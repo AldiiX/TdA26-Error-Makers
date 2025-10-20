@@ -3,19 +3,19 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-backend
 WORKDIR /app
 
 # Copy csproj and restore as distinct layers
-COPY aspnuxt.Server/aspnuxt.Server.csproj ./aspnuxt.Server/
-RUN dotnet restore ./aspnuxt.Server/aspnuxt.Server.csproj
+COPY tda26.Server/tda26.Server.csproj ./tda26.Server/
+RUN dotnet restore ./tda26.Server/tda26.Server.csproj
 
 # Copy everything else and build
-COPY aspnuxt.Server/. ./aspnuxt.Server/
-RUN dotnet publish ./aspnuxt.Server/aspnuxt.Server.csproj -c Release -o out
+COPY tda26.Server/. ./tda26.Server/
+RUN dotnet publish ./tda26.Server/tda26.Server.csproj -c Release -o out
 
 # Stage 2: Build Node.js frontend
 FROM node:22 AS build-frontend
 WORKDIR /app
-COPY aspnuxt.client/package.json aspnuxt.client/package-lock.json ./
+COPY tda26.client/package.json tda26.client/package-lock.json ./
 RUN npm install
-COPY aspnuxt.client/ ./
+COPY tda26.client/ ./
 RUN npm run build
 
 # Stage 3: Final image with .NET runtime, Node.js, and Nginx
@@ -31,7 +31,7 @@ COPY --from=build-frontend /app/dist /var/www/frontend
 COPY --from=build-backend /app/out /var/www/backend
 
 # Copy package.json for npm
-COPY aspnuxt.client/package.json /var/www/frontend/
+COPY tda26.client/package.json /var/www/frontend/
 
 # Nginx configuration
 RUN rm -f /etc/nginx/conf.d/default.conf

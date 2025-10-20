@@ -17,9 +17,11 @@ export default defineNuxtConfig({
         enabled: true
       }
     },
-    /*devServer: {
+
+    devServer: {
         host: "0.0.0.0",
-    },*/
+        port: 3226,
+    },
 
     nitro: {
         routeRules: {

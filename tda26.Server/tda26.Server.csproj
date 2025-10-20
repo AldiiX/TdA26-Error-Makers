@@ -6,9 +6,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>db420983-1241-40dc-bd80-07cc98d7fdf2</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <SpaRoot>..\aspnuxt.client</SpaRoot>
-        <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
-        <SpaProxyServerUrl>https://localhost:58960</SpaProxyServerUrl>
+<!--        <SpaRoot>..\tda26.client</SpaRoot>-->
+<!--        <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>-->
+<!--        <SpaProxyServerUrl>https://localhost:58960</SpaProxyServerUrl>-->
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\aspnuxt.client\aspnuxt.client.esproj">
+        <ProjectReference Include="..\tda26.client\tda26.client.esproj">
             <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
         </ProjectReference>
     </ItemGroup>
