@@ -9,7 +9,6 @@
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="app\components\" />
     <Folder Include="app\composables\" />
     <Folder Include="public\lib\" />
   </ItemGroup>

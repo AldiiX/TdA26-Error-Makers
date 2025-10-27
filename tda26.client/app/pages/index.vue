@@ -1,55 +1,212 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+import BlurBackground from "@/components/backgrounds/BlurBackground.vue";
+import ColoredBackground from "@/components/backgrounds/ColoredBackground.vue";
+import { RouterLink } from "vue-router";
+import Header from "~/components/Header.vue";
+import Footer from "~/components/Footer.vue";
 
+const projects = ref<any[] | null>(null);
+
+onMounted(() => {
+    fetch("/api/v1/projects").then(async response => {
+        const data = await response.json();
+        projects.value = data;
+    })
+});
 </script>
 
+
+
+
 <template>
-    <div :class="$style.centerdiv">
-        <h1>&lt;Hello TdA/&gt;</h1>
-        <p>we are error makers</p>
-    </div>
+    <Header/>
+    
+    <ColoredBackground/>
+
+    <section :class="$style.top">
+        <div :class="$style.center">
+            <div :class="$style.left">
+                <h1>Think different Academy</h1>
+                <p>Platforma na řešení zajímavých piškvorkových úloh, která ti pomůže rozvíjet logické myšlení a strategické schopnosti.</p>
+                <RouterLink to="/play" custom v-slot="{ navigate, href, isActive, isExactActive }">
+                    <button :class="$style['button-primary-col-sec']" @click="navigate">HRÁT</button>
+                </RouterLink>
+            </div>
+
+            <div :class="$style.right">
+                <div :class="$style.img"></div>
+            </div>
+        </div>
+    </section>
+    
+    <Footer/>
 </template>
 
+
 <style module lang="scss">
-@use '../app' as app;
+
+@keyframes ospfpodskfposdkfpsok {
+    from { opacity: 0; margin-top: 100px; }
+    to { opacity: 1; margin-top: 0;}
+}
 
 
 
-.centerdiv {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; // Full viewport height
-    text-align: center;
-    flex-direction: column;
+:root:is(.theme-light) {
+    .background {
 
-    * {
+        &::after {
+            background: none;
+        }
+    }
+
+    section:is(.top) > .center > .left > p {
+        color: #e3e3e3;
+    }
+}
+
+section:is(.top) {
+    position: relative;
+    height: calc(100vh + 80px);
+    width: 100%;
+    overflow: hidden;
+
+
+    h1, p {
         margin: 0;
     }
 
-    h1 {
-        font-size: 128px;
-        margin-bottom: 32px;
+    >.center {
+        position: absolute;
+        width: 80%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: ospfpodskfposdkfpsok 1s forwards ease;
+
+
+
+        >.left {
+            >h1 {
+                width: clamp(0px, 50vw, 700px);
+                font-size: clamp(0px, 6vw, 96px);
+                line-height: clamp(0px, 5.5vw, 90px);
+                position: relative;
+                color: white;
+
+                //&::before {
+                //    content: 'X O O X X O';
+                //    position: absolute;
+                //    bottom: 100%;
+                //    left: 0;
+                //    font-size: clamp(0px, 1.5vw, 32px);
+                //    color: #ff7575;
+                //}
+            }
+
+            >p {
+                width: 30vw;
+                font-size: clamp(0px, 1.5vw, 24px);
+
+                margin-top: 2vw;
+                opacity: 0.7;
+            }
+
+            >button{
+                border-radius: 12px;
+                padding: 0.8vw 3vw;
+                font-size: clamp(0px, 1.5vw, 24px);
+                cursor: pointer;
+                margin: 0;
+                margin-top: 2vw;
+            }
+        }
+
+        >.right {
+            position: relative;
+            flex-grow: 1;
+
+            >.img {
+                width: 100%;
+                max-width: 30vw;
+                aspect-ratio: 1/1;
+                background-image: url("/images/icons/zarivka_playing_bile.svg");
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
+                margin-left: auto;
+            }
+        }
     }
+}
 
-    p {
-        font-size: 24px;
+@media screen and (min-width: 600px) and (max-width: 960px){
+    section:is(.top) > .center > .left > p {
+        width: 45vw;
+        font-size: clamp(0px, 2.5vw, 24px);
+        margin-top: 2vw;
+        opacity: 0.7;
     }
 }
 
+@media screen and (max-width: 600px) {
+    section:is(.top) {
+        height: calc(100svh + 80px);
+        transition-duration: 0.3s;
 
+        >.center {
+            position: absolute;
+            width: auto;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: ospfpodskfposdkfpsok 1s forwards ease;
 
-// Laptops Responsive
-@media screen and (max-width: app.$laptopBreakpoint) {
+            >.left {
+                h1{
+                    width: 80vw;
+                    font-size: 48px;
+                    line-height: 48px;
+                    position: relative;
+                    color: white;
 
-}
+                    //&::before {
+                    //    content: "X O O X X O";
+                    //    position: absolute;
+                    //    bottom: 100%;
+                    //    left: 0;
+                    //    font-size: 16px;
+                    //    color: #ff7575;
+                    //}
+                }
 
-// tablet
-@media screen and (max-width: app.$tabletBreakpoint) {
+                p {
+                    width: 80vw;
+                    font-size: 16px;
+                    margin-top: 16px;
+                    opacity: 0.7;
+                }
 
-}
-
-// mobile
-@media screen and (max-width: app.$mobileBreakpoint) {
-
+                >button{
+                    border-radius: 12px;
+                    padding: 10px 30px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    margin: 0;
+                    margin-top: 16px;
+                }
+            }
+            >.right {
+                display: none;
+            }
+        }
+    }
 }
 </style>
