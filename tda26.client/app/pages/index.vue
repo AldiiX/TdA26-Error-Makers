@@ -9,9 +9,8 @@ import Footer from "~/components/Footer.vue";
 const projects = ref<any[] | null>(null);
 
 onMounted(() => {
-    fetch("/api/v1/projects").then(async response => {
-        const data = await response.json();
-        projects.value = data;
+    fetch("/api/v1").then(async response => {
+        return response.json();
     })
 });
 </script>
