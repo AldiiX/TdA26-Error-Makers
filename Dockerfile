@@ -15,22 +15,22 @@ RUN curl -sL https://deb.nodesource.com/setup_22.x | bash && apt-get install -y 
 FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["aspnuxt.Server/aspnuxt.Server.csproj", "aspnuxt.Server/"]
-COPY ["aspnuxt.client/aspnuxt.client.esproj", "aspnuxt.client/"]
-RUN dotnet restore "./aspnuxt.Server/aspnuxt.Server.csproj"
+COPY ["tda26.Server/tda26.Server.csproj", "tda26.Server/"]
+COPY ["tda26.client/tda26.client.esproj", "tda26.client/"]
+RUN dotnet restore "./tda26.Server/tda26.Server.csproj"
 COPY . .
-WORKDIR "/src/aspnuxt.Server"
+WORKDIR "/src/tda26.Server"
 
 # vytvoreni prazdnyho .env souboru v tomto direktory pokud .env neexistuje
 RUN if [ ! -f ".env" ]; then touch .env; fi
 
 # buildnuti backendu
-RUN dotnet build "./aspnuxt.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./tda26.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Stage to publish the backend
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./aspnuxt.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./tda26.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Final stage
 FROM base AS final
@@ -43,7 +43,7 @@ RUN apt-get update && apt-get install -y curl nginx
 RUN curl -sL https://deb.nodesource.com/setup_22.x | bash && apt-get install -y nodejs
 
 # Copy frontend files and fix permissions
-COPY ["aspnuxt.client/", "/app/client/"]
+COPY ["tda26.client/", "/app/client/"]
 RUN chown -R $APP_UID:$APP_UID /app/client
 WORKDIR /app/client
 
