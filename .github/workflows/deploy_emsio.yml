@@ -1,0 +1,68 @@
+﻿name: Deploy to Emsio Cloud
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        id: deploy
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "▶️ Volá se deploy endpoint…"
+
+          # pozor na pipefail: docasne vypnout jen kolem curl|tee, at mame soubor i pri curl exit 56
+          set +o pipefail
+          curl --no-buffer --http1.1 -sS -X POST \
+            -H "X-GHAD-Token: ${{ secrets.DEPLOY_TOKEN }}" \
+            -H "X-GHRP-Uuid: ${{ secrets.PROJECT_UUID }}" \
+            -H "X-GHRP-Name: ${{ github.repository }}" \
+            -H "X-GHRP-Branch: main" \
+            "https://deploy.emsio.cz/ghad/df/v2/run" \
+            -w "\nHTTP_CODE=%{http_code}\n" \
+          | tee full_response.txt
+          curl_exit=${PIPESTATUS[0]}
+          set -o pipefail
+
+          echo "CURL_EXIT=$curl_exit" >> full_response.txt
+
+      - name: Publish step summary
+        if: always() # udelej i kdyby predchozi step selhal
+        shell: bash
+        run: |
+          http_code=$(grep -oE 'HTTP_CODE=[0-9]{3}' full_response.txt | tail -n1 | cut -d= -f2)
+          curl_exit=$(grep -oE 'CURL_EXIT=[0-9]+' full_response.txt | tail -n1 | cut -d= -f2 || echo 0)
+          last_line=$(grep -v '^$' full_response.txt | tail -n1)
+
+          if echo "$last_line" | grep -q "❌"; then
+            body="❌ Chyba: Nasazení selhalo (viz log níže)"
+            fail=1
+          elif [ "$http_code" -ne 200 ]; then
+            body="❌ Chyba: Server vrátil $http_code"
+            fail=1
+          elif [ "$curl_exit" -eq 56 ]; then
+            # toleruj preruseny stream, kdyz server poslal 200 a ve vystupu neni chyba
+            body="⚠️ Stream se ukončil (curl 56), ale server vrátil 200 a ve výstupu není chyba."
+            fail=0
+          else
+            body="✅ Úspěšně nasazeno na server"
+            fail=0
+          fi
+
+          {
+            echo "### 🚀 Deploy výstup"
+            echo
+            echo "**HTTP status:** \`$http_code\`"
+            echo
+            echo '```'
+            echo "$body"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $fail
