@@ -17,9 +17,12 @@ $desktopBreakpoint: 1800px;
     --color-gray: #666;
     --element-bg: rgb(0, 0, 0, 0.1);
     --accent-color-primary: #0070BB;
+    --accent-color-primary-transparent-01: rgba(0, 112, 187, 0.1);
     --accent-color-primary-darker: #005288;
     --accent-color: var(--accent-color-primary);
     --accent-color-secondary: #91F5AD;
+    --accent-color-secondary-transparent-01: rgba(145, 245, 173, 0.1);
+    --accent-color-secondary-transparent-03: rgba(145, 245, 173, 0.3);
     --accent-color-secondary-darker: #3f936e;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
@@ -35,69 +38,11 @@ $desktopBreakpoint: 1800px;
     --button-bg: #e8e8e8;
     --button-outline-color: #dadada;
     --button-bg-hover: #d2d2d2;
+    --input-background-color: #fff;
+    --input-border-color: #cccccc;
+    --input-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
     --modal-blur-color: rgba(0, 0, 0, 0.5);
     --close-icon: url("../public/icons/Close_Dark.svg");
-
-    .bg-29aa2e9f-d314-4366-a4cd-95ba0bbd1433 {
-        filter: blur(10vw) !important;
-        background-color: white;
-
-        .one, .two {
-            width: 32vw;
-        }
-    }
-
-    .background-f55288d9-4dcf-456d-87c4-26be60c16cdb {
-        &::after {
-            opacity: 0.35 !important;
-            background: linear-gradient(0deg, black, transparent 100%) !important;
-        }
-    }
-
-
-
-    .header-5F015D44-0984-4A50-B52B-5319AE57C19C {
-        > .flex > .Login > .newgame {
-            background-color: rgba(0, 0, 0, 0.2);
-        }
-    }
-
-    .footer{
-        .login{
-            .UserIcon{
-                background: rgba(0, 0, 0 , 0.1);
-                font-family: "Dosis", sans-serif;
-            }
-        }
-    }
-
-    .header-5F015D44-0984-4A50-B52B-5319AE57C19C {
-        .UserIcon{
-            font-family: "Dosis", sans-serif;
-            background: rgb(0, 0, 0, 0.1);
-            font-family: "Dosis", sans-serif;
-        }
-    }
-
-    body:not(.header-top-light) {
-        .header-5F015D44-0984-4A50-B52B-5319AE57C19C {
-            > .flex > .Login > .User .Texts p {
-                color: black !important;
-            }
-        }
-    }
-
-    #ACCOUNT-PAGE{
-        .account-info{
-            .avatar{
-                /*background: rgba(0, 0, 0 , 0.1);*/
-            }
-        }
-    }
-
-    .sections >section:is(.top) .wallpaper::after {
-        opacity: 0.0 !important;
-    }
 }
 
 :root[data-theme='dark'] {
@@ -112,9 +57,12 @@ $desktopBreakpoint: 1800px;
     --color-gray: #666;
     --element-bg: rgb(255,255,255, 0.1);
     --accent-color-primary: #0070bb;
+    --accent-color-primary-transparent-01: rgba(0, 112, 187, 0.1);
     --accent-color-primary-darker: #005288;
     --accent-color: var(--accent-color-primary);
     --accent-color-secondary: #91F5AD;
+    --accent-color-secondary-transparent-01: rgba(145, 245, 173, 0.1);
+    --accent-color-secondary-transparent-03: rgba(145, 245, 173, 0.3);
     --accent-color-secondary-darker: #3f936e;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
@@ -132,52 +80,6 @@ $desktopBreakpoint: 1800px;
     --button-outline-color: #2d2d2d;
     --modal-blur-color: rgba(0, 0, 0, 0.75);
     --close-icon: url("../public/icons/Close_Light.svg");
-
-    .background-f55288d9-4dcf-456d-87c4-26be60c16cdb {
-        &::after {
-            background: linear-gradient(0deg, var(--background-color), transparent);
-            opacity: 0.7 !important;
-        }
-    }
-
-    .bg-29aa2e9f-d314-4366-a4cd-95ba0bbd1433 {
-        background-color: black;
-    }
-
-    .header-5F015D44-0984-4A50-B52B-5319AE57C19C {
-        > .flex > .Login > .newgame {
-            background-color: rgba(255,255,255, 0.2);
-        }
-    }
-
-    .footer{
-        .login{
-            .UserIcon{
-                background: rgb(255, 255, 255 , 0.2);
-            }
-        }
-    }
-
-    .header-5F015D44-0984-4A50-B52B-5319AE57C19C {
-        .UserIcon{
-            font-family: "Dosis", sans-serif;
-            background: rgb(255,255,255, 0.2);
-            font-family: "Dosis", sans-serif;
-        }
-    }
-
-    #ACCOUNT-PAGE{
-        .account-info{
-            .avatar{
-                /*background: rgba(255, 255, 255, 0.2);*/
-            }
-        }
-    }
-
-    .sections >section:is(.top) .wallpaper::after {
-        background: linear-gradient(0deg, var(--background-color), transparent 100%);
-        opacity: 0.6 !important;
-    }
 }
 
 #app {
@@ -349,7 +251,7 @@ body {
 
 ::selection {
     background-color: var(--accent-color-secondary);
-    color: white;
+    color: black;
     text-shadow: none;
 }
 
@@ -442,19 +344,6 @@ button,input,textarea,select {
     padding: 10px 20px;
     cursor: not-allowed;
     user-select: none;
-}
-
-input, select {
-    border: none;
-    border-radius: 12px;
-    padding: 10px 20px;
-    background-color: var(--button-bg);
-    color: var(--text-color);
-
-    &:focus {
-        outline: none;
-        background-color: var(--button-bg-hover);
-    }
 }
 
 @media screen and (min-width: 600px) and (max-width: 960px) {

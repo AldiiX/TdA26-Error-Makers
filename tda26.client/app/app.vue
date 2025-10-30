@@ -46,7 +46,7 @@ useHead({
         <!-- zaklad -->
         <Meta charset="utf-8" />
         <Meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Title>ASP.NET Core + Nuxt</Title>
+        <Title>Think different Academy</Title>
         <Meta name="description" :content="description" />
         <Meta name="robots" :content="robotsValue" />
         <Link rel="stylesheet" href="/lib/pure.css" type="text/css" />

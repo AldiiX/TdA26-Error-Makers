@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import BlurBackground from "@/components/backgrounds/BlurBackground.vue";
-import ColoredBackground from "@/components/backgrounds/ColoredBackground.vue";
-import { RouterLink } from "vue-router";
-import Header from "~/components/Header.vue";
-import Footer from "~/components/Footer.vue";
+    import { ref, onMounted, onUnmounted } from "vue";
+    import BlurBackground from "@/components/backgrounds/BlurBackground.vue";
+    import ColoredBackground from "@/components/backgrounds/ColoredBackground.vue";
+    import { RouterLink } from "vue-router";
+    import Header from "~/components/Header.vue";
+    import Footer from "~/components/Footer.vue";
+    import Input from "~/components/Input.vue";
+    import Button from "~/components/Button.vue";
+    import { Head, Title } from '#components';
 
-const projects = ref<any[] | null>(null);
+    const theme = useState("theme");
 
 onMounted(() => {
     fetch("/api/v1").then(async response => {
@@ -19,18 +22,21 @@ onMounted(() => {
 
 
 <template>
+    <Head>
+        <Title>Domů • Think different Academy</Title>
+    </Head>
+
     <Header/>
-    
-    <ColoredBackground/>
 
     <section :class="$style.top">
+        <div :class="$style.blob" :style="{ opacity: (theme == 'dark' ? '0.5' : '') }"></div>
+
         <div :class="$style.center">
             <div :class="$style.left">
-                <h1>Think different Academy</h1>
-                <p>Platforma na řešení zajímavých piškvorkových úloh, která ti pomůže rozvíjet logické myšlení a strategické schopnosti.</p>
-                <RouterLink to="/play" custom v-slot="{ navigate, href, isActive, isExactActive }">
-                    <button :class="$style['button-primary-col-sec']" @click="navigate">HRÁT</button>
-                </RouterLink>
+                <h1>Objevuj kurzy, které tě posunou.</h1>
+                <p>Studium nemusí být jen o biflování. S našimi interaktivními kurzy se učení stává zábavou.</p>
+                <Input :class="$style.input" placeholder="Najdi kurz nebo lektora..." />
+                <Button :class="$style.btn">Všechny lekce</Button>
             </div>
 
             <div :class="$style.right">
@@ -44,25 +50,11 @@ onMounted(() => {
 
 
 <style module lang="scss">
+@use "../app" as app;
 
 @keyframes ospfpodskfposdkfpsok {
     from { opacity: 0; margin-top: 100px; }
     to { opacity: 1; margin-top: 0;}
-}
-
-
-
-:root:is(.theme-light) {
-    .background {
-
-        &::after {
-            background: none;
-        }
-    }
-
-    section:is(.top) > .center > .left > p {
-        color: #e3e3e3;
-    }
 }
 
 section:is(.top) {
@@ -71,6 +63,24 @@ section:is(.top) {
     width: 100%;
     overflow: hidden;
 
+    .blob {
+        position: absolute;
+        margin-top: 15vh;
+        width: 100%;
+        aspect-ratio: 16/9;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        mask: url('../../public/images/blob1.svg') center/cover no-repeat;
+        background: linear-gradient(90deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
+        mask-size: cover;
+        mask-position: center center;
+        mask-repeat: no-repeat;
+    }
+
+    h1 {
+        font-weight: 700;
+    }
 
     h1, p {
         margin: 0;
@@ -79,13 +89,13 @@ section:is(.top) {
     >.center {
         position: absolute;
         width: 80%;
-        top: 50%;
+        top: calc(50% - 40px);
         left: 50%;
         transform: translate(-50%, -50%);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        animation: ospfpodskfposdkfpsok 1s forwards ease;
+        //animation: ospfpodskfposdkfpsok 1s forwards ease;
 
 
 
@@ -93,9 +103,9 @@ section:is(.top) {
             >h1 {
                 width: clamp(0px, 50vw, 700px);
                 font-size: clamp(0px, 6vw, 96px);
-                line-height: clamp(0px, 5.5vw, 90px);
+                line-height: clamp(0px, 5.5vw, 104px);
                 position: relative;
-                color: white;
+                color: var(--text-color-primary);
 
                 //&::before {
                 //    content: 'X O O X X O';
@@ -112,38 +122,28 @@ section:is(.top) {
                 font-size: clamp(0px, 1.5vw, 24px);
 
                 margin-top: 2vw;
+                margin-bottom: 2vw;
                 opacity: 0.7;
             }
 
-            >button{
-                border-radius: 12px;
-                padding: 0.8vw 3vw;
-                font-size: clamp(0px, 1.5vw, 24px);
-                cursor: pointer;
-                margin: 0;
-                margin-top: 2vw;
-            }
-        }
-
-        >.right {
-            position: relative;
-            flex-grow: 1;
-
-            >.img {
+            .input {
+                font-size: clamp(0px, 1.5vw, 20px);
                 width: 100%;
-                max-width: 30vw;
-                aspect-ratio: 1/1;
-                background-image: url("/images/icons/zarivka_playing_bile.svg");
-                background-size: contain;
-                background-position: center;
-                background-repeat: no-repeat;
-                margin-left: auto;
+                padding: 20px;
+            }
+
+            >.btn{
+                background-color: var(--accent-color-primary);
+                color: white;
+                margin-top: 2vw;
+                font-size: clamp(0px, 1.5vw, 20px);
+                padding: 0.8vw 2vw;
             }
         }
     }
 }
 
-@media screen and (min-width: 600px) and (max-width: 960px){
+@media screen and (min-width: app.$mobileBreakpoint) and (max-width: app.$tabletBreakpoint){
     section:is(.top) > .center > .left > p {
         width: 45vw;
         font-size: clamp(0px, 2.5vw, 24px);
@@ -152,7 +152,7 @@ section:is(.top) {
     }
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: app.$mobileBreakpoint) {
     section:is(.top) {
         height: calc(100svh + 80px);
         transition-duration: 0.3s;
@@ -166,7 +166,7 @@ section:is(.top) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: ospfpodskfposdkfpsok 1s forwards ease;
+            //animation: ospfpodskfposdkfpsok 1s forwards ease;
 
             >.left {
                 h1{
@@ -174,7 +174,6 @@ section:is(.top) {
                     font-size: 48px;
                     line-height: 48px;
                     position: relative;
-                    color: white;
 
                     //&::before {
                     //    content: "X O O X X O";
