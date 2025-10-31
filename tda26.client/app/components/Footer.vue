@@ -64,7 +64,6 @@
 <style module lang="scss">
 .footer {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.2);
-    min-height: 20vh;
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -84,7 +84,7 @@ function reloadPage() {
 
     <BlurBackground/>
 
-    <main id="error-page" >
+    <main :class="$style.main">
         <div :class="$style.center">
             <div :class="$style.errorCode">
                 
@@ -108,7 +108,7 @@ function reloadPage() {
 
 
 <style module lang="scss">
-main{
+.main{
     width: 80%;
     height: calc(100vh);
     margin: 0 auto;
