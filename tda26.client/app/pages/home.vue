@@ -1,5 +1,4 @@
 <script setup lang="ts">
-    import { ref, onMounted, onUnmounted } from "vue";
     import Header from "~/components/Header.vue";
     import Footer from "~/components/Footer.vue";
     import Input from "~/components/Input.vue";
@@ -8,11 +7,9 @@
 
     const theme = useState("theme");
 
-onMounted(() => {
-    fetch("/api/v1").then(async response => {
-        return response.json();
+    definePageMeta({
+        alias: "/"
     })
-});
 </script>
 
 

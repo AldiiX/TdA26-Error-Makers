@@ -4,6 +4,10 @@
     import { Head, Title } from '#components';
 
     const theme = useState("theme");
+
+    definePageMeta({
+        //alias: "/"
+    })
 </script>
 
 
