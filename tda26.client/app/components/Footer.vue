@@ -1,6 +1,6 @@
 <script setup lang="ts">
-    import { RouterLink } from 'vue-router';
     import Menu from "~/components/Menu.vue";
+    import { NuxtLink } from '#components';
 </script>
 
 <template>
@@ -21,16 +21,12 @@
                     
                     <div :class="$style.other">
                         <p :class="$style.upper">Ostatní</p>
-                        <p>
-                            <RouterLink to="/other/gdpr">GDPR</RouterLink>
-                        </p>
-                        <p>
-                            <RouterLink to="/other/cookies">Cookies</RouterLink>
-                        </p>
 
-                        <p>
-                            <RouterLink to="/other/tos">ToS</RouterLink>
-                        </p>
+                        <div style="gap: 8px; display: grid;">
+                            <NuxtLink to="/other/gdpr" :class="$style.link">GDPR</NuxtLink>
+                            <NuxtLink to="/other/cookies" :class="$style.link">Cookies</NuxtLink>
+                            <NuxtLink to="/other/tos" :class="$style.link">ToS</NuxtLink>
+                        </div>
                     </div>
                     
                     <div :class="$style.team">
@@ -64,11 +60,10 @@
     width: 80%;
     margin: 48px auto;
     //margin-top: -300px; // debug
-    padding: 24px 48px;
+    padding: 32px 48px;
     border-radius: 48px;
     backdrop-filter: blur(10px);
     font-family: Dosis, sans-serif;
-    // inset box shadow
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.1);
     z-index: 5;
 
@@ -80,7 +75,6 @@
             justify-content: space-between;
             align-items: center;
             padding-bottom: 48px;
-            padding-top: 16px;
 
             .left {
                 display: flex;
@@ -132,6 +126,10 @@
                             color: var(--accent-color-primary);
                         }
                     }
+
+                    .link {
+                        user-select: none;
+                    }
                 }
             }
         }
@@ -139,8 +137,9 @@
         .bottom {
             display:  flex;
             justify-content: space-between;
-            border-top: 1px solid var(--color-gray);
+            border-top: 1px solid rgb(from var(--text-color-primary) r g b / 0.1);
             padding: 16px 0;
+            padding-top: 48px;
             font-size: 14px;
             
 
