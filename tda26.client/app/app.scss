@@ -6,6 +6,7 @@ $desktopBreakpoint: 1800px;
 
 
 :root[data-theme='light'] {
+    --page-background: linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%);
     --bg: var(--background-color-primary);
     --text-color-primary: #080808;
     --text-color: var(--text-color-primary);
@@ -46,6 +47,7 @@ $desktopBreakpoint: 1800px;
 }
 
 :root[data-theme='dark'] {
+    --page-background: linear-gradient(180deg, #1a1a1a 0%, #090b0d 100%);
     --bg: black;
     --text-color-primary: #FFFFFF;
     --text-color: var(--text-color-primary);
@@ -153,7 +155,7 @@ a {
 html {
     font-size: 16px;
     color: var(--text-color);
-    background: linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%);
+    background: var(--page-background);
     margin: 0;
     position: relative;
     min-height: 100%;
