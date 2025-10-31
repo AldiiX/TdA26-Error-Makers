@@ -2,6 +2,8 @@
 
 import { fileURLToPath } from 'url'
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const target = process.env.ASPNETCORE_HTTPS_PORT
     ? `http://localhost:${process.env.ASPNETCORE_HTTPS_PORT}`
     : process.env.ASPNETCORE_URLS
@@ -21,7 +23,7 @@ export default defineNuxtConfig({
     vite: {
         css: {
             modules: {
-                generateScopedName: import.meta.dev === false ? '[hash:base64:11]' : '[local]__[hash:base64:6]',
+                generateScopedName: isProd ? '[hash:base64:11]' : '[local]__[hash:base64:6]',
             }
         }
     },
