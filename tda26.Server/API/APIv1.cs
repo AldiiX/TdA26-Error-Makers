@@ -10,7 +10,7 @@ public class APIv1 : Controller {
     public IActionResult Index() {
         return new JsonResult(new
         {
-            organization = "",
+            organization = "Student Cyber Games",
         });
     }
 }

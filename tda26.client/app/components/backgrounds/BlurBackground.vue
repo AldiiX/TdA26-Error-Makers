@@ -32,15 +32,15 @@
 
 
     .one, .two {
-        width: 34vw;
+        width: 23vw;
     }
 
     .one {
         position: absolute;
         aspect-ratio: 1/1;
         background-color: var(--accent-color-secondary);
-        bottom: -10vw;
-        left: -5vw;
+        bottom: -20vw;
+        left: -10vw;
         border-radius: 100%;
         animation: blobanim 10s infinite ease;
     }
@@ -49,8 +49,8 @@
         position: absolute;
         aspect-ratio: 1/1;
         background-color: var(--accent-color-primary);
-        top: -10vw;
-        right: -5vw;
+        top: -20vw;
+        right: -10vw;
         border-radius: 100%;
         animation: blobanim 15s infinite ease;
         animation-delay: 2.5s;
