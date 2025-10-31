@@ -3,6 +3,7 @@ import type {WebTheme} from "~/lib/types";
 import Header from "~/components/Header.vue";
 import Footer from "~/components/Footer.vue";
 import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
+import Button from "~/components/Button.vue";
 
 const nuxtError = useError();
 const theme = useState<WebTheme>('theme', () => 'light');
@@ -61,12 +62,16 @@ const splitNumber = computed<string[]>(() => {
 
 // nastav titulek stranky reaktivne
 useHead(() => ({
-    title: `Error ${code.value}`
+    title: `Error ${code.value} • Think different Academy`,
 }))
 
 function goHome() {
     // zrusit chybu a presmerovat domu (oficialni cesta v nuxtu)
-    clearError({ redirect: '/' }) // :contentReference[oaicite:1]{index=1}
+    clearError({ redirect: '/' })
+}
+
+function goBack() {
+    window.history.back();
 }
 
 function reloadPage() {
@@ -76,7 +81,9 @@ function reloadPage() {
 
 <template>
     <Header/>
+
     <BlurBackground/>
+
     <main id="error-page" >
         <div :class="$style.center">
             <div :class="$style.errorCode">
@@ -84,18 +91,21 @@ function reloadPage() {
             </div>
             <div :class="$style.codeContainer"> 
                 <p :class="$style.firstNumber">{{ splitNumber[0] ?? '' }}</p>
-                <div :class="$style.secondNumber"></div>
+                <div :class="$style.icon"></div>
                 <p :class="$style.thirdNumber"> {{ splitNumber[2] ?? '' }}</p>
             </div>
             <p :class="$style.desc">{{ message }}</p>
             <div :class="$style.buttons">
-                <Button :class="$style.btn" @click="goHome" button-style="primary" style="display: grid; font-size: 22px;" >Zpět</Button>
-                <Button :class="$style.btn" @click="reloadPage" button-style="secondary" style="display: grid; font-size: 22px;" >Načíst znovu</Button>
+                <Button :class="$style.btn" @click="goBack" button-style="primary" style="display: grid; font-size: 22px;" >Zpět</Button>
+                <Button :class="$style.btn" @click="goHome" button-style="secondary" style="display: grid; font-size: 22px;" >Domů</Button>
             </div>
         </div>
     </main>
+
     <Footer/>
 </template>
+
+
 
 <style module lang="scss">
 main{
@@ -112,7 +122,9 @@ main{
         
         
         .codeContainer{
-            background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-darker));
+            $gradientAngle: 135deg;
+
+            background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-darker));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -126,9 +138,9 @@ main{
             
             
             .firstNumber,
-            .secondNumber,
+            .icon,
             .thirdNumber {
-                font-size: 256px;
+                font-size: 264px;
                 font-weight: 700;
                 font-family: 'Dosis', sans-serif;
                 margin: 0;
@@ -137,23 +149,35 @@ main{
                 -webkit-text-fill-color: transparent;
             }
             
-            .secondNumber{
+            .icon {
                 mask-image: url(../public/icons/zarivka_sad_bile.svg);
                 mask-size: contain;
                 mask-repeat: no-repeat;
                 mask-position: center;
                 height: 256px;
                 aspect-ratio: 1 / 1;
-                background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-darker));
+                background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-darker));
+                animation: float 3s ease-in-out infinite alternate;
+
+                @keyframes float {
+                    0% {
+                        transform: translateY(0);
+                    }
+                    50% {
+                        transform: translateY(20px);
+                    }
+                    100% {
+                        transform: translateY(0);
+                    }
+                }
             }
-            
         }
         
         .desc{
             display: flex;
             justify-self: center;
             font-size: 32px;
-            font-weight: 500;
+            font-weight: 800;
             margin: 16px 0 32px 0;
         }
         
@@ -171,9 +195,7 @@ main{
                 font-size: 22px;
             }
         }
-        
     }
-    
 }
 
 

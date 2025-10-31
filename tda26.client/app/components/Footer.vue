@@ -63,7 +63,7 @@
 
 <style module lang="scss">
 .footer {
-    background-color: rgb(from var(--background-color-secondary) r g b / 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / 0.2);
     min-height: 20vh;
     display: flex;
     flex-direction: column;
@@ -78,6 +78,7 @@
     font-family: Dosis, sans-serif;
     // inset box shadow
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.1);
+    z-index: 5;
 
     .divider {
         width: 100%;
@@ -110,8 +111,7 @@
                 
                 .navigation,
                 .other,
-                .team
-                {
+                .team {
                     .upper{
                         font-size: 24px;
                         font-weight: 700;
@@ -131,7 +131,7 @@
                             transition-duration: 0.3s;
 
                             &:hover {
-                                color: var(--accent-color-secondary);
+                                color: var(--accent-color-secondary-darker);
                                 transition-duration: 0.3s;
                             }
                         }

@@ -3,14 +3,14 @@
 </script>
 
 <template>
-    <div class="bg-29aa2e9f-d314-4366-a4cd-95ba0bbd1433">
-        <div class="one"></div>
-        <div class="two"></div>
+    <div :class="$style.bg">
+        <div :class="$style.one"></div>
+        <div :class="$style.two"></div>
     </div>
 </template>
 
-<style scoped>
-.bg-29aa2e9f-d314-4366-a4cd-95ba0bbd1433 {
+<style module lang="scss">
+.bg {
     position: fixed;
     display: flex;
     justify-content: center;
@@ -30,6 +30,13 @@
         }
     }
 
+    :global(:root[data-theme='light']) & {
+        filter: blur(10vw);
+
+        .one, .two {
+            width: 35vw;
+        }
+    }
 
     .one, .two {
         width: 23vw;
