@@ -26,7 +26,7 @@ onMounted(() => {
     <Header/>
 
     <section :class="$style.top">
-        <div :class="$style.blob" :style="{ opacity: (theme == 'dark' ? '0.5' : '') }"></div>
+        <div :class="$style.blob"></div>
 
         <div :class="$style.center">
             <div :class="$style.left">
@@ -77,6 +77,10 @@ section:is(.top) {
         mask-size: cover;
         mask-position: center center;
         mask-repeat: no-repeat;
+
+        :global(:root[data-theme='dark']) & {
+            opacity: 0.5;
+        }
     }
 
     h1 {

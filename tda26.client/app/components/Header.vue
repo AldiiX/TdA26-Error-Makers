@@ -2,6 +2,7 @@
     import { onMounted, onUnmounted, inject, type Ref } from 'vue';
     import { RouterLink } from 'vue-router';
     import Button from "~/components/Button.vue";
+    import Menu from "~/components/Menu.vue";
     const $style = useCssModule();
 
     function ouasihfdusifhi() {
@@ -38,11 +39,7 @@
             </RouterLink>
 
             <div :class="[$style['Header-Menu'], { locked: $style.isTransitioning }]">
-                <RouterLink to="/">Domů</RouterLink>
-                <RouterLink to="/courses">Kurzy</RouterLink>
-                <RouterLink to="/lecturers">Lektoři</RouterLink>
-                <RouterLink to="/about">O nás</RouterLink>
-                <RouterLink to="/faq">FAQ</RouterLink>
+                <Menu :link-class="$style.link" />
 
                 <div :class="$style.btns">
                     <Button button-style="primary" href="/account">Přihlásit se</Button>
@@ -124,7 +121,7 @@
                 pointer-events: none;
             }
 
-            >a {
+            >.link {
                 position: relative;
                 text-decoration: none;
                 font-weight: 1000;
@@ -132,49 +129,49 @@
                 user-select: none;
                 transition-duration: 0.3s;
 
-                &:is(.active), &:is(.router-link-active) {
+                &:is(:global(.router-link-active)) {
                     pointer-events: none;
 
-                    &::before {
+                    &::after {
                         content: "";
-                        display: block;
+                        position: absolute;
+                        left: 0;
+                        bottom: -4px;
                         width: 100%;
                         height: 2px;
-                        background: var(--accent-color-primary);
-                        margin-top: 22.5px;
-                        position: absolute;
-                        border-radius: 10px;
-                        pointer-events: none;
-                        transition-duration: 0.3s;
+                        background-color: var(--accent-color-primary);
+                        transform: scaleX(1);
+                        transition: transform 0.3s ease;
+                        animation: oksfodsk 0.3s forwards ease;
+                        transform-origin: left;
 
-                        animation: asdfsdsadf 0.3s forwards ease-in-out;
-
-                        @keyframes asdfsdsadf {
-                            from { width: 0 }
-                            to {  width: 100% }
+                        @keyframes oksfodsk {
+                            from {
+                                transform: scaleX(0);
+                            }
+                            to {
+                                transform: scaleX(1);
+                            }
                         }
                     }
                 }
 
-                &:hover {
-                    &::after {
-                        content: "";
-                        display: block;
-                        width: 100%;
-                        height: 2px;
-                        background: var(--accent-color-secondary);
-                        margin-top: 5px;
-                        position: absolute;
-                        border-radius: 10px;
-                        animation: asdfsdf 0.3s forwards ease-in-out;
-                        pointer-events: none;
-                        transition-duration: 0.3s;
+                &::after {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    bottom: -4px;
+                    width: 100%;
+                    height: 2px;
+                    background-color: var(--accent-color-secondary);
+                    transform: scaleX(0);
+                    transform-origin: right;
+                    transition: transform 0.3s ease;
+                }
 
-                        @keyframes asdfsdf {
-                            from { width: 0 }
-                            to {  width: 100% }
-                        }
-                    }
+                &:hover::after {
+                    transform: scaleX(1);
+                    transform-origin: left;
                 }
             }
         }
@@ -188,7 +185,7 @@
         right: 5%;
         top: 50%;
         transform: translateY(-50%);
-        mask-image: url(../../public/images/svg/menu.svg);
+        //mask-image: url(../../public/images/svg/menu.svg);
         mask-size: 90%;
         mask-position: center;
         mask-repeat: no-repeat;

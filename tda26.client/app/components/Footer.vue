@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { RouterLink } from 'vue-router';
+    import Menu from "~/components/Menu.vue";
 </script>
 
 <template>
@@ -10,33 +11,25 @@
                     <div :class="$style.logo"></div>
                 </div>
                 <div :class="$style.right">
-                    <div :class="$style.navigation"> 
+                    <div :class="$style.navigation">
                         <p :class="$style.upper">Navigace</p>
-                        <p>
-                            <RouterLink to="/">Domů</RouterLink>
-                        </p>
-                        <p>
-                            <RouterLink to="/leaderboard">Žebříčky</RouterLink>
-                        </p>
-                        <p>
-                            <RouterLink to="/account">Účet</RouterLink>
-                        </p>
-                        <p>
-                            <RouterLink to="/play">Hrát</RouterLink>
-                        </p>
+
+                        <div style="gap: 8px; display: grid;">
+                            <Menu :link-class="$style.link" />
+                        </div>
                     </div>
                     
                     <div :class="$style.other">
                         <p :class="$style.upper">Ostatní</p>
                         <p>
-                            <RouterLink to="/privacy/gdpr">GDPR</RouterLink>
+                            <RouterLink to="/other/gdpr">GDPR</RouterLink>
                         </p>
                         <p>
-                            <RouterLink to="/privacy/cookies">Cookies</RouterLink>
+                            <RouterLink to="/other/cookies">Cookies</RouterLink>
                         </p>
 
                         <p>
-                            <RouterLink to="/privacy/tos">ToS</RouterLink>
+                            <RouterLink to="/other/tos">ToS</RouterLink>
                         </p>
                     </div>
                     
@@ -123,16 +116,20 @@
                     
                     p {
                         margin: 8px 0;
+                    }
 
-                        a {
-                            color: var(--text-color-primary);
-                            text-decoration: none;
+                    a, .link {
+                        color: var(--text-color-primary);
+                        text-decoration: none;
+                        transition-duration: 0.3s;
+
+                        &:hover {
+                            color: var(--accent-color-secondary-darker);
                             transition-duration: 0.3s;
+                        }
 
-                            &:hover {
-                                color: var(--accent-color-secondary-darker);
-                                transition-duration: 0.3s;
-                            }
+                        &:is(:global(.router-link-active)) {
+                            color: var(--accent-color-primary);
                         }
                     }
                 }

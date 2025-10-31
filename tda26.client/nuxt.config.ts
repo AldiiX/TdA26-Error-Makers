@@ -18,6 +18,14 @@ export default defineNuxtConfig({
       }
     },
 
+    vite: {
+        css: {
+            modules: {
+                generateScopedName: import.meta.dev === false ? '[hash:base64:11]' : '[local]__[hash:base64:6]',
+            }
+        }
+    },
+
     devServer: {
         host: "0.0.0.0",
         port: 3226,
