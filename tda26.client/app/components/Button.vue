@@ -11,7 +11,9 @@
         accentColor?: string,
         href?: string | null,
         target?: string | null,
-        background?: string | null
+        background?: string | null,
+        style?: Record<string, string>,
+        
     }>(), {
         buttonStyle: "primary",
         accentColor: 'var(--accent-color-primary)',
@@ -22,7 +24,7 @@
 </script>
 
 <template>
-    <NuxtLink :href="href ?? undefined" :target="target ?? '_self'" :class="[$style.button, $style['style_' + buttonStyle] ]" :style="{ '--color': accentColor, '--bg': background ?? accentColor }">
+    <NuxtLink :href="href ?? undefined" :target="target ?? '_self'" :class="[$style.button, $style['style_' + buttonStyle] ]" :style="{ '--color': accentColor, '--bg': background ?? accentColor, ...style}">
         <slot />
     </NuxtLink>
 </template>

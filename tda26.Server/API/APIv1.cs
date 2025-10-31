@@ -22,8 +22,7 @@ public class APIv1(
     public IActionResult GetStatus() {
         return Ok(new
         {
-            status = "ok",
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            organization = "Student Cyber Games",
         });
     }
 
