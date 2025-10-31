@@ -1,8 +1,5 @@
 <script setup lang="ts">
     import { ref, onMounted, onUnmounted } from "vue";
-    import BlurBackground from "@/components/backgrounds/BlurBackground.vue";
-    import ColoredBackground from "@/components/backgrounds/ColoredBackground.vue";
-    import { RouterLink } from "vue-router";
     import Header from "~/components/Header.vue";
     import Footer from "~/components/Footer.vue";
     import Input from "~/components/Input.vue";
