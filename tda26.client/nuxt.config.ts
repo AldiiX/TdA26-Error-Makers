@@ -27,7 +27,12 @@ export default defineNuxtConfig({
         routeRules: {
             '/api/**': {
                 proxy: `${target}/api/**`
-            }
+            },
+        },
+
+        devProxy: {
+            '/_openapi/': { target: `${target}/_openapi/`, changeOrigin: true },
+            '/_swagger/': { target: `${target}/_swagger/`, changeOrigin: true },
         },
 
         prerender: {
