@@ -2,7 +2,7 @@
 import { NuxtPage, Head, Title, Meta, Html, Link } from '#components'
 import { computed, onMounted, ref } from 'vue'
 import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
-import { NuxtLink, ClientOnly } from '#components';
+import { NuxtLink, ClientOnly, NuxtLayout } from '#components';
 import type {WebTheme} from "~/lib/types";
 
 // state
@@ -77,8 +77,9 @@ useHead({
     </Head>
 
 
-
-    <NuxtPage />
+    <NuxtLayout>
+        <NuxtPage />
+    </NuxtLayout>
 </template>
 
 <style src="./app.scss" />

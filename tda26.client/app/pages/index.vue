@@ -35,8 +35,12 @@ onMounted(() => {
             <div :class="$style.left">
                 <h1>Objevuj kurzy, které tě posunou.</h1>
                 <p>Studium nemusí být jen o biflování. S našimi interaktivními kurzy se učení stává zábavou.</p>
+                <div :class="$style.btns">
+                    <Button :class="$style.btn" href="/courses" button-style="primary" >Všechny kurzy</Button>
+                    <Button :class="$style.btn" href="/lecturers" button-style="secondary">Lektoři</Button>
+                </div>
+
                 <Input :class="$style.input" placeholder="Najdi kurz nebo lektora..." />
-                <Button :class="$style.btn">Všechny lekce</Button>
             </div>
 
             <div :class="$style.right">
@@ -132,13 +136,17 @@ section:is(.top) {
                 padding: 20px;
             }
 
-            >.btn{
-                background-color: var(--accent-color-primary);
-                color: white;
-                margin-top: 2vw;
-                font-size: clamp(0px, 1.5vw, 20px);
-                padding: 0.8vw 2vw;
+            >.btns {
+                display: flex;
+                gap: 1vw;
+                margin-bottom: 1vw;
+
+                >.btn{
+                    font-size: clamp(0px, 1.5vw, 20px);
+                    padding: 0.8vw 2vw;
+                }
             }
+
         }
     }
 }

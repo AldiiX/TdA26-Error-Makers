@@ -1,11 +1,30 @@
-﻿<script setup lang="ts">
+﻿<!--suppress HtmlUnknownTarget -->
+<script setup lang="ts">
+    import { NuxtLink } from '#components';
+
     const slot = useSlots();
+
+    type ButtonStyle = "primary" | "secondary" | "tertiary";
+
+    const props = withDefaults(defineProps<{
+        buttonStyle?: ButtonStyle,
+        accentColor?: string,
+        href?: string | null,
+        target?: string | null,
+        background?: string | null
+    }>(), {
+        buttonStyle: "primary",
+        accentColor: 'var(--accent-color-primary)',
+        href: null,
+        target: null,
+        background: null
+    });
 </script>
 
 <template>
-    <button :class="[$style.button]">
+    <NuxtLink :href="href ?? undefined" :target="target ?? '_self'" :class="[$style.button, $style['style_' + buttonStyle] ]" :style="{ '--color': accentColor, '--bg': background ?? accentColor }">
         <slot />
-    </button>
+    </NuxtLink>
 </template>
 
 <style module lang="scss">
@@ -19,10 +38,33 @@
         font-family: Dosis, sans-serif;
         box-shadow: var(--button-shadow);
         cursor: pointer;
-        transition: background-color 0.3s ease;
+        transition-duration: 0.3s;
+        user-select: none;
+        text-decoration: none;
+
+        &:focus, &:active {
+            box-shadow: none;
+            transition-duration: 0.3s;
+        }
+
 
         &:hover {
-            background-color: var(--button-bg-hover);
+            filter: brightness(0.75);
+            transition-duration: 0.3s;
+        }
+
+
+        // jednotlive styly
+        &:is(.style_primary) {
+            background-color: var(--color);
+            background: var(--bg);
+            color: white;
+        }
+
+        &:is(.style_secondary) {
+            background-color: transparent;
+            color: var(--color);
+            border: 2px solid var(--color);
         }
     }
 </style>

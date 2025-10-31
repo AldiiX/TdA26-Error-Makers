@@ -1,24 +1,23 @@
 <script setup lang="ts">
     import { onMounted, onUnmounted, inject, type Ref } from 'vue';
     import { RouterLink } from 'vue-router';
-    // import { toggleTheme } from '@/main';
+    import Button from "~/components/Button.vue";
+    const $style = useCssModule();
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
         if(!header) return;
 
         if(window.scrollY > 0) {
-            header.classList.add("scrolled")
+            header.classList.add($style.scrolled)
         } else {
-            header.classList.remove("scrolled")
+            header.classList.remove($style.scrolled)
         }
     }
 
-    const isTransitioning = inject("isTransitioning") as Ref<boolean>;
-
     onMounted(() => {
         document.addEventListener("scroll", ouasihfdusifhi);
-        document.onload = ouasihfdusifhi;
+        ouasihfdusifhi();
     });
 
     onUnmounted(() => {
@@ -40,14 +39,17 @@
 
             <div :class="[$style['Header-Menu'], { locked: $style.isTransitioning }]">
                 <RouterLink to="/">Domů</RouterLink>
-                <RouterLink to="/leaderboard">Žebříčky</RouterLink>
-                <RouterLink to="/account">Účet</RouterLink>
-                <RouterLink to="/play">Hrát</RouterLink>
+                <RouterLink to="/courses">Kurzy</RouterLink>
+                <RouterLink to="/lecturers">Lektoři</RouterLink>
+                <RouterLink to="/about">O nás</RouterLink>
+                <RouterLink to="/faq">FAQ</RouterLink>
+
+                <div :class="$style.btns">
+                    <Button button-style="primary" href="/account">Přihlásit se</Button>
+                    <Button button-style="primary" href="/account" accent-color="var(--accent-color-secondary-darker)">Registrovat se</Button>
+                </div>
             </div>
 
-<!--            <div :class="$style.Login">-->
-<!--                <div :class="$style.changetheme" v-on:click="toggleTheme()"></div>-->
-<!--            </div>-->
         </div>
 
         <!-- Menu pro mobily a tablety -->
@@ -57,150 +59,37 @@
 </template>
 
 <style module lang="scss">
-body:is(.header-top-light) .header:not(.scrolled) {
-    >.flex {
-        >.Header-Menu >a {
-            color: white !important;
-
-            &:is(.active)::before, &:is(.router-link-active)::before {
-                background: white !important;
-                transition-duration: 0.3s;
-            }
-        }
-
-        >.Login >.newgame {
-            background-color: rgba(255,255,255, 0.2);
-        }
-
-        >.Login >.changetheme {
-            background-color: white;
-        }
-
-        >.Header-Logo {
-            background-image: url("../../public/images/svg/Think-different-Academy_LOGO_oficialni-bile.svg");
-        }
-    }
-
-    > .Header-Logo-Small, .smallDevice {
-        background-color: white;
-    }
-}
-
 .header {
     position: fixed;
     background: none;
-    border-radius: 40px;
-    width: 90%;
+    width: 88.5%;
     height: 80px;
     margin-top: 2.5vh;
     left: 50%;
     transform: translateX(-50%);
     top: 0;
     z-index: 5;
-    transition-property: background, opacity;
     transition-duration: 0.3s;
+    border: 1px solid transparent;
+    border-radius: 32px;
 
     &:is(.scrolled) {
-        background: var(--background-color-3);
-
-        .newgame {
-            background-color: var(--accent-color-primary) !important;
-            transition-duration: 0.3s;
-
-            &:hover {
-                background-color: var(--accent-color-primary-darker) !important;
-            }
-        }
+        width: 80%;
+        box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.15);
+        background-color: rgb(from var(--background-color-secondary) r g b / 0.3);
+        border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.6);
+        backdrop-filter: blur(8px);
+        transition-duration: 0.3s;
     }
 
     >.flex {
         position: relative;
         display: flex;
         height: 100%;
-        width: 88.6%;
+        width: 90%;
         align-items: center;
         justify-content: space-between;
         margin: 0 auto;
-
-        >.Login {
-            width: fit-content;
-            display: flex;
-            align-items: center;
-            gap: 24px;
-
-            >.User{
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-left: 32px;
-                transition-duration: 0.3s;
-
-                &:hover {
-                    cursor: pointer;
-                    opacity: 0.5;
-                    transition-duration: 0.3s;
-                }
-
-                .UserIcon{
-                    font-family: "Dosis", sans-serif;
-                    font-size: 24px;
-                    font-weight: 700;
-                    color: white;
-                    text-align: center;
-                    align-content: center;
-                    position: relative;
-                    display: block;
-                    border-radius: 50%;
-                    width: 50px;
-                    height: 50px;
-                }
-                .Texts{
-                    >.top,
-                    >.bot{
-                        p{
-                            text-align: right;
-                            color : white;
-                            margin: 1px;
-                        }
-                    }
-                    .bot{
-                        p{
-                            font-weight: 700;
-                        }
-                    }
-                }
-            }
-
-            >.changetheme {
-                width: 30px;
-                height: 30px;
-                background-color: var(--text-color);
-                transition-duration: 0.3s;
-                mask-image: var(--theme-icon);
-                mask-size: contain;
-                mask-repeat: no-repeat;
-                mask-position: center;
-                cursor: pointer;
-
-                &:hover {
-                    background-color: var(--color-gray) !important;
-                    transition-duration: 0.3s;
-                }
-            }
-
-            >.newgame{
-                border: none;
-                border-radius: 12px;
-                padding: 10px 20px;
-                cursor: pointer;
-                margin: 0;
-
-                &:hover {
-                    background: rgba(255,255,255, 0.3);
-                    transition-duration: 0.3s;
-                }
-            }
-        }
 
         >.Header-Logo {
             height: 50px;
@@ -223,14 +112,19 @@ body:is(.header-top-light) .header:not(.scrolled) {
             height: 100%;
             width: fit-content;
             top: 50%;
-            left: 360px;
-            transform: translate(-50%, -50%);
+            right: 0;
+            transform: translateY(-50%);
+
+            .btns {
+                display: flex;
+                gap: 16px;
+            }
 
             &:is(.locked) {
                 pointer-events: none;
             }
 
-            a {
+            >a {
                 position: relative;
                 text-decoration: none;
                 font-weight: 1000;
@@ -323,41 +217,6 @@ body:is(.header-top-light) .header:not(.scrolled) {
         left: 5%;
         cursor: pointer;
     }
-
-
-
-    &:is(.scrolled) {
-        background: var(--background-color-3);
-
-        >.flex{
-            >.Login{
-                >.User{
-                    .UserIcon{
-                        color: var(--text-color-primary);
-                    }
-                    .Texts{
-                        >.top,
-                        >.bot{
-                            p{
-                                color : var(--text-color-primary);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        .newgame {
-            background-color: var(--accent-color-primary) !important;
-            transition-duration: 0.3s;
-
-            &:hover {
-                background-color: var(--accent-color-primary-darker) !important;
-            }
-        }
-    }
-
-
 }
 
 @media screen and (min-width: 600px) and (max-width: 960px) {
