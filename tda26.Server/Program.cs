@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using MySqlConnector;
 using StackExchange.Redis;
 using tda26.Server.Classes;
+using tda26.Server.Repositories;
 using tda26.Server.Services;
 
 namespace tda26.Server;
@@ -82,6 +83,7 @@ public static class Program {
 
         // repozitare a service
         builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+        builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 
         Application = builder.Build();
 

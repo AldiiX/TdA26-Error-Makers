@@ -39,8 +39,4 @@
         <Optimize>true</Optimize>
     </PropertyGroup>
 
-    <ItemGroup>
-      <Folder Include="Classes\Objects\" />
-    </ItemGroup>
-
 </Project>
