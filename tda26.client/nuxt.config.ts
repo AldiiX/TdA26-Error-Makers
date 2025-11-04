@@ -44,11 +44,6 @@ export default defineNuxtConfig({
             '/_openapi/': { target: `${target}/_openapi/`, changeOrigin: true },
             '/_swagger/': { target: `${target}/_swagger/`, changeOrigin: true },
         },
-
-        prerender: {
-            crawlLinks: true,
-            failOnError: false
-        }
     },
 
     runtimeConfig: {
