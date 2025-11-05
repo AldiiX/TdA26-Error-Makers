@@ -63,7 +63,7 @@
             <ul>
                 <li>Údaje uživatelského účtu po dobu trvání účtu a po jeho zrušení ještě po dobu stanovenou právními předpisy</li>
                 <li>Údaje potřebné pro splnění zákonných povinností po dobu stanovenou příslušnými právními předpisy (např. účetní doklady 10 let)</li>
-                <li>Marketingové údaje do odvolání souhlasu nebo vznесení námitky</li>
+                <li>Marketingové údaje do odvolání souhlasu nebo vznesení námitky</li>
             </ul>
         </section>
 
