@@ -172,7 +172,7 @@
 .lastUpdate {
     margin-top: 24px;
     font-style: italic;
-    font-size: 16px !important;
-    color: var(--color-gray) !important;
+    font-size: 16px;
+    color: var(--color-gray);
 }
 </style>
