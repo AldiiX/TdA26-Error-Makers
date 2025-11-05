@@ -125,6 +125,13 @@ body {
     display: grid !important;
 }
 
+.text-gradient{
+    background: linear-gradient(90deg, var(--accent-color-primary) 0%, var(--accent-color-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+}
 
 :root:is(.showlines) {
     * {

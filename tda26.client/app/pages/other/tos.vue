@@ -12,7 +12,7 @@
     </Head>
 
     <div :class="$style.container">
-        <h1 :class="$style.nadpis">Podmínky používání</h1>
+        <h1 :class="[$style.nadpis, 'text-gradient']">Podmínky používání</h1>
         <p :class="$style.podnapis">Vítejte na platformě Think different Academy. Prosím, přečtěte si pečlivě následující podmínky používání.</p>
 
         <section :class="$style.section">
@@ -154,6 +154,7 @@
         line-height: 1.6;
         color: var(--text-color-secondary);
         margin: 12px 0;
+        opacity: 0.7;
     }
 
     ul {
@@ -165,6 +166,7 @@
             line-height: 1.8;
             color: var(--text-color-secondary);
             margin: 8px 0;
+            opacity: 0.7;
         }
     }
 }

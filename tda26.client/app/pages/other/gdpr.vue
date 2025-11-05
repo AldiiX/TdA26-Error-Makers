@@ -12,7 +12,7 @@
     </Head>
 
     <div :class="$style.container">
-        <h1 :class="$style.nadpis">Ochrana osobních údajů (GDPR)</h1>
+        <h1 :class="[$style.nadpis, 'text-gradient']">Ochrana osobních údajů (GDPR)</h1>
         <p :class="$style.podnapis">Think different Academy respektuje vaše soukromí a zavazuje se chránit vaše osobní údaje v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 o ochraně osobních údajů (GDPR).</p>
 
         <section :class="$style.section">
@@ -111,7 +111,6 @@
         <section :class="$style.section">
             <h2>11. Kontakt a podání stížnosti</h2>
             <p>Pro uplatnění vašich práv nebo pro jakékoli dotazy týkající se zpracování osobních údajů nás prosím kontaktujte prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
-            <p>Máte také právo podat stížnost u dozorového úřadu - Úřadu pro ochranu osobních údajů (<a href="https://www.uoou.cz" target="_blank" rel="noopener noreferrer">www.uoou.cz</a>).</p>
             <p :class="$style.lastUpdate">Poslední aktualizace: Listopad 2025</p>
         </section>
     </div>
@@ -174,6 +173,7 @@
         line-height: 1.6;
         color: var(--text-color-secondary);
         margin: 12px 0;
+        opacity: 0.7;
     }
 
     ul {
@@ -185,6 +185,7 @@
             line-height: 1.8;
             color: var(--text-color-secondary);
             margin: 8px 0;
+            opacity: 0.7;
 
             strong {
                 color: var(--text-color-primary);
@@ -195,6 +196,7 @@
     a {
         color: var(--color-primary, #007bff);
         text-decoration: none;
+        opacity: 0.7;
         
         &:hover {
             text-decoration: underline;
