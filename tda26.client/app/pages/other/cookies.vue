@@ -13,14 +13,13 @@
 
     <div :class="$style.container">
         <div :class="$style.headerSection">
-            <img src="/icons/cookie.svg" alt="Cookie icon" :class="$style.cookieIcon" />
-            <h1 :class="$style.nadpis">Zásady používání cookies</h1>
+            <h1 :class="[$style.nadpis, 'text-gradient']">Zásady používání cookies</h1>
+            <div :class="$style.cookieIcon" />
         </div>
         <p :class="$style.podnapis">Vítejte na platformě Think different Academy. Tato stránka vysvětluje, jak používáme cookies k zlepšení vašeho zážitku z používání našich služeb.</p>
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>1. Co jsou cookies?</h2>
             </div>
             <p>Cookies jsou malé textové soubory, které se ukládají do vašeho zařízení při návštěvě webové stránky. Umožňují webu zapamatovat si vaše preference a zlepšit váš uživatelský zážitek.</p>
@@ -35,7 +34,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>2. Jaké cookies používáme?</h2>
             </div>
             <p>Na naší platformě používáme následující typy cookies:</p>
@@ -73,7 +71,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>3. Správa cookies</h2>
             </div>
             <p>Máte plnou kontrolu nad tím, jaké cookies akceptujete. Cookies můžete spravovat následujícími způsoby:</p>
@@ -87,7 +84,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>4. Cookies třetích stran</h2>
             </div>
             <p>Používáme také služby třetích stran, které mohou nastavovat vlastní cookies:</p>
@@ -101,7 +97,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>5. Doba uchování cookies</h2>
             </div>
             <p>Různé typy cookies uchovávame po různou dobu:</p>
@@ -115,7 +110,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>6. Jak smazat cookies?</h2>
             </div>
             <p>Pokud si přejete smazat cookies, můžete tak učinit prostřednictvím nastavení vašeho prohlížeče:</p>
@@ -129,7 +123,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>7. Aktualizace těchto zásad</h2>
             </div>
             <p>Tyto zásady používání cookies můžeme čas od času aktualizovat, abychom odráželi změny v našich postupech nebo z právních důvodů. O významných změnách vás budeme informovat prostřednictvím oznámení na platformě nebo emailem.</p>
@@ -137,7 +130,6 @@
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
-                <img src="/icons/cookie.svg" alt="Cookie" :class="$style.sectionIcon" />
                 <h2>8. Kontakt</h2>
             </div>
             <p>Pokud máte jakékoli dotazy ohledně našeho používání cookies, neváhejte nás kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
@@ -185,9 +177,13 @@
 }
 
 .cookieIcon {
+    mask-image: url('/icons/cookie.svg');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    background-color: var(--background-color-primary);
     width: 80px;
     height: 80px;
-    color: var(--color-primary);
     animation: float 4s ease-in-out infinite, slideUp 0.8s ease-out;
 }
 
@@ -249,6 +245,7 @@
         line-height: 1.6;
         color: var(--text-color-secondary);
         margin: 12px 0;
+        opacity: 0.7;
     }
 
     ul {
@@ -260,6 +257,7 @@
             line-height: 1.8;
             color: var(--text-color-secondary);
             margin: 8px 0;
+            opacity: 0.7;
 
             strong {
                 color: var(--text-color-primary);
@@ -271,7 +269,7 @@
 .cookieType {
     margin: 24px 0;
     padding: 20px;
-    background: var(--background-secondary, rgba(0, 0, 0, 0.05));
+    background: var(--background-color-secondary);
     border-radius: 12px;
     border-left: 4px solid var(--color-primary);
 }
