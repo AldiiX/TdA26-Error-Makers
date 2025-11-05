@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using tda26.Server.Classes.Objects;
+using tda26.Server.Repositories;
 using tda26.Server.Services;
 
 namespace tda26.Server.API;
@@ -6,7 +8,8 @@ namespace tda26.Server.API;
 [ApiController]
 [Route("api/v1"), Route("api")]
 public class APIv1(
-    IDatabaseService db
+    IDatabaseService db,
+    ICourseRepository courseRepository
 ) : Controller {
 
     [HttpGet]
@@ -43,7 +46,31 @@ public class APIv1(
                 username = reader.GetString("username"),
             });
         }
-
+        
         return Ok(lecturers);
+    }
+
+    [HttpGet("courses")]
+    public async Task<IActionResult> GetCourses() {
+        var courses = await courseRepository.GetAllAsync();
+        return Ok(courses);
+    }
+    
+    [HttpGet("courses/{uuid:guid}")]
+    public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
+        var course = await courseRepository.GetByIdAsync(uuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+        return Ok(course);
+    }
+    
+    [HttpPost("courses")]
+    public async Task<IActionResult> CreateCourse([FromBody] Course course) {
+        var success = await courseRepository.CreateAsync(course);
+        if (!success) {
+            return StatusCode(500, new { error = "Failed to create course." });
+        }
+        return new ObjectResult(course) { StatusCode = 201 };
     }
 }
