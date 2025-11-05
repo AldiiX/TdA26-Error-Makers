@@ -184,7 +184,7 @@
     background-color: var(--background-color-primary);
     width: 80px;
     height: 80px;
-    animation: float 4s ease-in-out infinite, slideUp 0.8s ease-out;
+    animation: slideUp 0.8s ease-out;
 }
 
 .nadpis {
