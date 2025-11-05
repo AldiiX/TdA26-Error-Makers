@@ -11,14 +11,132 @@
         <Title>GDPR • Think different Academy</Title>
     </Head>
 
-    <h1 :class="$style.nadpis">GDPR</h1>
-    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci at commodi corporis, delectus ducimus est facilis ipsum molestiae nisi odit, reprehenderit repudiandae sapiente sit temporibus voluptates. Consectetur cumque esse itaque.</p>
+    <div :class="$style.container">
+        <h1 :class="$style.nadpis">Ochrana osobních údajů (GDPR)</h1>
+        <p :class="$style.podnapis">Think different Academy respektuje vaše soukromí a zavazuje se chránit vaše osobní údaje v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 o ochraně osobních údajů (GDPR).</p>
+
+        <section :class="$style.section">
+            <h2>1. Správce osobních údajů</h2>
+            <p>Správcem vašich osobních údajů je Think different Academy. V případě dotazů týkajících se zpracování osobních údajů nás můžete kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+        </section>
+
+        <section :class="$style.section">
+            <h2>2. Jaké osobní údaje zpracováváme</h2>
+            <p>V rámci provozu naší vzdělávací platformy můžeme zpracovávat následující kategorie osobních údajů:</p>
+            <ul>
+                <li>Identifikační údaje (jméno, příjmení)</li>
+                <li>Kontaktní údaje (emailová adresa, telefonní číslo)</li>
+                <li>Údaje o používání platformy (historie kurzů, pokrok ve vzdělávání)</li>
+                <li>Platební údaje (pro zpracování plateb za kurzy)</li>
+                <li>Technické údaje (IP adresa, informace o zařízení a prohlížeči)</li>
+            </ul>
+        </section>
+
+        <section :class="$style.section">
+            <h2>3. Účel zpracování osobních údajů</h2>
+            <p>Vaše osobní údaje zpracováváme pro následující účely:</p>
+            <ul>
+                <li>Poskytování přístupu k vzdělávací platformě a kurzům</li>
+                <li>Vytvoření a správa uživatelského účtu</li>
+                <li>Zpracování plateb a vedení účetnictví</li>
+                <li>Komunikace s uživateli ohledně kurzů a služeb</li>
+                <li>Zlepšování kvality našich služeb a obsahu</li>
+                <li>Plnění právních povinností</li>
+                <li>Ochrana našich oprávněných zájmů</li>
+            </ul>
+        </section>
+
+        <section :class="$style.section">
+            <h2>4. Právní základ zpracování</h2>
+            <p>Osobní údaje zpracováváme na základě:</p>
+            <ul>
+                <li>Vašeho souhlasu (zejména při registraci)</li>
+                <li>Plnění smlouvy o poskytování vzdělávacích služeb</li>
+                <li>Plnění právních povinností</li>
+                <li>Oprávněného zájmu správce (zlepšování služeb, bezpečnost platformy)</li>
+            </ul>
+        </section>
+
+        <section :class="$style.section">
+            <h2>5. Doba uchovávání osobních údajů</h2>
+            <p>Osobní údaje uchováváme pouze po dobu nezbytně nutnou pro naplnění účelu zpracování:</p>
+            <ul>
+                <li>Údaje uživatelského účtu po dobu trvání účtu a po jeho zrušení ještě po dobu stanovenou právními předpisy</li>
+                <li>Údaje potřebné pro splnění zákonných povinností po dobu stanovenou příslušnými právními předpisy (např. účetní doklady 10 let)</li>
+                <li>Marketingové údaje do odvolání souhlasu nebo vznесení námitky</li>
+            </ul>
+        </section>
+
+        <section :class="$style.section">
+            <h2>6. Předávání osobních údajů</h2>
+            <p>Vaše osobní údaje můžeme předávat:</p>
+            <ul>
+                <li>Poskytovatelům platebních služeb (pro zpracování plateb)</li>
+                <li>Poskytovatelům hostingových služeb</li>
+                <li>Poskytovatelům analytických nástrojů</li>
+                <li>Orgánům veřejné moci na základě právních předpisů</li>
+            </ul>
+            <p>Všichni zpracovatelé jsou pečlivě vybráni a zavázáni k ochraně vašich osobních údajů.</p>
+        </section>
+
+        <section :class="$style.section">
+            <h2>7. Vaše práva</h2>
+            <p>V souvislosti se zpracováním vašich osobních údajů máte následující práva:</p>
+            <ul>
+                <li><strong>Právo na přístup:</strong> Máte právo získat informace o tom, jaké osobní údaje o vás zpracováváme</li>
+                <li><strong>Právo na opravu:</strong> Máte právo požadovat opravu nepřesných nebo neúplných údajů</li>
+                <li><strong>Právo na výmaz:</strong> Za určitých podmínek můžete požadovat výmaz vašich osobních údajů</li>
+                <li><strong>Právo na omezení zpracování:</strong> Můžete požádat o omezení zpracování vašich údajů</li>
+                <li><strong>Právo na přenositelnost:</strong> Máte právo získat své údaje ve strukturovaném, běžně používaném formátu</li>
+                <li><strong>Právo vznést námitku:</strong> Můžete vznést námitku proti zpracování vašich údajů</li>
+                <li><strong>Právo odvolat souhlas:</strong> Pokud je zpracování založeno na souhlasu, máte právo jej kdykoli odvolat</li>
+            </ul>
+        </section>
+
+        <section :class="$style.section">
+            <h2>8. Bezpečnost osobních údajů</h2>
+            <p>Zavázali jsme se chránit vaše osobní údaje pomocí vhodných technických a organizačních opatření, včetně šifrování dat, pravidelných bezpečnostních auditů a omezení přístupu k osobním údajům pouze na oprávněné osoby.</p>
+        </section>
+
+        <section :class="$style.section">
+            <h2>9. Cookies</h2>
+            <p>Naše webová stránka používá cookies pro zajištění správné funkčnosti a zlepšení uživatelského zážitku. Podrobnosti o používání cookies najdete v naší <a href="/other/cookies">Zásadách používání cookies</a>.</p>
+        </section>
+
+        <section :class="$style.section">
+            <h2>10. Změny těchto zásad</h2>
+            <p>Tyto zásady ochrany osobních údajů můžeme čas od času aktualizovat. O významných změnách vás budeme informovat prostřednictvím našich webových stránek nebo e-mailem.</p>
+        </section>
+
+        <section :class="$style.section">
+            <h2>11. Kontakt a podání stížnosti</h2>
+            <p>Pro uplatnění vašich práv nebo pro jakékoli dotazy týkající se zpracování osobních údajů nás prosím kontaktujte prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+            <p>Máte také právo podat stížnost u dozorového úřadu - Úřadu pro ochranu osobních údajů (<a href="https://www.uoou.cz" target="_blank" rel="noopener noreferrer">www.uoou.cz</a>).</p>
+            <p :class="$style.lastUpdate">Poslední aktualizace: Listopad 2025</p>
+        </section>
+    </div>
 </template>
 
 <style module lang="scss">
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container {
+    animation: slideUp 0.6s ease-out;
+}
+
 .nadpis {
     font-size: 64px;
-    margin:0;
+    margin: 0;
+    animation: slideUp 0.8s ease-out;
 }
 
 .podnapis {
@@ -26,5 +144,68 @@
     margin-top: 16px;
     max-width: 700px;
     color: var(--text-color-secondary);
+    animation: slideUp 0.8s ease-out 0.1s backwards;
+}
+
+.section {
+    margin-top: 40px;
+    animation: slideUp 0.6s ease-out backwards;
+    
+    &:nth-child(3) { animation-delay: 0.1s; }
+    &:nth-child(4) { animation-delay: 0.15s; }
+    &:nth-child(5) { animation-delay: 0.2s; }
+    &:nth-child(6) { animation-delay: 0.25s; }
+    &:nth-child(7) { animation-delay: 0.3s; }
+    &:nth-child(8) { animation-delay: 0.35s; }
+    &:nth-child(9) { animation-delay: 0.4s; }
+    &:nth-child(10) { animation-delay: 0.45s; }
+    &:nth-child(11) { animation-delay: 0.5s; }
+    &:nth-child(12) { animation-delay: 0.55s; }
+    &:nth-child(13) { animation-delay: 0.6s; }
+
+    h2 {
+        font-size: 32px;
+        margin: 0 0 16px 0;
+        color: var(--text-color-primary);
+    }
+
+    p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--text-color-secondary);
+        margin: 12px 0;
+    }
+
+    ul {
+        margin: 12px 0;
+        padding-left: 24px;
+
+        li {
+            font-size: 18px;
+            line-height: 1.8;
+            color: var(--text-color-secondary);
+            margin: 8px 0;
+
+            strong {
+                color: var(--text-color-primary);
+            }
+        }
+    }
+
+    a {
+        color: var(--color-primary, #007bff);
+        text-decoration: none;
+        
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.lastUpdate {
+    margin-top: 24px;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--color-gray);
 }
 </style>
