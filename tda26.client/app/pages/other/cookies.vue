@@ -217,7 +217,6 @@
     &:nth-child(8) { animation-delay: 0.35s; }
     &:nth-child(9) { animation-delay: 0.4s; }
     &:nth-child(10) { animation-delay: 0.45s; }
-    &:nth-child(11) { animation-delay: 0.5s; }
 
     .sectionHeader {
         display: flex;
