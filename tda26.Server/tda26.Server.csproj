@@ -30,6 +30,13 @@
         </ProjectReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove=".env" />
+      <Content Include=".env">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
     <!-- definice DEBUG a RELEASE promennych -->
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
         <DefineConstants>DEBUG;TRACE;DEVELOPMENT</DefineConstants>
