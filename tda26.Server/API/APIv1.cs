@@ -15,20 +15,13 @@ public class APIv1(
     [HttpGet]
     public IActionResult Index() {
         return Ok(new {
+            organization = "Student Cyber Games",
             status = "ok",
             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             message = "This is API version 1.",
         });
     }
-
-    [HttpGet("status")]
-    public IActionResult GetStatus() {
-        return Ok(new
-        {
-            organization = "Student Cyber Games",
-        });
-    }
-
+    
     [HttpGet("lecturers")]
     public async Task<IActionResult> GetLecturers() {
         await using var conn = await db.GetOpenConnectionAsync();
