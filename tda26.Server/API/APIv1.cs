@@ -16,9 +16,9 @@ public class APIv1(
     public IActionResult Index() {
         return Ok(new {
             organization = "Student Cyber Games",
-            status = "ok",
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            message = "This is API version 1.",
+            // status = "ok",
+            // timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            // message = "This is API version 1.",
         });
     }
     
