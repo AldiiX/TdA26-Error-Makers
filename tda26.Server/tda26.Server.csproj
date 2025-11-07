@@ -31,10 +31,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove=".env" />
-      <Content Include=".env">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <None Update=".env" Condition="Exists('$(MSBuildProjectDirectory)/.env')">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <!-- definice DEBUG a RELEASE promennych -->
