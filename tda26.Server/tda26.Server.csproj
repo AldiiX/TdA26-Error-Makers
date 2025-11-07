@@ -33,7 +33,7 @@
     <ItemGroup>
       <None Remove=".env" />
       <Content Include=".env">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
 

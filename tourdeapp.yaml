@@ -3,6 +3,9 @@ containers:
   - name: web
     image: registry.tourde.cloud/error-makers/web
     port: 80
+    env:
+      # backend .env posleme jako base64 a rozbalime pri startu
+      DOTENV_B64: {{BACKEND_ENV_B64}}
 build:
   - name: web
     context: ./

@@ -20,9 +20,6 @@ RUN dotnet restore "./tda26.Server/tda26.Server.csproj"
 COPY . .
 WORKDIR "/src/tda26.Server"
 
-# vytvoreni prazdnyho .env souboru v tomto direktory pokud .env neexistuje
-RUN if [ ! -f ".env" ]; then touch .env; fi
-
 # buildnuti backendu
 RUN dotnet build "./tda26.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

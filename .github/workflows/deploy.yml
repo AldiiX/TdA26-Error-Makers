@@ -10,19 +10,15 @@ permissions:
 
 jobs:
   build:
+    # vytvoreni env souboru pro backend
+    env:
+      BACKEND_ENV_B64: ${{ secrets.DOTENV_BACKEND_B64 }} # base64 obsahu backend .env
+
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
-      # vytvoreni env souboru pro backend
-      - name: Write backend .env
-        shell: bash
-        run: |
-          mkdir -p tda26.Server
-          cat > tda26.Server/.env <<'__ENV__'
-          ${{ secrets.DOTENV_BACKEND }}
-          __ENV__
 
       - name: Upload to TdA
         uses: Student-Cyber-Games/upload-app@tda-26
