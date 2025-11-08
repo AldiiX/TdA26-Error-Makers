@@ -6,7 +6,7 @@
     const theme = useState("theme");
 
     definePageMeta({
-        alias: "/"
+        //alias: "/"
     })
 </script>
 
