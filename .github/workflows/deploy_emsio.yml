@@ -1,27 +1,18 @@
 ﻿name: Deploy to Emsio Servers
+
 on:
   push:
-    branches: [ main ] # or any branch you want to deploy from
+    branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: read         # required to checkout the code
-  packages: write        # required to deploy to Emsio
-
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      BACKEND_ENV_B64: ${{ secrets.DOTENV_BACKEND_B64 }} # base64 obsahu backend .env
+
     steps:
       - name: Deploy to Emsio
-        uses: AldiiX/emsio-deploy@v4
+        uses: AldiiX/emsio-deploy@v3
         with:
           deploy_token: ${{ secrets.DEPLOY_TOKEN }}
           project_uuid: ${{ secrets.PROJECT_UUID }}
-          # branch: main               # optional, default is current branch
-          # dockerfile: Dockerfile     # optional, default is 'Dockerfile'
+          branch: main
