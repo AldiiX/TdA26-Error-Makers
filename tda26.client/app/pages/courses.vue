@@ -36,8 +36,9 @@
             <div :class="$style.left">
                 <div :class="$style.filtersLeft">
                     <p>Filtry</p>
-                    <div :class="$style.searchBar">
-
+                    <div :class="[$style.searchBar, 'liquid-glass']">
+                        <div :class="$style.searchIcon"></div>
+                        <input type="text" placeholder="Hledat kurz..." />
                     </div>
                     <div :class="$style.sortOptions">
 
@@ -133,7 +134,7 @@
     .bottomContainer {
         display: flex;
         width: 100%;
-        height: 80vh;
+        height: 90vh;
         gap: 64px;
 
 
@@ -142,6 +143,8 @@
             flex-direction: column;
             width: 256px;
             background-color: var(--background-color-secondary);
+            border-radius: 16px;
+            box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
 
             .filtersLeft {
                 
@@ -151,8 +154,44 @@
                     margin: 24px 24px;
                 }
                 .searchBar {
-                    height: 64px;
-                    background-color: var(--accent-color-secondary-darker);
+                    height: 48px;
+                    background-color: var(--accent-color-secondary);
+                    display: flex;
+                    align-items: center;
+                    justify-self: center;
+                    gap: 10px;
+                    width: 80%;
+                    border-radius: 12px;
+                    padding: 16px;
+                    transition: all 0.2s ease-in-out;
+
+
+                    .searchIcon {
+                        mask-image: url('../../public/icons/search.svg');
+                        mask-size: cover;
+                        mask-position: center;
+                        mask-repeat: no-repeat;
+
+                        width: 24px;
+                        height: 24px;
+                        background-color: var(--text-color-secondary);
+                        opacity: 0.8;
+                    }
+
+                    input {
+                        width: 100%;
+                        border: none;
+                        outline: none;
+                        font-size: 16px;
+                        color: var(--text-color-secondary);
+                        background: transparent;
+                        font-family: 'Poppins', sans-serif;
+
+                        &::placeholder {
+                            color: var(--text-color-secondary);
+                            opacity: 0.8;
+                        }
+                    }
                 }
 
                 .sortOptions {
@@ -179,7 +218,7 @@
             .courses{
                 
                 .coursesList {
-                    height: calc(70vh - 64px - 32px);
+                    height: calc(80vh - 64px - 32px);
                     background-color: var(--background-color-secondary);
                 }
 
