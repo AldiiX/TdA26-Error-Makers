@@ -1,9 +1,16 @@
 ﻿<script setup lang="ts">
     import { Head, Title } from '#components';
-
+    import Course from '~/components/Course.vue';
+    import type { Course as ICourse } from '~/lib/types';
+    
     definePageMeta({
         layout: "normal-page-layout"
     });
+
+    const { data: courses } = await useAsyncData<ICourse[]>("courses", () =>
+        $fetch("/api/v1/courses")
+    );
+    
 </script>
 
 <template>
@@ -19,7 +26,7 @@
                 </p>
             </div>
             <div :class="$style.right">
-                <div :class="[$style.coursesInfo , 'liquid-glass']">
+                <div :class="$style.coursesInfo">
                     <div :class="$style.row">
                         <span :class="$style.number">152</span>
                         <span :class="$style.text">Kurzů</span>
@@ -48,13 +55,22 @@
             
             <div :class="$style.right">
                 <div :class="$style.filtersTop">
-                    
+                    <p>Seřadit: </p>
+                    <div :class="$style.sortOptionsList">
+                        <button type="button" :class="$style.sortOption">Nejnovější</button>
+                        <button type="button" :class="$style.sortOption">Nejstarší</button>
+                        <button type="button" :class="$style.sortOption">Nejlepe hodnocení</button>
+                        <button type="button" :class="$style.sortOption">Nejvíce zhlédnutí</button>
+                    </div>
                 </div>
                 <div :class="$style.courses">
                     <div :class="$style.coursesList">
-
+                        <Course
+                            v-for="course in courses"
+                            :course="course"
+                            :key="course.uuid"
+                        />
                     </div>
-
                     <div :class="$style.pagination">
 
                     </div>
@@ -74,6 +90,8 @@
     .topContainer {
         display: flex;
         justify-content: space-between;
+        width: 80%;
+        gap: 32px;
 
         .left {
             display: flex;
@@ -98,8 +116,6 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            margin-right: 256px;
-            margin-top: 32px;
             min-width: 216px;
 
             .coursesInfo {
@@ -182,10 +198,10 @@
                         width: 100%;
                         border: none;
                         outline: none;
-                        font-size: 16px;
+                        font-size: 18px;
                         color: var(--text-color-secondary);
                         background: transparent;
-                        font-family: 'Poppins', sans-serif;
+                        font-family: 'Dosis', sans-serif;
 
                         &::placeholder {
                             color: var(--text-color-secondary);
@@ -210,9 +226,44 @@
             flex: 1 1 auto;
             
             .filtersTop {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 0 16px;
                 width: 100%;
                 height: 64px;
+                border-radius: 16px;
                 background-color: var(--background-color-secondary);
+                
+                p{
+                    font-size: 18px;
+                    color: var(--text-color-secondary);
+                }
+                .sortOptionsList{
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+
+                    .sortOption {
+                        appearance: none;
+                        border: none;
+                        background: transparent;
+                        padding: 8px 12px;
+                        border-radius: 10px;
+                        font-size: 16px;
+                        font-family: 'Dosis', sans-serif;
+                        color: var(--text-color-secondary);
+                        cursor: pointer;
+                        transition: background-color 0.15s ease, color 0.15s ease;
+
+                        &:hover,
+                        &:focus {
+                            background-color: var(--accent-color-secondary-darker);
+                            color: var(--text-color-primary);
+                            outline: none;
+                        }
+                    }
+                }
             }
             
             .courses{
