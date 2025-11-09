@@ -1,27 +1,21 @@
 ﻿<script setup lang="ts">
-    // propy deděné z rodiče
-    const props = defineProps(
-        {
-            placeholder: {
-                type: String,
-                required: false,
-                default: ""
-            },
-
-            type: {
-                type: String,
-                required: false,
-                default: "text"
-            }
-        }
-    )
+    const props = withDefaults(defineProps<{
+        type?: string,
+        placeholder?: string,
+        required?: boolean,
+    }>(), {
+        type: 'text',
+        placeholder: '',
+        required: false,
+    });
 </script>
 
 <template>
     <input
-            :type="props.type"
-            :placeholder="props.placeholder"
-            :class="$style.input"
+        :type="props.type"
+        :placeholder="props.placeholder"
+        :class="$style.input"
+        :required="required"
     />
 </template>
 

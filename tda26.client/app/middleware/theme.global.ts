@@ -2,7 +2,7 @@ import type { WebTheme } from '@/lib/types'
 
 export default defineNuxtRouteMiddleware(() => {
     const theme = useState<WebTheme | null>('theme', () => "light")
-    const cookie = useCookie<WebTheme | null>('theme', {
+    /*const cookie = useCookie<WebTheme | null>('theme', {
         default: () => null,
         sameSite: 'lax',
         path: '/'
@@ -40,5 +40,5 @@ export default defineNuxtRouteMiddleware(() => {
             mql.addEventListener?.('change', handler)
             mqlBound.value = true
         }
-    }
+    }*/
 })

@@ -29,7 +29,7 @@ export default defineNuxtConfig({
     },
 
     devServer: {
-        host: "0.0.0.0",
+        //host: "0.0.0.0",
         port: 3226,
     },
 
@@ -52,6 +52,6 @@ export default defineNuxtConfig({
 
     experimental: {
         viewTransition: true,
-        payloadExtraction: true,
+        //payloadExtraction: true,
     },
 })

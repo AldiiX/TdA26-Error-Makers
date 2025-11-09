@@ -181,7 +181,7 @@
     mask-size: contain;
     mask-repeat: no-repeat;
     mask-position: center;
-    background-color: var(--background-color-primary);
+    background-color: var(--accent-color-secondary-theme);
     width: 80px;
     height: 80px;
     animation: slideUp 0.8s ease-out;
