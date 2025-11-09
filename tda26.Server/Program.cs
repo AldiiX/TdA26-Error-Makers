@@ -84,6 +84,8 @@ public static class Program {
         // repozitare a service
         builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
         builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 
         Application = builder.Build();
 
@@ -91,7 +93,7 @@ public static class Program {
         Application.MapStaticAssets();
 
         Application.MapOpenApi("/_openapi/{documentName}.json");
-
+        Application.UseSession();
         Application.UseAuthorization();
         Application.UseCors();
 

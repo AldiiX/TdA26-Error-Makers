@@ -124,7 +124,7 @@ function reloadPage() {
         .codeContainer{
             $gradientAngle: 135deg;
 
-            background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-darker));
+            background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-theme));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -156,7 +156,7 @@ function reloadPage() {
                 mask-position: center;
                 height: 256px;
                 aspect-ratio: 1 / 1;
-                background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-darker));
+                background: linear-gradient($gradientAngle, var(--accent-color), var(--accent-color-secondary-theme));
                 animation: float 3s ease-in-out infinite alternate;
 
                 @keyframes float {

@@ -1,5 +1,4 @@
 ﻿using MySqlConnector;
-using StackExchange.Redis;
 using tda26.Server.Classes.Objects;
 using tda26.Server.Services;
 

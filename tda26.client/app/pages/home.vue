@@ -3,7 +3,11 @@
     import Footer from "~/components/Footer.vue";
     import Input from "~/components/Input.vue";
     import Button from "~/components/Button.vue";
-    import { Head, Title } from '#components';
+    import { Head, Title, NuxtLink } from '#components';
+    import TypeWriter from "~/components/TypeWriter.vue";
+    import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
+    import BlurText from "~/components/BlurText.vue";
+    import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 
     const theme = useState("theme");
 
@@ -22,16 +26,29 @@
 
     <Header/>
 
+    <CircleBlurBlob bottom="0vw" left="-5vw" blur="12vw" size="15vw" color="var(--accent-color-primary)" />
+
     <section :class="$style.top">
         <div :class="$style.blob"></div>
 
         <div :class="$style.center">
             <div :class="$style.left">
-                <h1>Objevuj kurzy, které tě posunou.</h1>
+                <BlurText text="Objevuj kurzy, které tě posunou." tag="h1" />
                 <p>Studium nemusí být jen o biflování. S našimi interaktivními kurzy se učení stává zábavou.</p>
+
+<!--                <h1>Objevuj kurzy, které tě posunou.</h1>-->
+<!--                <SmoothSizeWrapper>-->
+<!--                    <TypeWriter element="p" text="Studium nemusí být jen o biflování. S našimi interaktivními kurzy se učení stává zábavou." :speed="50" />-->
+<!--                </SmoothSizeWrapper>-->
+
                 <div :class="$style.btns">
-                    <Button :class="$style.btn" href="/courses" button-style="primary" >Všechny kurzy</Button>
-                    <Button :class="$style.btn" href="/lecturers" button-style="secondary">Lektoři</Button>
+                    <NuxtLink to="/courses">
+                        <Button :class="$style.btn" href="/courses" button-style="primary" >Všechny kurzy</Button>
+                    </NuxtLink>
+
+                    <NuxtLink to="/lecturers">
+                        <Button :class="$style.btn" href="/lecturers" button-style="secondary">Lektoři</Button>
+                    </NuxtLink>
                 </div>
 
                 <Input :class="$style.input" placeholder="Najdi kurz nebo lektora..." />
@@ -50,12 +67,8 @@
 <style module lang="scss">
 @use "../app" as app;
 
-@keyframes ospfpodskfposdkfpsok {
-    from { opacity: 0; margin-top: 100px; }
-    to { opacity: 1; margin-top: 0;}
-}
 
-section:is(.top) {
+.top {
     position: relative;
     height: calc(100vh + 80px);
     width: 100%;
@@ -89,6 +102,7 @@ section:is(.top) {
     }
 
     >.center {
+        animation: idsojfodsijf 0.8s forwards ease;
         position: absolute;
         width: 80%;
         top: calc(50% - 40px);
@@ -97,12 +111,25 @@ section:is(.top) {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        //animation: ospfpodskfposdkfpsok 1s forwards ease;
+
+        @keyframes idsojfodsijf {
+            from {
+                opacity: 0;
+                filter: blur(12px);
+                transform: translate(-50%, calc(-50% + 64px));
+            }
+
+            to {
+                opacity: 1;
+                filter: blur(0px);
+                transform: translate(-50%, -50%);
+            }
+        }
 
 
 
         >.left {
-            >h1 {
+            h1 {
                 width: clamp(0px, 50vw, 700px);
                 font-size: clamp(0px, 6vw, 96px);
                 line-height: clamp(0px, 5.5vw, 104px);
@@ -119,7 +146,7 @@ section:is(.top) {
                 //}
             }
 
-            >p {
+            p {
                 width: 30vw;
                 font-size: clamp(0px, 1.5vw, 24px);
 
@@ -139,7 +166,7 @@ section:is(.top) {
                 gap: 1vw;
                 margin-bottom: 1vw;
 
-                >.btn{
+                .btn{
                     font-size: clamp(0px, 1.5vw, 20px);
                     padding: 0.8vw 2vw;
                 }
