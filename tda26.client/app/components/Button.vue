@@ -8,31 +8,49 @@
 
     const props = withDefaults(defineProps<{
         buttonStyle?: ButtonStyle,
-        accentColor?: string,
-        href?: string | null,
-        target?: string | null,
+        accentColor?: string | "primary" | "secondary",
+        textColor?: string | null,
         background?: string | null,
         style?: Record<string, string>,
-        
+        loading?: boolean,
+        disabled?: boolean,
     }>(), {
         buttonStyle: "primary",
-        accentColor: 'var(--accent-color-primary)',
-        href: null,
-        target: null,
-        background: null
+        accentColor: 'primary',
+        background: null,
+        loading: false,
+        disabled: false,
     });
+
+    const emit = defineEmits<{
+        (e: 'click', event: MouseEvent): void;
+    }>();
 </script>
 
 <template>
-    <NuxtLink :href="href ?? undefined" :target="target ?? '_self'" :class="[$style.button, $style['style_' + buttonStyle] ]" :style="{ '--color': accentColor, '--bg': background ?? accentColor, ...style}">
-        <slot />
-    </NuxtLink>
+    <button
+            @click="disabled ? null : $emit('click', $event)"
+            :disabled="disabled"
+            :class="[$style.button, $style['style_' + buttonStyle], { [$style.loading]: loading }]"
+            :style="{
+                '--color': accentColor === 'primary' ? 'var(--accent-color-primary)' : accentColor === 'secondary' ? 'var(--accent-color-secondary-theme)' : accentColor,
+                '--bg': background ?? accentColor,
+                '--txc': (textColor ?? accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' ? 'var(--accent-color-secondary-theme-text)' : 'inherit' ),
+                ...style
+            }">
+
+        <template v-if="!loading">
+            <slot />
+        </template>
+
+        <template v-else>
+            Načítání...
+        </template>
+    </button>
 </template>
 
 <style module lang="scss">
     .button {
-        background-color: var(--button-bg);
-        color: var(--button-text-color);
         border: none;
         border-radius: 12px;
         padding: 12px 24px;
@@ -43,6 +61,17 @@
         transition-duration: 0.3s;
         user-select: none;
         text-decoration: none;
+        text-align: center;
+
+        &:is(.loading) {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
 
         &:focus, &:active {
             box-shadow: none;
@@ -50,7 +79,7 @@
         }
 
 
-        &:hover {
+        &:not(:disabled):hover {
             filter: brightness(0.75);
             transition-duration: 0.3s;
         }
@@ -58,9 +87,9 @@
 
         // jednotlive styly
         &:is(.style_primary) {
-            background-color: var(--color);
+            background-color: var(--color) !important;
             background: var(--bg);
-            color: white;
+            color: var(--txc);
         }
 
         &:is(.style_secondary) {

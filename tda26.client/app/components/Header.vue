@@ -1,9 +1,13 @@
 <script setup lang="ts">
     import { onMounted, onUnmounted, inject, type Ref } from 'vue';
-    import { RouterLink } from 'vue-router';
+    import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
+    import type {Account} from "~/lib/types";
+    import Avatar from "~/components/Avatar.vue";
     const $style = useCssModule();
+
+    const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -34,17 +38,38 @@
     <header :class="$style.header">
 
         <div :class="$style.flex">
-            <RouterLink to="/" custom v-slot="{ navigate, href, isActive, isExactActive }">
+            <NuxtLink to="/" custom v-slot="{ navigate, href, isActive, isExactActive }">
                 <div :class="[$style['Header-Logo'], { active: $style.isActive }]" @click="navigate"></div>
-            </RouterLink>
+            </NuxtLink>
 
             <div :class="[$style['Header-Menu'], { locked: $style.isTransitioning }]">
                 <Menu :link-class="$style.link" />
 
-                <div :class="$style.btns">
-                    <Button button-style="primary" href="/account">Přihlásit se</Button>
-                    <Button button-style="primary" href="/account" accent-color="var(--accent-color-secondary-darker)">Registrovat se</Button>
+                <div :class="$style.btns" v-if="!loggedAccount">
+                    <NuxtLink to="/login">
+                        <Button button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
+                    </NuxtLink>
+
+                    <NuxtLink to="/register">
+                        <Button button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
+                    </NuxtLink>
                 </div>
+
+                <template v-else>
+                    <div :class="$style.btns">
+                        <Button button-style="primary" href="/dashboard">Dashboard</Button>
+                    </div>
+
+                    <div :class="$style.loggedAs">
+                        <div>
+                            <p>Přihlášen jako</p>
+                            <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
+                            <p :class="[$style.name, $style.shadow]">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}A</p>
+                        </div>
+
+                        <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
+                    </div>
+                </template>
             </div>
 
         </div>
@@ -75,8 +100,15 @@
         box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.15);
         background-color: rgb(from var(--background-color-secondary) r g b / 0.3);
         border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.6);
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px) saturate(1.2);
         transition-duration: 0.3s;
+
+        /*#accountName {
+            background: transparent;
+            color: var(--text-color-primary);
+            background-clip: unset;
+            -webkit-text-fill-color: unset;
+        }*/
     }
 
     >.flex {
@@ -115,6 +147,36 @@
             .btns {
                 display: flex;
                 gap: 16px;
+            }
+
+            .loggedAs {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                position: relative;
+
+                >div {
+                    display: grid;
+
+                    p {
+                        margin: 0;
+                        text-align: right;
+
+                        &:is(.name) {
+                            font-weight: 700;
+                            font-size: 20px;
+                        }
+
+                        &:is(.shadow) {
+                            position: absolute;
+                            bottom: 2px;
+                            left: 0px;
+                            z-index: -1;
+                            color: transparent;
+                            text-shadow: 0 0 24px var(--background-color), 0px 0 12px var(--background-color);
+                        }
+                    }
+                }
             }
 
             &:is(.locked) {
@@ -163,7 +225,7 @@
                     bottom: -4px;
                     width: 100%;
                     height: 2px;
-                    background-color: var(--accent-color-secondary);
+                    background-color: var(--accent-color-secondary-theme);
                     transform: scaleX(0);
                     transform-origin: right;
                     transition: transform 0.3s ease;

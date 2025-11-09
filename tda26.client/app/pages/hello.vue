@@ -88,7 +88,7 @@ section:is(.top) {
             font-weight: 1000;
 
             span {
-                color: var(--accent-color-secondary);
+                color: var(--accent-color-secondary-theme);
 
                 &:nth-child(1) {
                     color: var(--accent-color);

@@ -62,7 +62,7 @@
     //margin-top: -300px; // debug
     padding: 32px 48px;
     border-radius: 48px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px)  saturate(1.2);
     font-family: Dosis, sans-serif;
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.1);
     z-index: 5;
@@ -86,7 +86,7 @@
                     mask-position: center;
                     height: 128px;
                     aspect-ratio: 2 / 1;
-                    background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-darker));
+                    background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-theme));
                 }
             }
 
@@ -118,7 +118,7 @@
                         transition-duration: 0.3s;
 
                         &:hover {
-                            color: var(--accent-color-secondary-darker);
+                            color: var(--accent-color-secondary-theme);
                             transition-duration: 0.3s;
                         }
 
@@ -154,7 +154,7 @@
                     transition-duration: 0.3s;
 
                     &:hover{
-                        color: var(--accent-color-secondary);
+                        color: var(--accent-color-secondary-theme);
                         transition-duration: 0.3s;
                     }
                 }

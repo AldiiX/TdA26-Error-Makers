@@ -45,7 +45,7 @@
     .one {
         position: absolute;
         aspect-ratio: 1/1;
-        background-color: var(--accent-color-secondary);
+        background-color: var(--accent-color-secondary-theme);
         bottom: -20vw;
         left: -10vw;
         border-radius: 100%;
