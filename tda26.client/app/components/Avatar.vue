@@ -12,7 +12,7 @@ type AvatarProps = {
     size?: Size;
     name: string;
     src: string | null;
-    className?: string;
+    class?: string;
     backgroundColor?: BackgroundColor;
     containerStyle?: CSSProperties;
     letterStyle?: CSSProperties;
@@ -57,7 +57,7 @@ const emit = defineEmits<{ (e: "click"): void }>();
 
 <template>
     <div
-            :class="[$style.avatar, className]"
+            :class="[$style.avatar, props.class]"
             :style="containerStyles"
             @click="emit('click')"
     >

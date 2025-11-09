@@ -41,6 +41,7 @@ public class AccountRepository(
         await using var cmd = new MySqlCommand(
         """
             select * from lecturers
+            order by member_since asc
         """, conn);
 
         await using var reader = await cmd.ExecuteReaderAsync(ct);

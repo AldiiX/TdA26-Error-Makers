@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using tda26.Server.Classes;
+using tda26.Server.Repositories;
 using tda26.Server.Services;
 
 namespace tda26.Server.API;
@@ -10,7 +11,8 @@ namespace tda26.Server.API;
 [ApiController]
 [Route("api/v2")]
 public class APIv2(
-    IAuthService auth
+    IAuthService auth,
+    ILecturerRepository lecturers
 ) : Controller {
 
     [HttpGet]
@@ -70,5 +72,20 @@ public class APIv2(
         obj.AsObject().Remove("password");
 
         return Ok(obj);
+    }
+
+
+
+    // lecturers
+    [HttpGet("lecturers")]
+    public async Task<IActionResult> GetLecturers(CancellationToken ct) {
+        var all = await lecturers.GetAllAsync(ct);
+        var arr = new JsonArray();
+
+        foreach (var l in all.Select(lecturer => lecturer.ToJsonNode())) {
+            arr.Add(l);
+        }
+
+        return new OkObjectResult(arr);
     }
 }
