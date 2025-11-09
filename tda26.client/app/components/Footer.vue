@@ -56,7 +56,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.2);
+    border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.6);
     width: 80%;
     margin: 48px auto;
     //margin-top: -300px; // debug

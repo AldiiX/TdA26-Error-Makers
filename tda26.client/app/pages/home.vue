@@ -7,6 +7,7 @@
     import TypeWriter from "~/components/TypeWriter.vue";
     import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
     import BlurText from "~/components/BlurText.vue";
+    import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 
     const theme = useState("theme");
 
@@ -24,6 +25,8 @@
     </Head>
 
     <Header/>
+
+    <CircleBlurBlob bottom="0vw" left="-5vw" blur="12vw" size="15vw" color="var(--accent-color-primary)" />
 
     <section :class="$style.top">
         <div :class="$style.blob"></div>

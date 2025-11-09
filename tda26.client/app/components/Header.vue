@@ -57,7 +57,9 @@
 
                 <template v-else>
                     <div :class="$style.btns">
-                        <Button button-style="primary" href="/dashboard">Dashboard</Button>
+                        <NuxtLink to="/dashboard">
+                            <Button button-style="primary" href="/dashboard">Dashboard</Button>
+                        </NuxtLink>
                     </div>
 
                     <div :class="$style.loggedAs">

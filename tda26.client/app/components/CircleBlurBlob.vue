@@ -24,6 +24,7 @@
 
 <style module lang="scss">
 .one {
+    overflow: hidden;
     position: absolute;
     aspect-ratio: 1/1;
     background-color: v-bind(color);

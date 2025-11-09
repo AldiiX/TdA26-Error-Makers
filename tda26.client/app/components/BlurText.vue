@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+﻿<!--suppress CssUnresolvedCustomProperty -->
+<script setup lang="ts">
 import {ref, computed, onMounted, onBeforeUnmount, watch, type Component} from "vue";
 
 type Emits = {
@@ -82,7 +83,7 @@ function mountObserver() {
         return;
     }
     io = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
             inView.value = true;
             if (props.once && io && rootRef.value) {
                 io.unobserve(rootRef.value);
