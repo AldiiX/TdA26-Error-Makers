@@ -1,5 +1,6 @@
 ﻿using MySqlConnector;
 using tda26.Server.Classes.Objects;
+using tda26.Server.Infrastructure;
 using tda26.Server.Services;
 
 namespace tda26.Server.Repositories;
@@ -55,11 +56,14 @@ public class CourseRepository(IDatabaseService db) : ICourseRepository
         return courses;
     }
 
-    public async Task<bool> CreateAsync(Course course, CancellationToken ct = default)
+    public async Task<Course?> CreateAsync(string name, string description, CancellationToken ct = default)
     {
         await using var conn = await db.GetOpenConnectionAsync(ct);
         if (conn == null)
-            return false;
+            return null;
+        
+        
+        
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             INSERT INTO courses (
@@ -75,14 +79,17 @@ public class CourseRepository(IDatabaseService db) : ICourseRepository
                 @created_at,
                 @updated_at
             );
+            SELECT * FROM courses WHERE uuid = @uuid;
         ";
-        cmd.Parameters.AddWithValue("@uuid", course.Uuid);
-        cmd.Parameters.AddWithValue("@name", course.Name);
-        cmd.Parameters.AddWithValue("@description", course.Description);
-        cmd.Parameters.AddWithValue("@created_at", course.CreatedAt);
-        cmd.Parameters.AddWithValue("@updated_at", course.UpdatedAt);
-        var result = await cmd.ExecuteNonQueryAsync(ct);
-        return result > 0;
+        cmd.Parameters.AddWithValue("@uuid", Guid.NewGuid());
+        cmd.Parameters.AddWithValue("@name", name);
+        cmd.Parameters.AddWithValue("@description", description);
+        cmd.Parameters.AddWithValue("@created_at", DateTime.Now);
+        cmd.Parameters.AddWithValue("@updated_at", DateTime.Now);
+        var result = await cmd.ExecuteReaderAsync(ct);
+        if (!await result.ReadAsync(ct)) return null;
+        var course = MapCourseFromReader(result);
+        return course;
     }
 
     public async Task<bool> UpdateAsync(Course course, CancellationToken ct = default)
@@ -106,7 +113,8 @@ public class CourseRepository(IDatabaseService db) : ICourseRepository
             reader.GetString("name"),
             reader.GetString("description"),
             reader.GetDateTime("created_at"),
-            reader.GetDateTime("updated_at")
+            reader.GetDateTime("updated_at"),
+            reader.GetStringOrNull("image_url")
         );
     }
     

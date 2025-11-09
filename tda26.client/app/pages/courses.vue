@@ -8,7 +8,7 @@
     });
 
     const { data: courses } = await useAsyncData<ICourse[]>("courses", () =>
-        $fetch("/api/v1/courses")
+        $fetch("/api/v2/courses")
     );
     
 </script>
@@ -150,7 +150,7 @@
     .bottomContainer {
         display: flex;
         width: 100%;
-        height: 90vh;
+        min-height: 90vh;
         gap: 64px;
 
 
@@ -234,6 +234,7 @@
                 height: 64px;
                 border-radius: 16px;
                 background-color: var(--background-color-secondary);
+                box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
                 
                 p{
                     font-size: 18px;
@@ -269,8 +270,13 @@
             .courses{
                 
                 .coursesList {
-                    height: calc(80vh - 64px - 32px);
-                    background-color: var(--background-color-secondary);
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 24px;
+                    align-items: start;
+                    padding: 16px;
+                    
+                    min-height: calc(80vh - 64px - 32px);
                 }
 
                 .pagination {

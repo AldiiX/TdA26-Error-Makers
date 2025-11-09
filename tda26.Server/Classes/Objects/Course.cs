@@ -12,15 +12,18 @@ public partial class Course {
     public DateTime CreatedAt { get; private set; }
     
     public DateTime UpdatedAt { get; private set; }
-    
-    
+
+    public string? ImageUrl { get; private set; }
+
+
     [JsonConstructor]
     public Course(
         Guid uuid,
         string name,
         string description,
         DateTime createdAt,
-        DateTime updatedAt
+        DateTime updatedAt,
+        string? imageUrl 
     )
     {
         Uuid = uuid;
@@ -28,7 +31,7 @@ public partial class Course {
         Description = description;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
+        ImageUrl = imageUrl;
     }
-    
     
 }
