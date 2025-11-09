@@ -158,6 +158,7 @@
             display: flex;
             flex-direction: column;
             width: 256px;
+            height: 100vh;
             background-color: var(--background-color-secondary);
             border-radius: 16px;
             box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
