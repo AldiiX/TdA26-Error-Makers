@@ -14,10 +14,12 @@ export interface Lecturer {
     mobileNumbers: string[],
     emails: string[],
     tags: string[],
-    locations: string | null,
+    location: string | null,
     memberSince: string,
 }
 
 export interface Account extends Lecturer {
     username: string
 }
+
+export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

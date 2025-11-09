@@ -5,7 +5,7 @@ import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "~/lib/types";
+import type {Account} from "#shared/types";
 
 definePageMeta({
     layout: "normal-page-layout"

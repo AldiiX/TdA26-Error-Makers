@@ -1,4 +1,4 @@
-﻿import type {Account} from "~/lib/types";
+﻿import type {Account} from "#shared/types";
 
 export default defineNuxtRouteMiddleware(async () => {
     const loggedAccount = useState<Account | null>('loggedAccount', () => null)
@@ -20,6 +20,6 @@ export default defineNuxtRouteMiddleware(async () => {
 
 
         loggedAccount.value = account;
-        console.log(loggedAccount.value)
+        //console.log(loggedAccount.value)
     }
 })

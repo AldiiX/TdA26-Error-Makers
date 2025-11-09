@@ -1,4 +1,4 @@
-import type { WebTheme } from '@/lib/types'
+import type { WebTheme } from '#shared/types'
 
 export default defineNuxtRouteMiddleware(() => {
     const theme = useState<WebTheme | null>('theme', () => "light")

@@ -1,6 +1,7 @@
 ﻿<!--suppress CssUnresolvedCustomProperty -->
 <script setup lang="ts">
 import {ref, computed, onMounted, onBeforeUnmount, watch, type Component} from "vue";
+import type {ClassLike} from "#shared/types";
 
 type Emits = {
     (e: "complete"): void;
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<{
     tag?: keyof HTMLElementTagNameMap | Component;
     /** aria popis (fallback je samotny text) */
     ariaLabel?: string;
+    segmentClass?: ClassLike
 }>(), {
     animateBy: "words",
     direction: "top",
@@ -39,7 +41,7 @@ const props = withDefaults(defineProps<{
     threshold: 0.1,
     rootMargin: "0px",
     once: true,
-    tag: "p"
+    tag: "p",
 });
 
 const rootRef = ref<HTMLElement | null>(null);
@@ -117,8 +119,7 @@ watch(() => props.text, () => {
     <component
             :is="props.tag"
             ref="rootRef"
-            class="blur-text flex flex-wrap"
-            :class="[{ 'in-view': inView }, props.direction === 'top' ? 'dir-top' : 'dir-bottom']"
+            :class="['blur-text', 'flex', 'flex-wrap', { 'in-view': inView }, props.direction === 'top' ? 'dir-top' : 'dir-bottom']"
             :style="{
       '--segment-duration': props.durationMs + 'ms',
       '--segment-ease': props.easing
@@ -132,7 +133,7 @@ watch(() => props.text, () => {
             <!-- animovany segment -->
             <span
                     v-else
-                    class="segment"
+                    :class="['segment', segmentClass]"
                     :style="{ '--segment-delay': (animatedIndices.indexOf(i) * props.delay) + 'ms' } as any"
                     :data-last="i === lastAnimatedIndex"
                     @animationend="(e) => { if ((e.target as HTMLElement).dataset.last === 'true') emit('complete'); }"

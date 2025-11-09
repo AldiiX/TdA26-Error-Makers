@@ -88,4 +88,12 @@ public class APIv2(
 
         return new OkObjectResult(arr);
     }
+
+    [HttpGet("lecturers/{uuid:guid}")]
+    public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct) {
+        var lecturer = await lecturers.GetByIdAsync(uuid, ct);
+        if (lecturer == null) return new NotFoundObjectResult(new { message = "Lecturer not found." });
+
+        return new OkObjectResult(lecturer.ToJsonNode());
+    }
 }
