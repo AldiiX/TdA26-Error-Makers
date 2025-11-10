@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="app\composables\" />
+    <Folder Include="app\lib\" />
     <Folder Include="public\lib\" />
   </ItemGroup>
 </Project>

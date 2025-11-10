@@ -16,6 +16,6 @@
     <NuxtLink to="/faq" :class="linkClass">FAQ</NuxtLink>
 </template>
 
-<style scoped lang="scss">
+<style module lang="scss">
 
 </style>

@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import type { Lecturer } from "~/lib/types";
+import type { Lecturer } from "#shared/types";
 import { computed } from "vue";
 import Avatar from "~/components/Avatar.vue";
 import { NuxtLink } from "#components";
@@ -57,7 +57,7 @@ const pictureStyle = computed(() => {
         <Avatar :class="$style.avatar" :src="lecturer.pictureUrl" :alt="displayName" :size="140" :name="lecturer.firstName + ' ' + lecturer.lastName" />
 
         <div :class="$style.description">
-            <h1 :class="$style.title">
+            <h1 :class="[$style.title, 'text-gradient']">
                 <span :class="[$style.name, nameTextClass]" v-html="displayName"></span>
             </h1>
 
@@ -91,7 +91,7 @@ const pictureStyle = computed(() => {
     width: 100%;
     //max-width: 900px;
     margin: 0 auto;
-    background-color: rgb(from var(--background-color-secondary) r g b / 0.6);
+    background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 0 8px rgba(0, 0, 0, 0.04);
     transition: 0.3s;
 
@@ -151,6 +151,7 @@ const pictureStyle = computed(() => {
         font-size: 32px;
         line-height: 1.1;
         margin: 0;
+        width: fit-content;
     }
 
     .name {

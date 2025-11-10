@@ -3,7 +3,7 @@
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
-    import type {Account} from "~/lib/types";
+    import type {Account} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
     const $style = useCssModule();
 
@@ -195,6 +195,7 @@
 
                 &:is(:global(.router-link-active)) {
                     pointer-events: none;
+                    //color: var(--accent-color-primary);
 
                     &::after {
                         content: "";
