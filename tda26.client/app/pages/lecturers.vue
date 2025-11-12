@@ -8,17 +8,11 @@
     import getBaseUrl from "#shared/utils/getBaseUrl";
 
     definePageMeta({
-        layout: "normal-page-layout",
-        middleware: [
-            defineNuxtRouteMiddleware(async (to) => {
-                const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v2/lecturers/`);
-                const state = useState<Lecturer | null>('lecturers', () => null);
-                state.value = lecturer;
-            })
-        ]
+        layout: "normal-page-layout"
     });
 
-    const lecturers = useState<Lecturer[]>('lecturers');
+    const { data: _lecturers, pending, error, refresh } = await useFetch<Lecturer[]>('/api/v2/lecturers');
+    const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 
 <template>

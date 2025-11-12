@@ -6,17 +6,11 @@
     import getBaseUrl from "#shared/utils/getBaseUrl";
     
     definePageMeta({
-        layout: "normal-page-layout",
-        middleware: [
-            defineNuxtRouteMiddleware(async (to) => {
-                const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v2/courses/`);
-                const state = useState<Lecturer | null>('courses', () => null);
-                state.value = lecturer;
-            })
-        ]
+        layout: "normal-page-layout"
     });
 
-    const courses = useState<Course[]>('courses');
+    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>('/api/v2/courses');
+    const courses = computed(() => _courses.value ?? []);
 
 
     // TODO: pagination, filtering, sorting will be added later
