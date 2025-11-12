@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
     import { Head, Title } from '#components';
-    import Course from '~/components/Course.vue';
-    import type { Course as ICourse } from '~/lib/types';
+    import Course from '~/components/pagespecific/CourseCard.vue';
+    import type { Course as ICourse } from '#shared/types';
+    import NumberExponential from "~/components/NumberExponential.vue";
     
     definePageMeta({
         layout: "normal-page-layout"
@@ -10,13 +11,42 @@
     const { data: courses } = await useAsyncData<ICourse[]>("courses", () =>
         $fetch("/api/v2/courses")
     );
-    
+
+
+    // TODO: pagination, filtering, sorting will be added later
+    const page = ref(1);
+    const PAGE_SIZE = 8;
+
+    const paginatedCourses = computed(() => {
+        if (!courses.value) return [];
+        const start = (page.value - 1) * PAGE_SIZE;
+        return courses.value.slice(start, start + PAGE_SIZE);
+    });
+
+    const totalPages = computed(() => {
+        if (!courses.value) return 0;
+        return Math.ceil(courses.value.length / PAGE_SIZE);
+    });
+
+    const goToPage = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages.value) return;
+        page.value = newPage;
+    };
+
+    const goToNextPage = () => {
+        goToPage(page.value + 1);
+    };
+
+    const goToLastPage = () => {
+        goToPage(page.value - 1);
+    };
 </script>
 
 <template>
     <Head>
         <Title>Kurzy • Think different Academy</Title>
     </Head>
+
     <section :class="$style.section">
         <div :class="$style.topContainer">
             <div :class="$style.left">
@@ -25,15 +55,17 @@
                     Ať už jsi začátečník nebo pokročilý, máme pro tebe kurz, který ti pomůže rozvíjet tvé dovednosti a znalosti.
                 </p>
             </div>
+
             <div :class="$style.right">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
-                        <span :class="$style.number">152</span>
-                        <span :class="$style.text">Kurzů</span>
+                        <NumberExponential :value="courses?.length ?? 0" :decimals="0" :duration-ms="1500" :locale="'cs-CZ'" :format-options="{ useGrouping: true }" :number-class="$style.number"/>
+<!--                        <p :class="$style.number">{{ courses?.length }}</p>-->
+                        <p :class="$style.text">Kurzů</p>
                     </div>
                     <div :class="$style.row">
-                        <span :class="$style.number">24</span>
-                        <span :class="$style.text">Nových kurzů</span>
+                        <p :class="$style.number">5</p>
+                        <p :class="$style.text">Nových kurzů</p>
                     </div>
                 </div>
             </div>
@@ -63,16 +95,20 @@
                         <button type="button" :class="$style.sortOption">Nejvíce zhlédnutí</button>
                     </div>
                 </div>
+
                 <div :class="$style.courses">
                     <div :class="$style.coursesList">
                         <Course
-                            v-for="course in courses"
+                            v-for="course in paginatedCourses"
                             :course="course"
                             :key="course.uuid"
                         />
                     </div>
                     <div :class="$style.pagination">
-
+                        <!-- Pagination controls will go here -->
+                        <p @click="goToLastPage()">zpet</p>
+                        <p>Stránka {{ page }} z {{ totalPages }}</p>
+                        <p @click="goToNextPage()">dopredu</p>
                     </div>
                 </div>
             </div>
@@ -90,7 +126,7 @@
     .topContainer {
         display: flex;
         justify-content: space-between;
-        width: 80%;
+        width: 100%;
         gap: 32px;
 
         .left {
@@ -116,7 +152,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-width: 216px;
+            width: 30%;
 
             .coursesInfo {
                 display: flex;
@@ -126,6 +162,7 @@
                 background: linear-gradient(135deg, var(--accent-color-secondary-darker), var(--accent-color-secondary)) ;
                 border-radius: 48px;
                 padding: 16px 32px;
+                width: fit-content;
 
                 .row {
                     display: flex;
@@ -134,12 +171,12 @@
 
 
                     .number, .text {
-                        color: var(--text-color-primary);
+                        color: var(--accent-color-secondary-theme-text);
                         font-size: 22px;
                         margin: 0;
                     }
 
-                    .number{
+                    .number {
                         font-size: 28px;
                     }
                 }
@@ -237,10 +274,12 @@
                 background-color: var(--background-color-secondary);
                 box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
                 
-                p{
+                >p {
                     font-size: 18px;
                     color: var(--text-color-secondary);
+                    margin-right: 24px;
                 }
+
                 .sortOptionsList{
                     display: flex;
                     gap: 12px;
@@ -256,12 +295,13 @@
                         font-family: 'Dosis', sans-serif;
                         color: var(--text-color-secondary);
                         cursor: pointer;
-                        transition: background-color 0.15s ease, color 0.15s ease;
+                        transition-duration: 0.3s;
+                        user-select: none;
 
-                        &:hover,
-                        &:focus {
-                            background-color: var(--accent-color-secondary-darker);
-                            color: var(--text-color-primary);
+                        &:hover {
+                            transition-duration: 0.3s;
+                            background-color: var(--accent-color-secondary-theme);
+                            color: var(--accent-color-secondary-theme-text);
                             outline: none;
                         }
                     }
@@ -272,11 +312,10 @@
                 
                 .coursesList {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
                     gap: 24px;
                     align-items: start;
-                    padding: 16px;
-                    
+
                     min-height: calc(80vh - 64px - 32px);
                 }
 
@@ -288,7 +327,4 @@
         }
     }
 }
-    
-
 </style>
-

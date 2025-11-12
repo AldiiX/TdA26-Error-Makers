@@ -4,11 +4,11 @@
 
     const slot = useSlots();
 
-    type ButtonStyle = "primary" | "secondary" | "tertiary" | "gradient";
+    type ButtonStyle = "primary" | "secondary" | "tertiary";
 
     const props = withDefaults(defineProps<{
         buttonStyle?: ButtonStyle,
-        accentColor?: string | "primary" | "secondary",
+        accentColor?: string | "primary" | "secondary" | "gradient",
         textColor?: string | null,
         background?: string | null,
         style?: Record<string, string>,
@@ -34,8 +34,8 @@
             :class="[$style.button, $style['style_' + buttonStyle], { [$style.loading]: loading }]"
             :style="{
                 '--color': accentColor === 'primary' ? 'var(--accent-color-primary)' : accentColor === 'secondary' ? 'var(--accent-color-secondary-theme)' : accentColor,
-                '--bg': background ?? accentColor,
-                '--txc': (textColor ?? accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' ? 'var(--accent-color-secondary-theme-text)' : 'inherit' ),
+                '--bg': accentColor === 'gradient' ? 'linear-gradient(60deg, var(--accent-color-primary), var(--accent-color-secondary-theme))' : background ?? accentColor,
+                '--txc': (textColor ?? accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' || accentColor === 'gradient' ? 'var(--accent-color-secondary-theme-text)' : 'inherit' ),
                 ...style
             }">
 
@@ -97,11 +97,6 @@
             background-color: transparent;
             color: var(--color);
             border: 2px solid var(--color);
-        }
-        
-        &:is(.style_gradient) {
-            background: linear-gradient(60deg, var(--accent-color-primary), var(--accent-color-secondary-theme));
-            color: var(--accent-color-primary-text);
         }
     }
 </style>

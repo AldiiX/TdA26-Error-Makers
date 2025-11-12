@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {WebTheme} from "~/lib/types";
+import type {WebTheme} from "#shared/types";
 import Header from "~/components/Header.vue";
 import Footer from "~/components/Footer.vue";
 import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
@@ -20,29 +20,12 @@ useHead({
     ],
 });
 
-if (import.meta.client && theme.value === null) {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    theme.value = prefersDark ? 'dark' : 'light'
-}
-
-if (import.meta.client) {
-    const mql = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e: MediaQueryListEvent) => {
-        const hasCookie = useCookie<WebTheme>('theme').value
-        if (!hasCookie) {
-            theme.value = e.matches ? 'dark' : 'light'
-        }
-    }
-    mql.addEventListener?.('change', handler)
-}
-
 const code = computed<number>(() => Number(nuxtError.value?.statusCode ?? 500))
 
 const message = computed<string>(() => {
     const c = code.value
-    // preferuj statusMessage/message z chyby, pokud neni jedna z nasich preset kategorii
-    if (!([404, 403, 500] as number[]).includes(c)) {
-        return (nuxtError.value?.statusMessage || nuxtError.value?.message) ?? 'Unexpected error'
+    if(nuxtError.value?.statusMessage || nuxtError.value?.message) {
+        return (nuxtError.value?.statusMessage || nuxtError.value?.message) as string
     }
 
     switch (c) {
@@ -66,7 +49,6 @@ useHead(() => ({
 }))
 
 function goHome() {
-    // zrusit chybu a presmerovat domu (oficialni cesta v nuxtu)
     clearError({ redirect: '/' })
 }
 
@@ -91,7 +73,11 @@ function reloadPage() {
             </div>
             <div :class="$style.codeContainer"> 
                 <p :class="$style.firstNumber">{{ splitNumber[0] ?? '' }}</p>
-                <div :class="$style.icon"></div>
+
+
+                <p :class="$style.firstNumber" v-if="splitNumber[1] !== '0'">{{ splitNumber[1] }}</p>
+                <div :class="$style.icon" v-else></div>
+
                 <p :class="$style.thirdNumber"> {{ splitNumber[2] ?? '' }}</p>
             </div>
             <p :class="$style.desc">{{ message }}</p>

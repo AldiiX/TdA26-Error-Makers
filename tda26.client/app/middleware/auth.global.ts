@@ -1,4 +1,5 @@
 ﻿import type {Account} from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
 
 export default defineNuxtRouteMiddleware(async () => {
     const loggedAccount = useState<Account | null>('loggedAccount', () => null)
@@ -8,7 +9,7 @@ export default defineNuxtRouteMiddleware(async () => {
         let account: Account | null = null;
 
         try {
-            account = await $fetch<Account>('/api/v2/me', {
+            account = await $fetch<Account>(getBaseUrl() + '/api/v2/me', {
                 method: 'GET',
                 headers: {
                     'Cookie': useRequestHeaders(['cookie']).cookie || ''

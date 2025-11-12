@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-    import type { Lecturer } from "#shared/types";
+    import { type Lecturer } from "#shared/types";
     import getLecturerDisplayName from "#shared/utils/getLecturerDisplayNameHTML";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Avatar from "~/components/Avatar.vue";
@@ -7,14 +7,20 @@
 
     definePageMeta({
         layout: "normal-page-layout",
-        alias: ["/lecturer/:uuid"],
+        alias: ["/lecturers/:uuid"],
         middleware: [
             defineNuxtRouteMiddleware(async (to) => {
                 const uuid = to.params.uuid as string;
                 //console.log(uuid);
 
+                // pokud chybi uuid
                 if (!uuid) {
                     return navigateTo("/lecturers");
+                }
+
+                // pokud je stranka /lecturers/:uuid, perm presmeruje na /lecturer/:uuid
+                if (to.path.startsWith("/lecturers/")) {
+                    return navigateTo(`/lecturer/${uuid}`);
                 }
 
                 try {
@@ -22,7 +28,18 @@
                     const key = `lecturer-${uuid}`;
                     const state = useState<Lecturer | null>(key, () => null);
                     state.value = lecturer;
-                } catch {
+                } catch (err: any) {
+
+                    if (err.statusCode === 404) {
+                        throw createError({
+                            statusCode: 404,
+                            statusMessage: `Lektor s tímto UUID nebyl nalezen.`,
+                            /*data: {
+                                message: `Lektor s UUID ${uuid} nebyl nalezen.`
+                            }*/
+                        });
+                    }
+
                     return navigateTo("/lecturers");
                 }
             })

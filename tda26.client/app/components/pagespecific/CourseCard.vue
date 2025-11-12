@@ -1,11 +1,9 @@
 ﻿<script setup lang="ts">
-    import type { Course } from "~/lib/types";
-    import { computed } from "vue";
+    import type { Course } from "#shared/types";
     import Button from "~/components/Button.vue";
     import timeAgoString from "#shared/utils/timeAgoString";
 
     const props = defineProps<{ course: Course }>();
-    
 </script>
 
 <template>
@@ -26,17 +24,17 @@
             </div>
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
-                    <div :class="$style.views">
-                        <div :class="$style.viewsIcon"></div>
+                    <div :class="$style.info">
+                        <div style="mask-image: url(/icons/star.svg)"></div>
                         <p>{{ }} 6</p>
                     </div>
-                    <div :class="$style.rating">
-                        <div :class="$style.ratingIcon"></div>
+                    <div :class="$style.info">
+                        <div style="mask-image: url(/icons/views.svg)"></div>
                         <p>{{ }} 5</p>
                     </div>
                 </div>
 
-                <Button button-style="gradient" href="/courses/{uuid}" accent-color="primary">Začít</Button>
+                <Button button-style="primary" href="/courses/{uuid}" accent-color="secondary">Začít</Button>
             </div>
         </div>
     </div>
@@ -79,11 +77,11 @@
         .infoContainer{
             display: flex;
             flex-direction: column;
-            padding: 12px;
+            padding: 16px;
             flex-grow: 1;
 
             h1{
-                margin: 0 auto;
+                margin: 0;
                 font-size: 24px;
             }
 
@@ -109,59 +107,34 @@
         .buttonsContainer{
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: end;
             width: 100%;
             padding: 12px;
             margin-top: auto;
 
             .anotherInfo{
                 display: flex;
-                gap: 8px;
+                gap: 16px;
 
-                .views{
+                .info {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
                     gap: 4px;
 
-                    .viewsIcon{
-                        mask-image: url("../../public/icons/views.svg");
+                    >div {
+                        mask-image: url("../../../public/icons/views.svg");
                         mask-size: cover;
                         mask-position: center;
                         mask-repeat: no-repeat;
-
-                        height: 24px;
-                        width: 24px;
+                        height: 16px;
+                        width: 16px;
                         background-color: var(--text-color-secondary);
                     }
 
-                    p{
+                    >p {
                         font-size: 16px;
-                        margin: 0 auto;
-                    }
-                }
-
-                .rating{
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 4px;
-
-                    .ratingIcon{
-                        mask-image: url("../../public/icons/star.svg");
-                        mask-size: cover;
-                        mask-position: center;
-                        mask-repeat: no-repeat;
-
-                        height: 24px;
-                        width: 24px;
-                        background-color: var(--text-color-secondary);
-
-                    }
-
-                    p{
-                        font-size: 16px;
-                        margin: 0 auto;
+                        margin: 0;
                     }
                 }
             }
