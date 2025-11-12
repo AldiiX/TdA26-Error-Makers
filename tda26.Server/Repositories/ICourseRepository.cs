@@ -10,7 +10,7 @@ public interface ICourseRepository
     
     Task<Course?> CreateAsync(string name, string description, CancellationToken ct = default);
     
-    Task<bool> UpdateAsync(Course course, CancellationToken ct = default);
+    Task<Course?> UpdateAsync(Guid uuid, string name, string description, CancellationToken ct = default);
     
     Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default);
 }

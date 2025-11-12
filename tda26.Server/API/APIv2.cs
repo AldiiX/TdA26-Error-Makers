@@ -114,6 +114,43 @@ public class APIv2(
         }
         return Ok(course);
     }
+
+    [HttpPut("courses/{uuid:guid}")]
+    public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] JsonNode body) {
+        var course = await courseRepository.GetByIdAsync(uuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var name = body["name"]?.GetValue<string>();
+        var description = body["description"]?.GetValue<string>();
+
+        if(string.IsNullOrEmpty(name) || string.IsNullOrEmpty(description)) {
+            return BadRequest(new { error = "Name and description are required." });
+        }
+
+        var updatedCourse = await courseRepository.UpdateAsync(uuid, name, description);
+        if (updatedCourse is null) {
+            return StatusCode(500, new { error = "Failed to update course." });
+        }
+
+        return new OkObjectResult(updatedCourse);
+    }
+
+    [HttpDelete("courses/{uuid:guid}")]
+    public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
+        var course = await courseRepository.GetByIdAsync(uuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var success = await courseRepository.DeleteAsync(uuid);
+        if (!success) {
+            return StatusCode(500, new { error = "Failed to delete course." });
+        }
+
+        return NoContent();
+    }
     
     [HttpPost("courses")]
     public async Task<IActionResult> CreateCourse([FromBody] JsonNode body ) {
@@ -124,8 +161,6 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        
-        
         var course = await courseRepository.CreateAsync(name, description);
         if (course == null) {
             return StatusCode(500, new { error = "Failed to create course." });

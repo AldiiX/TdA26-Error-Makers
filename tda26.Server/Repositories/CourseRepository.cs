@@ -92,14 +92,42 @@ public class CourseRepository(IDatabaseService db) : ICourseRepository
         return course;
     }
 
-    public async Task<bool> UpdateAsync(Course course, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
+    public async Task<Course?> UpdateAsync(Guid uuid, string name, string description, CancellationToken ct = default) {
+        await using var conn = await db.GetOpenConnectionAsync(ct);
+        if (conn == null) return null;
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            """
+            UPDATE courses SET 
+                name = @name,
+                description = @description,
+                updated_at = NOW()
+            WHERE uuid = @uuid;
+            SELECT * FROM courses WHERE uuid = @uuid;
+            """;
+
+        cmd.Parameters.AddWithValue("@uuid", uuid);
+        cmd.Parameters.AddWithValue("@name", name);
+        cmd.Parameters.AddWithValue("@description", description);
+
+        var result = await cmd.ExecuteReaderAsync(ct);
+        if (!await result.ReadAsync(ct)) return null;
+
+        var updatedCourse = MapCourseFromReader(result);
+        return updatedCourse;
     }
 
-    public async Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
+    public async Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default) {
+        await using var conn = await db.GetOpenConnectionAsync(ct);
+        if (conn == null) return false;
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM courses WHERE uuid = @uuid;";
+
+        cmd.Parameters.AddWithValue("@uuid", uuid);
+        var affectedRows = await cmd.ExecuteNonQueryAsync(ct);
+        return affectedRows > 0;
     }
     
     
