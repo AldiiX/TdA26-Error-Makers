@@ -8,7 +8,7 @@ public interface ICourseRepository
     
     Task<List<Course>> GetAllAsync(CancellationToken ct = default);
     
-    Task<bool> CreateAsync(Course course, CancellationToken ct = default);
+    Task<Course?> CreateAsync(string name, string description, CancellationToken ct = default);
     
     Task<bool> UpdateAsync(Course course, CancellationToken ct = default);
     

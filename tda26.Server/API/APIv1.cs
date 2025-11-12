@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.Mvc;
 using tda26.Server.Classes.Objects;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
@@ -43,7 +44,16 @@ public class APIv1(
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await courseRepository.GetAllAsync();
-        return Ok(courses);
+        
+        var obj = courses.Select(course => new {
+            uuid = course.Uuid,
+            name = course.Name,
+            description = course.Description,
+            createdAt = course.CreatedAt,
+            updatedAt = course.UpdatedAt,
+        });
+        
+        return Ok(obj);
     }
     
     [HttpGet("courses/{uuid:guid}")]
@@ -52,15 +62,39 @@ public class APIv1(
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
-        return Ok(course);
+        var obj = new {
+            uuid = course.Uuid,
+            name = course.Name,
+            description = course.Description,
+            createdAt = course.CreatedAt,
+            updatedAt = course.UpdatedAt,
+        };
+        
+        return Ok(obj);
     }
     
     [HttpPost("courses")]
-    public async Task<IActionResult> CreateCourse([FromBody] Course course) {
-        var success = await courseRepository.CreateAsync(course);
-        if (!success) {
+    public async Task<IActionResult> CreateCourse([FromBody] JsonNode body ) {
+        var name = body["name"]?.GetValue<string>();
+        var description = body["description"]?.GetValue<string>();
+
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(description)) {
+            return BadRequest(new { error = "Name and description are required." });
+        }
+        
+        var course = await courseRepository.CreateAsync(name, description);
+        if (course == null) {
             return StatusCode(500, new { error = "Failed to create course." });
         }
-        return new ObjectResult(course) { StatusCode = 201 };
+
+        var obj = new {
+            uuid = course.Uuid,
+            name = course.Name,
+            description = course.Description,
+            createdAt = course.CreatedAt,
+            updatedAt = course.UpdatedAt,
+        };
+        
+        return new JsonResult(obj) { StatusCode = 201 };
     }
 }

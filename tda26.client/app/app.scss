@@ -187,42 +187,6 @@ html {
     to { opacity: 0; display: none; }
 }
 
-.modal-main {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 10;
-    animation: dfksdopfdspkfopdsfk 0.3s forwards ease-in-out;
-    animation-iteration-count: 1;
-
-
-
-    >.blur {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: var(--modal-blur-color);
-        backdrop-filter: blur(0.2vw);
-        z-index: 10;
-    }
-
-    >.modal {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: var(--background-color);
-        border: 1px solid var(--button-outline-color);
-        border-radius: 12px;
-        padding: 20px;
-        z-index: 11;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    }
-}
 @keyframes dfksdopfdspkfopdsfk {
     from { opacity: 0 }
     to { opacity: 1 }
@@ -280,7 +244,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 32px;
 }
 
-p,a,button,input,textarea,select,label, li {
+p,a,button,input,textarea,select,label, li{
     font-family: Dosis, sans-serif;
     font-size: 16px;
     font-weight: 500;

@@ -4,7 +4,7 @@
 
     const slot = useSlots();
 
-    type ButtonStyle = "primary" | "secondary" | "tertiary";
+    type ButtonStyle = "primary" | "secondary" | "tertiary" | "gradient";
 
     const props = withDefaults(defineProps<{
         buttonStyle?: ButtonStyle,
@@ -97,6 +97,11 @@
             background-color: transparent;
             color: var(--color);
             border: 2px solid var(--color);
+        }
+        
+        &:is(.style_gradient) {
+            background: linear-gradient(60deg, var(--accent-color-primary), var(--accent-color-secondary-theme));
+            color: var(--accent-color-primary-text);
         }
     }
 </style>
