@@ -11,7 +11,7 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _lecturers, pending, error, refresh } = await useFetch<Lecturer[]>('/api/v2/lecturers');
+    const { data: _lecturers, pending, error, refresh } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers');
     const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 

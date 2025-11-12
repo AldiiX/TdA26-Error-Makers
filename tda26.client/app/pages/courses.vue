@@ -9,7 +9,7 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>('/api/v2/courses');
+    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
     const courses = computed(() => _courses.value ?? []);
 
 
