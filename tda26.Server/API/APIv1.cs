@@ -51,6 +51,9 @@ public class APIv1(
             description = course.Description,
             createdAt = course.CreatedAt,
             updatedAt = course.UpdatedAt,
+            materials = course.Materials,
+            quizzes = course.Quizzes,
+            feed = course.Feed,
         });
         
         return Ok(obj);
@@ -68,6 +71,9 @@ public class APIv1(
             description = course.Description,
             createdAt = course.CreatedAt,
             updatedAt = course.UpdatedAt,
+            materials = course.Materials,
+            quizzes = course.Quizzes,
+            feed = course.Feed,
         };
         
         return Ok(obj);
@@ -98,6 +104,9 @@ public class APIv1(
             description = updatedCourse.Description,
             createdAt = updatedCourse.CreatedAt,
             updatedAt = updatedCourse.UpdatedAt,
+            materials = course.Materials,
+            quizzes = course.Quizzes,
+            feed = course.Feed,
         };
 
         return new OkObjectResult(obj);
@@ -138,6 +147,9 @@ public class APIv1(
             description = course.Description,
             createdAt = course.CreatedAt,
             updatedAt = course.UpdatedAt,
+            materials = course.Materials,
+            quizzes = course.Quizzes,
+            feed = course.Feed,
         };
         
         return new JsonResult(obj) { StatusCode = 201 };

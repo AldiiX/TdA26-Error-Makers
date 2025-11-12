@@ -15,6 +15,13 @@ public partial class Course {
 
     public string? ImageUrl { get; private set; }
 
+    public List<Material> Materials { get; private set; } = [];
+
+    public List<Quiz> Quizzes { get; private set; } = [];
+
+    public List<FeedPost> Feed { get; private set; } = [];
+
+
 
     [JsonConstructor]
     public Course(
