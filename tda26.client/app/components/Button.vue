@@ -90,6 +90,7 @@
             background-color: var(--color) !important;
             background: var(--bg);
             color: var(--txc);
+            border: 2px solid var(--color);
         }
 
         &:is(.style_secondary) {
