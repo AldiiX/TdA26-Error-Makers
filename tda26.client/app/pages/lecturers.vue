@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
+    import { Head, Title, ClientOnly } from '#components';
     import LecturerCard from "~/components/pagespecific/LecturerCard.vue";
     import type {Lecturer} from "#shared/types";
     import TypeWriter from "~/components/TypeWriter.vue";
@@ -11,7 +11,7 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _lecturers, pending, error, refresh } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers');
+    const { data: _lecturers } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers');
     const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 
@@ -22,7 +22,7 @@
 
 
     <!-- blobíci -->
-    <Teleport to="#__nuxt">
+    <Teleport to="#teleports">
         <div :class="$style.blobeffect"></div>
         <Blob
             top="60vh"
@@ -46,14 +46,16 @@
 
 
     <h1 :class="[$style.nadpis/*, 'text-gradient'*/]">Lektoři</h1>
-    <SmoothSizeWrapper>
-        <TypeWriter
-                style="height: 46px"
-                text="Podívej se na naše úžasné lektory, kteří tě provedou světem kurzů. Každý z nich přináší jedinečný přístup k výuce, který ti pomůže dosáhnout tvých cílů."
-                :class="$style.podnapis"
-                :startDelayMs="300"
-        />
-    </SmoothSizeWrapper>
+    <ClientOnly>
+        <SmoothSizeWrapper>
+            <TypeWriter
+                    style="height: 46px"
+                    text="Podívej se na naše úžasné lektory, kteří tě provedou světem kurzů. Každý z nich přináší jedinečný přístup k výuce, který ti pomůže dosáhnout tvých cílů."
+                    :class="$style.podnapis"
+                    :startDelayMs="300"
+            />
+        </SmoothSizeWrapper>
+    </ClientOnly>
 
     <div :class="$style.list">
         <LecturerCard v-for="l in lecturers" :lecturer="l" :class="$style.card" />

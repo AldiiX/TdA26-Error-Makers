@@ -279,7 +279,7 @@
                 >p {
                     font-size: 18px;
                     color: var(--text-color-secondary);
-                    margin-right: 24px;
+                    margin-right: 48px;
                 }
 
                 .sortOptionsList{
