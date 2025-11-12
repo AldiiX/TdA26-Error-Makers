@@ -2,7 +2,7 @@
 import getBaseUrl from "#shared/utils/getBaseUrl";
 
 export default defineNuxtRouteMiddleware(async () => {
-    const loggedAccount = useState<Account | null>('loggedAccount', () => null)
+    const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
     // fetchnuti api
     if (loggedAccount.value === null) {

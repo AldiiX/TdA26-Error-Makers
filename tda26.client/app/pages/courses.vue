@@ -1,16 +1,22 @@
 ﻿<script setup lang="ts">
     import { Head, Title } from '#components';
-    import Course from '~/components/pagespecific/CourseCard.vue';
-    import type { Course as ICourse } from '#shared/types';
+    import CourseCard from '~/components/pagespecific/CourseCard.vue';
+    import type {Course, Lecturer} from '#shared/types';
     import NumberExponential from "~/components/NumberExponential.vue";
+    import getBaseUrl from "#shared/utils/getBaseUrl";
     
     definePageMeta({
-        layout: "normal-page-layout"
+        layout: "normal-page-layout",
+        middleware: [
+            defineNuxtRouteMiddleware(async (to) => {
+                const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v2/courses/`);
+                const state = useState<Lecturer | null>('courses', () => null);
+                state.value = lecturer;
+            })
+        ]
     });
 
-    const { data: courses } = await useAsyncData<ICourse[]>("courses", () =>
-        $fetch("/api/v2/courses")
-    );
+    const courses = useState<Course[]>('courses');
 
 
     // TODO: pagination, filtering, sorting will be added later
@@ -30,6 +36,8 @@
 
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
+
+        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
         page.value = newPage;
     };
 
@@ -98,7 +106,7 @@
 
                 <div :class="$style.courses">
                     <div :class="$style.coursesList">
-                        <Course
+                        <CourseCard
                             v-for="course in paginatedCourses"
                             :course="course"
                             :key="course.uuid"

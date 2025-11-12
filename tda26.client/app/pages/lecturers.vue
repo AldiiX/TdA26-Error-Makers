@@ -5,15 +5,20 @@
     import TypeWriter from "~/components/TypeWriter.vue";
     import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
     import Blob from "~/components/Blob.vue";
+    import getBaseUrl from "#shared/utils/getBaseUrl";
 
     definePageMeta({
-        layout: "normal-page-layout"
+        layout: "normal-page-layout",
+        middleware: [
+            defineNuxtRouteMiddleware(async (to) => {
+                const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v2/lecturers/`);
+                const state = useState<Lecturer | null>('lecturers', () => null);
+                state.value = lecturer;
+            })
+        ]
     });
 
-    const { data: lecturers } = await useAsyncData(
-        'lecturers',
-        () => $fetch<Lecturer[]>('/api/v2/lecturers')
-    )
+    const lecturers = useState<Lecturer[]>('lecturers');
 </script>
 
 <template>
