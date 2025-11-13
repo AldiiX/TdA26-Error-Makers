@@ -34,7 +34,9 @@
                     </div>
                 </div>
 
-                <Button button-style="primary" href="/courses/{uuid}" accent-color="secondary">Začít</Button>
+                <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
+                    <Button button-style="primary" accent-color="secondary" style="width: 100%">Začít</Button>
+                </NuxtLink>
             </div>
         </div>
     </div>
@@ -139,7 +141,7 @@
                 }
             }
 
-            button{
+            .button {
                 width: 50%;
             }
         }
