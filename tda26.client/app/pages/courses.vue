@@ -4,6 +4,7 @@
     import type {Course, Lecturer} from '#shared/types';
     import NumberExponential from "~/components/NumberExponential.vue";
     import getBaseUrl from "#shared/utils/getBaseUrl";
+    import Blob from "~/components/Blob.vue";
     
     definePageMeta({
         layout: "normal-page-layout"
@@ -42,14 +43,20 @@
     const goToLastPage = () => {
         goToPage(page.value - 1);
     };
+    
 </script>
 
 <template>
     <Head>
         <Title>Kurzy • Think different Academy</Title>
     </Head>
-
+    
+    <Teleport to="#teleports">
+        <div :class="$style.blob"></div>
+    </Teleport>
+    
     <section :class="$style.section">
+        
         <div :class="$style.topContainer">
             <div :class="$style.left">
                 <h1 :class="$style.nadpis">Kurzy</h1>
@@ -120,6 +127,19 @@
 </template>
 
 <style module lang="scss">
+
+.blob{
+    mask-image: url("../../public/icons/blob_curses1.svg");
+    mask-size: 100vw;
+    mask-position: top;
+    mask-repeat: no-repeat;
+    width: 100vw;
+    aspect-ratio: 16/9;
+    background: linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
+    position: absolute;
+    top: -20vh;
+    z-index: -1;
+}
 .section{
     display: flex;
     flex-direction: column;
