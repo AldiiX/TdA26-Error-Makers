@@ -20,7 +20,7 @@
         background: 'linear-gradient(180deg, var(--accent-color-secondary-transparent-03), var(--accent-color))',
     });
 
-    const randomPickedNumber = Math.floor(Math.random() * 2) + 1;
+    const randomPickedNumber = Math.floor(Math.random() * 4) + 1;
     const randomBlob = `url(/images/blobs/blob${randomPickedNumber}.svg)`;
 </script>
 

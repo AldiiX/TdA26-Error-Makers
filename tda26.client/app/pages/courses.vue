@@ -13,20 +13,38 @@
     const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
     const courses = computed(() => _courses.value ?? []);
 
+    const sort = ref<'new' | 'old'>('new');
+    const sortedCourses = computed(() => {
+        let list = [...courses.value];
 
-    // TODO: pagination, filtering, sorting will be added later
+        switch (sort.value) {
+            case 'new':
+                return list.sort(
+                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+            case 'old':
+                return list.sort(
+                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+            default:
+                return list;
+        }
+    });
+    
+    // TODO: pagination, filtering, add sort with rating and views
     const page = ref(1);
     const PAGE_SIZE = 8;
 
     const paginatedCourses = computed(() => {
         if (!courses.value) return [];
+        const list = sortedCourses.value;
         const start = (page.value - 1) * PAGE_SIZE;
-        return courses.value.slice(start, start + PAGE_SIZE);
+        return list.slice(start, start + PAGE_SIZE);
     });
 
     const totalPages = computed(() => {
         if (!courses.value) return 0;
-        return Math.ceil(courses.value.length / PAGE_SIZE);
+        return Math.ceil(sortedCourses.value.length / PAGE_SIZE);
     });
 
     const goToPage = (newPage: number) => {
@@ -53,6 +71,22 @@
     
     <Teleport to="#teleports">
         <div :class="$style.blob"></div>
+        <Blob
+            top="120vh"
+            right="1vw"
+            left="unset"
+            background="linear-gradient(0deg, var(--accent-color-primary) 0%, transparent 80%)"
+            style="opacity: 0.5"
+            :class="$style.blob1"
+        />
+        <Blob
+            top="100vh"
+            left="2vw"
+            right="unset"
+            background="linear-gradient(0deg, transparent 0%, var(--accent-color-secondary-theme)  80%)"
+            style="opacity: 0.5"
+            :class="$style.blob2"
+        />
     </Teleport>
     
     <section :class="$style.section">
@@ -98,8 +132,16 @@
                 <div :class="$style.filtersTop">
                     <p>Seřadit: </p>
                     <div :class="$style.sortOptionsList">
-                        <button type="button" :class="$style.sortOption">Nejnovější</button>
-                        <button type="button" :class="$style.sortOption">Nejstarší</button>
+                        <button type="button" 
+                                :class="$style.sortOption" 
+                                :data-active="sort === 'new'"
+                                @click="sort = 'new'">Nejnovější
+                        </button>
+                        <button type="button" 
+                                :class="$style.sortOption" 
+                                :data-active="sort === 'old'"
+                                @click="sort = 'old'">Nejstarší
+                        </button>
                         <button type="button" :class="$style.sortOption">Nejlepe hodnocení</button>
                         <button type="button" :class="$style.sortOption">Nejvíce zhlédnutí</button>
                     </div>
@@ -128,6 +170,8 @@
 
 <style module lang="scss">
 
+
+
 .blob{
     mask-image: url("../../public/icons/blob_curses1.svg");
     mask-size: 100vw;
@@ -136,8 +180,11 @@
     width: 100vw;
     aspect-ratio: 16/9;
     background:
-        linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color)),
-        linear-gradient(180deg, var(--background-color) 0%, transparent 80%);
+        linear-gradient(to top,
+            rgba(255, 255, 255, 0.6),
+            rgba(255, 255, 255, 0)
+        ),
+        linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
     position: absolute;
     top: -25vh;
     z-index: -1;
@@ -145,11 +192,53 @@
     animation: sdoksapkdf 1.5s forwards ease;
 }
 
+.blob1 {
+    animation: asdsasafasfasfhhdmg1 3s forwards ease;
+}
+
+.blob2 {
+    animation: asdsasafasfasfhhdmg2 3s forwards ease;
+}
+
 .liquid-glass {
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@keyframes asdsasafasfasfhhdmg1 {
+    0% {
+        opacity: 0;
+        transform: translate(-40px, 80px);
+    }
+
+    20% {
+        opacity: 0;
+        transform: translate(-10px, 60px);
+    }
+
+    100% {
+        opacity: 0.5;
+        transform: translate(-50px, 0);
+    }
+}
+
+@keyframes asdsasafasfasfhhdmg2 {
+    0% {
+        opacity: 0;
+        transform: translate(-80px, 40px);
+    }
+
+    20% {
+        opacity: 0;
+        transform: translate(-60px, 10px);
+    }
+
+    100% {
+        opacity: 0.5;
+        transform: translate(0, -50px);
+    }
 }
 
 @keyframes sdoksapkdf {
