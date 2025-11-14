@@ -43,18 +43,25 @@
 </template>
 
 <style module lang="scss">
+
+.liquid-glass {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
+    backdrop-filter: blur(8px) saturate(1.6);
+}
+
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
     height: 100%;
     width: 100%;
-    background-color: var(--background-color-secondary);
     border-radius: 16px;
-    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
+    
+    @extend .liquid-glass;
     
     .top{
-        
         width: 100%;
         
         .imageContainer{

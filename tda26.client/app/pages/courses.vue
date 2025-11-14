@@ -135,11 +135,34 @@
     mask-repeat: no-repeat;
     width: 100vw;
     aspect-ratio: 16/9;
-    background: linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
+    background:
+        linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color)),
+        linear-gradient(180deg, var(--background-color) 0%, transparent 80%);
     position: absolute;
-    top: -20vh;
+    top: -25vh;
     z-index: -1;
+    
+    animation: sdoksapkdf 1.5s forwards ease;
 }
+
+.liquid-glass {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
+    border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
+    backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@keyframes sdoksapkdf {
+    from {
+        transform: translateY(-80px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 .section{
     display: flex;
     flex-direction: column;
@@ -218,9 +241,10 @@
             flex-direction: column;
             width: 256px;
             height: 100vh;
-            background-color: var(--background-color-secondary);
-            border-radius: 16px;
-            box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            padding-top: 8px;
+
+            @extend .liquid-glass;
 
             .filtersLeft {
                 
@@ -240,7 +264,7 @@
                     border-radius: 12px;
                     padding: 16px;
                     transition: all 0.2s ease-in-out;
-
+                    border: none;
 
                     .searchIcon {
                         mask-image: url('../../public/icons/search.svg');
@@ -290,11 +314,11 @@
                 align-items: center;
                 gap: 16px;
                 padding: 0 16px;
-                width: 100%;
                 height: 64px;
-                border-radius: 16px;
-                background-color: var(--background-color-secondary);
-                box-shadow: 12px 0 32px rgba(0, 0, 0, 0.1);
+                width: 100%;
+                border-radius: 24px;
+
+                @extend .liquid-glass;
                 
                 >p {
                     font-size: 18px;
@@ -339,6 +363,7 @@
                     align-items: start;
 
                     min-height: calc(80vh - 64px - 32px);
+                    
                 }
 
                 .pagination {
