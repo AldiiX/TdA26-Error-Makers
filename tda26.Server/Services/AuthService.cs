@@ -47,7 +47,6 @@ public class AuthService(
         if (sessionAcc == null) return null;
 
         var acc = await accounts.GetByIdAsync(sessionAcc.Uuid, ct);
-        Console.WriteLine($"Password from session: {sessionAcc.Password}, password from db: {acc?.Password}");
         if (acc == null || acc.Password != sessionAcc.Password) return null;
 
         http.HttpContext!.Items["loggedaccount"] = acc;
