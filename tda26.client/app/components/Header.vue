@@ -5,7 +5,10 @@
     import Menu from "~/components/Menu.vue";
     import type {Account} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
+    
     const $style = useCssModule();
+    
+    const theme = useCookie('theme')
 
     const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
@@ -57,7 +60,7 @@
 
                 <template v-else>
                     <div :class="$style.btns">
-                        <NuxtLink to="/dashboard">
+                        <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>
                     </div>
@@ -70,6 +73,31 @@
                         </div>
 
                         <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
+                    </div>
+                    <div :class="$style.popoverContainer">
+                        <div :class="$style.accountInfo">
+                            <div :class="$style.accountDetails"> 
+                                <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="128" />
+                                <div :class="$style.accountText">
+                                    <p :class="$style.name">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
+                                    <p>{{ loggedAccount.email }}</p>
+                                </div>
+                                <div :class="$style.btns">
+                                    <div :class="[$style.button, $style.logoutBtn]">
+                                        <p :class="$style.container">
+                                            <div :class="$style.icon"></div>
+                                            <p>Odhlásit se</p>
+                                        </p>
+                                    </div>
+                                    <div :class="[$style.button, $style.themeBtn]">
+                                        <div :class="$style.container">
+                                            <div :class="$style.icon"></div>
+                                            <p>Přepnout téma</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -149,6 +177,14 @@
             .btns {
                 display: flex;
                 gap: 16px;
+                
+                >.linkBtn {
+                    
+                    button{
+                        text-decoration: none;
+                        color: var(--text-color-primary);
+                    }
+                }
             }
 
             .loggedAs {
@@ -176,6 +212,44 @@
                             z-index: -1;
                             color: transparent;
                             text-shadow: 0 0 24px var(--background-color), 0px 0 12px var(--background-color);
+                        }
+                    }
+                }
+
+                &:hover .popoverContainer{
+                    display: flex;
+                }
+            }
+            
+            .popoverContainer{
+                position: absolute;
+                display: none;
+                top: 70px;
+                right: 0;
+                background-color: var(--background-color-secondary);
+                border-radius: 16px;
+                padding: 16px;
+                width: 256px;
+                z-index: 10;
+                
+                
+                >.accountInfo{
+                    
+                    >.accountDetails{
+                        
+                        div{
+                            
+                        }
+                        
+                        >.accountText{
+                            
+                        }
+                        
+                        >.btns{
+                            
+                            >.button{
+                                
+                            }
                         }
                     }
                 }

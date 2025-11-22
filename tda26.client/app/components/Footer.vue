@@ -39,6 +39,10 @@
                             Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
                             <a href="https://serhii.cz" target="_blank"> Serhii Yavorskyi</a>
                         </p>
+                        <p>
+                            Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
+                            <a href="https://jakooob.dev" target="_blank"> Jakub Sokol</a>
+                        </p>
                     </div>
                 </div>
             </div>
