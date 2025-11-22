@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
-using tda26.Server.Classes.Objects;
+using tda26.Server.Data;
+using tda26.Server.Data.Models;
 using tda26.Server.Infrastructure;
 using tda26.Server.Services;
 
@@ -10,77 +12,41 @@ namespace tda26.Server.Repositories;
 
 
 public class AccountRepository(
-    IDatabaseService db
+    AppDbContext db
 ) : IAccountRepository {
-
-    public async Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null) return null;
-
-        const string query =
-            """
-            select * from lecturers
-            where uuid = @uuid  
-            """;
-
-        await using var cmd = new MySqlCommand(query, conn);
-        cmd.Parameters.AddWithValue("@uuid", uuid);
-
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        if (!await reader.ReadAsync(ct)) return null;
-
-        var user = MapAccount(reader);
-
-        return user;
+    public async Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default)
+    {
+        return await db.Accounts
+            .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
     }
 
-    public async Task<List<Account>> GetAllAsync(CancellationToken ct = default) {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null) return [];
-
-        await using var cmd = new MySqlCommand(
-        """
-            select * from lecturers
-            order by member_since asc
-        """, conn);
-
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-
-        var list = new List<Account>();
-        while (await reader.ReadAsync(ct)) {
-            list.Add(MapAccount(reader));
-        }
-
-        return list;
+    public async Task<List<Account>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await db.Accounts
+            .ToListAsync(ct);
     }
 
+    public async Task CreateAsync(Account account, CancellationToken ct = default)
+    {
+        db.Accounts.Add(account);
+        await db.SaveChangesAsync(ct);
+    }
 
+    public async Task UpdateAsync(Account account, CancellationToken ct = default)
+    {
+        db.Accounts.Update(account);
+        await db.SaveChangesAsync(ct);
+    }
 
-    public static Account MapAccount(MySqlDataReader reader) {
-        return new Account(
-            reader.GetGuid("uuid"),
-            reader.GetString("username"),
-            reader.GetString("password"),
-            reader.GetStringOrNull("title_before"),
-            reader.GetString("first_name"),
-            reader.GetStringOrNull("middle_name"),
-            reader.GetString("last_name"),
-            reader.GetStringOrNull("title_after"),
-            reader.GetStringOrNull("bio"),
-            reader.GetStringOrNull("picture_url"),
-            reader.GetStringOrNull("claim"),
-            reader.GetValueOrNull<ushort>("price_per_hour") ?? 0,
-            reader.GetStringOrNull("mobile_numbers") != null
-                ? reader.GetString("mobile_numbers").Split(',').Select(s => s.Trim()).ToList()
-                : [],
-            reader.GetStringOrNull("emails") != null
-                ? reader.GetString("emails").Split(',').Select(s => s.Trim()).ToList()
-                : [],
-            reader.GetStringOrNull("tags") != null
-                ? reader.GetString("tags").Split(',').Select(s => s.Trim()).ToList()
-                : [],
-            reader.GetStringOrNull("location"),
-            reader.GetDateTime("member_since")
-        );
+    public async Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default)
+    {
+        var account = await GetByIdAsync(uuid, ct);
+        if (account == null) return false;
+        
+        db.Accounts.Remove(account);
+        await db.SaveChangesAsync(ct);
+            
+        return true;
+
     }
 }

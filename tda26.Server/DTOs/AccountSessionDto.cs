@@ -1,0 +1,12 @@
+﻿using System.ComponentModel.DataAnnotations;
+using tda26.Server.Data.Models;
+
+namespace tda26.Server.DTOs;
+
+public class AccountSessionDto {
+    public Guid Uuid { get; set; } = Guid.NewGuid();
+    [MaxLength(32)] public string Username { get; set; } = string.Empty;
+    [MaxLength(512)] public string Password { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}

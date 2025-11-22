@@ -1,0 +1,14 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace tda26.Server.Data.Models;
+
+public class FeedPost : IAuditable {
+    [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    
+    public Guid CourseUuid { get; set; }
+    [ForeignKey("CourseUuid")]
+    public Course Course { get; set; } = null!;
+}

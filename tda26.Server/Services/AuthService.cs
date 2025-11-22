@@ -1,6 +1,8 @@
 using System.Text.Json;
 using tda26.Server.Classes;
-using tda26.Server.Classes.Objects;
+using tda26.Server.Data.Models;
+using tda26.Server.Data;
+using tda26.Server.DTOs;
 using tda26.Server.Repositories;
 
 namespace tda26.Server.Services;
@@ -10,7 +12,7 @@ namespace tda26.Server.Services;
 
 
 public class AuthService(
-    IDatabaseService db,
+    AppDbContext db,
     IHttpContextAccessor http,
     IAccountRepository accounts
 ) : IAuthService {
@@ -20,24 +22,36 @@ public class AuthService(
         var acc = (await accounts.GetAllAsync(ct)).FirstOrDefault(a => a.Username.Equals(identifier, StringComparison.OrdinalIgnoreCase));
         if (acc == null) return null;
 
+        var json = new AccountSessionDto {
+            Uuid =  acc.Uuid,
+            Username = acc.Username,
+            Password = acc.Password,
+            CreatedAt = acc.CreatedAt,
+        };
+
+        Console.WriteLine("Login attempt for json: " + json);
+
         if (!Utilities.VerifyPassword(plainPassword, acc.Password)) return null;
-        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(acc, JsonSerializerOptions.Web));
-        http.HttpContext.Items["loggedaccount"] = acc;
+        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
+        http.HttpContext.Items["loggedaccount"] = json;
         return acc;
     }
+    
+    // FIX:
 
     public async Task<Account?> ReAuthAsync(CancellationToken ct = default) {
         var json = http.HttpContext?.Session.GetString("loggedaccount");
         if (string.IsNullOrEmpty(json)) return null;
 
-        var sessionAcc = JsonSerializer.Deserialize<Account>(json, JsonSerializerOptions.Web);
+        var sessionAcc = JsonSerializer.Deserialize<AccountSessionDto>(json);
         if (sessionAcc == null) return null;
 
         var acc = await accounts.GetByIdAsync(sessionAcc.Uuid, ct);
+        Console.WriteLine($"Password from session: {sessionAcc.Password}, password from db: {acc?.Password}");
         if (acc == null || acc.Password != sessionAcc.Password) return null;
 
         http.HttpContext!.Items["loggedaccount"] = acc;
-        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(acc, JsonSerializerOptions.Web));
+        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(acc));
         return acc;
     }
 

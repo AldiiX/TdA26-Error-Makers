@@ -1,4 +1,4 @@
-﻿using tda26.Server.Classes.Objects;
+﻿using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
@@ -7,14 +7,12 @@ public class LecturerRepository(
 ) : ILecturerRepository {
 
     public async Task<Lecturer?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
-        var acc = await accounts.GetByIdAsync(uuid, ct);
-
-        return acc;
+        var account = await accounts.GetByIdAsync(uuid, ct);
+        return account as Lecturer;
     }
 
     public async Task<List<Lecturer>> GetAllAsync(CancellationToken ct = default) {
-        var all = await accounts.GetAllAsync(ct);
-        var lecturers = all.OfType<Lecturer>().ToList();
-        return lecturers;
+        var allAccounts = await accounts.GetAllAsync(ct);
+        return allAccounts.OfType<Lecturer>().ToList();
     }
 }

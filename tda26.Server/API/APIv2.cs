@@ -1,8 +1,11 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using tda26.Server.Classes;
+using tda26.Server.Data;
+using tda26.Server.Data.Models;
+using tda26.Server.DTOs.v2;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 
@@ -13,7 +16,8 @@ namespace tda26.Server.API;
 public class APIv2(
     IAuthService auth,
     ILecturerRepository lecturers,
-    ICourseRepository courseRepository
+    ICourseRepository courseRepository,
+    AppDbContext db
 ) : Controller {
 
     [HttpGet]
@@ -41,38 +45,23 @@ public class APIv2(
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct) {
         var acc = await auth.ReAuthAsync(ct);
-        if (acc == null) return new UnauthorizedResult();
+        if (acc == null) return Unauthorized();
 
-        var obj = JsonSerializer.SerializeToNode(acc, JsonSerializerOptions.Web);
-        if(obj == null) return StatusCode(500, new { error = "Serialization error." });
-
-        // odstraneni hesla
-        obj.AsObject().Remove("password");
-
-        return Ok(obj);
+        return Ok(acc);
     }
 
     [HttpPost("auth/login")]
-    public async Task<IActionResult> Login([FromBody] JsonNode body, CancellationToken ct) {
-        var username = body["username"]?.GetValue<string>();
-        var password = body["password"]?.GetValue<string>();
-
-        if(string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) {
+    public async Task<IActionResult> Login([FromBody] AuthLoginRequest body, CancellationToken ct) {
+        if(string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password)) {
             return new BadRequestObjectResult(new {
                 message = "Username and password are required."
             });
         }
 
-        var acc = await auth.LoginAsync(username, password, ct);
+        var acc = await auth.LoginAsync(body.Username, body.Password, ct);
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
 
-        var obj = JsonSerializer.SerializeToNode(acc, JsonSerializerOptions.Web);
-        if(obj == null) return StatusCode(500, new { message = "Serialization error." });
-
-        // odstraneni hesla
-        obj.AsObject().Remove("password");
-
-        return Ok(obj);
+        return Ok(acc);
     }
 
 
@@ -81,21 +70,58 @@ public class APIv2(
     [HttpGet("lecturers")]
     public async Task<IActionResult> GetLecturers(CancellationToken ct) {
         var all = await lecturers.GetAllAsync(ct);
-        var arr = new JsonArray();
+        return new OkObjectResult(all);
+    }
 
-        foreach (var l in all.Select(lecturer => lecturer.ToJsonNode())) {
-            arr.Add(l);
+    [HttpPost("lecturers")]
+    public async Task<IActionResult> CreateLecturer([FromBody] CreateLecturerRequest body, CancellationToken ct)
+    {
+        var existingAccount = await db.Accounts
+            .AnyAsync(a => a.Username == body.Username, ct);
+        
+        if (existingAccount)
+        {
+            return new ConflictObjectResult(new { message = "Username already exists." });
         }
 
-        return new OkObjectResult(arr);
+        var newLecturer = new Lecturer
+        {
+            Username = body.Username!,
+            Password = Utilities.EncryptPassword(body.Password!),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            TitleBefore = body.TitleBefore,
+            FirstName = body.FirstName!,
+            MiddleName = body.MiddleName,
+            LastName = body.LastName!,
+            TitleAfter = body.TitleAfter,
+            Bio = body.Bio,
+            PictureUrl = body.PictureUrl,
+            Claim = body.Claim,
+            Location = body.Location,
+            PricePerHour = body.PricePerHour,
+            MobileNumbers = body.MobileNumbers,
+            Emails = body.Emails,
+            Tags = body.Tags
+        };
+        
+        db.Lecturers.Add(newLecturer);
+        await db.SaveChangesAsync(ct);
+        
+        return new CreatedAtActionResult(
+            actionName: nameof(GetLecturer),
+            controllerName: "APIv2",
+            routeValues: new { uuid = newLecturer.Uuid },
+            value: newLecturer
+        );
     }
-    
+
     [HttpGet("lecturers/{uuid:guid}")]
     public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct) {
         var lecturer = await lecturers.GetByIdAsync(uuid, ct);
         if (lecturer == null) return new NotFoundObjectResult(new { message = "Lecturer not found." });
 
-        return new OkObjectResult(lecturer.ToJsonNode());
+        return new OkObjectResult(lecturer);
     }
     
     //courses
@@ -125,48 +151,47 @@ public class APIv2(
         var name = body["name"]?.GetValue<string>();
         var description = body["description"]?.GetValue<string>();
 
-        if(string.IsNullOrEmpty(name) || string.IsNullOrEmpty(description)) {
-            return BadRequest(new { error = "Name and description are required." });
+        if (!string.IsNullOrEmpty(name)) {
+            course.Name = name;
         }
 
-        var updatedCourse = await courseRepository.UpdateAsync(uuid, name, description);
-        if (updatedCourse is null) {
-            return StatusCode(500, new { error = "Failed to update course." });
+        if (!string.IsNullOrEmpty(description)) {
+            course.Description = description;
         }
 
-        return new OkObjectResult(updatedCourse);
+        await courseRepository.UpdateAsync(course);
+
+        return Ok(course);
     }
 
     [HttpDelete("courses/{uuid:guid}")]
     public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
-        if (course == null) {
-            return NotFound(new { error = "Course not found." });
-        }
-
         var success = await courseRepository.DeleteAsync(uuid);
         if (!success) {
-            return StatusCode(500, new { error = "Failed to delete course." });
+            return NotFound(new { error = "Course not found." });
         }
 
         return NoContent();
     }
     
     [HttpPost("courses")]
-    public async Task<IActionResult> CreateCourse([FromBody] JsonNode body ) {
-        var name = body["name"]?.GetValue<string>();
-        var description = body["description"]?.GetValue<string>();
-
-        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(description)) {
+    public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body ) {
+        if(string.IsNullOrEmpty(body.Name) || string.IsNullOrEmpty(body.Description)) {
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var course = await courseRepository.CreateAsync(name, description);
-        if (course == null) {
-            return StatusCode(500, new { error = "Failed to create course." });
-        }
+        var newCourse = new Course {
+            Name = body.Name,
+            Description = body.Description
+        };
 
-        return new JsonResult(course) { StatusCode = 201 };
+        await courseRepository.CreateAsync(newCourse);
 
+        return new CreatedAtActionResult(
+            actionName: nameof(GetCourseById),
+            controllerName: "APIv2",
+            routeValues: new { uuid = newCourse.Uuid },
+            value: newCourse
+        );
     }
 }
