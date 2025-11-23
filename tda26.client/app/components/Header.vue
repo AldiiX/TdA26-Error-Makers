@@ -74,11 +74,11 @@
                 <Menu :link-class="$style.link" />
 
                 <div :class="$style.btns" v-if="!loggedAccount">
-                    <NuxtLink to="/login">
+                    <NuxtLink :class="$style.linkBtn" to="/login">
                         <Button button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
 
-                    <NuxtLink to="/register">
+                    <NuxtLink :class="$style.linkBtn" to="/register">
                         <Button button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
                     </NuxtLink>
                 </div>
@@ -95,8 +95,8 @@
                             <div :class="$style.loggedAs">
                                 <div>
                                     <p>Přihlášen jako</p>
-                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
-                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}A</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}A</p>
                                 </div>
 
                                 <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
@@ -108,7 +108,7 @@
                                 <div :class="$style.accountInfo">
                                     <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="64" />
                                     <div :class="$style.accountText">
-                                        <p :class="$style.name">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
+                                        <p :class="$style.name">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
                                         <p :class="$style.email">{{ loggedAccount.email }}</p>
                                     </div>
                                 </div>
@@ -158,7 +158,7 @@
     transition-duration: 0.3s;
     border: 1px solid transparent;
     border-radius: 32px;
-
+    
     &:is(.scrolled) {
         width: 80%;
         box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.15);
@@ -227,10 +227,6 @@
                 gap: 12px;
                 position: relative;
                 transition: transform 0.2s ease;
-
-                &:hover {
-                    transform: scale(1.02);
-                }
 
                 >div {
                     display: grid;

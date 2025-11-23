@@ -120,7 +120,7 @@ const $style = useCssModule();
     border-radius: 16px;
     padding: 16px;
     min-width: 256px;
-    z-index: 1000;
+    z-index: 10;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.6);
     backdrop-filter: blur(8px);
