@@ -1,149 +1,37 @@
-﻿using MySqlConnector;
-using tda26.Server.Classes.Objects;
-using tda26.Server.Infrastructure;
-using tda26.Server.Services;
+﻿using Microsoft.EntityFrameworkCore;
+using tda26.Server.Data;
+using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
-public class CourseRepository(IDatabaseService db) : ICourseRepository 
-{
-    public async Task<Course?> GetByIdAsync(Guid uuid, CancellationToken ct = default)
-    {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null)
-            return null;
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            SELECT 
-                uuid,
-                name,
-                description,
-                created_at,
-                updated_at
-            FROM courses
-            WHERE uuid = @uuid;
-        ";
-        cmd.Parameters.AddWithValue("@uuid", uuid);
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        if (!await reader.ReadAsync(ct)) return null;
-        var course = MapCourseFromReader(reader);
-        return course;
+public class CourseRepository(AppDbContext db) : ICourseRepository {
+    public async Task<Course?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
+        return await db.Courses
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
 
-    public async Task<List<Course>> GetAllAsync(CancellationToken ct = default)
-    {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null)
-            return new List<Course>();
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-
-            SELECT 
-                uuid,
-                name,
-                description,
-                created_at,
-                updated_at
-            FROM courses;
-        ";
-        var courses = new List<Course>();
-        await using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (await reader.ReadAsync(ct))
-        {
-            var course = MapCourseFromReader(reader);
-            courses.Add(course);
-        }
-        return courses;
+    public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
+        return await db.Courses
+            .ToListAsync(ct);
     }
 
-    public async Task<Course?> CreateAsync(string name, string description, CancellationToken ct = default)
-    {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null)
-            return null;
-        
-        
-        
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
-            INSERT INTO courses (
-                uuid,
-                name,
-                description,
-                created_at,
-                updated_at
-            ) VALUES (
-                @uuid,
-                @name,
-                @description,
-                @created_at,
-                @updated_at
-            );
-            SELECT * FROM courses WHERE uuid = @uuid;
-        ";
-        cmd.Parameters.AddWithValue("@uuid", Guid.NewGuid());
-        cmd.Parameters.AddWithValue("@name", name);
-        cmd.Parameters.AddWithValue("@description", description);
-        cmd.Parameters.AddWithValue("@created_at", DateTime.Now);
-        cmd.Parameters.AddWithValue("@updated_at", DateTime.Now);
-        var result = await cmd.ExecuteReaderAsync(ct);
-        if (!await result.ReadAsync(ct)) return null;
-        var course = MapCourseFromReader(result);
-        return course;
+    public async Task CreateAsync(Course course, CancellationToken ct = default) {
+        db.Courses.Add(course);
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task<Course?> UpdateAsync(Guid uuid, string name, string description, CancellationToken ct = default) {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null) return null;
-
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText =
-            """
-            UPDATE courses SET 
-                name = @name,
-                description = @description,
-                updated_at = NOW()
-            WHERE uuid = @uuid;
-            SELECT * FROM courses WHERE uuid = @uuid;
-            """;
-
-        cmd.Parameters.AddWithValue("@uuid", uuid);
-        cmd.Parameters.AddWithValue("@name", name);
-        cmd.Parameters.AddWithValue("@description", description);
-
-        var result = await cmd.ExecuteReaderAsync(ct);
-        if (!await result.ReadAsync(ct)) return null;
-
-        var updatedCourse = MapCourseFromReader(result);
-        return updatedCourse;
+    public async Task UpdateAsync(Course course, CancellationToken ct = default) {
+        db.Courses.Update(course);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default) {
-        await using var conn = await db.GetOpenConnectionAsync(ct);
-        if (conn == null) return false;
-
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM courses WHERE uuid = @uuid;";
-
-        cmd.Parameters.AddWithValue("@uuid", uuid);
-        var affectedRows = await cmd.ExecuteNonQueryAsync(ct);
-        return affectedRows > 0;
+        var course = await GetByIdAsync(uuid, ct);
+        if (course == null) return false;
+        
+        db.Courses.Remove(course);
+        await db.SaveChangesAsync(ct);
+            
+        return true;
     }
-    
-    
-    
-    // mapovani objektu z readeru 
-    
-    public Course MapCourseFromReader(MySqlDataReader reader)
-    {
-        return new Course(
-            reader.GetGuid("uuid"),
-            reader.GetString("name"),
-            reader.GetString("description"),
-            reader.GetDateTime("created_at"),
-            reader.GetDateTime("updated_at"),
-            reader.GetStringOrNull("image_url")
-        );
-    }
-    
 }

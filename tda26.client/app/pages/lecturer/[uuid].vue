@@ -110,7 +110,7 @@
 
                     <div :class="$style.duo">
                         <div :class="$style.icon" style="--ico: url(/icons/user_circle.svg)"></div>
-                        <p>{{ new Date(lecturer.memberSince).toLocaleDateString() }}</p>
+                        <p>{{ new Date(lecturer.createdAt).toLocaleDateString() }}</p>
                     </div>
                 </div>
 

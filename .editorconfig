@@ -1,0 +1,31 @@
+
+[*]
+
+# Microsoft .NET properties
+csharp_indent_braces = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_members_in_object_initializers = false
+csharp_new_line_before_open_brace = accessors,control_blocks,events,indexers,properties
+csharp_preferred_modifier_order = public, async, protected, internal, file, new, private, abstract, virtual, sealed, override, static, extern, unsafe, volatile, readonly, required:suggestion
+
+# ReSharper properties
+resharper_blank_lines_after_block_statements = 0
+resharper_blank_lines_around_auto_property = 0
+resharper_braces_for_foreach = required
+resharper_braces_for_ifelse = required_for_multiline_statement
+resharper_csharp_keep_blank_lines_in_declarations = 100
+resharper_csharp_max_line_length = 499
+resharper_csharp_other_braces = end_of_line
+resharper_csharp_remove_blank_lines_near_braces_in_code = false
+resharper_csharp_remove_blank_lines_near_braces_in_declarations = false
+resharper_indent_preprocessor_if = do_not_change
+resharper_instance_members_qualify_declared_in = 
+resharper_keep_existing_attribute_arrangement = true
+resharper_parentheses_redundancy_style = remove
+resharper_place_accessorholder_attribute_on_same_line = true
+resharper_place_expr_method_on_single_line = true
+resharper_place_expr_property_on_single_line = true
+resharper_place_simple_embedded_statement_on_same_line = true
+resharper_place_simple_initializer_on_single_line = false
+resharper_wrap_before_primary_constructor_declaration_rpar = true
+resharper_wrap_object_and_collection_initializer_style = chop_always

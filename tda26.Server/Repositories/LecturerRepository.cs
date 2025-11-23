@@ -1,4 +1,4 @@
-﻿using tda26.Server.Classes.Objects;
+﻿using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
@@ -7,14 +7,20 @@ public class LecturerRepository(
 ) : ILecturerRepository {
 
     public async Task<Lecturer?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
-        var acc = await accounts.GetByIdAsync(uuid, ct);
+        var account = await accounts.GetByIdAsync(uuid, ct);
+        if (account is not Lecturer lecturer) return null;
 
-        return acc;
+        if (lecturer is { IsPublic: false }) return null;
+
+        return lecturer;
     }
 
     public async Task<List<Lecturer>> GetAllAsync(CancellationToken ct = default) {
-        var all = await accounts.GetAllAsync(ct);
-        var lecturers = all.OfType<Lecturer>().ToList();
-        return lecturers;
+        var allAccounts = (await accounts.GetAllAsync(ct)).Where(a => a is Lecturer l && l.IsPublic).Cast<Lecturer>().ToList();
+
+        // sortnuti podle createdAt
+        allAccounts.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
+
+        return allAccounts;
     }
 }

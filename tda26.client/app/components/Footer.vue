@@ -36,8 +36,12 @@
                             <a href="https://stanislavskudrna.cz" target="_blank"> Stanislav Škudrna</a>
                         </p>
                         <p>
-                            Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
-                            <a href="https://serhii.cz" target="_blank"> Serhii Yavorskyi</a>
+                          Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
+                          <a href="https://serhii.cz" target="_blank"> Serhii Yavorskyi</a>
+                        </p>
+                        <p>
+                          Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
+                          <a href="https://jakubsokol.cz" target="_blank"> Jakub Sokol</a>
                         </p>
                         <p>
                             Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;

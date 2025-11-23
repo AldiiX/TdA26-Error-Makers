@@ -23,7 +23,8 @@ export interface Lecturer {
     emails: string[],
     tags: string[],
     location: string | null,
-    memberSince: string,
+    createdAt: string,
+    updatedAt: string,
 }
 
 export interface Account extends Lecturer {
