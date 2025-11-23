@@ -130,4 +130,4 @@ Pro konzistentní historii používáme tyto prefixy:
 
 ## Škola
 
-> Soutěžíme za [Střední Školu EDUCHEM, a.s.](https://educhem.cz) – děkujeme za podporu 🙌
+> Soutěžíme za [Střední Školu EDUCHEM, a.s.](https://educhem.cz) – děkujeme za podporu :)
