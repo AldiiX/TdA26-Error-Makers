@@ -20,19 +20,19 @@
   <table>
     <tr>
       <td align="center" width="240">
-        <img src="https://avatars.githubusercontent.com/u/66065731?v=4" width="96" style="border-radius: 50%;" alt="Stanislav Škudrna" />
+        <img src="https://avatars.githubusercontent.com/u/66065731?v=4" width="96" style="border-radius: 100%;" alt="Stanislav Škudrna" />
         <p></p>
         <a href="https://stanislavskudrna.cz"><b>AldiiX</b></a><br />
         <sub>Stanislav Škudrna<br />Fullstack · DevOps</sub>
       </td>
       <td align="center" width="240">
-        <img src="https://cloud0.emsio.cz/public/avatars/38d32c1d-f592-4dd1-8238-3ac14fb7952e.png" width="96" style="border-radius: 50%;" alt="Serhii Yavorskyi" />
+        <img src="https://cloud0.emsio.cz/public/avatars/38d32c1d-f592-4dd1-8238-3ac14fb7952e.png" width="96" style="border-radius: 100%;" alt="Serhii Yavorskyi" />
         <p></p>
         <a href="https://serhii.cz"><b>WezeAnonym</b></a><br />
         <sub>Serhii Yavorskyi<br />Fullstack · UI/UX</sub>
       </td>
       <td align="center" width="240">
-        <img src="https://cloud0.emsio.cz/public/avatars/11c27d7cf633d7058554aba6b6941caa.webp" width="96" style="border-radius: 50%;" alt="Serhii Yavorskyi" />
+        <img src="https://cloud0.emsio.cz/public/avatars/11c27d7cf633d7058554aba6b6941caa.webp" width="96" style="border-radius: 100%;" alt="Serhii Yavorskyi" />
         <p></p>
         <a href="https://jakubsokol.cz"><b>Jakooob</b></a><br />
         <sub>Jakub Sokol<br />Fullstack · Architecture</sub>
