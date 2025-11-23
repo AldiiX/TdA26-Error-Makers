@@ -43,10 +43,6 @@
                           Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
                           <a href="https://jakubsokol.cz" target="_blank"> Jakub Sokol</a>
                         </p>
-                        <p>
-                            Fullstack:&nbsp;&nbsp;&nbsp;&nbsp;
-                            <a href="https://jakooob.dev" target="_blank"> Jakub Sokol</a>
-                        </p>
                     </div>
                 </div>
             </div>
