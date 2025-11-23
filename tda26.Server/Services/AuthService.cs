@@ -27,7 +27,7 @@ public class AuthService(
             Username = acc.Username,
             Password = acc.Password,
             CreatedAt = acc.CreatedAt,
-            UpdatedAt = acc.UpdatedAt
+            UpdatedAt = acc.UpdatedAt,
         };
 
         Console.WriteLine("Login attempt for json: " + json);
@@ -57,7 +57,7 @@ public class AuthService(
             Username = acc.Username,
             Password = acc.Password,
             CreatedAt = acc.CreatedAt,
-            UpdatedAt = acc.UpdatedAt
+            UpdatedAt = acc.UpdatedAt,
         };
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
         return acc;
