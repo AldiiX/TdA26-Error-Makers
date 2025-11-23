@@ -12,6 +12,7 @@ public class Quiz : IAuditable {
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
     
     public Guid CourseUuid { get; set; }
+
     [ForeignKey("CourseUuid")]
     public Course Course { get; set; } = null!;
 }

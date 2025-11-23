@@ -2,8 +2,7 @@
 
 namespace tda26.Server.Repositories;
 
-public interface ICourseRepository
-{
+public interface ICourseRepository {
     Task<Course?> GetByIdAsync(Guid uuid, CancellationToken ct = default);
     
     Task<List<Course>> GetAllAsync(CancellationToken ct = default);
