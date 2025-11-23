@@ -2,23 +2,39 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps<{
-    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    trigger?: 'click' | 'hover';
 }>();
 
 const isOpen = ref(false);
 const popoverRef = ref<HTMLDivElement | null>(null);
 const triggerRef = ref<HTMLDivElement | null>(null);
+const hoverTimeout = ref<number | null>(null);
 
-const togglePopover = () => {
-    isOpen.value = !isOpen.value;
+const openPopover = () => {
+    if (hoverTimeout.value) {
+        clearTimeout(hoverTimeout.value);
+        hoverTimeout.value = null;
+    }
+    isOpen.value = true;
 };
 
 const closePopover = () => {
     isOpen.value = false;
 };
 
+const closePopoverDelayed = () => {
+    hoverTimeout.value = window.setTimeout(() => {
+        closePopover();
+    }, 200);
+};
+
+const togglePopover = () => {
+    isOpen.value = !isOpen.value;
+};
+
 const handleClickOutside = (event: MouseEvent) => {
-    if (popoverRef.value && triggerRef.value) {
+    if (props.trigger === 'click' && popoverRef.value && triggerRef.value) {
         const target = event.target as Node;
         if (!popoverRef.value.contains(target) && !triggerRef.value.contains(target)) {
             closePopover();
@@ -26,12 +42,35 @@ const handleClickOutside = (event: MouseEvent) => {
     }
 };
 
+const handleMouseEnter = () => {
+    if (props.trigger === 'hover') {
+        openPopover();
+    }
+};
+
+const handleMouseLeave = () => {
+    if (props.trigger === 'hover') {
+        closePopoverDelayed();
+    }
+};
+
+const handleClick = () => {
+    if (props.trigger === 'click' || !props.trigger) {
+        togglePopover();
+    }
+};
+
 onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
+    if (props.trigger === 'click' || !props.trigger) {
+        document.addEventListener('click', handleClickOutside);
+    }
 });
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    if (hoverTimeout.value) {
+        clearTimeout(hoverTimeout.value);
+    }
 });
 
 const $style = useCssModule();
@@ -42,7 +81,9 @@ const $style = useCssModule();
         <div 
             ref="triggerRef" 
             :class="$style.trigger"
-            @click="togglePopover"
+            @click="handleClick"
+            @mouseenter="handleMouseEnter"
+            @mouseleave="handleMouseLeave"
         >
             <slot name="trigger"></slot>
         </div>
@@ -52,6 +93,8 @@ const $style = useCssModule();
                 v-if="isOpen"
                 ref="popoverRef"
                 :class="[$style.popover, $style[position || 'bottom-right']]"
+                @mouseenter="handleMouseEnter"
+                @mouseleave="handleMouseLeave"
             >
                 <slot name="content"></slot>
             </div>

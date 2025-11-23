@@ -35,10 +35,17 @@
         themeCookie.value = newTheme;
     }
 
-    function logout() {
-        // TODO: Implement actual logout logic
-        loggedAccount.value = null;
-        navigateTo('/');
+    async function logout() {
+        try {
+            await $fetch('/api/v2/auth/logout', {
+                method: 'POST'
+            });
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            loggedAccount.value = null;
+            navigateTo('/');
+        }
     }
 
     onMounted(() => {
@@ -83,7 +90,7 @@
                         </NuxtLink>
                     </div>
 
-                    <Popover position="bottom-right">
+                    <Popover position="bottom-right" trigger="hover">
                         <template #trigger>
                             <div :class="$style.loggedAs">
                                 <div>
