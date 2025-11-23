@@ -6,6 +6,9 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
+    materials: Materials[];
+    quizzes: Quiz[];
+    feed: FeedPost[];
 }
 
 export interface Lecturer {
@@ -27,8 +30,42 @@ export interface Lecturer {
     updatedAt: string,
 }
 
-export interface Account extends Lecturer {
-    username: string
+export interface Account extends Lecturer{
+    username: string,
+}
+
+export interface Materials {
+    uuid: string,
+    type: MaterialType,
+    courseUuid: string,
+    name: string,
+    description: string,
+    fileUrl: string,
+    createdAt: string,
+    updatedAt: string,
+}
+
+export enum MaterialType {
+    VIDEO = "video",
+    DOCUMENT = "document",
+    AUDIO = "audio",
+    IMAGE = "image"
+}
+
+export interface Quiz {
+    uuid: string,
+    courseUuid: string,
+    title: string,
+    questionCount: string,
+    createdAt: string,
+    updatedAt: string,
+}
+
+export interface FeedPost {
+    uuid: string,
+    createdAt: string,
+    updatedAt: string,
+    courseUuid: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];
