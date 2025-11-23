@@ -73,19 +73,17 @@ public class APIv2(
         return new OkObjectResult(all);
     }
 
+    #if DEBUG
     [HttpPost("lecturers")]
-    public async Task<IActionResult> CreateLecturer([FromBody] CreateLecturerRequest body, CancellationToken ct)
-    {
+    public async Task<IActionResult> CreateLecturer([FromBody] CreateLecturerRequest body, CancellationToken ct) {
         var existingAccount = await db.Accounts
             .AnyAsync(a => a.Username == body.Username, ct);
         
-        if (existingAccount)
-        {
+        if (existingAccount) {
             return new ConflictObjectResult(new { message = "Username already exists." });
         }
 
-        var newLecturer = new Lecturer
-        {
+        var newLecturer = new Lecturer {
             Username = body.Username!,
             Password = Utilities.EncryptPassword(body.Password!),
             CreatedAt = DateTime.UtcNow,
@@ -115,6 +113,8 @@ public class APIv2(
             value: newLecturer
         );
     }
+    #endif
+
 
     [HttpGet("lecturers/{uuid:guid}")]
     public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct) {

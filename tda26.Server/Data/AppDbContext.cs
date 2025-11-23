@@ -29,4 +29,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         SetAuditProperties();
         return base.SaveChangesAsync(cancellationToken);
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Lecturer>()
+            .Property(l => l.IsPublic)
+            .IsRequired()
+            .HasDefaultValue(true);
+    }
 }
