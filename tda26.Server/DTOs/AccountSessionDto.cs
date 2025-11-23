@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using tda26.Server.Data.Models;
 
 namespace tda26.Server.DTOs;
 

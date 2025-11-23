@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
-using tda26.Server.Infrastructure;
-using tda26.Server.Services;
 
 namespace tda26.Server.Repositories;
 

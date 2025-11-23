@@ -1,9 +1,6 @@
-﻿using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using tda26.Server.DTOs.v1;
-using tda26.Server.DTOs.v2;
 using tda26.Server.Repositories;
-using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v1.CreateCourseRequest;
 
 namespace tda26.Server.API;

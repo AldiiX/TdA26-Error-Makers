@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using BCrypt.Net;
 
-namespace tda26.Server.Classes;
+namespace tda26.Server.Infrastructure;
 
 
 

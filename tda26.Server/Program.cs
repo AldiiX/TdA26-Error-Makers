@@ -5,8 +5,8 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using MySqlConnector;
 using StackExchange.Redis;
-using tda26.Server.Classes;
 using tda26.Server.Data;
+using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 
@@ -60,8 +60,7 @@ public static class Program {
         });
         
         // Primary Connection Configuration
-        var primaryConnectionStringBuilder = new MySqlConnectionStringBuilder
-        {
+        var primaryConnectionStringBuilder = new MySqlConnectionStringBuilder {
             Server = ENV["DATABASE_IP"],
             UserID = "tda26",
             Password = ENV["DATABASE_PASSWORD"],
@@ -74,8 +73,7 @@ public static class Program {
         };
 
         // Fallback Connection Configuration
-        var fallbackConnectionStringBuilder = new MySqlConnectionStringBuilder
-        {
+        var fallbackConnectionStringBuilder = new MySqlConnectionStringBuilder {
             Server = "localhost",
             UserID = "tda26",
             Password = "tda26",
@@ -87,29 +85,25 @@ public static class Program {
             ConnectionTimeout = 10
         };
 
-        List<(string Name, string ConnectionString)> potentialConnections = new()
-        {
+        List<(string Name, string ConnectionString)> potentialConnections = [
             ("Primary", primaryConnectionStringBuilder.ConnectionString),
             ("Fallback", fallbackConnectionStringBuilder.ConnectionString)
-        };
+        ];
 
         string? workingConnectionString = null;
         string? workingConnectionName = null;
 
-        foreach (var (name, cs) in potentialConnections)
-        {
+        foreach (var (name, cs) in potentialConnections) {
             // Mask password in logs
             var displayCs = cs.Contains("Password=") 
                 ? cs.Substring(0, cs.IndexOf("Password=", StringComparison.Ordinal) + 9) + "****" 
                 : cs;
 
-            try
-            {
+            try {
                 Console.WriteLine($"Attempting connection to {name} database...");
                 var testDataSource = new MySqlDataSourceBuilder(cs).Build();
                 
-                using (var connection = testDataSource.CreateConnection())
-                {
+                using (var connection = testDataSource.CreateConnection()) {
                     connection.OpenAsync();
                 }
 
@@ -118,14 +112,13 @@ public static class Program {
                 Console.WriteLine($"Successfully connected to {name} database: {displayCs}");
                 break;
             }
-            catch (Exception ex)
-            {
+
+            catch (Exception ex) {
                 Console.WriteLine($"Failed to connect to {name} database ({displayCs}). Error: {ex.Message}");
             }
         }
 
-        if (workingConnectionString == null)
-        {
+        if (workingConnectionString == null) {
             Console.WriteLine("---------------------------------------------");
             throw new InvalidOperationException("CRITICAL: Failed to connect to both primary and fallback databases. Application startup aborted.");
         }

@@ -19,4 +19,6 @@ public class CreateLecturerRequest {
     public ICollection<string> MobileNumbers { get; set; } = new List<string>();
     public ICollection<string> Emails { get; set; } = new List<string>();
     public ICollection<string> Tags { get; set; } = new List<string>();
+
+    public bool IsPublic { get; set; } = true;
 }
