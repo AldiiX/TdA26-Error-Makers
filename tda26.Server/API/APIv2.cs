@@ -75,7 +75,12 @@ public class APIv2(
         return Ok(obj);
     }
 
-
+    [HttpPost("auth/logout")]
+    public async Task<IActionResult> Logout(CancellationToken ct) {
+        await auth.ReAuthAsync(ct);
+        return Ok(new { message = "Logged out successfully." });
+    }
+    
 
     // lecturers
     [HttpGet("lecturers")]
