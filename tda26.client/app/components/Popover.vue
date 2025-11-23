@@ -4,6 +4,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 const props = defineProps<{
     position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     trigger?: 'click' | 'hover';
+    wrapperClass?: string;
 }>();
 
 const isOpen = ref(false);
@@ -77,7 +78,7 @@ const $style = useCssModule();
 </script>
 
 <template>
-    <div :class="$style.popoverWrapper">
+    <div :class="$style.popoverWrapper + (props.wrapperClass ? ' ' + props.wrapperClass : '')">
         <div 
             ref="triggerRef" 
             :class="$style.trigger"
