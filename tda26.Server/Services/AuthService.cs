@@ -27,6 +27,7 @@ public class AuthService(
             Username = acc.Username,
             Password = acc.Password,
             CreatedAt = acc.CreatedAt,
+            UpdatedAt = acc.UpdatedAt
         };
 
         Console.WriteLine("Login attempt for json: " + json);
@@ -50,7 +51,15 @@ public class AuthService(
         if (acc == null || acc.Password != sessionAcc.Password) return null;
 
         http.HttpContext!.Items["loggedaccount"] = acc;
-        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(acc));
+        // Keep session data consistent by storing AccountSessionDto instead of full Account
+        var sessionDto = new AccountSessionDto {
+            Uuid = acc.Uuid,
+            Username = acc.Username,
+            Password = acc.Password,
+            CreatedAt = acc.CreatedAt,
+            UpdatedAt = acc.UpdatedAt
+        };
+        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
         return acc;
     }
 
@@ -93,12 +102,7 @@ public class AuthService(
         if (http.HttpContext == null) return null;
         if (!http.HttpContext.Items.ContainsKey("loggedaccount")) return await ReAuthAsync(ct);
 
-        var str = http.HttpContext?.Session.GetString("loggedaccount");
-        if (string.IsNullOrEmpty(str)) return null;
-
-        var acc = JsonSerializer.Deserialize<Account>(str, JsonSerializerOptions.Web);
-        if (acc != null) return acc;
-
+        // Session always contains AccountSessionDto, so we need to re-auth to get full Account
         return await ReAuthAsync(ct);
     }
 }
