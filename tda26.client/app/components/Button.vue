@@ -18,6 +18,7 @@
         buttonStyle: "primary",
         accentColor: 'primary',
         background: null,
+        textColor: null,
         loading: false,
         disabled: false,
     });
@@ -35,7 +36,7 @@
             :style="{
                 '--color': accentColor === 'primary' ? 'var(--accent-color-primary)' : accentColor === 'secondary' ? 'var(--accent-color-secondary-theme)' : accentColor,
                 '--bg': accentColor === 'gradient' ? 'linear-gradient(60deg, var(--accent-color-primary), var(--accent-color-secondary-theme))' : background ?? accentColor,
-                '--txc': (textColor ?? accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' || accentColor === 'gradient' ? 'var(--accent-color-secondary-theme-text)' : 'inherit' ),
+                '--txc': (textColor) ?? (accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' || accentColor === 'gradient' ? 'var(--accent-color-secondary-theme-text)' : 'inherit'),
                 ...style
             }">
 

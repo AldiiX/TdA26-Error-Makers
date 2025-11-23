@@ -172,25 +172,32 @@
 
 
 
-.blob{
-    mask-image: url("../../public/icons/blob_curses1.svg");
-    mask-size: 100vw;
-    mask-position: top;
-    mask-repeat: no-repeat;
+.blob {
     width: 100vw;
-    aspect-ratio: 16/9;
-    background:
-        linear-gradient(to top,
-            rgba(255, 255, 255, 0.6),
-            rgba(255, 255, 255, 0)
-        ),
-        linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
+    height: 100vh;
     position: absolute;
-    top: -25vh;
+    //top: 0;
+    left: 0;
     z-index: -1;
-    
     animation: sdoksapkdf 1.5s forwards ease;
+    top: -25vh;
+
+    // tady blob jako celek postupne mizi do pruhledna
+    mask-image: linear-gradient(to bottom, #000 20%, transparent 85%);
+
+    &::before {
+        position: absolute;
+        content: '';
+        inset: 0;
+        mask-image: url("../../public/icons/blob_curses1.svg");
+        mask-size: cover;
+        mask-position: top;
+        mask-repeat: no-repeat;
+        background: linear-gradient(60deg, var(--accent-color-secondary-transparent-03), var(--accent-color));
+        z-index: 0;
+    }
 }
+
 
 .blob1 {
     animation: asdsasafasfasfhhdmg1 3s forwards ease;

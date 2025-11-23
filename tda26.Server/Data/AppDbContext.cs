@@ -33,9 +33,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Lecturer>()
+        /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)
             .IsRequired()
-            .HasDefaultValue(true);
+            .HasDefaultValue(true);*/
     }
 }

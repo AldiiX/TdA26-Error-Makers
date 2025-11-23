@@ -135,15 +135,6 @@
                 line-height: clamp(0px, 5.5vw, 104px);
                 position: relative;
                 color: var(--text-color-primary);
-
-                //&::before {
-                //    content: 'X O O X X O';
-                //    position: absolute;
-                //    bottom: 100%;
-                //    left: 0;
-                //    font-size: clamp(0px, 1.5vw, 32px);
-                //    color: #ff7575;
-                //}
             }
 
             p {
@@ -165,7 +156,8 @@
                 display: flex;
                 gap: 1vw;
                 margin-bottom: 1vw;
-
+                color: unset;
+                
                 .btn{
                     font-size: clamp(0px, 1.5vw, 20px);
                     padding: 0.8vw 2vw;
@@ -199,7 +191,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            //animation: ospfpodskfposdkfpsok 1s forwards ease;
 
             >.left {
                 h1{
@@ -208,14 +199,7 @@
                     line-height: 48px;
                     position: relative;
 
-                    //&::before {
-                    //    content: "X O O X X O";
-                    //    position: absolute;
-                    //    bottom: 100%;
-                    //    left: 0;
-                    //    font-size: 16px;
-                    //    color: #ff7575;
-                    //}
+                    
                 }
 
                 p {

@@ -3,10 +3,20 @@
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
-    import type {Account} from "#shared/types";
+    import type {Account, WebTheme} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
+    import Popover from "~/components/Popover.vue";
+    
     const $style = useCssModule();
+    
+    const theme = useState<WebTheme>('theme', () => 'light');
+    const themeCookie = useCookie<WebTheme>('theme', {
+        default: () => 'light',
+        sameSite: 'lax',
+        path: '/'
+    });
 
+    const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
     const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
     function ouasihfdusifhi() {
@@ -17,6 +27,25 @@
             header.classList.add($style.scrolled)
         } else {
             header.classList.remove($style.scrolled)
+        }
+    }
+
+    function toggleTheme() {
+        const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
+        theme.value = newTheme;
+        themeCookie.value = newTheme;
+    }
+
+    async function logout() {
+        try {
+            await $fetch('/api/v2/auth/logout', {
+                method: 'POST'
+            });
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            loggedAccount.value = null;
+            navigateTo('/');
         }
     }
 
@@ -42,36 +71,77 @@
                 <div :class="[$style['Header-Logo'], { active: $style.isActive }]" @click="navigate"></div>
             </NuxtLink>
 
-            <div :class="[$style['Header-Menu'], { locked: $style.isTransitioning }]">
-                <Menu :link-class="$style.link" />
+            <div :class="[$style.right, { locked: $style.isTransitioning }]">
+                <div :class="[$style.menu]">
+                    <Menu :link-class="$style.link" />
+                </div>
 
+                <!-- neprihlaseny uzivatel -->
                 <div :class="$style.btns" v-if="!loggedAccount">
-                    <NuxtLink to="/login">
-                        <Button button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
+                    <NuxtLink :class="$style.linkBtn" to="/login">
+                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
 
-                    <NuxtLink to="/register">
-                        <Button button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
+                    <NuxtLink :class="$style.linkBtn" to="/register">
+                        <Button text-color="var(--accent-color-secondary-theme-text)" button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
                     </NuxtLink>
                 </div>
 
+                <!-- prihlaseny uzivatel -->
                 <template v-else>
                     <div :class="$style.btns">
-                        <NuxtLink to="/dashboard">
+                        <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>
                     </div>
 
-                    <div :class="$style.loggedAs">
-                        <div>
-                            <p>Přihlášen jako</p>
-                            <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
-                            <p :class="[$style.name, $style.shadow]">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}A</p>
-                        </div>
+                    <Popover position="bottom-right" trigger="hover" :wrapper-class="$style.pwr">
+                        <template #trigger>
+                            <div :class="$style.loggedAs">
+                                <div>
+                                    <p>Přihlášen jako</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}A</p>
+                                </div>
 
-                        <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
-                    </div>
+                                <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
+                            </div>
+                        </template>
+                        
+                        <template #content>
+                            <div :class="$style.popoverContent">
+                                <div :class="$style.accountInfo">
+                                    <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="64" />
+                                    <div :class="$style.accountText">
+                                        <p :class="$style.name">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                        <p v-if='loggedAccount?.emails?.length ?? 0 > 0' :class="$style.email">{{ loggedAccount?.emails?.[0] }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div :class="$style.divider"></div>
+                                
+                                <div :class="$style.popoverActions">
+                                    <button :class="$style.actionButton" @click="toggleTheme">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.themeIcon]"></div>
+                                        </div>
+                                        <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
+                                    </button>
+                                    
+                                    <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.logoutIcon]"></div>
+                                        </div>
+                                        <p>Odhlásit se</p>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </Popover>
                 </template>
+
+                <!-- mobile menu -->
+                <div :class="$style.smallDevice" @click="mobileMenuOpened = true"></div>
             </div>
 
         </div>
@@ -83,6 +153,8 @@
 </template>
 
 <style module lang="scss">
+@use "../app.scss";
+
 .header {
     position: fixed;
     background: none;
@@ -134,7 +206,7 @@
             transition-duration: 0.3s;
         }
 
-        >.Header-Menu {
+        >.right {
             position: absolute;
             display: flex;
             gap: 40px;
@@ -146,9 +218,79 @@
             right: 0;
             transform: translateY(-50%);
 
+            .menu {
+                display: flex;
+                gap: 40px;
+                align-items: center;
+                justify-content: center;
+
+                >.link {
+                    position: relative;
+                    text-decoration: none;
+                    font-weight: 1000;
+                    color: var(--text-color-primary);
+                    user-select: none;
+                    transition-duration: 0.3s;
+
+                    &:is(:global(.router-link-active)) {
+                        pointer-events: none;
+                        //color: var(--accent-color-primary);
+
+                        &::after {
+                            content: "";
+                            position: absolute;
+                            left: 0;
+                            bottom: -4px;
+                            width: 100%;
+                            height: 2px;
+                            background-color: var(--accent-color-primary);
+                            transform: scaleX(1);
+                            transition: transform 0.3s ease;
+                            animation: oksfodsk 0.3s forwards ease;
+                            transform-origin: left;
+
+                            @keyframes oksfodsk {
+                                from {
+                                    transform: scaleX(0);
+                                }
+                                to {
+                                    transform: scaleX(1);
+                                }
+                            }
+                        }
+                    }
+
+                    &::after {
+                        content: "";
+                        position: absolute;
+                        left: 0;
+                        bottom: -4px;
+                        width: 100%;
+                        height: 2px;
+                        background-color: var(--accent-color-secondary-theme);
+                        transform: scaleX(0);
+                        transform-origin: right;
+                        transition: transform 0.3s ease;
+                    }
+
+                    &:hover::after {
+                        transform: scaleX(1);
+                        transform-origin: left;
+                    }
+                }
+            }
+
             .btns {
                 display: flex;
                 gap: 16px;
+
+                >.linkBtn {
+                    color: unset;
+
+                    button{
+                        text-decoration: none;
+                    }
+                }
             }
 
             .loggedAs {
@@ -156,6 +298,7 @@
                 align-items: center;
                 gap: 12px;
                 position: relative;
+                transition: transform 0.2s ease;
 
                 >div {
                     display: grid;
@@ -181,86 +324,125 @@
                 }
             }
 
+            .popoverContent {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .accountInfo {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+
+                .accountText {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+
+                    p {
+                        margin: 0;
+
+                        &.name {
+                            font-weight: 700;
+                            font-size: 18px;
+                            color: var(--text-color-primary);
+                        }
+
+                        &.email {
+                            font-size: 14px;
+                            color: var(--text-color-secondary);
+                        }
+                    }
+                }
+            }
+
+            .divider {
+                height: 1px;
+                background-color: rgb(from var(--text-color-primary) r g b / 0.1);
+                width: 100%;
+            }
+
+            .popoverActions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .actionButton {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background-color: transparent;
+                border: 1px solid rgb(from var(--text-color-primary) r g b / 0.1);
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                color: var(--text-color-primary);
+                font-size: 15px;
+                font-weight: 600;
+                width: 100%;
+
+                &:hover {
+                    background-color: rgb(from var(--accent-color-primary) r g b / 0.1);
+                    border-color: var(--accent-color-primary);
+                    transform: translateY(-2px);
+                }
+
+                &.logoutButton {
+                    &:hover {
+                        background-color: rgba(220, 38, 38, 0.1);
+                        border-color: rgb(220, 38, 38);
+                    }
+                }
+
+                .iconWrapper {
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .icon {
+                    width: 20px;
+                    height: 20px;
+                    mask-size: contain;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    background-color: var(--text-color-primary);
+                    transition: background-color 0.2s ease;
+
+                    &.themeIcon {
+                        mask-image: var(--theme-icon);
+                    }
+
+                    &.logoutIcon {
+                        mask-image: url('/icons/logout.svg');
+                    }
+                }
+
+                p {
+                    margin: 0;
+                    font-weight: 600;
+                }
+            }
+
             &:is(.locked) {
                 pointer-events: none;
             }
 
-            >.link {
-                position: relative;
-                text-decoration: none;
-                font-weight: 1000;
-                color: var(--text-color-primary);
-                user-select: none;
-                transition-duration: 0.3s;
-
-                &:is(:global(.router-link-active)) {
-                    pointer-events: none;
-                    //color: var(--accent-color-primary);
-
-                    &::after {
-                        content: "";
-                        position: absolute;
-                        left: 0;
-                        bottom: -4px;
-                        width: 100%;
-                        height: 2px;
-                        background-color: var(--accent-color-primary);
-                        transform: scaleX(1);
-                        transition: transform 0.3s ease;
-                        animation: oksfodsk 0.3s forwards ease;
-                        transform-origin: left;
-
-                        @keyframes oksfodsk {
-                            from {
-                                transform: scaleX(0);
-                            }
-                            to {
-                                transform: scaleX(1);
-                            }
-                        }
-                    }
-                }
-
-                &::after {
-                    content: "";
-                    position: absolute;
-                    left: 0;
-                    bottom: -4px;
-                    width: 100%;
-                    height: 2px;
-                    background-color: var(--accent-color-secondary-theme);
-                    transform: scaleX(0);
-                    transform-origin: right;
-                    transition: transform 0.3s ease;
-                }
-
-                &:hover::after {
-                    transform: scaleX(1);
-                    transform-origin: left;
-                }
+            .smallDevice {
+                width: 64px;
+                height: 64px;
+                background-color: var(--text-color-primary);
+                mask-image: url("../../public/icons/menu.svg");
+                mask-size: 24px;
+                mask-position: right center;
+                mask-repeat: no-repeat;
+                display: none;
             }
-        }
-    }
-
-    >.smallDevice{
-        display: none;
-        width: 50px;
-        height: 50px;
-        position: absolute;
-        right: 5%;
-        top: 50%;
-        transform: translateY(-50%);
-        //mask-image: url(../../public/images/svg/menu.svg);
-        mask-size: 90%;
-        mask-position: center;
-        mask-repeat: no-repeat;
-        background-color: var(--text-color);
-        cursor: pointer;
-        transition-duration: 0.3s;
-
-        &:hover {
-            background-color: var(--color-gray) !important;
-            transition-duration: 0.3s;
         }
     }
 
@@ -281,31 +463,66 @@
     }
 }
 
-@media screen and (min-width: 600px) and (max-width: 960px) {
-    .header{
-        >.flex {
-            display: none;
-        }
-        >.smallDevice {
-            display: unset;
-        }
-        >.Header-Logo-Small {
-            display: grid;
+@media screen and (max-width: app.$desktopBreakpoint) and (min-width: app.$tabletBreakpoint) {
+
+}
+
+@media screen and (max-width: app.$tabletBreakpoint) and (min-width: app.$mobileBreakpoint) {
+    .header {
+        .flex {
+            .right {
+                gap: 0;
+
+                .menu, .btns {
+                    display: none;
+                }
+
+                .smallDevice {
+                    display: block;
+                }
+            }
         }
     }
 }
 
-@media screen and (max-width: 600px) {
-    header{
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .header {
+        .flex {
+            .right {
+                gap: 0;
 
-        >.flex {
-            display: none;
+                .menu, .btns, .pwr {
+                    display: none;
+                }
+
+                .smallDevice {
+                    display: block;
+                }
+            }
         }
-        >.smallDevice {
-            display: unset;
-        }
-        >.Header-Logo-Small {
-            display: grid;
+    }
+}
+
+
+
+
+// specificky sirky stranky
+
+// odstraneni menu z headeru pokud se to prekryva s logem
+@media screen and (max-width: 1200px) and (min-width: app.$tabletBreakpoint) {
+    .header {
+        .flex {
+            .right {
+                gap: 0;
+
+                .menu, .btns {
+                    display: none;
+                }
+
+                .smallDevice {
+                    display: block;
+                }
+            }
         }
     }
 }
