@@ -1,10 +1,12 @@
 using dotenv.net;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using MySqlConnector;
 using StackExchange.Redis;
 using tda26.Server.Classes;
+using tda26.Server.Data;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 
@@ -56,6 +58,93 @@ public static class Program {
             options.Cookie.MaxAge = TimeSpan.FromDays(365);
             options.Cookie.Name = "tda26_session";
         });
+        
+        // Primary Connection Configuration
+        var primaryConnectionStringBuilder = new MySqlConnectionStringBuilder
+        {
+            Server = ENV["DATABASE_IP"],
+            UserID = "tda26",
+            Password = ENV["DATABASE_PASSWORD"],
+            Database = ENV["DATABASE_DBNAME"],
+            Pooling = true,
+            MaximumPoolSize = 300,
+            AllowUserVariables = true,
+            UseAffectedRows = false,
+            ConnectionTimeout = 10
+        };
+
+        // Fallback Connection Configuration
+        var fallbackConnectionStringBuilder = new MySqlConnectionStringBuilder
+        {
+            Server = "localhost",
+            UserID = "tda26",
+            Password = "tda26",
+            Database = "tda26",
+            Pooling = true,
+            MaximumPoolSize = 300,
+            AllowUserVariables = true,
+            UseAffectedRows = false,
+            ConnectionTimeout = 10
+        };
+
+        List<(string Name, string ConnectionString)> potentialConnections = new()
+        {
+            ("Primary", primaryConnectionStringBuilder.ConnectionString),
+            ("Fallback", fallbackConnectionStringBuilder.ConnectionString)
+        };
+
+        string? workingConnectionString = null;
+        string? workingConnectionName = null;
+
+        foreach (var (name, cs) in potentialConnections)
+        {
+            // Mask password in logs
+            var displayCs = cs.Contains("Password=") 
+                ? cs.Substring(0, cs.IndexOf("Password=", StringComparison.Ordinal) + 9) + "****" 
+                : cs;
+
+            try
+            {
+                Console.WriteLine($"Attempting connection to {name} database...");
+                var testDataSource = new MySqlDataSourceBuilder(cs).Build();
+                
+                using (var connection = testDataSource.CreateConnection())
+                {
+                    connection.OpenAsync();
+                }
+
+                workingConnectionString = cs;
+                workingConnectionName = name;
+                Console.WriteLine($"Successfully connected to {name} database: {displayCs}");
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to {name} database ({displayCs}). Error: {ex.Message}");
+            }
+        }
+
+        if (workingConnectionString == null)
+        {
+            Console.WriteLine("---------------------------------------------");
+            throw new InvalidOperationException("CRITICAL: Failed to connect to both primary and fallback databases. Application startup aborted.");
+        }
+
+        Console.WriteLine($"--- Configuration using the {workingConnectionName} database. ---");
+
+        builder.Services.AddSingleton(sp => new MySqlDataSourceBuilder(workingConnectionString).Build());
+
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseMySql(
+                workingConnectionString,
+                ServerVersion.AutoDetect(workingConnectionString),
+                mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null
+                )
+            )
+        );
 
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
         builder.Services.AddControllers();
@@ -65,24 +154,7 @@ public static class Program {
         builder.Services.AddOpenApi();
         builder.Services.AddHttpClient();
 
-
-        // databaze source service
-        builder.Services.AddKeyedSingleton<MySqlDataSource>("main", (sp, key) => {
-            // emsio data source
-            var cs = $"server={ENV["DATABASE_IP"]};user id={ENV["DATABASE_DBNAME"]};password={ENV["DATABASE_PASSWORD"]};database={ENV["DATABASE_DBNAME"]};pooling=true;Max Pool Size=300;";
-            var dsb = new MySqlDataSourceBuilder(cs);
-            return dsb.Build();
-        });
-
-        builder.Services.AddKeyedSingleton<MySqlDataSource>("fallback", (sp, key) => {
-            // fallback data source (container db)
-            const string cs = $"server=localhost:3306;user id=tda26;password=tda26;database=tda26;pooling=true;Max Pool Size=300;";
-            var dsb = new MySqlDataSourceBuilder(cs);
-            return dsb.Build();
-        });
-
         // repozitare a service
-        builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
         builder.Services.AddScoped<ICourseRepository, CourseRepository>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IAccountRepository, AccountRepository>();

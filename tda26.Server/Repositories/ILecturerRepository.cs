@@ -1,4 +1,4 @@
-using tda26.Server.Classes.Objects;
+﻿using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
