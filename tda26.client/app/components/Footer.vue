@@ -11,6 +11,7 @@
                     <div :class="$style.logo"></div>
                 </div>
                 <div :class="$style.right">
+                        
                     <div :class="$style.navigation">
                         <p :class="$style.upper">Navigace</p>
 
@@ -55,6 +56,9 @@
 </template>
 
 <style module lang="scss">
+
+@use "../app" as app;
+
 .footer {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.2);
     display: flex;
@@ -161,6 +165,84 @@
                         color: var(--accent-color-secondary-theme);
                         transition-duration: 0.3s;
                     }
+                }
+            }
+        }
+    }
+}
+
+@media screen and (max-width:app.$mobileBreakpoint) {
+    .footer{
+        
+        .divider {
+            
+            .top{
+                display: flex;
+                flex-direction: column;
+                
+                .left{
+                    
+                }
+                
+                .right{
+                    display: flex;
+                    flex-direction: column;
+                    gap: 36px;
+                    width: 100%;
+                    
+                    .navigation{
+                        display: none;
+                    }
+                    
+                    .other{
+                        
+                    }
+                    
+                    .team{
+                        
+                        .upper{
+                            
+                            p{
+                            }                            
+                        }
+                    }
+                }
+            }
+            
+            .bottom{
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+                
+                p{
+                    margin: 0;
+                    font-size: 14px;
+                }
+                
+                a{
+                    color: var(--accent-color-secondary-theme) !important;
+                    text-decoration: none;
+                    font-size: 16px;
+                    transition-duration: 0.3s;
+                }
+            }
+        }
+    }
+}
+
+@media screen and (max-width:app.$tabletBreakpoint) {
+    .footer {
+        .divider {
+            
+            .top {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                
+                .right {
+                    display: flex;
+                    width: 100%;
+                    gap: 24px;
                 }
             }
         }
