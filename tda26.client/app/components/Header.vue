@@ -3,9 +3,18 @@
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
-    import type {Account} from "#shared/types";
+    import type {Account, WebTheme} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
+    import Popover from "~/components/Popover.vue";
+    
     const $style = useCssModule();
+    
+    const theme = useState<WebTheme>('theme', () => 'light');
+    const themeCookie = useCookie<WebTheme>('theme', {
+        default: () => 'light',
+        sameSite: 'lax',
+        path: '/'
+    });
 
     const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
@@ -17,6 +26,25 @@
             header.classList.add($style.scrolled)
         } else {
             header.classList.remove($style.scrolled)
+        }
+    }
+
+    function toggleTheme() {
+        const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
+        theme.value = newTheme;
+        themeCookie.value = newTheme;
+    }
+
+    async function logout() {
+        try {
+            await $fetch('/api/v2/auth/logout', {
+                method: 'POST'
+            });
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            loggedAccount.value = null;
+            navigateTo('/');
         }
     }
 
@@ -46,31 +74,65 @@
                 <Menu :link-class="$style.link" />
 
                 <div :class="$style.btns" v-if="!loggedAccount">
-                    <NuxtLink to="/login">
-                        <Button button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
+                    <NuxtLink :class="$style.linkBtn" to="/login">
+                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
 
-                    <NuxtLink to="/register">
-                        <Button button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
+                    <NuxtLink :class="$style.linkBtn" to="/register">
+                        <Button text-color="var(--accent-color-secondary-theme-text)" button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
                     </NuxtLink>
                 </div>
 
                 <template v-else>
                     <div :class="$style.btns">
-                        <NuxtLink to="/dashboard">
+                        <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>
                     </div>
 
-                    <div :class="$style.loggedAs">
-                        <div>
-                            <p>Přihlášen jako</p>
-                            <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}</p>
-                            <p :class="[$style.name, $style.shadow]">{{ loggedAccount.firstName }} {{ loggedAccount.lastName }}A</p>
-                        </div>
+                    <Popover position="bottom-right" trigger="hover">
+                        <template #trigger>
+                            <div :class="$style.loggedAs">
+                                <div>
+                                    <p>Přihlášen jako</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}A</p>
+                                </div>
 
-                        <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
-                    </div>
+                                <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
+                            </div>
+                        </template>
+                        
+                        <template #content>
+                            <div :class="$style.popoverContent">
+                                <div :class="$style.accountInfo">
+                                    <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="64" />
+                                    <div :class="$style.accountText">
+                                        <p :class="$style.name">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                        <p v-if='loggedAccount?.emails?.length ?? 0 > 0' :class="$style.email">{{ loggedAccount?.emails?.[0] }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div :class="$style.divider"></div>
+                                
+                                <div :class="$style.popoverActions">
+                                    <button :class="$style.actionButton" @click="toggleTheme">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.themeIcon]"></div>
+                                        </div>
+                                        <span>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</span>
+                                    </button>
+                                    
+                                    <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.logoutIcon]"></div>
+                                        </div>
+                                        <span>Odhlásit se</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </Popover>
                 </template>
             </div>
 
@@ -96,7 +158,7 @@
     transition-duration: 0.3s;
     border: 1px solid transparent;
     border-radius: 32px;
-
+    
     &:is(.scrolled) {
         width: 80%;
         box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.6), 0 4px 30px rgba(0, 0, 0, 0.15);
@@ -149,6 +211,14 @@
             .btns {
                 display: flex;
                 gap: 16px;
+                
+                >.linkBtn {
+                    color: unset;
+                    
+                    button{
+                        text-decoration: none;
+                    }
+                }
             }
 
             .loggedAs {
@@ -156,6 +226,7 @@
                 align-items: center;
                 gap: 12px;
                 position: relative;
+                transition: transform 0.2s ease;
 
                 >div {
                     display: grid;
@@ -177,6 +248,106 @@
                             color: transparent;
                             text-shadow: 0 0 24px var(--background-color), 0px 0 12px var(--background-color);
                         }
+                    }
+                }
+            }
+            
+            .popoverContent {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .accountInfo {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                
+                .accountText {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    
+                    p {
+                        margin: 0;
+                        
+                        &.name {
+                            font-weight: 700;
+                            font-size: 18px;
+                            color: var(--text-color-primary);
+                        }
+                        
+                        &.email {
+                            font-size: 14px;
+                            color: var(--text-color-secondary);
+                        }
+                    }
+                }
+            }
+            
+            .divider {
+                height: 1px;
+                background-color: rgb(from var(--text-color-primary) r g b / 0.1);
+                width: 100%;
+            }
+            
+            .popoverActions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .actionButton {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background-color: transparent;
+                border: 1px solid rgb(from var(--text-color-primary) r g b / 0.1);
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                color: var(--text-color-primary);
+                font-size: 15px;
+                font-weight: 600;
+                width: 100%;
+                
+                &:hover {
+                    background-color: rgb(from var(--accent-color-primary) r g b / 0.1);
+                    border-color: var(--accent-color-primary);
+                    transform: translateY(-2px);
+                }
+                
+                &.logoutButton {
+                    &:hover {
+                        background-color: rgba(220, 38, 38, 0.1);
+                        border-color: rgb(220, 38, 38);
+                    }
+                }
+                
+                .iconWrapper {
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .icon {
+                    width: 20px;
+                    height: 20px;
+                    mask-size: contain;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    background-color: var(--text-color-primary);
+                    transition: background-color 0.2s ease;
+                    
+                    &.themeIcon {
+                        mask-image: var(--theme-icon);
+                    }
+                    
+                    &.logoutIcon {
+                        mask-image: url('/icons/logout.svg');
                     }
                 }
             }
