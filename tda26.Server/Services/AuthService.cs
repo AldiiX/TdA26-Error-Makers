@@ -101,4 +101,11 @@ public class AuthService(
 
         return await ReAuthAsync(ct);
     }
+    
+    public async Task<bool> LogoutAsync(CancellationToken ct = default) {
+        if (http.HttpContext == null) return false;
+        http.HttpContext.Items.Remove("loggedaccount");
+        http.HttpContext.Session.Remove("loggedaccount");
+        return true;
+    }
 }

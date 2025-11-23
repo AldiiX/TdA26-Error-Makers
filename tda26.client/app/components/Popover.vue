@@ -126,7 +126,7 @@ const $style = useCssModule();
     backdrop-filter: blur(8px);
     
     &.bottom-right {
-        top: calc(100% + 10px);
+        top: calc(100% + 16px);
         right: 0;
     }
     

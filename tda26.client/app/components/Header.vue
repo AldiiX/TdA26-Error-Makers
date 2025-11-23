@@ -109,7 +109,7 @@
                                     <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="64" />
                                     <div :class="$style.accountText">
                                         <p :class="$style.name">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
-                                        <p :class="$style.email">{{ loggedAccount.email }}</p>
+                                        <p v-if='loggedAccount?.emails?.length ?? 0 > 0' :class="$style.email">{{ loggedAccount?.emails?.[0] }}</p>
                                     </div>
                                 </div>
                                 

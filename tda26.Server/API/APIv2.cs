@@ -65,7 +65,7 @@ public class APIv2(
 
     [HttpPost("auth/logout")]
     public async Task<IActionResult> Logout(CancellationToken ct) {
-        await auth.ReAuthAsync(ct);
+        await auth.LogoutAsync(ct);
         return Ok(new { message = "Logged out successfully." });
     }
     
