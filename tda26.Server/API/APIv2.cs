@@ -63,7 +63,12 @@ public class APIv2(
         return Ok(acc);
     }
 
-
+    [HttpPost("auth/logout")]
+    public async Task<IActionResult> Logout(CancellationToken ct) {
+        await auth.LogoutAsync(ct);
+        return Ok(new { message = "Logged out successfully." });
+    }
+    
 
     // lecturers
     [HttpGet("lecturers")]

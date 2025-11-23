@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
 import { NuxtLink, ClientOnly, NuxtLayout } from '#components';
 import type {WebTheme} from "#shared/types";
+import MobileMenu from "~/components/MobileMenu.vue";
 
 // state
 const route = useRoute();
@@ -76,6 +77,8 @@ useHead({
 <!--        <Link rel="manifest" href="/site.webmanifest" />-->
     </Head>
 
+    <!-- Mobile menu -->
+    <MobileMenu />
 
     <NuxtLayout>
         <NuxtPage />
