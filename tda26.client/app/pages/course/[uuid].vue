@@ -184,6 +184,7 @@ import {type Course, MaterialType} from "#shared/types";
         
         >.info {
             display: flex;
+            justify-content: space-between;
             gap: 24px;
 
             >p {
