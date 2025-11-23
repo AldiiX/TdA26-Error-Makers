@@ -213,6 +213,7 @@
                 gap: 16px;
                 
                 >.linkBtn {
+                    color: unset;
                     
                     button{
                         text-decoration: none;
