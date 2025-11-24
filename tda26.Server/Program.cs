@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Minio;
+using Minio.AspNetCore;
 using MySqlConnector;
 using StackExchange.Redis;
 using tda26.Server.Data;
 using tda26.Server.Infrastructure;
+using tda26.Server.Options;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 
@@ -146,13 +149,33 @@ public static class Program {
         // openapi generator (vestaveny v asp.net core)
         builder.Services.AddOpenApi();
         builder.Services.AddHttpClient();
+        
+        // Minio
+        builder.Services.AddMinio(options =>
+        {
+            options.Endpoint = ENV["MINIO_ENDPOINT"];
+            options.AccessKey = ENV["MINIO_ACCESS_KEY"];
+            options.SecretKey = ENV["MINIO_SECRET_KEY"];
 
+            options.ConfigureClient(client =>
+            {
+                client.WithSSL();
+            });
+        });
+        
         // repozitare a service
         builder.Services.AddScoped<ICourseRepository, CourseRepository>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IAccountRepository, AccountRepository>();
         builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
         builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
+        builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
+        
+        // Nastaveni
+        builder.Services.Configure<CustomMinioOptions>(options =>
+            {
+                options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";
+            });
 
         Application = builder.Build();
 

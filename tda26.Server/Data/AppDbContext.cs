@@ -23,7 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });
 
         foreach (var entityEntry in entries) {
-            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.UtcNow;
+            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
         }
     }
 

@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Minio;
+using Minio.DataModel.Args;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
 using tda26.Server.Repositories;
+using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v1.CreateCourseRequest;
 
 namespace tda26.Server.API;
@@ -12,7 +15,9 @@ namespace tda26.Server.API;
 [Route("api/v1"), Route("api")]
 public class APIv1(
     ICourseRepository courseRepository,
-    IMaterialRepository materialRepository
+    IMaterialRepository materialRepository,
+    IMinioClient minioClient,
+    IMaterialAccessService materialAccessService
 ) : Controller {
 
     [HttpGet]
@@ -25,19 +30,19 @@ public class APIv1(
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await courseRepository.GetAllAsyncFull();
-        
+
         var obj = courses.Select(course => course.ToReadDto());
-        
+
         return Ok(obj);
     }
-    
+
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
         var course = await courseRepository.GetByIdAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
-        
+
         return Ok(course.ToReadDto());
     }
 
@@ -57,7 +62,7 @@ public class APIv1(
         }
 
         await courseRepository.UpdateAsync(course);
-        
+
         return Ok(course.ToReadDto());
     }
 
@@ -75,9 +80,9 @@ public class APIv1(
 
         return NoContent();
     }
-    
+
     [HttpPost("courses")]
-    public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body ) {
+    public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body) {
         if (string.IsNullOrEmpty(body.Name) || string.IsNullOrEmpty(body.Description)) {
             return BadRequest(new { error = "Name and description are required." });
         }
@@ -88,7 +93,7 @@ public class APIv1(
         };
 
         await courseRepository.CreateAsync(newCourse);
-        
+
         return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, newCourse.ToReadDto());
     }
 
@@ -98,7 +103,7 @@ public class APIv1(
         if (body.Type != "url") {
             return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
         }
-        
+
         var course = await courseRepository.GetByIdAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -125,13 +130,97 @@ public class APIv1(
             description = newMaterial.Description,
             url = newMaterial.Url,
             faviconUrl = newMaterial.FaviconUrl,
-            type = newMaterial.Type,
+            type = "url",
             createdAt = newMaterial.CreatedAt,
             updatedAt = newMaterial.UpdatedAt
         };
-        
+
         return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, obj);
     }
+
+    [HttpPost("courses/{courseId:guid}/materials")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> AddFileMaterialToCourse(
+        [FromRoute] Guid courseId,
+        [FromForm] CreateFileMaterialRequest body
+    ) {
+        if (body.Type != "file")
+            return BadRequest(new { error = "Only 'file' material type is supported in this endpoint." });
+
+        var allowedMimeTypes = new List<string> {
+            // Documents
+            "application/pdf", // .pdf
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+            "text/plain", // .txt
+
+            // Images
+            "image/png", // .png
+            "image/jpeg", // .jpg, .jpeg
+            "image/gif", // .gif
+
+            // Media
+            "video/mp4", // .mp4
+            "audio/mpeg" // .mp3
+        };
+            
+        var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
+
+        if (!allowedMimeTypes.Contains(mimeType)) {
+            return BadRequest(new { error = $"Unsupported file type {mimeType}."  });
+        }
+
+        const long maxFileSizeBytes = 30 * 1024 * 1024;
+        if (body.File.Length > maxFileSizeBytes) {
+            return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+        }
+
+        var course = await courseRepository.GetByIdAsync(courseId);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var file = body.File;
+        if (file.Length == 0) {
+            return BadRequest(new { error = "File content is required." });
+        }
+
+        var fileUrl = await materialAccessService.UploadFileMaterialAsync(course.Uuid, file);
+
+        var newMaterial = new FileMaterial {
+            Name = body.Name,
+            Description = body.Description,
+            Type = Material.MaterialType.File,
+            CourseUuid = course.Uuid,
+            FileUrl = fileUrl,
+            MimeType = mimeType,
+            SizeBytes = (int)file.Length,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        await materialRepository.AddMaterialAsync(course.Uuid, newMaterial);
+
+        var responseObj = new {
+            uuid = newMaterial.Uuid,
+            type = "file",
+            name = newMaterial.Name,
+            description = newMaterial.Description,
+            fileUrl = newMaterial.FileUrl,
+            mimeType = newMaterial.MimeType,
+            sizeBytes = newMaterial.SizeBytes,
+            createdAt = newMaterial.CreatedAt,
+            updatedAt = newMaterial.UpdatedAt
+        };
+
+        return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, responseObj);
+    }
+
+    // Other content types return 400
+    [HttpPost("courses/{courseId:guid}/materials")]
+    public IActionResult AddMaterialToCourseUnsupported([FromRoute] Guid courseId) {
+        return BadRequest(new { error = "Unsupported content type. Use 'application/json' for URL materials or 'multipart/form-data' for file materials." });
+    }
+
 
     [HttpGet("courses/{uuid:guid}/materials")]
     public async Task<IActionResult> GetMaterialsByCourseId([FromRoute] Guid uuid) {
@@ -141,17 +230,141 @@ public class APIv1(
         }
         var materials = await materialRepository.GetMaterialsByCourseIdAsync(course.Uuid);
 
-        var obj = materials.Select(material => new {
-            uuid = material.Uuid,
-            name = material.Name,
-            description = material.Description,
-            type = material.Type,
-            createdAt = material.CreatedAt,
-            updatedAt = material.UpdatedAt,
-            url = material is UrlMaterial urlMaterial ? urlMaterial.Url : null,
-            faviconUrl = material is UrlMaterial urlMaterial2 ? urlMaterial2.FaviconUrl : null,
-        });
+        var obj = materials.Select(material => material.ToReadDto());
 
         return Ok(obj);
+    }
+
+    [HttpPut("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
+    [Consumes("application/json")]
+    public async Task<IActionResult> UpdateUrlMaterialInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid materialUuid,
+        [FromBody] UpdateUrlMaterialRequest body
+    ) {
+        var course = await courseRepository.GetByIdAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        
+        switch (material) {
+            case UrlMaterial urlMaterial:
+                if (!string.IsNullOrEmpty(body.Name))
+                    urlMaterial.Name = body.Name;
+
+                if (!string.IsNullOrEmpty(body.Description))
+                    urlMaterial.Description = body.Description;
+
+                if (!string.IsNullOrEmpty(body.Url)) {
+                    urlMaterial.Url = body.Url;
+                    urlMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(body.Url).Host}&sz=64";
+                }
+
+                await materialRepository.UpdateMaterialAsync(urlMaterial);
+
+                return Ok(urlMaterial.ToReadDto());
+            case FileMaterial fileMaterial:
+                if (!string.IsNullOrEmpty(body.Name))
+                    fileMaterial.Name = body.Name;
+
+                if (!string.IsNullOrEmpty(body.Description))
+                    fileMaterial.Description = body.Description;
+
+                await materialRepository.UpdateMaterialAsync(fileMaterial);
+
+                return Ok(fileMaterial.ToReadDto());
+                
+            default:
+                return BadRequest(new { error = "Material is not of type 'url'." });
+        }
+    }
+
+    [HttpPut("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateFileMaterialInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid materialUuid,
+        [FromForm] UpdateFileMaterialRequest body
+    ) {
+        var course = await courseRepository.GetByIdAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        
+        if (material == null || material.CourseUuid != course.Uuid)
+            return NotFound(new { error = "Material not found in the specified course." });
+
+        if (material is not FileMaterial fileMaterial)
+            return BadRequest(new { error = "Material is not of type 'file'." });
+        
+        if (!string.IsNullOrEmpty(body.Name))
+            fileMaterial.Name = body.Name;
+
+        if (!string.IsNullOrEmpty(body.Description))
+            fileMaterial.Description = body.Description;
+        
+        if (body.File != null && body.File.Length > 0) {
+            var allowedMimeTypes = new List<string> {
+                // Documents
+                "application/pdf", // .pdf
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+                "text/plain", // .txt
+
+                // Images
+                "image/png", // .png
+                "image/jpeg", // .jpg, .jpeg
+                "image/gif", // .gif
+
+                // Media
+                "video/mp4", // .mp4
+                "audio/mpeg" // .mp3
+            };
+            
+            var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
+
+            if (!allowedMimeTypes.Contains(mimeType)) {
+                return BadRequest(new { error = "Unsupported file type." });
+            }
+
+            const long maxFileSizeBytes = 30 * 1024 * 1024;
+            if (body.File.Length > maxFileSizeBytes) {
+                return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+            }
+            
+            await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
+            
+            var newFileUrl = await materialAccessService.UploadFileMaterialAsync(course.Uuid, body.File);
+            fileMaterial.FileUrl = newFileUrl;
+            fileMaterial.MimeType = mimeType;
+            fileMaterial.SizeBytes = (int)body.File.Length;
+        }
+
+        await materialRepository.UpdateMaterialAsync(fileMaterial);
+
+        return Ok(fileMaterial.ToReadDto());
+    }
+    
+    [HttpDelete("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
+    public async Task<IActionResult> DeleteMaterialFromCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid materialUuid
+    ) {
+        var course = await courseRepository.GetByIdAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        
+        if (material == null || material.CourseUuid != course.Uuid)
+            return NotFound(new { error = "Material not found in the specified course." });
+
+        await materialRepository.DeleteMaterialAsync(material);
+
+        return NoContent();
     }
 }

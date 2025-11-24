@@ -121,7 +121,7 @@ import {type Course} from "#shared/types";
                         <li v-for="material in course.materials" :key="material.uuid">
                             <!-- FILE MATERIAL -->
                             <template v-if="material.type === 'file'">
-                                <NuxtLink :href="material.fileUrl" target="_blank" rel="noopener noreferrer">
+                                <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" target="_blank" rel="noopener noreferrer">
                                     <div :class="$style.fileIcon"></div>
     
                                     <div :class="$style.fileInfo">
@@ -130,6 +130,7 @@ import {type Course} from "#shared/types";
                                             <p>{{ material.fileUrl.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
                                         </div>
                                     </div>
+                                    <p :class="$style.description">{{ material.description }}</p>
                                 </NuxtLink>
                             </template>
     

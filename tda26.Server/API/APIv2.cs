@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Minio;
+using Minio.DataModel.Args;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -19,7 +21,8 @@ public class APIv2(
     IAuthService auth,
     ILecturerRepository lecturers,
     ICourseRepository courseRepository,
-    AppDbContext db
+    IAccountRepository accounts,
+    IMaterialAccessService materialAccessService
 ) : Controller {
 
     [HttpGet]
@@ -83,10 +86,9 @@ public class APIv2(
     #if DEBUG
     [HttpPost("lecturers")]
     public async Task<IActionResult> CreateLecturer([FromBody] CreateLecturerRequest body, CancellationToken ct) {
-        var existingAccount = await db.Accounts
-            .AnyAsync(a => a.Username == body.Username, ct);
+        var existingAccount = await accounts.GetByUsernameAsync(body.Username!, ct);
         
-        if (existingAccount) {
+        if (existingAccount != null) {
             return new ConflictObjectResult(new { message = "Username already exists." });
         }
 
@@ -110,8 +112,7 @@ public class APIv2(
             Tags = body.Tags
         };
         
-        db.Lecturers.Add(newLecturer);
-        await db.SaveChangesAsync(ct);
+        await accounts.CreateAsync(newLecturer, ct);
         
         return new CreatedAtActionResult(
             actionName: nameof(GetLecturer),
@@ -145,8 +146,11 @@ public class APIv2(
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
+
+        var courses = course.ToReadDto();
+        courses.Materials = courses.Materials.OrderByDescending(m => m.CreatedAt).ToList();
         
-        return Ok(course.ToReadDto());
+        return Ok(courses);
     }
 
     [HttpPut("courses/{uuid:guid}")]
@@ -201,5 +205,54 @@ public class APIv2(
             routeValues: new { uuid = newCourse.Uuid },
             value: newCourse
         );
+    }
+    
+    [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
+    public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
+    {
+        var course = await courseRepository.GetByIdAsyncFull(courseUuid);
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var material = course.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+        if (material == null)
+            return NotFound(new { error = "Material not found." });
+
+        switch (material)
+        {
+            case UrlMaterial urlMaterial:
+                return Ok(urlMaterial.ToReadDto());
+            case FileMaterial fileMaterial:
+                try {
+                    var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl);
+
+                    var baseName = material.Name.Trim().ToLowerInvariant().Replace(" ", "-");
+
+                    string extension;
+                    try {
+                        var uri = new Uri(fileMaterial.FileUrl, UriKind.RelativeOrAbsolute);
+                        var path = uri.IsAbsoluteUri ? uri.AbsolutePath : fileMaterial.FileUrl;
+                        extension = Path.GetExtension(path);
+                    } catch {
+                        extension = Path.GetExtension(fileMaterial.FileUrl);
+                    }
+
+                    if (string.IsNullOrEmpty(extension) && fileMaterial.FileUrl.Contains('.')) {
+                        var idx = fileMaterial.FileUrl.LastIndexOf('.');
+                        if (idx >= 0 && idx < fileMaterial.FileUrl.Length - 1)
+                            extension = fileMaterial.FileUrl[idx..];
+                    }
+
+                    var fileName = string.IsNullOrEmpty(extension) ? baseName : $"{baseName}{extension}";
+                    return File(memoryStream, "application/octet-stream", fileName);
+                }
+                catch (Minio.Exceptions.MinioException e)
+                {
+                    return StatusCode(500, new { error = "Error fetching file from storage.", detail = e.Message });
+                }
+            default:
+                return StatusCode(500, new { error = "Unknown material type." });
+
+        }
     }
 }
