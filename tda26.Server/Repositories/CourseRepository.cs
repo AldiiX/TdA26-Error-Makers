@@ -9,9 +9,25 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
         return await db.Courses
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
+    
+    public async Task<Course?> GetByIdAsyncFull(Guid uuid, CancellationToken ct = default) {
+        return await db.Courses
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+    }
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
         return await db.Courses
+            .ToListAsync(ct);
+    }
+    
+    public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
+        return await db.Courses
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
             .ToListAsync(ct);
     }
 

@@ -15,6 +15,11 @@ public class AccountRepository(
         return await db.Accounts
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
     }
+    
+    public async Task<Account?> GetByUsernameAsync(string username, CancellationToken ct = default) {
+        return await db.Accounts
+            .FirstOrDefaultAsync(a => a.Username == username, ct);
+    }
 
     public async Task<List<Account>> GetAllAsync(CancellationToken ct = default) {
         return await db.Accounts.ToListAsync(ct);

@@ -6,6 +6,9 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
+    materials: Material[];
+    quizzes: Quiz[];
+    feed: FeedPost[];
 }
 
 export interface Lecturer {
@@ -28,8 +31,49 @@ export interface Lecturer {
     updatedAt: string,
 }
 
-export interface Account extends Lecturer {
-    username: string
+export interface Account extends Lecturer{
+    username: string,
+}
+
+export interface BaseMaterial {
+    uuid: string;
+    type: 'file' | 'url';
+    courseUuid: string;
+    name: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface FileMaterial extends BaseMaterial {
+    type: 'file';
+    fileUrl: string;
+    mimeType: string | null;
+    sizeBytes: number;
+}
+
+export interface UrlMaterial extends BaseMaterial {
+    type: 'url';
+    url: string;
+    faviconUrl: string | null;
+}
+
+export type Material = FileMaterial | UrlMaterial;
+
+export interface Quiz {
+    uuid: string,
+    courseUuid: string,
+    title: string,
+    questionCount: string,
+    createdAt: string,
+    updatedAt: string,
+}
+
+export interface FeedPost {
+    uuid: string,
+    createdAt: string,
+    updatedAt: string,
+    courseUuid: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

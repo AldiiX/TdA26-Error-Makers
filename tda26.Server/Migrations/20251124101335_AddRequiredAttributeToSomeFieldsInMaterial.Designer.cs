@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251124101335_AddRequiredAttributeToSomeFieldsInMaterial")]
+    partial class AddRequiredAttributeToSomeFieldsInMaterial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -260,8 +263,8 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(256)");
 
                     b.Property<string>("MimeType")
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<int>("SizeBytes")
                         .HasColumnType("int");
