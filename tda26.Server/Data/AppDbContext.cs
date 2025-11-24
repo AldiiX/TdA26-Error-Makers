@@ -5,10 +5,17 @@ namespace tda26.Server.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
+    
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
+    
     public DbSet<Course> Courses => Set<Course>();
-    public DbSet<Material> Materials => Set<Material>();
+    
+    public DbSet<Material> Materials { get; set; }
+    public DbSet<FileMaterial> FileMaterials => Set<FileMaterial>();
+    public DbSet<UrlMaterial> UrlMaterials => Set<UrlMaterial>();
+    
     public DbSet<Quiz> Quizzes => Set<Quiz>();
+    
     public DbSet<FeedPost> FeedItems => Set<FeedPost>();
 
     // auto update audit properties

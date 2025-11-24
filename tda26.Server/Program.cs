@@ -152,6 +152,7 @@ public static class Program {
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IAccountRepository, AccountRepository>();
         builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
+        builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 
         Application = builder.Build();
 

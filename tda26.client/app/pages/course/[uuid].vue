@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Course, MaterialType} from "#shared/types";
+import {type Course} from "#shared/types";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
@@ -26,31 +26,6 @@ import {type Course, MaterialType} from "#shared/types";
                     const course = await $fetch<Course>(getBaseUrl() + `/api/v2/courses/${uuid}`);
                     const key = `course-${uuid}`;
                     const state = useState<Course | null>(key, () => null);
-                    
-                    // TODO: Odstranit po implementaci materiálů na backendu
-                    course.materials = [
-                        // Příklad materiálů
-                        { 
-                            uuid: 'mat1',
-                            name: 'Úvodní prezentace', 
-                            fileUrl: 'https://example.com/materials/intro-presentation.pdf',
-                            courseUuid: "0",
-                            description: "allah",
-                            type: MaterialType.DOCUMENT,
-                            createdAt: "2024-01-01T00:00:00Z",
-                            updatedAt: "2024-01-01T00:00:00Z"
-                        },
-                        { 
-                            uuid: 'mat2', 
-                            name: 'Studijní plán', 
-                            fileUrl: 'https://example.com/materials/study-plan.pdf',
-                            courseUuid: "0",
-                            description: "allah",
-                            type: MaterialType.DOCUMENT,
-                            createdAt: "2024-01-01T00:00:00Z",
-                            updatedAt: "2024-01-01T00:00:00Z"
-                        }
-                    ]
                     
                     state.value = course;
                 } catch (err: any) {
@@ -83,6 +58,14 @@ import {type Course, MaterialType} from "#shared/types";
     const selectItem = (item: string) => {
         selectedItem.value = item;
     };
+
+    const getHostname = (url?: string) => {
+        try {
+            return url ? new URL(url).hostname : ''
+        } catch {
+            return ''
+        }
+    }
 
     
 </script>
@@ -136,16 +119,36 @@ import {type Course, MaterialType} from "#shared/types";
                     <p v-if="course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
                     <ul v-else>
                         <li v-for="material in course.materials" :key="material.uuid">
-                            <NuxtLink :href="material.fileUrl" target="_blank" rel="noopener noreferrer">
-                                <div :class="$style.fileIcon"></div>
-                                <div :class="$style.fileInfo">
-                                    <p>{{ material.name }}</p>
-                                    <div :class="$style.fileDetails">
-                                        <span>{{ material.fileUrl.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "Jiné" }}</span> •
-                                        <span>{{ new Date(material.createdAt).toLocaleDateString() }}</span>
+                            <!-- FILE MATERIAL -->
+                            <template v-if="material.type === 'file'">
+                                <NuxtLink :href="material.fileUrl" target="_blank" rel="noopener noreferrer">
+                                    <div :class="$style.fileIcon"></div>
+    
+                                    <div :class="$style.fileInfo">
+                                        <p>{{ material.name }}</p>
+                                        <div :class="$style.fileDetails">
+                                            <p>{{ material.fileUrl.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </NuxtLink>
+                                </NuxtLink>
+                            </template>
+    
+                            <!-- URL MATERIAL -->
+                            <template v-else-if="material.type === 'url'">
+                                <NuxtLink :href="material.url" target="_blank" rel="noopener noreferrer">
+                                    <div :class="$style.favicon">
+                                        <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" />
+                                    </div>
+    
+                                    <div :class="$style.fileInfo">
+                                        <p>{{ material.name }}</p>
+                                        <div :class="$style.fileDetails">
+                                            <p>{{ getHostname(material.url) }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
+                                        </div>
+                                    </div>
+                                    <p :class="$style.description">{{ material.description }}</p>
+                                </NuxtLink>
+                            </template>
                         </li>
                     </ul>
                 </div>
@@ -332,16 +335,30 @@ import {type Course, MaterialType} from "#shared/types";
                             display: flex;
                             flex-direction: column;
                             gap: 4px;
+                            border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                            padding-right: 12px;
 
                             p {
                                 margin: 0;
                                 font-size: 16px;
                             }
 
-                            .fileDetails {
+                            .fileDetails >p {
                                 font-size: 12px;
                                 color: var(--text-color-secondary);
                             }
+                        }
+                        
+                        .favicon img {
+                            border-radius: 4px;
+                            overflow: hidden;
+                        }
+                        
+                        .description {
+                            margin-left: 10px;
+                            height: 100%;
+                            font-size: 14px;
+                            color: var(--text-color-secondary);
                         }
                     }
                 }

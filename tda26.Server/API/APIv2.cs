@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
+using tda26.Server.DTOs.Mapping;
+using tda26.Server.DTOs.v1;
 using tda26.Server.DTOs.v2;
 using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
+using CreateCourseRequest = tda26.Server.DTOs.v2.CreateCourseRequest;
 
 namespace tda26.Server.API;
 
@@ -138,11 +141,12 @@ public class APIv2(
     
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByIdAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
-        return Ok(course);
+        
+        return Ok(course.ToReadDto());
     }
 
     [HttpPut("courses/{uuid:guid}")]

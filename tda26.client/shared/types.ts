@@ -6,7 +6,7 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
-    materials: Materials[];
+    materials: Material[];
     quizzes: Quiz[];
     feed: FeedPost[];
 }
@@ -35,23 +35,30 @@ export interface Account extends Lecturer{
     username: string,
 }
 
-export interface Materials {
-    uuid: string,
-    type: MaterialType,
-    courseUuid: string,
-    name: string,
-    description: string,
-    fileUrl: string,
-    createdAt: string,
-    updatedAt: string,
+export interface BaseMaterial {
+    uuid: string;
+    type: 'file' | 'url';
+    courseUuid: string;
+    name: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export enum MaterialType {
-    VIDEO = "video",
-    DOCUMENT = "document",
-    AUDIO = "audio",
-    IMAGE = "image"
+export interface FileMaterial extends BaseMaterial {
+    type: 'file';
+    fileUrl: string;
+    mimeType: string | null;
+    sizeBytes: number;
 }
+
+export interface UrlMaterial extends BaseMaterial {
+    type: 'url';
+    url: string;
+    faviconUrl: string | null;
+}
+
+export type Material = FileMaterial | UrlMaterial;
 
 export interface Quiz {
     uuid: string,
