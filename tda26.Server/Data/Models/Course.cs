@@ -13,4 +13,6 @@ public class Course : IAuditable {
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>(); 
+    
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }
