@@ -1,26 +1,28 @@
-﻿using tda26.Server.Data.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using tda26.Server.Data;
+using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
 public class LecturerRepository(
-    IAccountRepository accounts
+    IAccountRepository accounts,
+    AppDbContext db
 ) : ILecturerRepository {
 
     public async Task<Lecturer?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
-        var account = await accounts.GetByIdAsync(uuid, ct);
-        if (account is not Lecturer lecturer) return null;
-
-        if (lecturer is { IsPublic: false }) return null;
+        var lecturer = await db.Lecturers
+            .FirstOrDefaultAsync(l => l.Uuid == uuid, ct);
 
         return lecturer;
     }
 
     public async Task<List<Lecturer>> GetAllAsync(CancellationToken ct = default) {
-        var allAccounts = (await accounts.GetAllAsync(ct)).Where(a => a is Lecturer l && l.IsPublic).Cast<Lecturer>().ToList();
+        var lecturers = (await db.Lecturers.ToListAsync(ct));
 
-        // sortnuti podle createdAt
-        allAccounts.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
+        // sortnuti podle createdat
+        lecturers.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
 
-        return allAccounts;
+        //Console.WriteLine(lecturers.ToJsonString());
+        return lecturers;
     }
 }

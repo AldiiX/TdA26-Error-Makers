@@ -1,12 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Minio;
-using Minio.DataModel.Args;
-using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
-using tda26.Server.DTOs.v1;
 using tda26.Server.DTOs.v2;
 using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;

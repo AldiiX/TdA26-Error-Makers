@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using tda26.Server.Data.Models;
 
 namespace tda26.Server.DTOs.v1;
 
