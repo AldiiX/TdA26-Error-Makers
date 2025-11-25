@@ -57,6 +57,15 @@
     onUnmounted(() => {
         document.removeEventListener("scroll", ouasihfdusifhi);
     });
+
+    const displayName = computed(() => {
+        const acc = loggedAccount.value;
+        if (!acc) return null;
+
+        return acc.firstName && acc.lastName
+            ? `${acc.firstName} ${acc.lastName}`
+            : acc.username;
+    });
 </script>
 
 
@@ -100,20 +109,20 @@
                             <div :class="$style.loggedAs">
                                 <div>
                                     <p>Přihlášen jako</p>
-                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
-                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}A</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ displayName }}g</p>
+                                    <p :class="[$style.name, $style.shadow]">{{ displayName }}A</p>
                                 </div>
 
-                                <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="48" />
+                                <Avatar :name="displayName" :src="loggedAccount.pictureUrl" :size="48" />
                             </div>
                         </template>
                         
                         <template #content>
                             <div :class="$style.popoverContent">
                                 <div :class="$style.accountInfo">
-                                    <Avatar :name="loggedAccount.firstName + ' ' + loggedAccount.lastName" :src="loggedAccount.pictureUrl" :size="64" />
+                                    <Avatar :name="displayName" :src="loggedAccount.pictureUrl" :size="64" />
                                     <div :class="$style.accountText">
-                                        <p :class="$style.name">{{ loggedAccount!.firstName }} {{ loggedAccount!.lastName }}</p>
+                                        <p :class="$style.name">{{ displayName }}</p>
                                         <p v-if='loggedAccount?.emails?.length ?? 0 > 0' :class="$style.email">{{ loggedAccount?.emails?.[0] }}</p>
                                     </div>
                                 </div>
@@ -302,10 +311,12 @@
 
                 >div {
                     display: grid;
+                    position: relative;
 
                     p {
                         margin: 0;
                         text-align: right;
+                        padding-bottom: 2px;
 
                         &:is(.name) {
                             font-weight: 700;
@@ -314,8 +325,8 @@
 
                         &:is(.shadow) {
                             position: absolute;
-                            bottom: 2px;
-                            left: 0px;
+                            bottom: 0;
+                            right: 0;
                             z-index: -1;
                             color: transparent;
                             text-shadow: 0 0 24px var(--background-color), 0px 0 12px var(--background-color);

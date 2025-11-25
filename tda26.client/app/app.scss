@@ -62,7 +62,6 @@ $desktopBreakpoint: 1800px;
     --color-gray: #666;
     --element-bg: rgb(255,255,255, 0.1);
     --accent-color-primary: #0070bb;
-    --accent-color-primary-text: #fff;
     --accent-color-primary-transparent-01: rgba(0, 112, 187, 0.1);
     --accent-color-primary-darker: #005288;
     --accent-color: var(--accent-color-primary);
@@ -137,7 +136,7 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-fill-color: transparent;
+    text-fill-color: transparent;    
 }
 
 :root:is(.showlines) {
