@@ -109,7 +109,7 @@
                             <div :class="$style.loggedAs">
                                 <div>
                                     <p>Přihlášen jako</p>
-                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ displayName }}g</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ displayName }}</p>
                                     <p :class="[$style.name, $style.shadow]">{{ displayName }}A</p>
                                 </div>
 
