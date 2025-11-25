@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using tda26.Server.Data.Models;
-using tda26.Server.DTOs.v1;
-
-namespace tda26.Server.Services;
+﻿namespace tda26.Server.Services;
 
 public interface IMaterialAccessService {
     /// <summary>
