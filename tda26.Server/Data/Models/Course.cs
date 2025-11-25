@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace tda26.Server.Data.Models;
 
@@ -10,7 +11,11 @@ public class Course : IAuditable {
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
     [MaxLength(512)] public string? ImageUrl { get; set; }
     
+    public Guid? LecturerUuid { get; set; }
+    [ForeignKey(nameof(LecturerUuid))]
+    public Lecturer? Lecturer { get; set; } = null!;
+    
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
-    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>(); 
+    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
 }

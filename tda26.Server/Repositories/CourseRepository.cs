@@ -31,18 +31,22 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .ToListAsync(ct);
     }
 
-    public async Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, CancellationToken ct = default) {
+    public async Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         return await db.Courses
             .Where(c => c.LecturerUuid == lecturerUuid)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(max > -1 ? max : int.MaxValue)
             .ToListAsync(ct);
     }
 
-    public async Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, CancellationToken ct = default) {
+    public async Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         return await db.Courses
             .Where(c => c.LecturerUuid == lecturerUuid)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(max > -1 ? max : int.MaxValue)
             .ToListAsync(ct);
     }
 

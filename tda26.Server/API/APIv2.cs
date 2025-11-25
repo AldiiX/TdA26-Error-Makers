@@ -127,6 +127,19 @@ public class APIv2(
         return new OkObjectResult(lecturer);
     }
     
+    // accounts
+    
+    [HttpGet("accounts/{uuid:guid}")]
+    public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct) {
+        var account = await accounts.GetByIdAsync(uuid, ct);
+        if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
+
+        return account switch {
+            Lecturer lecturer => Ok(lecturer),
+            _ => Ok(account)
+        };
+    }
+    
     //courses
     
     [HttpGet("courses")]
@@ -135,9 +148,26 @@ public class APIv2(
         return Ok(courses);
     }
     
+    [HttpGet("me/courses")]
+    public async Task<IActionResult> GetMyCourses(
+        [FromQuery] bool full = false,
+        [FromQuery] int max = -1
+        ) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+    
+        if (full) {
+            var courses = await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max);
+            return Ok(courses);
+        } else {
+            var courses = await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max);
+            return Ok(courses);
+        }
+    }
+    
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+        var course = await courseRepository.GetByUuidAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -150,7 +180,7 @@ public class APIv2(
 
     [HttpPut("courses/{uuid:guid}")]
     public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] JsonNode body) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -205,7 +235,7 @@ public class APIv2(
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
     {
-        var course = await courseRepository.GetByIdAsyncFull(courseUuid);
+        var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 

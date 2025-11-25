@@ -24,12 +24,12 @@ public interface ICourseRepository {
     /// <summary>
     /// Gets all courses taught by a specific lecturer identified by their UUID.
     /// </summary>
-    Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, CancellationToken ct = default);
+    Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, int max = -1, CancellationToken ct = default);
     
     /// <summary>
     /// Gets all courses taught by a specific lecturer identified by their UUID, including related entities (Materials, Quizzes, Feed).
     /// </summary>
-    Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, CancellationToken ct = default);
+    Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, int max = -1, CancellationToken ct = default);
     
     Task CreateAsync(Course course, CancellationToken ct = default);
     

@@ -2,8 +2,26 @@
     import type { Course } from "#shared/types";
     import Button from "~/components/Button.vue";
     import timeAgoString from "#shared/utils/timeAgoString";
+    import type { Account, Lecturer } from "#shared/types";
+    import getBaseUrl from "#shared/utils/getBaseUrl";
+    import { NuxtLink } from "#components";
 
-    const props = defineProps<{ course: Course }>();
+    const props = defineProps<{ 
+        course: Course,
+        editMode?: boolean
+    }>();
+    
+    const { data: _account } = await useFetch<Account>(getBaseUrl() + `/api/v2/accounts/${props.course.lecturerUuid}`);
+    const account = computed(() => _account.value ?? null);
+
+    const lecturerDisplayName = computed(() => {
+        const acc = account.value;
+        if (!acc) return null;
+
+        return acc.firstName && acc.lastName
+            ? `${acc.firstName} ${acc.lastName}`
+            : acc.username;
+    });
 </script>
 
 <template>
@@ -15,8 +33,8 @@
         </div>
         <div :class="$style.bottom">
             <div :class="$style.infoContainer">
-                <h1 :class="[$style.nadpis, 'text-gradient']"> {{ course.name }}</h1>
-                <p :class="$style.autor"> {{  }} Serhii Yavorskyi </p> <!-- autor -->
+                <h1 :class="[$style.nadpis, 'text-gradient']" :title="course.name"> {{ course.name }}</h1>
+                <p :class="$style.autor"> {{ lecturerDisplayName }}</p>
                 <div :class="$style.date">
                     <p :class="$style.created">Vytvořeno: {{ timeAgoString(course.createdAt) }}</p>
                     <p :class="$style.lastUpdate">Poslední úprava: {{ timeAgoString(course.updatedAt) }}</p>
@@ -34,9 +52,19 @@
                     </div>
                 </div>
 
-                <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
-                    <Button button-style="primary" accent-color="secondary" style="width: 100%">Začít</Button>
-                </NuxtLink>
+                <div :class="$style.actionContainer">
+                    <div v-if="!editMode" :class="$style.userButtons">
+                        <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
+                            <Button button-style="primary" accent-color="secondary" style="width: 100%">Začít</Button>
+                        </NuxtLink>
+                    </div>
+                    <div v-else :class="$style.lecturerButtons">
+                        <NuxtLink :to="`/lecturer/courses/${course.uuid}/edit`" :class="$style.button">
+                            <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
+                        </NuxtLink>
+                        <Button button-style="secondary" accent-color="secondary" style="width: 100%">Smazat</Button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -54,10 +82,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 100%;
-    width: 100%;
+    height: 400px;
+    width: 300px;
     border-radius: 16px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
+    background-color: var(--background-color-secondary);
     
     @extend .liquid-glass;
     
@@ -92,6 +121,10 @@
             h1{
                 margin: 0;
                 font-size: 24px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+                padding-bottom: 3px;
             }
 
             .autor{
@@ -150,6 +183,13 @@
 
             .button {
                 width: 50%;
+            }
+            
+            .actionContainer {
+                .lecturerButtons {
+                    display: flex;
+                    gap: 8px;
+                }
             }
         }
     }

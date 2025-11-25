@@ -36,7 +36,7 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+        var course = await courseRepository.GetByUuidAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -46,7 +46,7 @@ public class APIv1(
 
     [HttpPut("courses/{uuid:guid}")]
     public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+        var course = await courseRepository.GetByUuidAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -66,7 +66,7 @@ public class APIv1(
 
     [HttpDelete("courses/{uuid:guid}")]
     public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -102,7 +102,7 @@ public class APIv1(
             return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
         }
 
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -172,7 +172,7 @@ public class APIv1(
             return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
         }
 
-        var course = await courseRepository.GetByIdAsync(courseId);
+        var course = await courseRepository.GetByUuidAsync(courseId);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -222,7 +222,7 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}/materials")]
     public async Task<IActionResult> GetMaterialsByCourseId([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -240,7 +240,7 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromBody] UpdateUrlMaterialRequest body
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -286,7 +286,7 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromForm] UpdateFileMaterialRequest body
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -351,7 +351,7 @@ public class APIv1(
         [FromRoute] Guid courseUuid,
         [FromRoute] Guid materialUuid
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
