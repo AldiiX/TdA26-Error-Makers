@@ -1,0 +1,264 @@
+﻿<script setup lang="ts">
+import { ref, watch, onBeforeUnmount } from "vue";
+import type { CSSProperties } from "vue";
+
+type AnimationState = "opening" | "open" | "closing" | "closed";
+
+interface ModalProps {
+    enabled: boolean;
+    canBeClosedByClickingOutside?: boolean;
+    modalStyle?: CSSProperties;
+    modalClassName?: string;
+    containerStyle?: CSSProperties;
+    containerClassName?: string;
+    showCloseButton?: boolean;
+    closeButtonClassName?: string;
+    className?: string;
+}
+
+const props = withDefaults(defineProps<ModalProps>(), {
+    canBeClosedByClickingOutside: true,
+    modalClassName: "",
+    containerClassName: "",
+    showCloseButton: true,
+    closeButtonClassName: "",
+    className: ""
+});
+
+const emit = defineEmits<{
+    (e: "close"): void;
+}>();
+
+const isOpen = ref(props.enabled);
+const animationState = ref<AnimationState>("closed");
+let animationTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const clearAnimationTimeout = () => {
+    // vycisteni timeoutu pro animaci
+    if (animationTimeout !== null) {
+        clearTimeout(animationTimeout);
+        animationTimeout = null;
+    }
+};
+
+watch(
+    () => props.enabled,
+    (enabled) => {
+        // reaguje na zmenu enabled z parent komponenty
+        clearAnimationTimeout();
+
+        if (enabled) {
+            isOpen.value = true;
+            animationState.value = "opening";
+
+            animationTimeout = setTimeout(() => {
+                animationState.value = "open";
+            }, 300);
+        } else {
+            animationState.value = "closing";
+
+            animationTimeout = setTimeout(() => {
+                isOpen.value = false;
+                animationState.value = "closed";
+            }, 250);
+        }
+    },
+    { immediate: true }
+);
+
+const handleClose = () => {
+    // zavreni modalniho okna
+    clearAnimationTimeout();
+    emit("close");
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+    // zavreni pres escape
+    if (event.key === "Escape") {
+        handleClose();
+    }
+};
+
+watch(
+    () => isOpen.value,
+    (open) => {
+        // registrace / odregistrace listeneru podle stavu modalu
+        if (open) {
+            document.addEventListener("keydown", handleKeydown);
+        } else {
+            document.removeEventListener("keydown", handleKeydown);
+        }
+    },
+    { immediate: true }
+);
+
+onBeforeUnmount(() => {
+    // uklid pri odstraneni komponenty
+    document.removeEventListener("keydown", handleKeydown);
+    clearAnimationTimeout();
+});
+</script>
+
+<template>
+    <div
+            v-if="isOpen"
+            :class="[$style.modal, props.containerClassName, props.className]"
+            :style="props.containerStyle"
+            :data-anim="animationState"
+    >
+        <div
+                :class="$style.blurdiv"
+                @click="props.canBeClosedByClickingOutside ? handleClose() : undefined"
+        ></div>
+
+        <div
+                :class="[$style.modalcontent, props.modalClassName]"
+                :style="props.modalStyle"
+        >
+            <div
+                    v-if="props.showCloseButton"
+                    :class="[$style.closebutton, props.closeButtonClassName]"
+                    @click="handleClose"
+            ></div>
+
+            <slot />
+        </div>
+    </div>
+</template>
+
+<style module lang="scss">
+.modal {
+    position: fixed;
+    z-index: 3;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+
+    &[data-anim="opening"] {
+        .blurdiv {
+            animation: closediv-opening 0.3s ease-out forwards;
+
+            @keyframes closediv-opening {
+                0% {
+                    opacity: 0;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+        }
+
+        .modalcontent {
+            animation: modalcontent-opening 0.3s ease-in-out forwards;
+
+            @keyframes modalcontent-opening {
+                0% {
+                    transform: translate(-50%, -65%);
+                    opacity: 0;
+                }
+                100% {
+                    transform: translate(-50%, -50%);
+                    opacity: 1;
+                }
+            }
+        }
+    }
+
+    &[data-anim="closing"] {
+        .blurdiv {
+            animation: closediv-closing 0.25s ease-out forwards;
+
+            @keyframes closediv-closing {
+                0% {
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                }
+            }
+        }
+
+        .modalcontent {
+            animation: modalcontent-closing 0.15s ease-in forwards;
+
+            @keyframes modalcontent-closing {
+                0% {
+                    transform: translate(-50%, -50%);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -80%);
+                    opacity: 0;
+                }
+            }
+        }
+    }
+
+    >.blurdiv {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 1;
+        backdrop-filter: blur(5px) brightness(0.6);
+    }
+
+    .modalcontent {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--modal-background-color);
+        padding: 20px;
+        border: 1px solid var(--applayout-background-color-1);
+        border-radius: 24px;
+        width: 90vw;
+        max-width: 400px;
+        min-width: 40px;
+        max-height: 90vh;
+        min-height: 40px;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.025);
+        overflow: auto;
+
+        >.closebutton {
+            width: 24px;
+            height: 24px;
+            cursor: var(--cursor-pointer);
+            position: absolute;
+            background-color: var(--modal-input-background-color);
+            z-index: 1;
+            border-radius: 100%;
+            top: 12px;
+            right: 12px;
+            transition-duration: 0.3s;
+
+            &:hover {
+                transition-duration: 0.3s;
+                background-color: var(--accent-color-primary-1-transparent);
+            }
+
+            &::after {
+                position: absolute;
+                content: "";
+                width: 100%;
+                height: 100%;
+                mask-image: url("../../public/icons/x.svg");
+                mask-size: 70%;
+                mask-repeat: no-repeat;
+                mask-position: center;
+                background-color: var(--text-color-2);
+            }
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal, .modal * {
+        animation-duration: 0s !important;
+        transition-duration: 0s !important;
+    }
+}
+</style>
