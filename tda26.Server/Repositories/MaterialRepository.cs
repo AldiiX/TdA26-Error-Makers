@@ -40,6 +40,8 @@ public class MaterialRepository(
     }
     
     public async Task UpdateMaterialAsync(Material material, CancellationToken ct = default) {
+        material.UpdatedAt = DateTime.Now;
+        
         db.Materials.Update(material);
         await db.SaveChangesAsync(ct);
     }
