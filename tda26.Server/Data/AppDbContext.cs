@@ -20,10 +20,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // auto update audit properties
     private void SetAuditProperties() {
-        var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });
+        var entries = ChangeTracker.Entries().Where(e => e is { Entity: Auditable, State: EntityState.Added or EntityState.Modified });
 
         foreach (var entityEntry in entries) {
-            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
+            ((Auditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
         }
     }
 

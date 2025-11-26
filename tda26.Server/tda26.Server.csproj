@@ -50,6 +50,12 @@
       <Folder Include="Migrations\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Data\Models\Course.Like.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
     <!-- definice DEBUG a RELEASE promennych -->
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
         <DefineConstants>DEBUG;TRACE;DEVELOPMENT</DefineConstants>

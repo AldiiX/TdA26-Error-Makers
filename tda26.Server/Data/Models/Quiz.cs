@@ -1,16 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
 [Table("Quizzes")]
-public class Quiz : IAuditable {
-    [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
-    [MaxLength(128)] public string Title { get; set; } = string.Empty;
+public class Quiz : Auditable {
+    [Key]
+    public Guid Uuid { get; set; } = Guid.NewGuid();
+
+    [MaxLength(128)]
+    public string Title { get; set; } = string.Empty;
+
     public int QuestionCount { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime UpdatedAt { get; set; } = DateTime.Now;
-    
+
+    [JsonIgnore]
     public Guid CourseUuid { get; set; }
 
     [ForeignKey("CourseUuid")]

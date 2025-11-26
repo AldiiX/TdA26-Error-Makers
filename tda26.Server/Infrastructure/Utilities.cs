@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using BCrypt.Net;
@@ -86,5 +87,72 @@ public static class Utilities {
 
     public static JsonNode ToJsonNode(this object obj, in JsonSerializerOptions? options = null) {
         return JsonSerializer.SerializeToNode(obj, options ?? JsonSerializerOptions.Web) ?? new JsonObject();
+    }
+
+    public static IPAddress? GetIPAddress(this HttpContext context) {
+        ArgumentNullException.ThrowIfNull(context);
+
+        // cloudflare cf-connecting-ip ma nejvyssi prioritu
+        var cfConnectingIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+        var ip = parseIp(cfConnectingIp);
+        if (ip != null) {
+            return ip;
+        }
+
+        // cloudflare true-client-ip (pokud je povoleny)
+        var trueClientIp = context.Request.Headers["True-Client-IP"].FirstOrDefault();
+        ip = parseIp(trueClientIp);
+        if (ip != null) {
+            return ip;
+        }
+
+        // potom zkusit x-forwarded-for
+        var xForwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        ip = parseIp(xForwardedFor);
+        if (ip != null) {
+            return ip;
+        }
+
+        // fallback: remote ip z pripojeni
+        var remoteIp = context.Connection.RemoteIpAddress;
+        if (remoteIp == null) {
+            return null;
+        }
+
+        if (remoteIp.IsIPv4MappedToIPv6) {
+            remoteIp = remoteIp.MapToIPv4();
+        }
+
+        return remoteIp;
+
+
+
+        // pomocna funkce pro parsovani ip (vcetne pripadneho seznamu ip oddelenych carkou)
+        static IPAddress? parseIp(string? value) {
+            if (string.IsNullOrWhiteSpace(value)) {
+                return null;
+            }
+
+            // header muze obsahovat vice ip oddelenych carkou (client, proxy1, proxy2, ...)
+            var firstIpString = value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault()?
+                .Trim();
+
+            if (string.IsNullOrWhiteSpace(firstIpString)) {
+                return null;
+            }
+
+            if (!IPAddress.TryParse(firstIpString, out var ipAddress)) {
+                return null;
+            }
+
+            // pokud je ipv4 namapovana do ipv6 (::ffff:127.0.0.1), zmapuj na klasickou ipv4
+            if (ipAddress.IsIPv4MappedToIPv6) {
+                ipAddress = ipAddress.MapToIPv4();
+            }
+
+            return ipAddress;
+        }
     }
 }

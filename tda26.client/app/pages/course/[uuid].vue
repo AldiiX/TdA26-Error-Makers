@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {type Course} from "#shared/types";
+    import {type Course} from "#shared/types";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
+    declare const grecaptcha: any;
 
     definePageMeta({
         layout: "normal-page-layout",
@@ -67,7 +68,21 @@ import {type Course} from "#shared/types";
         }
     }
 
-    
+    // frontendove poslani view eventu
+    onMounted(async () => {
+        const captchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
+
+        await fetch(`/api/v2/courses/${uuid}/view`, {
+            method: 'POST',
+            body: JSON.stringify({ token: captchaToken }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    })
 </script>
 
 <template>

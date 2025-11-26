@@ -8,12 +8,14 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
             .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
-    
+
     public async Task<Course?> GetByIdAsyncFull(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
             .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
@@ -23,17 +25,20 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
         return await db.Courses
             .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .ToListAsync(ct);
     }
-    
+
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
         return await db.Courses
             .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
             .ToListAsync(ct);
     }
+
 
     public async Task CreateAsync(Course course, CancellationToken ct = default) {
         db.Courses.Add(course);

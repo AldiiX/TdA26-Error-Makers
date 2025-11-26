@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -19,6 +20,12 @@ public class APIv2(
     IAccountRepository accounts,
     IMaterialAccessService materialAccessService
 ) : Controller {
+
+    // random picovinky
+    private static readonly HttpClient HttpClient = new();
+    public static List<IPAddress> UsedIps = [];
+
+
 
     [HttpGet]
     public IActionResult Index() {
@@ -177,6 +184,59 @@ public class APIv2(
         if (!success) {
             return NotFound(new { error = "Course not found." });
         }
+
+        return NoContent();
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/view")] // TODO: pripadne casove omezeni resetu ip
+    public async Task<IActionResult> UpdateCourseViewCount(
+        [FromRoute] Guid courseUuid,
+        [FromBody] CaptchaTokenRequest ctr,
+        CancellationToken ct
+    ) {
+        // overeni captchy
+        using var requestMessage = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://www.google.com/recaptcha/api/siteverify"
+        );
+
+        var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+            { "secret", Program.ENV["RECAPTCHA_SECRET_KEY"] },
+            { "response", ctr.Token }
+            // { "remoteip", HttpContext.GetIPAddress()?.ToString() ?? "" } // volitelne pro recaptchu
+        });
+
+        requestMessage.Content = formData;
+
+        var response = await HttpClient.SendAsync(requestMessage, ct);
+        var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+        var jsonResponse = JsonNode.Parse(responseContent);
+        if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+            return BadRequest(new { error = "Recaptcha verification failed." });
+        }
+
+        // zjisteni jestli ip adresa neni v pouzitych
+        var ipAddress = HttpContext.GetIPAddress();
+        if (ipAddress == null) {
+            return BadRequest(new { error = "Unable to determine client IP address." });
+        }
+
+        if (UsedIps.Contains(ipAddress)) {
+            return BadRequest(new { error = "IP address has already been used to update view count." });
+        }
+
+        // ip oznacit jako pouzitou (az po uspesne captcha)
+        UsedIps.Add(ipAddress);
+
+        // aktualizace poctu zobrazeni kurzu
+        var course = await courseRepository.GetByIdAsync(courseUuid, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        course.ViewCount += 1;
+        await courseRepository.UpdateAsync(course, ct);
 
         return NoContent();
     }
