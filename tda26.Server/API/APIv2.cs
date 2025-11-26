@@ -223,7 +223,7 @@ public class APIv2(
         }
 
         if (UsedIps.Contains(ipAddress)) {
-            return BadRequest(new { error = "IP address has already been used to update view count." });
+            return BadRequest(new { error = "You have already used your view for today." });
         }
 
         // ip oznacit jako pouzitou (az po uspesne captcha)
