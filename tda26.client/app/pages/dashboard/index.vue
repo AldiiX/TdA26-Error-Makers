@@ -7,6 +7,7 @@ import { NuxtLink } from "#components";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
+import Input from "~/components/Input.vue";
 
 definePageMeta({
     layout: "normal-page-layout",

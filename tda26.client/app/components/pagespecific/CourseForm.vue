@@ -151,7 +151,7 @@ const submitForm = async () => {
                 </template>
 
                 <template v-else>
-                    <Input type="file" @change="handleFileChange(i, $event)" />
+                    <Input type="file" @change="handleFileChange(i, $event)" defaultFileName="Žádný soubor pro přepsání" />
                 </template>
 
                 <Input type="textarea" placeholder="Popis" v-model="m.description" rows="4"/>

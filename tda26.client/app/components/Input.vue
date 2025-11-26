@@ -4,16 +4,27 @@
         type?: string,
         placeholder?: string,
         required?: boolean,
+        defaultFileName?: string,
     }>(), {
         modelValue: '',
         type: 'text',
         placeholder: '',
         required: false,
+        defaultFileName: 'Žádný soubor nebyl vybrán',
     });
     
     const emit = defineEmits<{
         (e: 'update:modelValue', value: string | number | null): void
     }>();
+
+    const fileName = ref(props.defaultFileName);
+
+    function onFileChange(e: Event) {
+        const target = e.target as HTMLInputElement;
+        const selected = target.files?.[0] ?? null;
+
+        fileName.value = selected ? selected.name : props.defaultFileName;
+    }
 </script>
 
 <template>
@@ -34,6 +45,16 @@
     >
         <slot />
     </select>
+    <label v-else-if="type === 'file'" :class="$style.input">
+        <input
+            :type="props.type"
+            :placeholder="props.placeholder"
+            :required="required"
+            :value="modelValue"
+            @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+        />
+        <i>{{ fileName }}</i>
+    </label>
     <input
         v-else
         :type="props.type"
@@ -60,5 +81,10 @@
     &:focus {
         outline: 2px solid var(--accent-color);
     }
+    
+    [type="file"] {
+        display: none;
+    }
+    
 }
 </style>
