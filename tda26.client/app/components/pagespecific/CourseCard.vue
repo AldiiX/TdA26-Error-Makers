@@ -11,6 +11,10 @@
         editMode?: boolean
     }>();
     
+    const emit = defineEmits<{
+        (e: "edit"): void;
+    }>();
+    
     const { data: _account } = await useFetch<Account>(getBaseUrl() + `/api/v2/accounts/${props.course.lecturerUuid}`);
     const account = computed(() => _account.value ?? null);
 
@@ -27,9 +31,9 @@
 <template>
     <div :class="$style.container">
         <div :class="$style.top">
-            <div :class="$style.imageContainer">
+            <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
                 <div :class="$style.image"></div>                
-            </div>
+            </NuxtLink>
         </div>
         <div :class="$style.bottom">
             <div :class="$style.infoContainer">
@@ -59,9 +63,7 @@
                         </NuxtLink>
                     </div>
                     <div v-else :class="$style.lecturerButtons">
-                        <NuxtLink :to="`/lecturer/courses/${course.uuid}/edit`" :class="$style.button">
-                            <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
-                        </NuxtLink>
+                        <Button button-style="primary" accent-color="secondary" @click="emit('edit')" style="width: 100%">Upravit</Button>
                         <Button button-style="secondary" accent-color="secondary" style="width: 100%">Smazat</Button>
                     </div>
                 </div>
@@ -94,6 +96,7 @@
         width: 100%;
         
         .imageContainer{
+            display: block;
             min-height: 200px;
             width: 100%;
             background-color: var(--accent-color-primary);
@@ -177,6 +180,7 @@
                     >p {
                         font-size: 16px;
                         margin: 0;
+                        color: var(--text-color);
                     }
                 }
             }
@@ -189,6 +193,9 @@
                 .lecturerButtons {
                     display: flex;
                     gap: 8px;
+                    button {
+                        height: fit-content;
+                    }
                 }
             }
         }

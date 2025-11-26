@@ -9,6 +9,29 @@ export interface Course {
     lecturerUuid: string;
 }
 
+export type CourseWithMaterials = Course & {
+    materials?: {
+        uuid: string;
+        name: string;
+        type: "url" | "file";
+        url?: string;
+    }[];
+};
+
+export interface MaterialFormModel {
+    uuid?: string | null;
+    name: string;
+    type: "file" | "url";
+    url?: string | null;
+    file?: File | null;
+}
+
+export interface CourseFormModel {
+    name: string;
+    description: string;
+    materials: MaterialFormModel[];
+}
+
 export interface Lecturer {
     uuid: string,
     titleBefore: string | null,
