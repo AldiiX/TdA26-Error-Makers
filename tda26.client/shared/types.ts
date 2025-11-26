@@ -7,16 +7,17 @@ export interface Course {
     createdAt: string;
     updatedAt: string;
     lecturerUuid: string;
-}
-
-export type CourseWithMaterials = Course & {
     materials?: {
         uuid: string;
         name: string;
         type: "url" | "file";
         url?: string;
+        fileUrl?: string;
+        createdAt: string;
+        description?: string;
+        faviconUrl?: string;
     }[];
-};
+}
 
 export interface MaterialFormModel {
     uuid?: string | null;
@@ -24,6 +25,7 @@ export interface MaterialFormModel {
     type: "file" | "url";
     url?: string | null;
     file?: File | null;
+    description?: string | null;
 }
 
 export interface CourseFormModel {

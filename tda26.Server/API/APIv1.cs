@@ -361,6 +361,10 @@ public class APIv1(
         if (material == null || material.CourseUuid != course.Uuid)
             return NotFound(new { error = "Material not found in the specified course." });
 
+        
+        if (material is FileMaterial fileMaterial)
+            await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
+        
         await materialRepository.DeleteMaterialAsync(material);
 
         return NoContent();

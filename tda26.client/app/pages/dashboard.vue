@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {Account, Course, CourseFormModel, CourseWithMaterials} from "#shared/types";
+import type { Account, Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import { NuxtLink } from "#components";
@@ -25,10 +25,8 @@ const { data: _courses, pending: coursesPending } = await useFetch<Course[]>(get
     server: false
 });
 
-const courses = computed<CourseWithMaterials[]>(() => {
-    const list = _courses.value ?? [];
-    if (list.length === 0) return [];
-    return [...list];
+const courses = computed<Course[]>(() => {
+    return [...(_courses.value ?? [])];
 });
 
 const courseList = ref<HTMLElement | null>(null);
@@ -48,7 +46,7 @@ const updateScroll = () => {
         canScrollLeft.value = coursesEl.scrollLeft > 0;
         canScrollRight.value = coursesEl.scrollLeft + coursesEl.clientWidth < coursesEl.scrollWidth;
     }
-}
+};
 
 onMounted(() => {
     updateScroll();
@@ -60,146 +58,17 @@ watch(courses, () => {
     window.removeEventListener('resize', updateScroll);
 });
 
-const courseForm = ref<CourseFormModel>({
-    name: '',
-    description: '',
-    materials: []
-});
-
-const createCourseLoading = ref(false);
-const createCourseServerError = ref<string | null>(null);
-
-const submitCourse = async (formData: any) => {
-    createCourseLoading.value = true;
-    createCourseServerError.value = null;
-
+const refreshCourses = async () => {
     try {
-        const fd = new FormData();
-
-        fd.append("Course.Name", formData.name);
-        fd.append("Course.Description", formData.description ?? "");
-
-        // FILE MATERIALS
-        formData.materials
-            .filter((m: any) => m.type === "file")
-            .forEach((m: any, index: number) => {
-                fd.append(`FileMaterials[${index}].Name`, m.name);
-                fd.append(`FileMaterials[${index}].Type`, "file");
-                if (m.file) fd.append(`FileMaterials[${index}].File`, m.file);
-            });
-
-        // URL MATERIALS
-        formData.materials
-            .filter((m: any) => m.type === "url")
-            .forEach((m: any, index: number) => {
-                fd.append(`UrlMaterials[${index}].Name`, m.name);
-                fd.append(`UrlMaterials[${index}].Type`, "url");
-                fd.append(`UrlMaterials[${index}].Url`, m.url ?? "");
-            });
-        
-        // SEND AS MULTIPART/FORM-DATA
-        await $fetch(getBaseUrl() + "/api/v2/courses", {
-            method: "POST",
-            body: fd,
-        });
-
-        // refresh courses display
-        try {
-            const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
-            _courses.value = refreshed;
-        } catch {}
-
-        // close modal + reset
-        enabledModal.value = null;
-        courseForm.value = { name: "", description: "", materials: [] };
-
-    } catch (err: any) {
-        createCourseServerError.value = err?.data?.message ?? err?.message ?? "Server error";
-    } finally {
-        createCourseLoading.value = false;
-    }
+        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
+        _courses.value = refreshed;
+    } catch {}
 };
 
-const openEdit = async (course: CourseWithMaterials) => {
-    const { data: _fullCourse } = await useFetch<CourseWithMaterials>(getBaseUrl() + `/api/v2/courses/${course.uuid}?full=true`, {
-        server: false
-    });
-    
-    const fullCourse = _fullCourse.value;
-    if (!fullCourse) return;
-    
-    const safeMaterials = fullCourse.materials ?? [];
-
-    courseForm.value = {
-        name: fullCourse.name,
-        description: fullCourse.description ?? "",
-        materials: safeMaterials.map((m) => ({
-            uuid: m.uuid,
-            name: m.name,
-            type: m.type,
-            url: m.url ?? null,
-            file: null
-        }))
-    };
-
-    editingCourseId.value = fullCourse.uuid;
+const openEdit = (course: Course) => {
+    editingCourseId.value = course.uuid;
     enabledModal.value = "updateCourse";
 };
-
-const submitEditedCourse = async (formData: any) => {
-    if (!editingCourseId.value) return;
-    createCourseLoading.value = true;
-    createCourseServerError.value = null;
-
-    try {
-        const fd = new FormData();
-
-        fd.append("Course.Name", formData.name);
-        fd.append("Course.Description", formData.description ?? "");
-        fd.append("Course.Uuid", editingCourseId.value);
-
-        // FILE MATERIALS
-        formData.materials
-            .filter((m: any) => m.type === "file")
-            .forEach((m: any, index: number) => {
-                fd.append(`FileMaterials[${index}].Uuid`, m.uuid);
-                fd.append(`FileMaterials[${index}].Name`, m.name);
-                fd.append(`FileMaterials[${index}].Type`, "file");
-                if (m.file) fd.append(`FileMaterials[${index}].File`, m.file);
-            });
-
-        // URL MATERIALS
-        formData.materials
-            .filter((m: any) => m.type === "url")
-            .forEach((m: any, index: number) => {
-                fd.append(`UrlMaterials[${index}].Uuid`, m.uuid);
-                fd.append(`UrlMaterials[${index}].Name`, m.name);
-                fd.append(`UrlMaterials[${index}].Type`, "url");
-                fd.append(`UrlMaterials[${index}].Url`, m.url ?? "");
-            });
-
-        await $fetch(getBaseUrl() + `/api/v2/courses/${editingCourseId.value}`, {
-            method: "PUT",
-            body: fd,
-        });
-
-        // refresh courses
-        try {
-            const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
-            _courses.value = refreshed;
-        } catch {}
-
-        enabledModal.value = null;
-        courseForm.value = { name: "", description: "", materials: [] };
-        editingCourseId.value = null;
-
-    } catch (err: any) {
-        createCourseServerError.value = err?.data?.message ?? err?.message ?? "Server error";
-    } finally {
-        createCourseLoading.value = false;
-    }
-};
-
 </script>
 
 <template>
@@ -208,19 +77,20 @@ const submitEditedCourse = async (formData: any) => {
     </Head>
 
     <h1 :class="$style.nadpis">Přehled</h1>
-    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci at commodi corporis, delectus ducimus est facilis ipsum molestiae nisi odit, reprehenderit repudiandae sapiente sit temporibus voluptates. Consectetur cumque esse itaque.</p>
+    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
 
     <div :class="$style.actionButtons">
         <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">
             <Button button-style="primary" accent-color="primary"><span :class="$style.icon"></span><p>Vytvořit nový kurz</p></Button>
         </div>
     </div>
-    
+
     <div :class="['liquid-glass', $style.courses]">
         <div :class="$style.header">
             <h2>Moje kurzy</h2>
             <NuxtLink to="/dashboard/courses" :class="['text-gradient']">Všechny kurzy</NuxtLink>
         </div>
+
         <p v-if="coursesPending">Načítání kurzů...</p>
         <p v-else-if="courses.length === 0">Žádné kurzy nenalezeny.</p>
 
@@ -229,7 +99,7 @@ const submitEditedCourse = async (formData: any) => {
             <button :class="['liquid-glass', $style.rightBtn, canScrollRight && $style.active]" @click="scroll(1000)"><span>></span></button>
 
             <ul ref="courseList" @scroll="updateScroll">
-                <li v-for="course in courses" :key="course!.uuid">
+                <li v-for="course in courses" :key="course.uuid">
                     <CourseCard :course="course" edit-mode @edit="openEdit(course)" />
                 </li>
             </ul>
@@ -237,25 +107,22 @@ const submitEditedCourse = async (formData: any) => {
     </div>
 
     <Teleport to="#teleports">
+        <!-- CREATE -->
         <Modal :enabled="enabledModal === 'createCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
             <h3 class="text-lg font-semibold">Vytvořit nový kurz</h3>
-
             <CourseForm
-                v-model="courseForm"
                 mode="create"
-                @submit="submitCourse"
-                @cancel="enabledModal = null"
+                @finished="() => { enabledModal = null; refreshCourses(); }"
             />
         </Modal>
 
+        <!-- EDIT -->
         <Modal :enabled="enabledModal === 'updateCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
             <h3 class="text-lg font-semibold">Upravit kurz</h3>
-
             <CourseForm
-                v-model="courseForm"
                 mode="edit"
-                @submit="submitEditedCourse"
-                @cancel="enabledModal = null"
+                :course-id="editingCourseId"
+                @finished="() => { enabledModal = null; refreshCourses(); editingCourseId = null; }"
             />
         </Modal>
     </Teleport>

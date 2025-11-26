@@ -116,7 +116,7 @@ import {type Course} from "#shared/types";
             </nav>
             <div :class="['liquid-glass']">
                 <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <p v-if="course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
+                    <p v-if="course.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
                     <ul v-else>
                         <li v-for="material in course.materials" :key="material.uuid">
                             <!-- FILE MATERIAL -->
@@ -127,7 +127,7 @@ import {type Course} from "#shared/types";
                                     <div :class="$style.fileInfo">
                                         <p>{{ material.name }}</p>
                                         <div :class="$style.fileDetails">
-                                            <p>{{ material.fileUrl.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
+                                            <p>{{ material.fileUrl?.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
                                         </div>
                                     </div>
                                     <p :class="$style.description">{{ material.description }}</p>
@@ -154,12 +154,12 @@ import {type Course} from "#shared/types";
                     </ul>
                 </div>
                 <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>
-                    <ul v-else>
-                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">
-                            <!-- // TODO: -->
-                        </li>
-                    </ul>
+<!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+<!--                    <ul v-else>-->
+<!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+<!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+<!--                        </li>-->
+<!--                    </ul>-->
                 </div>
             </div>
         </div>
@@ -353,6 +353,8 @@ import {type Course} from "#shared/types";
                         .favicon img {
                             border-radius: 4px;
                             overflow: hidden;
+                            width: 32px;
+                            height: 32px;
                         }
                         
                         .description {

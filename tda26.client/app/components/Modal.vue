@@ -129,7 +129,6 @@ onBeforeUnmount(() => {
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
 
     &[data-anim="opening"] {
         .blurdiv {
@@ -200,6 +199,12 @@ onBeforeUnmount(() => {
         min-height: 40px;
         box-shadow: 0 0 6px rgba(0, 0, 0, 0.025);
         overflow: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
 
         > .closebutton {
             width: 24px;

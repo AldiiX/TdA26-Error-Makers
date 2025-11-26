@@ -1,138 +1,187 @@
 ﻿<script setup lang="ts">
-type Material = {
-    uuid?: string | null;
-    name: string;
-    type: "url" | "file";
-    url?: string | null;
-    file?: File | null;
-};
+import type {Course, CourseFormModel, MaterialFormModel} from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
+import Button from "~/components/Button.vue";
+import Input from "~/components/Input.vue";
 
-interface CourseFormModel {
-    name: string;
-    description: string;
-    materials: Material[];
-}
+type Material = MaterialFormModel;
 
 const props = defineProps<{
-    modelValue: CourseFormModel;
-    mode?: "create" | "edit";
+    mode: "create" | "edit";
+    courseId?: string | null;
 }>();
 
 const emit = defineEmits<{
-    (e: "update:modelValue", value: CourseFormModel): void;
-    (e: "submit", value: CourseFormModel): void;
-    (e: "cancel"): void;
+    (e: "finished"): void;
 }>();
 
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+const form = ref<CourseFormModel>({
+    name: "",
+    description: "",
+    materials: []
+});
+
+// LOAD EXISTING DATA WHEN EDITING
+if (props.mode === "edit" && props.courseId) {
+    const { data } = await useFetch<Course>(
+        getBaseUrl() + `/api/v2/courses/${props.courseId}?full=true`,
+        { server: false }
+    );
+
+    const c = data.value;
+    if (c) {
+        form.value = {
+            name: c.name,
+            description: c.description ?? "",
+            materials: (c.materials ?? []).map(m => ({
+                uuid: m.uuid,
+                name: m.name,
+                type: m.type,
+                url: m.url ?? null,
+                file: null,
+                description: m.description ?? null
+            }))
+        };
+    }
+}
+
+// FIELD HELPERS
 const updateField = (field: keyof CourseFormModel, value: any) => {
-    emit("update:modelValue", { ...props.modelValue, [field]: value });
+    form.value = { ...form.value, [field]: value };
 };
 
 const updateMaterial = (index: number, newData: Partial<Material>) => {
-    const materials = [...props.modelValue.materials];
-    materials[index] = { ...materials[index], ...newData };
-    emit("update:modelValue", { ...props.modelValue, materials });
+    form.value.materials[index] = {
+        ...(form.value.materials[index] || { name: "", type: "url", url: null, file: null }),
+        ...newData
+    } as Material;
 };
 
 const addMaterial = () => {
-    const materials = [...props.modelValue.materials];
-    materials.push({ name: "", type: "url", url: "" });
-    emit("update:modelValue", { ...props.modelValue, materials });
+    form.value.materials.push({ name: "", type: "url", url: "", file: null } as Material);
 };
 
 const removeMaterial = (index: number) => {
-    const materials = [...props.modelValue.materials];
-    materials.splice(index, 1);
-    emit("update:modelValue", { ...props.modelValue, materials });
+    form.value.materials.splice(index, 1);
 };
 
-const submitForm = () => emit("submit", props.modelValue);
+// Typed file change handler to avoid EventTarget typing issues
+const handleFileChange = (index: number, event: Event) => {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0] ?? null;
+    updateMaterial(index, { file });
+};
+
+// SUBMIT
+const submitForm = async () => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+        const fd = new FormData();
+        fd.append("Course.Name", form.value.name);
+        fd.append("Course.Description", form.value.description ?? "");
+
+        if (props.mode === "edit") fd.append("Course.Uuid", props.courseId ?? "");
+
+        form.value.materials.filter(m => m.type === "file").forEach((m, index) => {
+            if (m.uuid) fd.append(`FileMaterials[${index}].Uuid`, m.uuid);
+            fd.append(`FileMaterials[${index}].Name`, m.name);
+            fd.append(`FileMaterials[${index}].Type`, "file");
+            fd.append(`FileMaterials[${index}].Description`, m.description ?? "");
+            if (m.file) fd.append(`FileMaterials[${index}].File`, m.file);
+        });
+
+        form.value.materials.filter(m => m.type === "url").forEach((m, index) => {
+            if (m.uuid) fd.append(`UrlMaterials[${index}].Uuid`, m.uuid);
+            fd.append(`UrlMaterials[${index}].Name`, m.name);
+            fd.append(`UrlMaterials[${index}].Type`, "url");
+            fd.append(`UrlMaterials[${index}].Description`, m.description ?? "");
+            fd.append(`UrlMaterials[${index}].Url`, m.url ?? "");
+        });
+
+        if (props.mode === "create") {
+            await $fetch(getBaseUrl() + "/api/v2/courses", { method: "POST", body: fd });
+        } else {
+            await $fetch(getBaseUrl() + `/api/v2/courses/${props.courseId}`, { method: "PUT", body: fd });
+        }
+
+        emit("finished");
+
+    } catch (err: any) {
+        error.value = err?.data?.message ?? err?.message ?? "Server error";
+    } finally {
+        loading.value = false;
+    }
+};
 </script>
 
 <template>
-    <form @submit.prevent="submitForm" class="course-form">
-        <div class="form-group">
+    <form @submit.prevent="submitForm" :class="$style.courseForm">
+        <div :class="$style.formGroup">
             <label>Název</label>
-            <input
-                type="text"
-                :value="modelValue.name"
-                @input="updateField('name', $event.target.value)"
-                required
-            />
+            <Input type="text" v-model="form.name" required />
         </div>
 
-        <div class="form-group">
+        <div :class="$style.formGroup">
             <label>Popis</label>
-            <textarea
-                :value="modelValue.description"
-                @input="updateField('description', $event.target.value)"
-                rows="4"
-            ></textarea>
+            <Input type="textarea" v-model="form.description" rows="4"/>
         </div>
 
-        <!-- MATERIALS SECTION -->
-        <div class="materials">
-            <div class="materials-header">
+        <div :class="$style.materials">
+            <div :class="$style.header">
                 <label>Materiály</label>
-                <button type="button" class="add-btn" @click="addMaterial">+</button>
+                <button type="button" @click="addMaterial" :class="$style.add">Přidat</button>
             </div>
 
-            <div class="material-item" v-for="(m, i) in modelValue.materials" :key="i">
-                <input
-                    type="text"
-                    placeholder="Název materiálu"
-                    :value="m.name"
-                    @input="updateMaterial(i, { name: $event.target.value })"
-                />
-
-                <select
-                    :value="m.type"
-                    @change="updateMaterial(i, { type: $event.target.value })"
-                >
-                    <option value="url">URL</option>
-                    <option value="file">Soubor</option>
-                </select>
+            <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
+                <div>
+                    <Input type="text" placeholder="Název materiálu" v-model="m.name" />
+                    <Input type="select" v-model="m.type" :value="m.type">
+                        <option value="url">URL</option>
+                        <option value="file">Soubor</option>
+                    </Input>
+                </div>
 
                 <template v-if="m.type === 'url'">
-                    <input
-                        type="text"
-                        placeholder="Odkaz"
-                        :value="m.url"
-                        @input="updateMaterial(i, { url: $event.target.value })"
-                    />
+                    <Input type="text" placeholder="Odkaz" v-model="m.url" />
                 </template>
 
                 <template v-else>
-                    <input
-                        type="file"
-                        @change="updateMaterial(i, { file: $event.target.files?.[0] })"
-                    />
+                    <Input type="file" @change="handleFileChange(i, $event)" />
                 </template>
 
-                <button type="button" class="remove-btn" @click="removeMaterial(i)">×</button>
+                <Input type="textarea" placeholder="Popis" v-model="m.description" rows="4"/>
+
+                <button type="button" :class="$style.remove" @click="removeMaterial(i)">Odstranit</button>
             </div>
         </div>
 
-        <!-- BUTTONS -->
-        <div class="form-buttons">
-            <button type="button" class="cancel-btn" @click="$emit('cancel')">
+        <p v-if="error" style="color:red;">{{ error }}</p>
+        <p v-if="loading">Probíhá ukládání...</p>
+
+        <div :class="$style.formButtons">
+            <Button button-style="tertiary" type="button" @click="emit('finished')" :disabled="loading">
                 Zrušit
-            </button>
-            <button type="submit" class="submit-btn">
-                {{ mode === 'create' ? 'Vytvořit' : 'Uložit' }}
-            </button>
+            </Button>
+            <Button button-style="primary" type="submit" :disabled="loading">
+                {{ props.mode === 'create' ? 'Vytvořit' : 'Uložit' }}
+            </Button>
         </div>
     </form>
 </template>
 
-<style scoped lang="scss">
-.course-form {
+<style module lang="scss">
+.courseForm {
     display: flex;
     flex-direction: column;
     gap: 18px;
 }
 
-.form-group {
+.formGroup {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -142,23 +191,12 @@ const submitForm = () => emit("submit", props.modelValue);
     }
 }
 
-input,
-textarea,
-select {
-    border: 1px solid var(--background-color-secondary);
-    border-radius: 8px;
-    padding: 8px 12px;
-    background-color: var(--background-color-secondary);
-    color: var(--text-color-secondary);
-    font-size: 16px;
-}
-
 .materials {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
 
-    .materials-header {
+    .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -167,60 +205,64 @@ select {
             font-weight: 600;
         }
 
-        .add-btn {
-            background-color: var(--accent-color-primary);
-            color: white;
-            border-radius: 8px;
-            padding: 2px 10px;
-            font-size: 18px;
-            cursor: var(--cursor-pointer);
-        }
     }
 
-    .material-item {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
-        position: relative;
+    button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--accent-color-primary);
 
-        input,
-        select {
-            width: 100%;
+        &::before {
+            mask-size: cover;
+            background-color: var(--accent-color-primary);
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
         }
-
-        .remove-btn {
-            position: absolute;
-            right: -8px;
-            top: -8px;
-            background-color: #ff4a4aa2;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            color: white;
-            font-size: 16px;
-            cursor: var(--cursor-pointer);
+    }
+    
+    .remove {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .add {
+        font-size: 16px;
+        font-weight: 600;
+        
+        &::before {
+            content: '';
+            mask-image: url("../../../public/icons/plus.svg");
         }
     }
 }
 
-.form-buttons {
+.formButtons {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+}
 
-    .cancel-btn {
-        background-color: #aaa2;
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 600;
-    }
-
-    .submit-btn {
-        background-color: var(--accent-color-primary);
-        color: white;
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 600;
+.materialGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 12px;
+    background-color: var(--background-color-secondary);
+    
+    >div {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        
+        :first-child {
+            width: 70%;
+        }
     }
 }
 </style>

@@ -18,7 +18,8 @@ public class APIv2(
     ILecturerRepository lecturers,
     ICourseRepository courseRepository,
     IAccountRepository accounts,
-    IMaterialAccessService materialAccessService
+    IMaterialAccessService materialAccessService,
+    IMaterialRepository materialRepository
 ) : Controller {
 
     [HttpGet]
@@ -229,76 +230,85 @@ public class APIv2(
         existingCourse.Name = body.Course.Name;
         existingCourse.Description = body.Course.Description;
 
-        foreach (var url in body.UrlMaterials) {
-            if (string.IsNullOrEmpty(url.Url)) {
-                return BadRequest(new { error = "URL is required for URL materials." });
-            }
+        foreach (var urlMaterial in body.UrlMaterials) {
+            
+            var existingMaterial = existingCourse.Materials
+                .OfType<UrlMaterial>()
+                .FirstOrDefault(m => m.Uuid == urlMaterial.Uuid);
 
-            var existing = existingCourse.Materials.FirstOrDefault(m => m.Uuid == url.Uuid);
-
-            if (existing is UrlMaterial urlMat) {
-                urlMat.Name = url.Name;
-                urlMat.Description = url.Description;
-                urlMat.Url = url.Url;
-                urlMat.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(url.Url).Host}&sz=64";
-            } 
-            else {
-                existingCourse.Materials.Add(new UrlMaterial {
-                    Name = url.Name,
-                    Description = url.Description,
+            if (existingMaterial == null) {
+                if (string.IsNullOrEmpty(urlMaterial.Name)) {
+                    return BadRequest(new { error = "Name is required for URL materials." });
+                }
+            
+                if (string.IsNullOrEmpty(urlMaterial.Url)) {
+                    return BadRequest(new { error = "URL is required for URL materials." });
+                }
+                
+                var newMaterial = new UrlMaterial {
+                    Name = urlMaterial.Name,
+                    Description = urlMaterial.Description,
                     Type = Material.MaterialType.Url,
                     CourseUuid = existingCourse.Uuid,
-                    Url = url.Url,
-                    FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(url.Url).Host}&sz=64"
-                });
+                    Url = urlMaterial.Url,
+                    FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64"
+                };
+                
+                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial);
+                continue;
             }
+            
+            if (!string.IsNullOrEmpty(urlMaterial.Name)) existingMaterial.Name = urlMaterial.Name;
+            existingMaterial.Description = urlMaterial.Description;
+            if (!string.IsNullOrEmpty(urlMaterial.Url)) {
+                existingMaterial.Url = urlMaterial.Url;
+                existingMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64";
+            }
+            
+            await materialRepository.UpdateMaterialAsync(existingMaterial);
         }
 
-        foreach (var file in body.FileMaterials) {
-            var existing = existingCourse.Materials.FirstOrDefault(m => m.Uuid == file.Uuid);
+        foreach (var fileMaterial in body.FileMaterials) {
+            var existingMaterial = existingCourse.Materials
+                .OfType<FileMaterial>()
+                .FirstOrDefault(m => m.Uuid == fileMaterial.Uuid);
 
-            if (existing is FileMaterial existingFileMat) {
-                existingFileMat.Name = file.Name;
-                existingFileMat.Description = file.Description;
-
-                if (file.File != null && file.File.Length > 0) {
-                    var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, file.File);
-                    existingFileMat.FileUrl = uploadedUrl;
-                }
-            }
-            else {
-                if (file.File == null || file.File.Length == 0) {
-                    return BadRequest(new { error = "New file material must include a file." });
+            if (existingMaterial == null) {
+                if (string.IsNullOrEmpty(fileMaterial.Name)) {
+                    return BadRequest(new { error = "Name is required for file materials." });
                 }
 
-                var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, file.File);
+                if (fileMaterial.File == null || fileMaterial.File.Length == 0) {
+                    return BadRequest(new { error = "File is required for file materials." });
+                }
 
-                existingCourse.Materials.Add(new FileMaterial {
-                    Name = file.Name,
-                    Description = file.Description,
+                var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
+
+                var newMaterial = new FileMaterial {
+                    Name = fileMaterial.Name,
+                    Description = fileMaterial.Description,
                     Type = Material.MaterialType.File,
                     CourseUuid = existingCourse.Uuid,
                     FileUrl = uploadedUrl
-                });
+                };
+
+                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial);
+                continue;
             }
-        }
-
-        var sentUuids = body.UrlMaterials.Select(m => m.Uuid)
-            .Concat(body.FileMaterials.Select(m => m.Uuid))
-            .Where(id => id.HasValue)
-            .Select(id => id.Value)
-            .ToHashSet();
-
-        var toRemove = existingCourse.Materials
-            .Where(m => !sentUuids.Contains(m.Uuid))
-            .ToList();
-
-        foreach (var material in toRemove) {
-            existingCourse.Materials.Remove(material);
+            
+            if (!string.IsNullOrEmpty(fileMaterial.Name)) existingMaterial.Name = fileMaterial.Name;
+            existingMaterial.Description = fileMaterial.Description;
+            
+            if (fileMaterial.File != null && fileMaterial.File.Length > 0) {
+                var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
+                existingMaterial.FileUrl = uploadedUrl;
+            }
+            
+            await materialRepository.UpdateMaterialAsync(existingMaterial);
         }
 
         await courseRepository.UpdateAsync(existingCourse);
-
+        
         return Ok(existingCourse.ToReadDto());
     }
 
