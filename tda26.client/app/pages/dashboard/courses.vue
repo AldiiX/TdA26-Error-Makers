@@ -1,11 +1,15 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
-import type {Course} from "#shared/types";
+import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 
 definePageMeta({
-    layout: "normal-page-layout"
+    layout: "normal-page-layout",
+    middleware: () => {
+        const user = useState<Account | null>('loggedAccount');
+        if (!user.value) return navigateTo('/login');
+    }
 });
 
 
