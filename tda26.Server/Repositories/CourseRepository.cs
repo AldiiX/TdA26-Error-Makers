@@ -7,11 +7,13 @@ namespace tda26.Server.Repositories;
 public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Likes)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
     
     public async Task<Course?> GetByIdAsyncFull(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Likes)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
@@ -20,11 +22,13 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Likes)
             .ToListAsync(ct);
     }
     
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Likes)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)

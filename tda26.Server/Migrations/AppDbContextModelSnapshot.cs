@@ -87,9 +87,39 @@ namespace tda26.Server.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("Views")
+                        .HasColumnType("int");
+
                     b.HasKey("Uuid");
 
                     b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("AccountUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CourseUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("AccountUuid");
+
+                    b.HasIndex("CourseUuid");
+
+                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -282,6 +312,25 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tda26.Server.Data.Models.Course", "Course")
+                        .WithMany("Likes")
+                        .HasForeignKey("CourseUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Course");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Course", "Course")
@@ -318,6 +367,8 @@ namespace tda26.Server.Migrations
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
                 {
                     b.Navigation("Feed");
+
+                    b.Navigation("Likes");
 
                     b.Navigation("Materials");
 
