@@ -99,7 +99,7 @@ const deleteCourse = async () => {
 
 <template>
     <Head>
-        <Title>Dashboard • Think different Academy</Title>
+        <Title>Přehled • Think different Academy</Title>
     </Head>
 
     <h1 :class="$style.nadpis">Přehled</h1>
