@@ -210,7 +210,7 @@ const deleteCourse = async () => {
             display: inline-block;
             width: 40px;
             height: 40px;
-            mask-image: url('../../public/icons/book.svg');
+            mask-image: url('../../../public/icons/book.svg');
             mask-size: cover;
             background-color: white;
             margin-right: 8px;
