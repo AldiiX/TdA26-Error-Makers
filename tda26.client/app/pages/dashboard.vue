@@ -110,9 +110,9 @@ const deleteCourse = async () => {
         </div>
     </div>
 
-    <div :class="['liquid-glass', $style.courses]">
+    <div :class="[$style.courses]">
         <div :class="$style.header">
-            <h2>Moje kurzy</h2>
+            <h2>Nedávné kurzy</h2>
             <NuxtLink to="/dashboard/courses" :class="['text-gradient']">Všechny kurzy</NuxtLink>
         </div>
 
@@ -138,7 +138,12 @@ const deleteCourse = async () => {
 
     <Teleport to="#teleports">
         <!-- CREATE -->
-        <Modal :enabled="enabledModal === 'createCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
+        <Modal 
+            :enabled="enabledModal === 'createCourse'" 
+            @close="enabledModal = null" 
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
             <h3>Vytvořit nový kurz</h3>
             <CourseForm
                 mode="create"
@@ -147,7 +152,12 @@ const deleteCourse = async () => {
         </Modal>
 
         <!-- EDIT -->
-        <Modal :enabled="enabledModal === 'updateCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
+        <Modal 
+            :enabled="enabledModal === 'updateCourse'" 
+            @close="enabledModal = null" 
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
             <h3>Upravit kurz</h3>
             <CourseForm
                 mode="edit"
@@ -224,7 +234,6 @@ const deleteCourse = async () => {
 .courses {
     position: relative;
     margin-top: 48px;
-    padding: 32px;
     margin-bottom: 16px;
     border-radius: 12px;
     overflow-x: hidden;
@@ -235,16 +244,16 @@ const deleteCourse = async () => {
     
     .header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        align-items: baseline;
         margin-bottom: 24px;
+        gap: 8px;
         
         >h2 {
             margin: 0;
         }
         
         a {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
             padding-bottom: 2px;
             display: flex;
@@ -279,8 +288,8 @@ const deleteCourse = async () => {
             
             >* {
                 box-shadow: none;
-                width: 400px;
-                height: 400px;
+                //width: 400px;
+                //height: 400px;
             }
         }
     }

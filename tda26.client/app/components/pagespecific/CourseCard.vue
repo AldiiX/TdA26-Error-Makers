@@ -41,8 +41,8 @@
                 <h1 :class="[$style.nadpis, 'text-gradient']" :title="course.name"> {{ course.name }}</h1>
                 <p :class="$style.autor"> {{ lecturerDisplayName }}</p>
                 <div :class="$style.date">
-                    <p :class="$style.created">Vytvořeno: {{ timeAgoString(course.createdAt) }}</p>
-                    <p :class="$style.lastUpdate">Poslední úprava: {{ timeAgoString(course.updatedAt) }}</p>
+                    <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
+                    <p :class="$style.lastUpdate">Poslední úprava {{ timeAgoString(course.updatedAt) }}</p>
                 </div>
             </div>
             <div :class="$style.buttonsContainer">
@@ -86,7 +86,7 @@
     flex-direction: column;
     align-items: center;
     height: 400px;
-    width: 300px;
+    width: 350px;
     border-radius: 16px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
     background-color: var(--background-color-secondary);
@@ -103,6 +103,12 @@
             background-color: var(--accent-color-primary);
             overflow: hidden;
             border-radius: 16px;
+            transition: filter 0.3s;
+            
+            &:hover {
+                filter: brightness(0.9);
+                transition-duration: 0.3s;
+            }
             
             .image{
                 
@@ -113,14 +119,14 @@
     .bottom{
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         width: 100%;
-        flex-grow: 1; 
+        flex-grow: 1;
+        padding: 16px;
         
         .infoContainer{
             display: flex;
-            flex-direction: column;
-            padding: 16px;
-            flex-grow: 1;
+            flex-direction: column;   
 
             h1{
                 margin: 0;
@@ -134,18 +140,15 @@
             .autor{
                 font-size: 16px;
                 color: var(--text-color-secondary);
-                margin: 4px 0;
+                margin: 0 0 8px;
+                font-weight: 600;
             }
 
             .date{
-                display: flex;
-                gap: 16px;
-
-
                 .created, .lastUpdate {
-                    text-align: center;
                     font-size: 14px;
                     color: var(--text-color-secondary);
+                    margin: 2px 0;
                 }
             }
         }
@@ -153,10 +156,8 @@
         .buttonsContainer{
             display: flex;
             justify-content: space-between;
-            align-items: end;
+            align-items: center;
             width: 100%;
-            padding: 12px;
-            margin-top: auto;
 
             .anotherInfo{
                 display: flex;
