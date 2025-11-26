@@ -281,6 +281,9 @@ public class APIv2(
                 if (fileMaterial.File == null || fileMaterial.File.Length == 0) {
                     return BadRequest(new { error = "File is required for file materials." });
                 }
+                
+                if (!fileMaterial.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+                if (!fileMaterial.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
 
                 var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
 
@@ -300,6 +303,9 @@ public class APIv2(
             existingMaterial.Description = fileMaterial.Description;
             
             if (fileMaterial.File != null && fileMaterial.File.Length > 0) {
+                if (!fileMaterial.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+                if (!fileMaterial.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+                
                 var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
                 existingMaterial.FileUrl = uploadedUrl;
             }
@@ -381,9 +387,12 @@ public class APIv2(
         }
 
         foreach (var file in body.FileMaterials) {
-            if (file.File.Length == 0) {
+            if (file.File == null || file.File.Length == 0) {
                 return BadRequest(new { error = "File is required for file materials." });
             }
+            
+            if (!file.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+            if (!file.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
 
             var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(newCourse.Uuid, file.File);
 

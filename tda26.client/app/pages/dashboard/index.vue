@@ -7,7 +7,6 @@ import { NuxtLink } from "#components";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
-import Input from "~/components/Input.vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -92,7 +91,6 @@ const deleteCourse = async () => {
         await refreshCourses();
     } catch (err) {
         deleteError.value = "Nepodařilo se smazat kurz.";
-        console.error("Chyba při mazání kurzu:", err);
     }
 };
 </script>

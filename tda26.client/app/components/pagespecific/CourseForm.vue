@@ -68,14 +68,12 @@ const removeMaterial = (index: number) => {
     form.value.materials.splice(index, 1);
 };
 
-// Typed file change handler to avoid EventTarget typing issues
-const handleFileChange = (index: number, event: Event) => {
+const handleFileChange = (index: number, event: Event) => {    
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.[0] ?? null;
     updateMaterial(index, { file });
 };
 
-// SUBMIT
 const submitForm = async () => {
     loading.value = true;
     error.value = null;
@@ -112,7 +110,7 @@ const submitForm = async () => {
         emit("finished");
 
     } catch (err: any) {
-        error.value = err?.data?.message ?? err?.message ?? "Server error";
+        error.value = err?.data?.error ?? err?.data?.message ?? err?.message ?? "Server error";
     } finally {
         loading.value = false;
     }
@@ -122,13 +120,13 @@ const submitForm = async () => {
 <template>
     <form @submit.prevent="submitForm" :class="$style.courseForm">
         <div :class="$style.formGroup">
-            <label>Název</label>
+            <label>Název *</label>
             <Input type="text" v-model="form.name" required />
         </div>
 
         <div :class="$style.formGroup">
-            <label>Popis</label>
-            <Input type="textarea" v-model="form.description" rows="4"/>
+            <label>Popis *</label>
+            <Input type="textarea" v-model="form.description" rows="4" />
         </div>
 
         <div :class="$style.materials">
@@ -139,7 +137,7 @@ const submitForm = async () => {
 
             <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
                 <div>
-                    <Input type="text" placeholder="Název materiálu" v-model="m.name" />
+                    <Input type="text" placeholder="Název materiálu *" v-model="m.name" required/>
                     <Input type="select" v-model="m.type" :value="m.type">
                         <option value="url">URL</option>
                         <option value="file">Soubor</option>
@@ -147,11 +145,15 @@ const submitForm = async () => {
                 </div>
 
                 <template v-if="m.type === 'url'">
-                    <Input type="text" placeholder="Odkaz" v-model="m.url" />
+                    <Input type="text" placeholder="Odkaz *" v-model="m.url" required />
                 </template>
 
                 <template v-else>
-                    <Input type="file" @change="handleFileChange(i, $event)" defaultFileName="Žádný soubor pro přepsání" />
+                    <Input 
+                        type="file" 
+                        @change="handleFileChange(i, $event)"
+                        :allowedFileTypes="['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain','image/png','image/jpeg','image/gif','video/mp4','audio/mpeg']"
+                    />
                 </template>
 
                 <Input type="textarea" placeholder="Popis" v-model="m.description" rows="4"/>
@@ -261,7 +263,7 @@ const submitForm = async () => {
         gap: 8px;
         
         :first-child {
-            width: 70%;
+            width: 100%;
         }
     }
 }

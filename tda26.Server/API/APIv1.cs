@@ -3,6 +3,7 @@ using Minio;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
+using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v1.CreateCourseRequest;
@@ -144,28 +145,14 @@ public class APIv1(
     ) {
         if (body.Type != "file")
             return BadRequest(new { error = "Only 'file' material type is supported in this endpoint." });
-
-        var allowedMimeTypes = new List<string> {
-            // Documents
-            "application/pdf", // .pdf
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-            "text/plain", // .txt
-
-            // Images
-            "image/png", // .png
-            "image/jpeg", // .jpg, .jpeg
-            "image/gif", // .gif
-
-            // Media
-            "video/mp4", // .mp4
-            "audio/mpeg" // .mp3
-        };
-            
-        var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
-
-        if (!allowedMimeTypes.Contains(mimeType)) {
-            return BadRequest(new { error = $"Unsupported file type {mimeType}."  });
-        }
+        
+        if (body.File == null)
+            return BadRequest(new { error = "File is required." });
+        
+        if (!body.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+        if (!body.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+        
+        var mimeType = body.File.ContentType.ToLowerInvariant().Split(';')[0];
 
         const long maxFileSizeBytes = 30 * 1024 * 1024;
         if (body.File.Length > maxFileSizeBytes) {
@@ -306,32 +293,10 @@ public class APIv1(
             fileMaterial.Description = body.Description;
         
         if (body.File != null && body.File.Length > 0) {
-            var allowedMimeTypes = new List<string> {
-                // Documents
-                "application/pdf", // .pdf
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-                "text/plain", // .txt
-
-                // Images
-                "image/png", // .png
-                "image/jpeg", // .jpg, .jpeg
-                "image/gif", // .gif
-
-                // Media
-                "video/mp4", // .mp4
-                "audio/mpeg" // .mp3
-            };
+            if (!body.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+            if (!body.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
             
             var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
-
-            if (!allowedMimeTypes.Contains(mimeType)) {
-                return BadRequest(new { error = "Unsupported file type." });
-            }
-
-            const long maxFileSizeBytes = 30 * 1024 * 1024;
-            if (body.File.Length > maxFileSizeBytes) {
-                return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
-            }
             
             await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
             
