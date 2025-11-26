@@ -18,7 +18,7 @@ definePageMeta({
 
 const user = useState<Account | null>('loggedAccount');
 
-const enabledModal = ref<"createCourse" | "updateCourse" | null>(null);
+const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
 
 const { data: _courses, pending: coursesPending } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?max=4', {
@@ -69,6 +69,31 @@ const openEdit = (course: Course) => {
     editingCourseId.value = course.uuid;
     enabledModal.value = "updateCourse";
 };
+
+const selectedDeleteCourse = ref<Course | null>(null);
+const deleteError = ref<string | null>(null);
+
+const openDelete = (course: Course) => {
+    selectedDeleteCourse.value = course;
+    enabledModal.value = "deleteCourse";
+};
+
+const deleteCourse = async () => {
+    if (!selectedDeleteCourse.value) return;
+
+    try {
+        await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
+            method: "DELETE"
+        });
+
+        enabledModal.value = null;
+        selectedDeleteCourse.value = null;
+        await refreshCourses();
+    } catch (err) {
+        deleteError.value = "Nepodařilo se smazat kurz.";
+        console.error("Chyba při mazání kurzu:", err);
+    }
+};
 </script>
 
 <template>
@@ -100,7 +125,12 @@ const openEdit = (course: Course) => {
 
             <ul ref="courseList" @scroll="updateScroll">
                 <li v-for="course in courses" :key="course.uuid">
-                    <CourseCard :course="course" edit-mode @edit="openEdit(course)" />
+                    <CourseCard 
+                        :course="course" 
+                        edit-mode 
+                        @edit="openEdit(course)"
+                        @delete="openDelete(course)"
+                    />
                 </li>
             </ul>
         </div>
@@ -109,7 +139,7 @@ const openEdit = (course: Course) => {
     <Teleport to="#teleports">
         <!-- CREATE -->
         <Modal :enabled="enabledModal === 'createCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
-            <h3 class="text-lg font-semibold">Vytvořit nový kurz</h3>
+            <h3>Vytvořit nový kurz</h3>
             <CourseForm
                 mode="create"
                 @finished="() => { enabledModal = null; refreshCourses(); }"
@@ -118,12 +148,29 @@ const openEdit = (course: Course) => {
 
         <!-- EDIT -->
         <Modal :enabled="enabledModal === 'updateCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
-            <h3 class="text-lg font-semibold">Upravit kurz</h3>
+            <h3>Upravit kurz</h3>
             <CourseForm
                 mode="edit"
                 :course-id="editingCourseId"
                 @finished="() => { enabledModal = null; refreshCourses(); editingCourseId = null; }"
             />
+        </Modal>
+
+        <!-- DELETE -->
+        <Modal :enabled="enabledModal === 'deleteCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
+            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
+            <p>Tuto akci nelze vrátit zpět.</p>
+            <div style="display: flex; gap: 16px; margin-top: 24px;">
+                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="deleteCourse"
+                >
+                    Smazat kurz
+                </Button>
+            </div>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         </Modal>
     </Teleport>
 </template>

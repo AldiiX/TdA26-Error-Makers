@@ -13,6 +13,7 @@
     
     const emit = defineEmits<{
         (e: "edit"): void;
+        (e: "delete"): void;
     }>();
     
     const { data: _account } = await useFetch<Account>(getBaseUrl() + `/api/v2/accounts/${props.course.lecturerUuid}`);
@@ -64,7 +65,7 @@
                     </div>
                     <div v-else :class="$style.lecturerButtons">
                         <Button button-style="primary" accent-color="secondary" @click="emit('edit')" style="width: 100%">Upravit</Button>
-                        <Button button-style="secondary" accent-color="secondary" style="width: 100%">Smazat</Button>
+                        <Button button-style="secondary" accent-color="secondary" @click="emit('delete')" style="width: 100%">Smazat</Button>
                     </div>
                 </div>
             </div>

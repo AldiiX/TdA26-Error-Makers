@@ -160,7 +160,7 @@ const submitForm = async () => {
             </div>
         </div>
 
-        <p v-if="error" style="color:red;">{{ error }}</p>
+        <p v-if="error" class="error-text">{{ error }}</p>
         <p v-if="loading">Probíhá ukládání...</p>
 
         <div :class="$style.formButtons">

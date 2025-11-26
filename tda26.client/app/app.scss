@@ -261,6 +261,11 @@ button,input,textarea,select {
     backdrop-filter: blur(8px) saturate(1.6);
 }
 
+.error-text {
+    color: #FF4C4C;
+    font-weight: 600;
+}
+
 
 @media screen and (min-width: 600px) and (max-width: 960px) {
     .sections > section:is(.top) > .texts > h1 {
