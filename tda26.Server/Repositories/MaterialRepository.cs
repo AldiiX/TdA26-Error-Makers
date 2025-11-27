@@ -6,8 +6,7 @@ using tda26.Server.Services;
 namespace tda26.Server.Repositories;
 
 public class MaterialRepository(
-    AppDbContext db,
-    IMaterialAccessService materialAccessService
+    AppDbContext db
     ) : IMaterialRepository {
     public async Task<Material?> GetMaterialByUuidAsync(Guid materialUuid, CancellationToken ct = default) {
         return await db.Materials
@@ -40,16 +39,14 @@ public class MaterialRepository(
     }
     
     public async Task UpdateMaterialAsync(Material material, CancellationToken ct = default) {
+        material.UpdatedAt = DateTime.Now;
+        
         db.Materials.Update(material);
         await db.SaveChangesAsync(ct);
     }
     
     public async Task DeleteMaterialAsync(Material material, CancellationToken ct = default) {
         db.Materials.Remove(material);
-        
-        if (material is FileMaterial fileMaterial)
-            await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl, ct);
-        
         await db.SaveChangesAsync(ct);
     }
 }

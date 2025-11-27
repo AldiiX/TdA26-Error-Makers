@@ -31,6 +31,8 @@ public class AccountRepository(
     }
 
     public async Task UpdateAsync(Account account, CancellationToken ct = default) {
+        account.UpdatedAt = DateTime.Now;
+        
         db.Accounts.Update(account);
         await db.SaveChangesAsync(ct);
     }

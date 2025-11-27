@@ -3,6 +3,7 @@ using Minio;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
+using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
 using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v1.CreateCourseRequest;
@@ -36,7 +37,7 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+        var course = await courseRepository.GetByUuidAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -46,7 +47,7 @@ public class APIv1(
 
     [HttpPut("courses/{uuid:guid}")]
     public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+        var course = await courseRepository.GetByUuidAsyncFull(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -66,7 +67,7 @@ public class APIv1(
 
     [HttpDelete("courses/{uuid:guid}")]
     public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -102,7 +103,7 @@ public class APIv1(
             return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
         }
 
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -144,35 +145,21 @@ public class APIv1(
     ) {
         if (body.Type != "file")
             return BadRequest(new { error = "Only 'file' material type is supported in this endpoint." });
-
-        var allowedMimeTypes = new List<string> {
-            // Documents
-            "application/pdf", // .pdf
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-            "text/plain", // .txt
-
-            // Images
-            "image/png", // .png
-            "image/jpeg", // .jpg, .jpeg
-            "image/gif", // .gif
-
-            // Media
-            "video/mp4", // .mp4
-            "audio/mpeg" // .mp3
-        };
-            
-        var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
-
-        if (!allowedMimeTypes.Contains(mimeType)) {
-            return BadRequest(new { error = $"Unsupported file type {mimeType}."  });
-        }
+        
+        if (body.File == null)
+            return BadRequest(new { error = "File is required." });
+        
+        if (!body.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+        if (!body.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+        
+        var mimeType = body.File.ContentType.ToLowerInvariant().Split(';')[0];
 
         const long maxFileSizeBytes = 30 * 1024 * 1024;
         if (body.File.Length > maxFileSizeBytes) {
             return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
         }
 
-        var course = await courseRepository.GetByIdAsync(courseId);
+        var course = await courseRepository.GetByUuidAsync(courseId);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -222,7 +209,7 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}/materials")]
     public async Task<IActionResult> GetMaterialsByCourseId([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsync(uuid);
+        var course = await courseRepository.GetByUuidAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -240,7 +227,7 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromBody] UpdateUrlMaterialRequest body
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -286,7 +273,7 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromForm] UpdateFileMaterialRequest body
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -306,32 +293,10 @@ public class APIv1(
             fileMaterial.Description = body.Description;
         
         if (body.File != null && body.File.Length > 0) {
-            var allowedMimeTypes = new List<string> {
-                // Documents
-                "application/pdf", // .pdf
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
-                "text/plain", // .txt
-
-                // Images
-                "image/png", // .png
-                "image/jpeg", // .jpg, .jpeg
-                "image/gif", // .gif
-
-                // Media
-                "video/mp4", // .mp4
-                "audio/mpeg" // .mp3
-            };
+            if (!body.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+            if (!body.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
             
             var mimeType = body.File.ContentType.ToLowerInvariant()?.Split(';')[0] ?? "";
-
-            if (!allowedMimeTypes.Contains(mimeType)) {
-                return BadRequest(new { error = "Unsupported file type." });
-            }
-
-            const long maxFileSizeBytes = 30 * 1024 * 1024;
-            if (body.File.Length > maxFileSizeBytes) {
-                return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
-            }
             
             await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
             
@@ -351,7 +316,7 @@ public class APIv1(
         [FromRoute] Guid courseUuid,
         [FromRoute] Guid materialUuid
     ) {
-        var course = await courseRepository.GetByIdAsync(courseUuid);
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -361,6 +326,10 @@ public class APIv1(
         if (material == null || material.CourseUuid != course.Uuid)
             return NotFound(new { error = "Material not found in the specified course." });
 
+        
+        if (material is FileMaterial fileMaterial)
+            await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
+        
         await materialRepository.DeleteMaterialAsync(material);
 
         return NoContent();

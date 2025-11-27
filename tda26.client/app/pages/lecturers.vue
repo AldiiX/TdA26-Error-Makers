@@ -11,7 +11,9 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _lecturers } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers');
+    const { data: _lecturers } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
+        server: false
+    });
     const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 

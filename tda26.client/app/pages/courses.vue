@@ -10,7 +10,9 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
+    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses', {
+        server: false
+    });
     const courses = computed(() => _courses.value ?? []);
 
     const sort = ref<'new' | 'old'>('new');
@@ -451,21 +453,27 @@
             }
             
             .courses{
-                
+
                 .coursesList {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
-                    gap: 24px;
-                    align-items: start;
+                    gap: 32px;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    align-items: stretch;
+                    width: 100%;
 
-                    min-height: calc(80vh - 64px - 32px);
-                    
+                    min-height: auto;
+
+                    > * {
+                        width: 100%;
+                        height: auto;
+                        display: flex;
+                    }
                 }
 
                 .pagination {
                     height: 64px;
                     background-color: var(--accent-color-secondary-darker);
-                }    
+                }
             }
         }
     }

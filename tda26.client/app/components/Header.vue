@@ -60,7 +60,7 @@
 
     const displayName = computed(() => {
         const acc = loggedAccount.value;
-        if (!acc) return null;
+        if (!acc) return "";
 
         return acc.firstName && acc.lastName
             ? `${acc.firstName} ${acc.lastName}`

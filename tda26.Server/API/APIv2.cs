@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
+using tda26.Server.DTOs.v1;
 using tda26.Server.DTOs.v2;
 using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
@@ -17,7 +18,8 @@ public class APIv2(
     ILecturerRepository lecturers,
     ICourseRepository courseRepository,
     IAccountRepository accounts,
-    IMaterialAccessService materialAccessService
+    IMaterialAccessService materialAccessService,
+    IMaterialRepository materialRepository
 ) : Controller {
 
     [HttpGet]
@@ -127,6 +129,19 @@ public class APIv2(
         return new OkObjectResult(lecturer);
     }
     
+    // accounts
+    
+    [HttpGet("accounts/{uuid:guid}")]
+    public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct) {
+        var account = await accounts.GetByIdAsync(uuid, ct);
+        if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
+
+        return account switch {
+            Lecturer lecturer => Ok(lecturer),
+            _ => Ok(account)
+        };
+    }
+    
     //courses
     
     [HttpGet("courses")]
@@ -135,9 +150,36 @@ public class APIv2(
         return Ok(courses);
     }
     
+    [HttpGet("me/courses")]
+    public async Task<IActionResult> GetMyCourses(
+        [FromQuery] bool full = false,
+        [FromQuery] int max = -1
+        ) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+    
+        if (full) {
+            var courses = await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max);
+            return Ok(courses);
+        } else {
+            var courses = await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max);
+            return Ok(courses);
+        }
+    }
+    
     [HttpGet("courses/{uuid:guid}")]
-    public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByIdAsyncFull(uuid);
+    public async Task<IActionResult> GetCourseById(
+        [FromRoute] Guid uuid,
+        [FromQuery] bool full = true
+        ) {
+        Course? course;
+        
+        if (full) {
+            course = await courseRepository.GetByUuidAsyncFull(uuid);
+        } else {
+            course = await courseRepository.GetByUuidAsync(uuid);
+        }
+        
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -149,26 +191,131 @@ public class APIv2(
     }
 
     [HttpPut("courses/{uuid:guid}")]
-    public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] JsonNode body) {
-        var course = await courseRepository.GetByIdAsync(uuid);
-        if (course == null) {
-            return NotFound(new { error = "Course not found." });
+    public async Task<IActionResult> UpdateCourse(Guid uuid, [FromBody] CreateCourseRequest body) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+
+        if (string.IsNullOrEmpty(body.Name) || string.IsNullOrEmpty(body.Description)) {
+            return BadRequest(new { error = "Name and description are required." });
         }
 
-        var name = body["name"]?.GetValue<string>();
-        var description = body["description"]?.GetValue<string>();
+        var existingCourse = await courseRepository.GetByUuidAsync(uuid);
+        if (existingCourse == null) return NotFound();
 
-        if (!string.IsNullOrEmpty(name)) {
-            course.Name = name;
+        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        existingCourse.Name = body.Name;
+        existingCourse.Description = body.Description;
+
+        await courseRepository.UpdateAsync(existingCourse);
+
+        return Ok(existingCourse);
+    }
+    
+    [HttpPut("courses/{uuid:guid}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateCourseWithMaterials(Guid uuid, [FromForm] UpdateCourseWithMaterialsRequest body) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+
+        if (string.IsNullOrEmpty(body.Course.Name) || string.IsNullOrEmpty(body.Course.Description)) {
+            return BadRequest(new { error = "Course name and description are required." });
         }
 
-        if (!string.IsNullOrEmpty(description)) {
-            course.Description = description;
+        var existingCourse = await courseRepository.GetByUuidAsyncFull(uuid);
+        if (existingCourse == null) return NotFound();
+
+        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        existingCourse.Name = body.Course.Name;
+        existingCourse.Description = body.Course.Description;
+
+        foreach (var urlMaterial in body.UrlMaterials) {
+            
+            var existingMaterial = existingCourse.Materials
+                .OfType<UrlMaterial>()
+                .FirstOrDefault(m => m.Uuid == urlMaterial.Uuid);
+
+            if (existingMaterial == null) {
+                if (string.IsNullOrEmpty(urlMaterial.Name)) {
+                    return BadRequest(new { error = "Name is required for URL materials." });
+                }
+            
+                if (string.IsNullOrEmpty(urlMaterial.Url)) {
+                    return BadRequest(new { error = "URL is required for URL materials." });
+                }
+                
+                var newMaterial = new UrlMaterial {
+                    Name = urlMaterial.Name,
+                    Description = urlMaterial.Description,
+                    Type = Material.MaterialType.Url,
+                    CourseUuid = existingCourse.Uuid,
+                    Url = urlMaterial.Url,
+                    FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64"
+                };
+                
+                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial);
+                continue;
+            }
+            
+            if (!string.IsNullOrEmpty(urlMaterial.Name)) existingMaterial.Name = urlMaterial.Name;
+            existingMaterial.Description = urlMaterial.Description;
+            if (!string.IsNullOrEmpty(urlMaterial.Url)) {
+                existingMaterial.Url = urlMaterial.Url;
+                existingMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64";
+            }
+            
+            await materialRepository.UpdateMaterialAsync(existingMaterial);
         }
 
-        await courseRepository.UpdateAsync(course);
+        foreach (var fileMaterial in body.FileMaterials) {
+            var existingMaterial = existingCourse.Materials
+                .OfType<FileMaterial>()
+                .FirstOrDefault(m => m.Uuid == fileMaterial.Uuid);
 
-        return Ok(course);
+            if (existingMaterial == null) {
+                if (string.IsNullOrEmpty(fileMaterial.Name)) {
+                    return BadRequest(new { error = "Name is required for file materials." });
+                }
+
+                if (fileMaterial.File == null || fileMaterial.File.Length == 0) {
+                    return BadRequest(new { error = "File is required for file materials." });
+                }
+                
+                if (!fileMaterial.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+                if (!fileMaterial.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+
+                var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
+
+                var newMaterial = new FileMaterial {
+                    Name = fileMaterial.Name,
+                    Description = fileMaterial.Description,
+                    Type = Material.MaterialType.File,
+                    CourseUuid = existingCourse.Uuid,
+                    FileUrl = uploadedUrl
+                };
+
+                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial);
+                continue;
+            }
+            
+            if (!string.IsNullOrEmpty(fileMaterial.Name)) existingMaterial.Name = fileMaterial.Name;
+            existingMaterial.Description = fileMaterial.Description;
+            
+            if (fileMaterial.File != null && fileMaterial.File.Length > 0) {
+                if (!fileMaterial.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+                if (!fileMaterial.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+                
+                var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
+                existingMaterial.FileUrl = uploadedUrl;
+            }
+            
+            await materialRepository.UpdateMaterialAsync(existingMaterial);
+        }
+
+        await courseRepository.UpdateAsync(existingCourse);
+        
+        return Ok(existingCourse.ToReadDto());
     }
 
     [HttpDelete("courses/{uuid:guid}")]
@@ -182,14 +329,18 @@ public class APIv2(
     }
     
     [HttpPost("courses")]
-    public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body ) {
+    public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+        
         if(string.IsNullOrEmpty(body.Name) || string.IsNullOrEmpty(body.Description)) {
             return BadRequest(new { error = "Name and description are required." });
         }
 
         var newCourse = new Course {
             Name = body.Name,
-            Description = body.Description
+            Description = body.Description,
+            LecturerUuid = acc.Uuid
         };
 
         await courseRepository.CreateAsync(newCourse);
@@ -201,11 +352,70 @@ public class APIv2(
             value: newCourse
         );
     }
-    
+
+    [HttpPost("courses")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CreateCourseWithMaterials([FromForm] CreateCourseWithMaterialsRequest body) {
+        var acc = await auth.ReAuthAsync();
+        if (acc == null) return Unauthorized();
+        
+        if(string.IsNullOrEmpty(body.Course.Name) || string.IsNullOrEmpty(body.Course.Description)) {
+            return BadRequest(new { error = "Course name and description are required." });
+        }
+        
+        var newCourse = new Course {
+            Name = body.Course.Name,
+            Description = body.Course.Description,
+            LecturerUuid = acc.Uuid
+        };
+        
+        foreach (var url in body.UrlMaterials) {
+            if (string.IsNullOrEmpty(url.Url)) {
+                return BadRequest(new { error = "URL is required for URL materials." });
+            }
+
+            var newMaterial = new UrlMaterial {
+                Name = url.Name,
+                Description = url.Description,
+                Type = Material.MaterialType.Url,
+                CourseUuid = newCourse.Uuid,
+                Url = url.Url,
+                FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(url.Url).Host}&sz=64"
+            };
+            
+            newCourse.Materials.Add(newMaterial);
+        }
+
+        foreach (var file in body.FileMaterials) {
+            if (file.File == null || file.File.Length == 0) {
+                return BadRequest(new { error = "File is required for file materials." });
+            }
+            
+            if (!file.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });
+            if (!file.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
+
+            var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(newCourse.Uuid, file.File);
+
+            var newMaterial = new FileMaterial {
+                Name = file.Name,
+                Description = file.Description,
+                Type = Material.MaterialType.File,
+                CourseUuid = newCourse.Uuid,
+                FileUrl = uploadedUrl
+            };
+
+            newCourse.Materials.Add(newMaterial);
+        }
+        
+        await courseRepository.CreateAsync(newCourse);
+        
+        return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, null);
+    }
+
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
     {
-        var course = await courseRepository.GetByIdAsyncFull(courseUuid);
+        var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 

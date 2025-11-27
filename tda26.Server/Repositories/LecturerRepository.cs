@@ -17,12 +17,10 @@ public class LecturerRepository(
     }
 
     public async Task<List<Lecturer>> GetAllAsync(CancellationToken ct = default) {
-        var lecturers = (await db.Lecturers.ToListAsync(ct));
-
-        // sortnuti podle createdat
-        lecturers.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
-
-        //Console.WriteLine(lecturers.ToJsonString());
+        var lecturers = await db.Lecturers
+            .OrderBy(l => l.CreatedAt)
+            .ToListAsync(ct);
+        
         return lecturers;
     }
 }
