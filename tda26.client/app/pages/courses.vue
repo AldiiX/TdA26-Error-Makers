@@ -46,7 +46,7 @@
         if (!courses.value) return 0;
         return Math.ceil(sortedCourses.value.length / PAGE_SIZE);
     });
-
+    
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -55,13 +55,14 @@
     };
 
     const goToNextPage = () => {
-        goToPage(page.value + 1);
+        if (page.value < totalPages.value) goToPage(page.value + 1);
     };
 
     const goToLastPage = () => {
-        goToPage(page.value - 1);
+        if (page.value > 1) goToPage(page.value - 1);
     };
     
+    const goToInput = ref<number | null>(null);
 </script>
 
 <template>
@@ -155,11 +156,32 @@
                             :key="course.uuid"
                         />
                     </div>
-                    <div :class="$style.pagination">
-                        <!-- Pagination controls will go here -->
-                        <p @click="goToLastPage()">zpet</p>
-                        <p>Stránka {{ page }} z {{ totalPages }}</p>
-                        <p @click="goToNextPage()">dopredu</p>
+                    <div :class="$style.paginationContainer">
+
+                        <button :class="$style.arrow" @click="goToLastPage()">‹</button>
+
+                        <button
+                            v-for="p in totalPages"
+                            :key="p"
+                            :class="[ $style.pageNumber, page === p && $style.active ]"
+                            @click="goToPage(p)"
+                        >
+                            {{ p }}
+                        </button>
+
+                        <button :class="$style.arrow" @click="goToNextPage()">›</button>
+
+                        <div :class="$style.goToWrap">
+                            <span>Go to</span>
+                            <input
+                                type="number"
+                                min="1"
+                                :max="totalPages"
+                                v-model.number="goToInput"
+                                @keyup.enter="goToPage(goToInput!)"
+                            />
+                            <span>Page</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -449,24 +471,97 @@
                     }
                 }
             }
-            
-            .courses{
-                
+
+            .courses {
+                display: flex;
+                flex-direction: column;
+                gap: 32px;
+
                 .coursesList {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
-                    gap: 24px;
-                    align-items: start;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 32px;
+                    align-items: stretch;
+                    padding: 8px;
 
                     min-height: calc(80vh - 64px - 32px);
-                    
                 }
 
-                .pagination {
-                    height: 64px;
-                    background-color: var(--accent-color-secondary-darker);
-                }    
+                .paginationContainer {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+
+                    background: var(--background-color-secondary);
+                    padding: 12px 24px;
+                    border-radius: 24px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+                    .pageNumber,
+                    .arrow {
+                        font-size: 16px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        user-select: none;
+
+                        padding: 6px 14px;
+                        border-radius: 100%;
+
+                        background: transparent;
+                        color: var(--text-color-primary);
+                        border: 1px solid transparent;
+
+                        transition: 0.2s ease;
+
+                        &:hover {
+                            opacity: 0.7;
+                        }
+
+                        &.active {
+                            background: var(--accent-color-primary);
+                            color: var(--accent-color-primary-text);
+                        }
+                    }
+
+                    .arrow {
+                        padding: 6px 12px;
+                    }
+
+                    .goToWrap {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+
+                        font-size: 16px;
+                        color: var(--text-color-primary);
+
+                        span {
+                            opacity: 0.75;
+                        }
+
+                        input {
+                            width: 48px;
+                            padding: 6px 10px;
+                            text-align: center;
+
+                            border-radius: 12px;
+                            border: 1px solid var(--input-border-color);
+                            background: var(--input-background-color);
+                            color: var(--text-color-primary);
+
+                            outline: none;
+                            transition: 0.2s ease;
+
+                            &:focus {
+                                border-color: var(--accent-color-primary);
+                                box-shadow: 0 0 0 3px var(--accent-color-primary-transparent-01);
+                            }
+                        }
+                    }
+                }
+
             }
+
         }
     }
 }
