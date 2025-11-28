@@ -172,14 +172,6 @@ public class APIv2(
         [FromRoute] Guid uuid,
         [FromQuery] bool full = true
         ) {
-        var acc = await auth.ReAuthAsync();
-        if (acc == null) return Unauthorized();
-        
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid);
-        if (existingCourse == null) return NotFound();
-
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
-        
         Course? course;
         
         if (full) {
@@ -544,14 +536,6 @@ public class APIv2(
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
     {
-        var acc = await auth.ReAuthAsync();
-        if (acc == null) return Unauthorized();
-        
-        var existingCourse = await courseRepository.GetByUuidAsync(courseUuid);
-        if (existingCourse == null) return NotFound();
-
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
-
         var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });

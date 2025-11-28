@@ -35,14 +35,14 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     
     if (errorCourseSmall.value) {
         console.error("Error loading course:", errorCourseSmall.value);
-        await navigateTo('/dashboard/courses');
+        await navigateTo('/courses');
     }
     
     const courseSmall = computed(() => _courseSmall.value ?? null);
     
     if (!courseSmall.value) {
         console.error("Course small fetch returned null.");
-        await navigateTo('/dashboard/courses');
+        await navigateTo('/courses');
     }
     
     
