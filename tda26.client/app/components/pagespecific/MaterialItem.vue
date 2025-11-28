@@ -31,7 +31,7 @@ const getHostname = (url?: string) => {
                 <div :class="$style.fileIcon"></div>
 
                 <div :class="$style.fileInfo">
-                    <p>{{ material.name }}</p>
+                    <p :title="material.name">{{ material.name }}</p>
                     <div :class="$style.fileDetails">
                         <p>{{ material.fileUrl?.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
                     </div>
@@ -55,7 +55,7 @@ const getHostname = (url?: string) => {
                 </div>
 
                 <div :class="$style.fileInfo">
-                    <p>{{ material.name }}</p>
+                    <p :title="material.name">{{ material.name }}</p>
                     <div :class="$style.fileDetails">
                         <p>{{ getHostname(material.url) }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
                     </div>
@@ -77,6 +77,7 @@ const getHostname = (url?: string) => {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    min-height: 72px;
     
     //box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/0.6), 0 0 8px rgba(0, 0, 0, 0.04);
     border: 1px solid color-mix(in srgb, var(--text-color-secondary) 10%, transparent 40%);
@@ -94,16 +95,18 @@ const getHostname = (url?: string) => {
         color: var(--text-color);
         text-decoration: none;
         padding: 12px 16px;
-        width: 100%;
+        flex: 1;
         
         .fileIcon {
             mask-image: url('../../../public/icons/file.svg');
             mask-size: cover;
             mask-position: center;
             mask-repeat: no-repeat;
-
-            width: 24px;
-            height: 24px;
+            
+            width: 28px;
+            height: 28px;
+            margin: 2px;
+            min-width: 28px;
             background-color: var(--text-color-secondary);
             opacity: 0.6;
         }
@@ -113,13 +116,17 @@ const getHostname = (url?: string) => {
             flex-direction: column;
             gap: 4px;
             border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
-            padding-right: 12px;
+            width: clamp(150px, 25%, 250px);
 
             p {
                 margin: 0;
                 font-size: 16px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+                padding-right: 8px;
             }
-
+            
             .fileDetails >p {
                 font-size: 12px;
                 color: var(--text-color-secondary);
@@ -131,6 +138,7 @@ const getHostname = (url?: string) => {
             overflow: hidden;
             width: 32px;
             height: 32px;
+            min-width: 32px;
         }
 
         .description {
@@ -138,6 +146,15 @@ const getHostname = (url?: string) => {
             height: 100%;
             font-size: 14px;
             color: var(--text-color-secondary);
+            display: -webkit-box;
+            
+            //-webkit-line-clamp: 3;
+            //-webkit-box-orient: vertical;
+            //
+            //overflow: hidden;
+            //text-overflow: ellipsis;
+            //line-height: 1.2;
+            //max-height: calc(1.2em * 3);
         }
     }
     

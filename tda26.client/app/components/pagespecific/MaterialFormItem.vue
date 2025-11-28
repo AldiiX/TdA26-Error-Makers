@@ -33,7 +33,7 @@ function onFileChange(event: Event) {
 <template>
     <div :class="$style.item">
         <div :class="$style.headInputs">
-            <Input type="text" placeholder="Název materiálu *" v-model="m.name" required/>
+            <Input type="text" placeholder="Název materiálu *" v-model="m.name" maxlength="128" required/>
 
             <Input type="select" v-model="m.type">
                 <option value="url">URL</option>
@@ -42,7 +42,7 @@ function onFileChange(event: Event) {
         </div>
 
         <template v-if="m.type === 'url'">
-            <Input type="text" placeholder="Odkaz *" v-model="m.url" required />
+            <Input type="text" placeholder="Odkaz *" v-model="m.url" maxlength="256" required />
         </template>
 
         <template v-else>
@@ -64,6 +64,7 @@ function onFileChange(event: Event) {
             placeholder="Popis"
             v-model="m.description"
             rows="4"
+            maxlength="1048"
         />
 
         <button v-if="showRemoveButton" :class="$style.remove" type="button" @click="emit('remove', props.index)">

@@ -120,12 +120,12 @@ const submitForm = async () => {
     <form @submit.prevent="submitForm" :class="$style.courseForm">
         <div :class="$style.formGroup">
             <label>Název *</label>
-            <Input type="text" v-model="form.name" required />
+            <Input type="text" v-model="form.name" maxlength="128" required />
         </div>
 
         <div :class="$style.formGroup">
             <label>Popis *</label>
-            <Input type="textarea" v-model="form.description" rows="4" />
+            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048"/>
         </div>
 
         <div :class="$style.materials">

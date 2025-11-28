@@ -48,19 +48,14 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     
     // client full fetch
     const { data: _course, pending: coursePending, error: courseError } = await useFetch<Course>(getBaseUrl() + `/api/v2/courses/${uuid}?full=true`, {
-        server: false
+        server: false,
     });
     
     if (courseError.value) {
         console.error("Error loading full course:", courseError.value);
     }
     
-    const key = `course-${uuid}`;
-    const course = useState<Course | null>(key, () => null);
-
-    watch(_course, (val) => {
-        if (val) course.value = val
-    })
+    const course = computed(() => _course.value)
 
     const user = useState<Account | null>('loggedAccount');
 
@@ -275,7 +270,7 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
             </nav>
             <div :class="['liquid-glass']">
                 <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <Button v-if="user?.uuid == courseSmall?.lecturerUuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" style="margin-bottom: 16px;">
+                    <Button v-if="user?.uuid == courseSmall?.lecturerUuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
                         Přidat nový materiál
                     </Button>
                     
@@ -530,6 +525,11 @@ ul {
         }
 
         .materials {
+            .addMaterialButton {
+                margin-bottom: 16px;
+                
+            }
+            
             ul {
                 display: flex;
                 flex-direction: column;
