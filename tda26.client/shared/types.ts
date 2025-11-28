@@ -7,16 +7,18 @@ export interface Course {
     createdAt: string;
     updatedAt: string;
     lecturerUuid: string;
-    materials?: {
-        uuid: string;
-        name: string;
-        type: "url" | "file";
-        url?: string;
-        fileUrl?: string;
-        createdAt: string;
-        description?: string;
-        faviconUrl?: string;
-    }[];
+    materials?: Material[];
+}
+
+export interface Material {
+    uuid: string;
+    name: string;
+    type: "url" | "file";
+    url?: string;
+    fileUrl?: string;
+    createdAt: string;
+    description?: string;
+    faviconUrl?: string;
 }
 
 export interface MaterialFormModel {
