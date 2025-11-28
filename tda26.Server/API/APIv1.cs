@@ -16,7 +16,8 @@ public class APIv1(
     ICourseRepository courseRepository,
     IMaterialRepository materialRepository,
     IMinioClient minioClient,
-    IMaterialAccessService materialAccessService
+    IMaterialAccessService materialAccessService,
+    IAccountRepository accountRepository
 ) : Controller {
 
     [HttpGet]
@@ -86,9 +87,12 @@ public class APIv1(
             return BadRequest(new { error = "Name and description are required." });
         }
 
+        var adminLecturer = await accountRepository.GetByUsernameAsync("lecturer");
+
         var newCourse = new Data.Models.Course {
             Name = body.Name,
             Description = body.Description,
+            LecturerUuid = adminLecturer?.Uuid ?? null
         };
 
         await courseRepository.CreateAsync(newCourse);
