@@ -50,7 +50,7 @@
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
-        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
+        // scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
         page.value = newPage;
     };
 
@@ -63,6 +63,59 @@
     };
     
     const goToInput = ref<number | null>(null);
+
+    const visiblePages = computed(() => {
+        const total = totalPages.value;
+        const current = page.value;
+
+        if (total <= 7) {
+            // malý počet → zobraz všechny
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+
+        const pages: (number | "...")[] = [];
+
+        // první stránka vždy
+        pages.push(1);
+
+        const windowSize = 5;
+        let start = current - Math.floor(windowSize / 2);
+        let end = current + Math.floor(windowSize / 2);
+
+        // oprava okna na začátku
+        if (start <= 2) {
+            start = 2;
+            end = start + windowSize - 1;
+        }
+
+        // oprava okna na konci
+        if (end >= total - 1) {
+            end = total - 1;
+            start = end - windowSize + 1;
+            if (start < 2) start = 2;
+        }
+
+        // tečky na začátku
+        if (start > 2) {
+            pages.push("...");
+        }
+
+        // přidání stránek okna
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+
+        // tečky na konci
+        if (end < total - 1) {
+            pages.push("...");
+        }
+
+        // poslední stránka vždy
+        pages.push(total);
+
+        return pages;
+    });
+    
 </script>
 
 <template>
@@ -156,33 +209,12 @@
                             :key="course.uuid"
                         />
                     </div>
-                    <div :class="$style.paginationContainer">
-
-                        <button :class="$style.arrow" @click="goToLastPage()">‹</button>
-
-                        <button
-                            v-for="p in totalPages"
-                            :key="p"
-                            :class="[ $style.pageNumber, page === p && $style.active ]"
-                            @click="goToPage(p)"
-                        >
-                            {{ p }}
-                        </button>
-
-                        <button :class="$style.arrow" @click="goToNextPage()">›</button>
-
-                        <div :class="$style.goToWrap">
-                            <span>Go to</span>
-                            <input
-                                type="number"
-                                min="1"
-                                :max="totalPages"
-                                v-model.number="goToInput"
-                                @keyup.enter="goToPage(goToInput!)"
-                            />
-                            <span>Page</span>
-                        </div>
-                    </div>
+                    <Pagination
+                        :page="page"
+                        :total-pages="totalPages"
+                        :visible-pages="visiblePages"
+                        @update:page="goToPage"
+                    />
                 </div>
             </div>
         </div>
@@ -403,7 +435,6 @@
                         font-size: 18px;
                         color: var(--text-color-secondary);
                         background: transparent;
-                        font-family: 'Dosis', sans-serif;
 
                         &::placeholder {
                             color: var(--text-color-secondary);
@@ -456,7 +487,6 @@
                         padding: 8px 12px;
                         border-radius: 10px;
                         font-size: 16px;
-                        font-family: 'Dosis', sans-serif;
                         color: var(--text-color-secondary);
                         cursor: pointer;
                         transition-duration: 0.3s;
@@ -490,31 +520,63 @@
                 .paginationContainer {
                     display: flex;
                     align-items: center;
+                    justify-content: center;
                     gap: 12px;
 
                     background: var(--background-color-secondary);
                     padding: 12px 24px;
-                    border-radius: 24px;
+                    border-radius: 32px;
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-                    .pageNumber,
                     .arrow {
-                        font-size: 16px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        user-select: none;
-
-                        padding: 6px 14px;
+                        width: 36px;
+                        height: 36px;
                         border-radius: 100%;
+                        cursor: pointer;
 
-                        background: transparent;
-                        color: var(--text-color-primary);
-                        border: 1px solid transparent;
+                        background-image: url("../../public/icons/arrow.svg");
+                        background-repeat: no-repeat;
+                        background-position: center;
+                        background-size: 18px;
 
                         transition: 0.2s ease;
 
                         &:hover {
-                            opacity: 0.7;
+                            background-color: var(--accent-color-primary);
+                            opacity: 0.9;
+                        }
+                    }
+
+
+                    .leftArrow {
+                        transform: rotate(180deg);
+                    }
+
+                    .rightArrow {
+                        transform: rotate(0deg);
+                    }
+
+                    .arrowNext {
+                        transform: rotate(180deg);
+                    }
+
+                    .pageNumber {
+                        font-size: 16px;
+                        cursor: pointer;
+                        width: 36px;
+                        height: 36px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+
+                        border-radius: 100%;
+                        color: var(--text-color-primary);
+                        transition: 0.2s ease;
+
+                        &:hover {
+                            opacity: 0.8;
+                            background: var(--accent-color-secondary-theme);
+                            color: var(--accent-color-primary-text);
                         }
 
                         &.active {
@@ -523,8 +585,15 @@
                         }
                     }
 
-                    .arrow {
-                        padding: 6px 12px;
+                    .dots {
+                        width: 36px;          
+                        height: 36px;         
+                        display: flex;         
+                        align-items: center;   
+                        justify-content: center; 
+                        font-size: 16px;       
+                        opacity: 0.5;
+                        user-select: none;
                     }
 
                     .goToWrap {
@@ -559,9 +628,7 @@
                         }
                     }
                 }
-
             }
-
         }
     }
 }
