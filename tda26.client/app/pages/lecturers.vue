@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
     import { Head, Title, ClientOnly } from '#components';
     import LecturerCard from "~/components/pagespecific/LecturerCard.vue";
-    import type {Lecturer} from "#shared/types";
+    import type {Course, Lecturer} from "#shared/types";
     import TypeWriter from "~/components/TypeWriter.vue";
     import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
     import Blob from "~/components/Blob.vue";
@@ -11,9 +11,21 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _lecturers } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
-        server: false
+    const _lecturers = ref<Lecturer[] | null>(null);
+    const pending = ref(true);
+    const error = ref<Error | null>(null);
+
+    onMounted(async () => {
+        try {
+            _lecturers.value = await $fetch(getBaseUrl() + '/api/v2/lecturers');
+        } catch (err) {
+            if (err instanceof Error) error.value = err;
+            else error.value = new Error(String(err));
+        } finally {
+            pending.value = false;
+        }
     });
+
     const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 
@@ -59,7 +71,11 @@
         </SmoothSizeWrapper>
     </ClientOnly>
 
-    <div :class="$style.list">
+
+    <p v-if="pending">Načítání lektorů...</p>
+    <p v-else-if="error">Chyba při načítání lektorů: {{ error.message }}</p>
+    <p v-else-if="!pending && lecturers.length === 0">Žádní lektoři k zobrazení.</p>
+    <div v-else :class="$style.list">
         <LecturerCard v-for="l in lecturers" :lecturer="l" :class="$style.card" />
     </div>
 </template>

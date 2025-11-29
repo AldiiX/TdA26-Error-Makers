@@ -10,9 +10,21 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses', {
-        server: false
+    const _courses = ref<Course[] | null>(null);
+    const pending = ref(true);
+    const error = ref<Error | null>(null);
+
+    onMounted(async () => {
+        try {
+            _courses.value = await $fetch(getBaseUrl() + '/api/v2/courses');
+        } catch (err) {
+            if (err instanceof Error) error.value = err;
+            else error.value = new Error(String(err));
+        } finally {
+            pending.value = false;
+        }
     });
+    
     const courses = computed(() => _courses.value ?? []);
 
     const sort = ref<'new' | 'old'>('new');
@@ -149,7 +161,10 @@
                     </div>
                 </div>
 
-                <div :class="$style.courses">
+                <p v-if="pending">Načítání kurzů...</p>
+                <p v-else-if="error">Chyba při načítání kurzů: {{ error.message }}</p>
+                <p v-else-if="!pending && courses.length === 0">Žádné kurzy k zobrazení.</p>
+                <div v-else :class="$style.courses">
                     <div :class="$style.coursesList">
                         <CourseCard
                             v-for="course in paginatedCourses"
