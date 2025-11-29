@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import {type Account, type Course, type Material} from "#shared/types";
+    import {type Account, type Course, type Material} from "#shared/types";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Button from "~/components/Button.vue";
-import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
-import CourseForm from "~/components/pagespecific/CourseForm.vue";
-import Modal from "~/components/Modal.vue";
-import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
+    import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+    import CourseForm from "~/components/pagespecific/CourseForm.vue";
+    import Modal from "~/components/Modal.vue";
+    import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
+    import { ref, computed } from "vue";
+    import { Head, Title } from "#components";
 
     definePageMeta({
         layout: "normal-page-layout",
@@ -31,33 +33,30 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     const uuid = route.params.uuid as string;
 
     // server small fetch
-    const { data: _courseSmall, error: errorCourseSmall } = await useFetch<Course>(`/api/v2/courses/${uuid}?full=false`);
-    
-    if (errorCourseSmall.value) {
-        console.error("Error loading course:", errorCourseSmall.value);
-        await navigateTo('/courses');
-    }
-    
-    const courseSmall = computed(() => _courseSmall.value ?? null);
-    
-    if (!courseSmall.value) {
+    const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`/api/v2/courses/${uuid}`, {
+        query: { full: false },
+        key: `course-${uuid}-small`,
+    });
+
+    if (courseSmallError.value || !courseSmall.value) {
         console.error("Course small fetch returned null.");
         await navigateTo('/courses');
     }
-    
-    
+
+
+
     // client full fetch
-    const { data: _course, pending: coursePending, error: courseError } = await useFetch<Course>(getBaseUrl() + `/api/v2/courses/${uuid}?full=true`, {
+    const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+        query: { full: true },
         server: false,
+        key: `course-${uuid}-full`,
     });
-    
+
     if (courseError.value) {
         console.error("Error loading full course:", courseError.value);
     }
     
-    const course = computed(() => _course.value)
-
-    const user = useState<Account | null>('loggedAccount');
+    const loggedUser = useState<Account | null>('loggedAccount');
 
     const menuItems = ['Materiály', 'Aktivita'];
     const selectedItem = ref(menuItems[0]);
@@ -95,7 +94,6 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
         selectedMaterial.value = material;
         enabledModal.value = 'deleteMaterial';
     };
-
 
     const handleMaterialUpdate = async () => {
         if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
@@ -232,8 +230,7 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     <div :class="$style.course">
         <h1 :class="['text-gradient', $style.title]">{{ courseSmall?.name }}</h1>
         <div :class="$style.info">
-            <p v-if="coursePending">Načítání kurzu...</p>
-            <p v-else>{{ course?.description }}</p>
+            <p>{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -270,18 +267,18 @@ import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
             </nav>
             <div :class="['liquid-glass']">
                 <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <Button v-if="user?.uuid == courseSmall?.lecturerUuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                    <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
                         Přidat nový materiál
                     </Button>
-                    
+
                     <p v-if="coursePending">Načítání materiálů...</p>
                     <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
                     <ul v-else>
                         <li v-for="material in course.materials" :key="material.uuid">
-                            <MaterialItem 
-                                :material="material" 
+                            <MaterialItem
+                                :material="material"
                                 :course="course"
-                                :edit-mode="user?.uuid == courseSmall?.lecturerUuid"
+                                :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
                                 @edit="openUpdateMaterialModal"
                                 @delete="openDeleteMaterialModal"
                             />

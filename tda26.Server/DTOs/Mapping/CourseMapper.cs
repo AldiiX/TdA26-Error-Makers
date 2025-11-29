@@ -13,8 +13,8 @@ public static class CourseMapper
             Description = course.Description,
             CreatedAt = course.CreatedAt,
             UpdatedAt = course.UpdatedAt,
-            LecturerUuid = course.LecturerUuid,
             ImageUrl = course.ImageUrl,
+            Lecturer = course.Lecturer,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => new ReadQuizResponse { /* map */ }).ToList(),
             Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList()

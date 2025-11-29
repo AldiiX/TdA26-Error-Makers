@@ -6,7 +6,8 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
-    lecturerUuid: string;
+    //lecturerUuid: string;
+    lecturer: Lecturer | null;
     materials?: Material[];
 }
 
@@ -36,8 +37,7 @@ export interface CourseFormModel {
     materials: MaterialFormModel[];
 }
 
-export interface Lecturer {
-    uuid: string,
+export interface Lecturer extends Account {
     titleBefore: string | null,
     firstName: string,
     middleName: string | null,
@@ -55,8 +55,9 @@ export interface Lecturer {
     updatedAt: string,
 }
 
-export interface Account extends Lecturer {
-    username: string
+export interface Account {
+    username: string;
+    uuid: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

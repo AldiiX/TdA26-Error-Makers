@@ -1,4 +1,6 @@
-﻿namespace tda26.Server.DTOs.v1;
+﻿using tda26.Server.Data.Models;
+
+namespace tda26.Server.DTOs.v1;
 
 public class ReadCourseResponse {
     public required Guid Uuid { get; set; }
@@ -8,6 +10,7 @@ public class ReadCourseResponse {
     public required DateTime UpdatedAt { get; set; }
     public Guid? LecturerUuid { get; set; }
     public string? ImageUrl { get; set; }
+    public Lecturer? Lecturer { get; set; } = null!;
     public required ICollection<ReadMaterialResponse> Materials { get; set; }
     public required ICollection<ReadQuizResponse> Quizzes { get; set; }
     public required ICollection<ReadFeedResponse> Feed { get; set; }

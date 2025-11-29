@@ -1,45 +1,71 @@
 ﻿<script setup lang="ts">
-    import type { Course } from "#shared/types";
-    import Button from "~/components/Button.vue";
-    import timeAgoString from "#shared/utils/timeAgoString";
-    import type { Account, Lecturer } from "#shared/types";
-    import getBaseUrl from "#shared/utils/getBaseUrl";
-    import { NuxtLink } from "#components";
+import { computed } from "vue";
+import type { Course } from "#shared/types";
+import Button from "~/components/Button.vue";
+import timeAgoString from "#shared/utils/timeAgoString";
+import type { Account } from "#shared/types";
+import { NuxtLink } from "#components";
+import Avatar from "~/components/Avatar.vue";
 
-    const props = defineProps<{ 
-        course: Course,
-        editMode?: boolean
-    }>();
-    
-    const emit = defineEmits<{
-        (e: "edit"): void;
-        (e: "delete"): void;
-    }>();
-    
-    const { data: _account } = await useFetch<Account>(getBaseUrl() + `/api/v2/accounts/${props.course.lecturerUuid}`);
-    const account = computed(() => _account.value ?? null);
+const props = defineProps<{
+    course: Course,
+    editMode?: boolean,
+    /** delay reveal animace v ms */
+    revealDelayMs?: number
+}>();
 
-    const lecturerDisplayName = computed(() => {
-        const acc = account.value;
-        if (!acc) return null;
+const emit = defineEmits<{
+    (e: "edit"): void;
+    (e: "delete"): void;
+}>();
 
-        return acc.firstName && acc.lastName
-            ? `${acc.firstName} ${acc.lastName}`
-            : acc.username;
-    });
+const loggedUser = useState<Account | null>("loggedUser");
+
+const lecturerDisplayName = computed(() => {
+    const acc = props.course.lecturer;
+    if (!acc) return null;
+
+    return acc.firstName && acc.lastName
+        ? `${acc.firstName} ${acc.lastName}`
+        : acc.username;
+});
+
+const revealStyle = computed(() => {
+    return {
+        "--reveal-delay-ms": `${props.revealDelayMs ?? 0}ms`
+    } as Record<string, string>;
+});
 </script>
 
 <template>
-    <div :class="$style.container">
+    <div :class="$style.container" :style="revealStyle">
         <div :class="$style.top">
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image"></div>                
+                <div :class="$style.image"></div>
             </NuxtLink>
         </div>
         <div :class="$style.bottom">
             <div :class="$style.infoContainer">
-                <h1 :class="[$style.nadpis, 'text-gradient']" :title="course.name"> {{ course.name }}</h1>
-                <p :class="$style.autor"> {{ lecturerDisplayName }}</p>
+                <h1 :class="[$style.nadpis, 'text-gradient']" :title="course.name">
+                    {{ course.name }}
+                </h1>
+
+                <NuxtLink
+                        v-if="course.lecturer"
+                        :class="$style.author"
+                        :to="`/lecturers/${course.lecturer.uuid}`"
+                >
+                    <Avatar
+                            :class="$style.avatar"
+                            :name="lecturerDisplayName ?? ''"
+                            :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
+                    />
+                    <p :class="$style.text">
+                        {{ lecturerDisplayName }}
+                        <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
+                    </p>
+                </NuxtLink>
+
                 <div :class="$style.date">
                     <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
                     <p :class="$style.lastUpdate">Poslední úprava {{ timeAgoString(course.updatedAt) }}</p>
@@ -49,23 +75,39 @@
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
                         <div style="mask-image: url(/icons/star.svg)"></div>
-                        <p>{{ }} 6</p>
+                        <p>6</p>
                     </div>
                     <div :class="$style.info">
                         <div style="mask-image: url(/icons/views.svg)"></div>
-                        <p>{{ }} 5</p>
+                        <p>5</p>
                     </div>
                 </div>
 
                 <div :class="$style.actionContainer">
                     <div v-if="!editMode" :class="$style.userButtons">
                         <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
-                            <Button button-style="primary" accent-color="secondary" style="width: 100%">Začít</Button>
+                            <Button button-style="primary" accent-color="secondary" style="width: 100%">
+                                Zobrazit kurz
+                            </Button>
                         </NuxtLink>
                     </div>
                     <div v-else :class="$style.lecturerButtons">
-                        <Button button-style="primary" accent-color="secondary" @click="emit('edit')" style="width: 100%">Upravit</Button>
-                        <Button button-style="secondary" accent-color="secondary" @click="emit('delete')" style="width: 100%">Smazat</Button>
+                        <Button
+                                button-style="primary"
+                                accent-color="secondary"
+                                @click="emit('edit')"
+                                style="width: 100%"
+                        >
+                            Upravit
+                        </Button>
+                        <Button
+                                button-style="secondary"
+                                accent-color="secondary"
+                                @click="emit('delete')"
+                                style="width: 100%"
+                        >
+                            Smazat
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -90,13 +132,23 @@
     border-radius: 16px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
     background-color: var(--background-color-secondary);
-    
+
     @extend .liquid-glass;
-    
-    .top{
+
+    /* reveal animace */
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(6px);
+    animation-name: course-card-reveal;
+    animation-duration: 0.5s;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+    animation-delay: var(--reveal-delay-ms, 0ms);
+
+    .top {
         width: 100%;
-        
-        .imageContainer{
+
+        .imageContainer {
             display: block;
             min-height: 200px;
             width: 100%;
@@ -104,31 +156,31 @@
             overflow: hidden;
             border-radius: 16px;
             transition: filter 0.3s;
-            
+
             &:hover {
                 filter: brightness(0.9);
                 transition-duration: 0.3s;
             }
-            
-            .image{
-                
+
+            .image {
+
             }
         }
     }
 
-    .bottom{
+    .bottom {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         width: 100%;
         flex-grow: 1;
         padding: 16px;
-        
-        .infoContainer{
-            display: flex;
-            flex-direction: column;   
 
-            h1{
+        .infoContainer {
+            display: flex;
+            flex-direction: column;
+
+            h1 {
                 margin: 0;
                 font-size: 24px;
                 text-overflow: ellipsis;
@@ -137,29 +189,49 @@
                 padding-bottom: 3px;
             }
 
-            .autor{
-                font-size: 16px;
-                color: var(--text-color-secondary);
-                margin: 0 0 8px;
-                font-weight: 600;
+            .author {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin: 8px 0;
+                text-decoration: none;
+                transition-duration: 0.3s;
+                width: fit-content;
+
+                &:hover {
+                    opacity: 0.5;
+                    transition-duration: 0.3s;
+                }
+
+                .text {
+                    font-size: 16px;
+                    color: var(--text-color-secondary);
+                    font-weight: 600;
+                    margin: 0;
+                }
+
+                .avatar {
+                    --size: 24px !important;
+                }
             }
 
-            .date{
-                .created, .lastUpdate {
+            .date {
+                .created,
+                .lastUpdate {
                     font-size: 14px;
                     color: var(--text-color-secondary);
                     margin: 2px 0;
                 }
             }
         }
-        
-        .buttonsContainer{
+
+        .buttonsContainer {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: end;
             width: 100%;
 
-            .anotherInfo{
+            .anotherInfo {
                 display: flex;
                 gap: 16px;
 
@@ -169,8 +241,7 @@
                     justify-content: space-between;
                     gap: 4px;
 
-                    >div {
-                        mask-image: url("../../../public/icons/views.svg");
+                    > div {
                         mask-size: cover;
                         mask-position: center;
                         mask-repeat: no-repeat;
@@ -179,10 +250,10 @@
                         background-color: var(--text-color-secondary);
                     }
 
-                    >p {
+                    > p {
                         font-size: 16px;
                         margin: 0;
-                        color: var(--text-color);
+                        color: var(--text-color-secondary);
                     }
                 }
             }
@@ -190,11 +261,12 @@
             .button {
                 width: 50%;
             }
-            
+
             .actionContainer {
                 .lecturerButtons {
                     display: flex;
                     gap: 8px;
+
                     button {
                         height: fit-content;
                     }
@@ -202,6 +274,13 @@
             }
         }
     }
-    
+}
+
+@keyframes course-card-reveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
 }
 </style>

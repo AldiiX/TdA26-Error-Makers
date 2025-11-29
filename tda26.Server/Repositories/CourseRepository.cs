@@ -7,11 +7,13 @@ namespace tda26.Server.Repositories;
 public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Lecturer)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
     
     public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
@@ -20,11 +22,13 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Lecturer)
             .ToListAsync(ct);
     }
     
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
@@ -42,6 +46,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         return await db.Courses
             .Where(c => c.LecturerUuid == lecturerUuid)
+            .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
