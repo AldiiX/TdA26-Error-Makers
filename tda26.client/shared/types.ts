@@ -9,6 +9,7 @@ export interface Course {
     materials: Material[];
     quizzes: Quiz[];
     feed: FeedPost[];
+    tags: Tag[] | null;
 }
 
 export interface Lecturer {
@@ -74,6 +75,12 @@ export interface FeedPost {
     createdAt: string,
     updatedAt: string,
     courseUuid: string,
+}
+export interface Tag{
+    uuid: string,
+    displayName: string,
+    createdAt: string,
+    updatedAt: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

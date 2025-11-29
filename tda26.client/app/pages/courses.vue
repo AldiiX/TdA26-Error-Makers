@@ -5,15 +5,82 @@
     import NumberExponential from "~/components/NumberExponential.vue";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Blob from "~/components/Blob.vue";
+    import Tag from "~/components/Tag.vue";
     
     definePageMeta({
         layout: "normal-page-layout"
     });
 
+    const allTags = computed(() => {
+        const map = new Map<string, { uuid: string; displayName: string }>();
+
+        courses.value.forEach(course => {
+            course.tags?.forEach(tag => {
+                map.set(tag.uuid, tag);
+            });
+        });
+
+        return Array.from(map.values());
+    });
+
+    const searchQuery = ref("");
+    
+    const activeTags = ref<string[]>([]);
+
+    const toggleTag = (uuid: string) => {
+        if (activeTags.value.includes(uuid)) {
+            activeTags.value = activeTags.value.filter(t => t !== uuid);
+        } else {
+            activeTags.value.push(uuid);
+        }
+    };
+
+    const filteredCourses = computed(() => {
+        let list = sortedCourses.value;
+
+        // Tagy
+        if (activeTags.value.length > 0) {
+            list = list.filter(course =>
+                course.tags?.some(tag => activeTags.value.includes(tag.uuid))
+            );
+        }
+
+        // Vyhledávání
+        const query = normalize(searchQuery.value);
+
+        if (query !== "") {
+            list = list.filter(course => {
+                const name = normalize(course.name);
+                const desc = normalize(course.description ?? "");
+                const tags = course.tags?.map(t => normalize(t.displayName)) ?? [];
+
+                return (
+                    name.includes(query) ||
+                    desc.includes(query) ||
+                    tags.some(t => t.includes(query))
+                );
+            });
+        }
+
+        return list;
+    });
+
+
+
+
     const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
     const courses = computed(() => _courses.value ?? []);
 
     const sort = ref<'new' | 'old'>('new');
+
+    const normalize = (str: string) => {
+        return str
+            .normalize("NFD")          // oddělí diakritiku
+            .replace(/\p{Diacritic}/gu, "") // odstraní diakritiku
+            .replace(/\s+/g, " ")      // více mezer → 1 mezera
+            .trim()                    // ořízne mezery
+            .toLowerCase();
+    };
     const sortedCourses = computed(() => {
         let list = [...courses.value];
 
@@ -36,17 +103,17 @@
     const PAGE_SIZE = 8;
 
     const paginatedCourses = computed(() => {
-        if (!courses.value) return [];
-        const list = sortedCourses.value;
+        const list = filteredCourses.value;
         const start = (page.value - 1) * PAGE_SIZE;
         return list.slice(start, start + PAGE_SIZE);
     });
 
     const totalPages = computed(() => {
-        if (!courses.value) return 0;
-        return Math.ceil(sortedCourses.value.length / PAGE_SIZE);
+        return Math.ceil(filteredCourses.value.length / PAGE_SIZE);
     });
-    
+
+
+
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -174,10 +241,18 @@
                     <p>Filtry</p>
                     <div :class="[$style.searchBar, 'liquid-glass']">
                         <div :class="$style.searchIcon"></div>
-                        <input type="text" placeholder="Hledat kurz..." />
+                        <input type="text"
+                               placeholder="Hledat kurz..."
+                               v-model="searchQuery" />
                     </div>
                     <div :class="$style.sortOptions">
-
+                        <Tag
+                            v-for="tag in allTags"
+                            :key="tag.uuid"
+                            :tag="tag"
+                            :active="activeTags.includes(tag.uuid)"
+                            @toggle="toggleTag"
+                        />
                     </div>
                 </div>
             </div>
@@ -444,6 +519,10 @@
                 }
 
                 .sortOptions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    padding: 8px;
+                    gap: 12px;
                     margin-top: 32px;
                     height: calc(100% - 64px - 32px);
                     background-color: var(--background-color-secondary);
@@ -498,6 +577,12 @@
                             color: var(--accent-color-secondary-theme-text);
                             outline: none;
                         }
+
+                        &[data-active="true"] {
+                            background-color: var(--accent-color-primary);
+                            color: var(--accent-color-primary-text);
+                            font-weight: 600;
+                        }
                     }
                 }
             }
@@ -515,118 +600,6 @@
                     padding: 8px;
 
                     min-height: calc(80vh - 64px - 32px);
-                }
-
-                .paginationContainer {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-
-                    background: var(--background-color-secondary);
-                    padding: 12px 24px;
-                    border-radius: 32px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-
-                    .arrow {
-                        width: 36px;
-                        height: 36px;
-                        border-radius: 100%;
-                        cursor: pointer;
-
-                        background-image: url("../../public/icons/arrow.svg");
-                        background-repeat: no-repeat;
-                        background-position: center;
-                        background-size: 18px;
-
-                        transition: 0.2s ease;
-
-                        &:hover {
-                            background-color: var(--accent-color-primary);
-                            opacity: 0.9;
-                        }
-                    }
-
-
-                    .leftArrow {
-                        transform: rotate(180deg);
-                    }
-
-                    .rightArrow {
-                        transform: rotate(0deg);
-                    }
-
-                    .arrowNext {
-                        transform: rotate(180deg);
-                    }
-
-                    .pageNumber {
-                        font-size: 16px;
-                        cursor: pointer;
-                        width: 36px;
-                        height: 36px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-
-                        border-radius: 100%;
-                        color: var(--text-color-primary);
-                        transition: 0.2s ease;
-
-                        &:hover {
-                            opacity: 0.8;
-                            background: var(--accent-color-secondary-theme);
-                            color: var(--accent-color-primary-text);
-                        }
-
-                        &.active {
-                            background: var(--accent-color-primary);
-                            color: var(--accent-color-primary-text);
-                        }
-                    }
-
-                    .dots {
-                        width: 36px;          
-                        height: 36px;         
-                        display: flex;         
-                        align-items: center;   
-                        justify-content: center; 
-                        font-size: 16px;       
-                        opacity: 0.5;
-                        user-select: none;
-                    }
-
-                    .goToWrap {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-
-                        font-size: 16px;
-                        color: var(--text-color-primary);
-
-                        span {
-                            opacity: 0.75;
-                        }
-
-                        input {
-                            width: 48px;
-                            padding: 6px 10px;
-                            text-align: center;
-
-                            border-radius: 12px;
-                            border: 1px solid var(--input-border-color);
-                            background: var(--input-background-color);
-                            color: var(--text-color-primary);
-
-                            outline: none;
-                            transition: 0.2s ease;
-
-                            &:focus {
-                                border-color: var(--accent-color-primary);
-                                box-shadow: 0 0 0 3px var(--accent-color-primary-transparent-01);
-                            }
-                        }
-                    }
                 }
             }
         }
