@@ -286,13 +286,15 @@ public class APIv2(
                 if (!fileMaterial.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
 
                 var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(existingCourse.Uuid, fileMaterial.File);
+                var mimeType = fileMaterial.File.ContentType.ToLowerInvariant().Split(';')[0];
 
                 var newMaterial = new FileMaterial {
                     Name = fileMaterial.Name,
                     Description = fileMaterial.Description,
                     Type = Material.MaterialType.File,
                     CourseUuid = existingCourse.Uuid,
-                    FileUrl = uploadedUrl
+                    FileUrl = uploadedUrl,
+                    MimeType = mimeType
                 };
 
                 await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial);
@@ -395,13 +397,15 @@ public class APIv2(
             if (!file.File.IsAllowedFileSize()) return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
 
             var uploadedUrl = await materialAccessService.UploadFileMaterialAsync(newCourse.Uuid, file.File);
+            var mimeType = file.File.ContentType.ToLowerInvariant().Split(';')[0];
 
             var newMaterial = new FileMaterial {
                 Name = file.Name,
                 Description = file.Description,
                 Type = Material.MaterialType.File,
                 CourseUuid = newCourse.Uuid,
-                FileUrl = uploadedUrl
+                FileUrl = uploadedUrl,
+                MimeType = mimeType
             };
 
             newCourse.Materials.Add(newMaterial);
@@ -449,7 +453,11 @@ public class APIv2(
                     }
 
                     var fileName = string.IsNullOrEmpty(extension) ? baseName : $"{baseName}{extension}";
-                    return File(memoryStream, "application/octet-stream", fileName);
+                    
+                    Response.Headers.ContentDisposition = "inline";
+                    
+                    // If mime type can be shown in browser, do not force download
+                    return File(memoryStream, fileMaterial.MimeType ?? "application/octet-stream", fileMaterial.MimeType == null || fileMaterial.MimeType == "application/octet-stream" ? fileName : null);
                 }
                 catch (Minio.Exceptions.MinioException e)
                 {
