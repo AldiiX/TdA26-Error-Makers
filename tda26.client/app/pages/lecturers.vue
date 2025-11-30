@@ -11,10 +11,10 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _lecturers } = await useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
-        server: false
+    const { data: lecturers, pending: lecturersFetchPending, error: lecturersFetchError } = useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
+        server: false,
+        key: 'lecturers-list',
     });
-    const lecturers = computed(() => _lecturers.value ?? []);
 </script>
 
 <template>
@@ -59,8 +59,21 @@
         </SmoothSizeWrapper>
     </ClientOnly>
 
+<!--    <div :class="$style.list">-->
+<!--        <LecturerCard v-for="_ in 6" :lecturer="null" :class="[$style.card, $style.cardloading]" />-->
+<!--    </div>-->
+
     <div :class="$style.list">
-        <LecturerCard v-for="l in lecturers" :lecturer="l" :class="$style.card" />
+        <!-- lectureri plně načteni -->
+        <LecturerCard v-if="lecturers && !lecturersFetchPending && !lecturersFetchError" v-for="l in lecturers" :lecturer="l" :class="$style.card" />
+
+        <!-- načítání lektorů -->
+        <LecturerCard v-else-if="lecturersFetchPending" v-for="_ in 6" :lecturer="null" :class="$style.card" />
+
+        <!-- chyba pri nacitani lektoru -->
+        <div v-if="lecturersFetchError">
+            <p>Něco se pokazilo při načítání lektorů. Zkus to prosím znovu později.</p>
+        </div>
     </div>
 </template>
 
@@ -152,6 +165,19 @@
     grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
     gap: 24px;
     margin-top: 32px;
+    margin-bottom: 32px;
+    animation: sddjfiosdjfujdfibnmijfgbno 1s forwards ease;
+
+    @keyframes sddjfiosdjfujdfibnmijfgbno {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
     .card {
         /*&:nth-child(odd) {
@@ -159,6 +185,10 @@
                 color: var(--accent-color-secondary-theme);
             }
         }*/
+
+        &:is(.cardloading) {
+            //height: 164px;
+        }
 
         .name {
             color: var(--accent-color-primary);
