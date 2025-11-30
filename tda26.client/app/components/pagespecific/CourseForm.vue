@@ -3,6 +3,7 @@ import type {Course, CourseFormModel, MaterialFormModel} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
+import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 
 type Material = MaterialFormModel;
 
@@ -68,9 +69,7 @@ const removeMaterial = (index: number) => {
     form.value.materials.splice(index, 1);
 };
 
-const handleFileChange = (index: number, event: Event) => {    
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0] ?? null;
+const handleFileChange = (index: number, file: File | null) => {
     updateMaterial(index, { file });
 };
 
@@ -121,12 +120,12 @@ const submitForm = async () => {
     <form @submit.prevent="submitForm" :class="$style.courseForm">
         <div :class="$style.formGroup">
             <label>Název *</label>
-            <Input type="text" v-model="form.name" required />
+            <Input type="text" v-model="form.name" maxlength="128" required />
         </div>
 
         <div :class="$style.formGroup">
             <label>Popis *</label>
-            <Input type="textarea" v-model="form.description" rows="4" />
+            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048"/>
         </div>
 
         <div :class="$style.materials">
@@ -136,29 +135,10 @@ const submitForm = async () => {
             </div>
 
             <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
-                <div>
-                    <Input type="text" placeholder="Název materiálu *" v-model="m.name" required/>
-                    <Input type="select" v-model="m.type" :value="m.type">
-                        <option value="url">URL</option>
-                        <option value="file">Soubor</option>
-                    </Input>
-                </div>
-
-                <template v-if="m.type === 'url'">
-                    <Input type="text" placeholder="Odkaz *" v-model="m.url" required />
-                </template>
-
-                <template v-else>
-                    <Input 
-                        type="file" 
-                        @change="handleFileChange(i, $event)"
-                        :allowedFileTypes="['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain','image/png','image/jpeg','image/gif','video/mp4','audio/mpeg']"
-                    />
-                </template>
-
-                <Input type="textarea" placeholder="Popis" v-model="m.description" rows="4"/>
-
-                <button type="button" :class="$style.remove" @click="removeMaterial(i)">Odstranit</button>
+                <MaterialFormItem :model-value="m" :index="i" 
+                    @update:modelValue="(val) => updateMaterial(i, val)" 
+                    @remove="() => removeMaterial(i)" 
+                    @file-selected="handleFileChange" />
             </div>
         </div>
 
@@ -254,17 +234,5 @@ const submitForm = async () => {
     border-radius: 8px;
     padding: 12px;
     background-color: var(--background-color-secondary);
-    
-    >div {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        
-        :first-child {
-            width: 100%;
-        }
-    }
 }
 </style>
