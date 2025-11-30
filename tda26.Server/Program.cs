@@ -8,6 +8,7 @@ using Minio.AspNetCore;
 using MySqlConnector;
 using StackExchange.Redis;
 using tda26.Server.Data;
+using tda26.Server.DTOs.Converters;
 using tda26.Server.Infrastructure;
 using tda26.Server.Options;
 using tda26.Server.Repositories;
@@ -149,7 +150,10 @@ public static class Program {
         );
 
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        builder.Services.AddControllers();
+        builder.Services.AddControllers().AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
+        });
         builder.Services.AddHttpContextAccessor();
 
         // openapi generator (vestaveny v asp.net core)
@@ -176,6 +180,7 @@ public static class Program {
         builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
         builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
+        builder.Services.AddScoped<IQuizRepository, QuizRepository>();
         
         // Nastaveni
         builder.Services.Configure<CustomMinioOptions>(options =>

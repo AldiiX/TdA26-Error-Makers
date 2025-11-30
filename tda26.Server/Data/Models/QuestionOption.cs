@@ -1,0 +1,16 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace tda26.Server.Data.Models;
+
+public class QuestionOption {
+    [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
+
+    public Guid QuestionUuid { get; set; }
+    [ForeignKey("QuestionUuid")]
+    public Question Question { get; set; } = null!;
+
+    [Required] public string Text { get; set; } = string.Empty;
+
+    public bool IsCorrect { get; set; }
+}

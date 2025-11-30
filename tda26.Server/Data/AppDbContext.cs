@@ -15,6 +15,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UrlMaterial> UrlMaterials => Set<UrlMaterial>();
     
     public DbSet<Quiz> Quizzes => Set<Quiz>();
+
+    public DbSet<Question> Questions => Set<Question>();
+    public DbSet<SingleChoiceQuestion> SingleChoiceQuestions => Set<SingleChoiceQuestion>();
+    public DbSet<MultipleChoiceQuestion> MultipleChoiceQuestions => Set<MultipleChoiceQuestion>();
+
+    public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
+
+    public DbSet<QuizResult> QuizResults => Set<QuizResult>();
+    public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
+    public DbSet<QuizAnswerOption> QuizAnswerOptions => Set<QuizAnswerOption>();
     
     public DbSet<FeedPost> FeedItems => Set<FeedPost>();
 

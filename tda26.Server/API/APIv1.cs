@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Minio;
+using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
@@ -15,9 +16,9 @@ namespace tda26.Server.API;
 public class APIv1(
     ICourseRepository courseRepository,
     IMaterialRepository materialRepository,
-    IMinioClient minioClient,
     IMaterialAccessService materialAccessService,
-    IAccountRepository accountRepository
+    IAccountRepository accountRepository,
+    IQuizRepository quizRepository
 ) : Controller {
 
     [HttpGet]
@@ -337,5 +338,90 @@ public class APIv1(
         await materialRepository.DeleteMaterialAsync(material);
 
         return NoContent();
+    }
+    
+    [HttpGet("courses/{courseUuid:guid}/quizzes")]
+    public async Task<IActionResult> GetQuizzesByCourseId([FromRoute] Guid courseUuid) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var quizzes = await quizRepository.GetAllQuizzesFromCourseAsyncFull(courseUuid);
+        
+        var obj = quizzes.Select(quiz => (dynamic)quiz.ToReadDto());
+
+        return Ok(obj);
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/quizzes")]
+    public async Task<IActionResult> CreateQuizInCourse([FromRoute] Guid courseUuid, [FromBody] CreateUpdateQuizRequest body) {
+        var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var newQuiz = new Quiz {
+            Title = body.Title,
+            AttemptsCount = body.AttemptsCount,
+            CourseUuid = course.Uuid
+        };
+        
+        foreach (var questionDto in body.Questions) {
+            switch (questionDto.Type) {
+                case "singleChoice":
+                    var singleDto = questionDto as CreateUpdateSingleChoiceQuestionRequest
+                                    ?? throw new InvalidOperationException("Expected singleChoice DTO");
+                    
+                    var singleChoiceQuestion = new SingleChoiceQuestion {
+                        Text = singleDto.Question,
+                        Quiz = newQuiz
+                    };
+                    
+                    for (int i = 0; i < singleDto.Options.Count; i++) {
+                        var optionText = singleDto.Options[i];
+                        var option = new QuestionOption {
+                            Text = optionText,
+                            IsCorrect = i == singleDto.CorrectIndex,
+                            Question = singleChoiceQuestion
+                        };
+                        
+                        singleChoiceQuestion.Options.Add(option);
+                    }
+                    
+                    newQuiz.Questions.Add(singleChoiceQuestion);
+                    break;
+
+                case "multipleChoice":
+                    var multipleDto = questionDto as CreateUpdateMultipleChoiceQuestionRequest
+                                    ?? throw new InvalidOperationException("Expected multipleChoice DTO");
+                    
+                    var multipleChoiceQuestion = new MultipleChoiceQuestion {
+                        Text = multipleDto.Question,
+                        Quiz = newQuiz
+                    };
+                    
+                    for (int i = 0; i < multipleDto.Options.Count; i++) {
+                        var optionText = multipleDto.Options[i];
+                        var option = new QuestionOption {
+                            Text = optionText,
+                            IsCorrect = multipleDto.CorrectIndices.Contains(i),
+                            Question = multipleChoiceQuestion
+                        };
+                        
+                        multipleChoiceQuestion.Options.Add(option);
+                    }
+                    
+                    newQuiz.Questions.Add(multipleChoiceQuestion);
+                    break;
+
+                default:
+                    return BadRequest(new { error = $"Unsupported question type: {questionDto.Type}" });
+            }
+        }
+        
+        await quizRepository.CreateAsync(newQuiz);
+
+        return Ok(newQuiz.ToReadDto());
     }
 }

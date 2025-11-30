@@ -12,7 +12,7 @@ public static class CourseMapper
             Name = course.Name,
             Description = course.Description,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
-            Quizzes = course.Quizzes.Select(q => new ReadQuizResponse { /* map */ }).ToList(),
+            Quizzes = course.Quizzes.Select(q => q.ToReadDto()).ToList(),
             Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList()
         };
 }
