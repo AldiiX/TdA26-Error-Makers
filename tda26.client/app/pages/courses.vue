@@ -10,11 +10,35 @@
         layout: "normal-page-layout"
     });
 
-    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
-    const courses = computed(() => _courses.value ?? []);
+
+
+    const courses = ref<Course[] | null>(null);
+
+    // client-side fetch courses
+    onMounted(async () => {
+        try {
+            const res = await fetch(getBaseUrl() + '/api/v2/courses', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!res.ok) {
+                throw new Error('Failed to fetch courses');
+            }
+            const data = await res.json();
+            courses.value = data;
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+        }
+    });
+
+
+
 
     const sort = ref<'new' | 'old'>('new');
     const sortedCourses = computed(() => {
+        if (!courses.value) return [];
         let list = [...courses.value];
 
         switch (sort.value) {
@@ -90,7 +114,6 @@
     </Teleport>
     
     <section :class="$style.section">
-        
         <div :class="$style.topContainer">
             <div :class="$style.left">
                 <h1 :class="$style.nadpis">Kurzy</h1>
@@ -148,12 +171,15 @@
                 </div>
 
                 <div :class="$style.courses">
-                    <div :class="$style.coursesList">
-                        <CourseCard
-                            v-for="course in paginatedCourses"
-                            :course="course"
-                            :key="course.uuid"
-                        />
+                    <div :class="$style.coursesWrapper">
+                        <div :class="$style.coursesList">
+                            <CourseCard
+                                v-for="(course, i) in paginatedCourses"
+                                :course="course"
+                                :key="course.uuid"
+                                :reveal-delay-ms="i * 200"
+                            />
+                        </div>
                     </div>
                     <div :class="$style.pagination">
                         <!-- Pagination controls will go here -->
@@ -451,21 +477,30 @@
             }
             
             .courses{
-                
-                .coursesList {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
-                    gap: 24px;
-                    align-items: start;
+                .coursesWrapper {
+                    min-height: 50vh;
 
-                    min-height: calc(80vh - 64px - 32px);
-                    
+                    .coursesList {
+                        display: grid;
+                        gap: 32px;
+                        grid-template-columns: repeat(auto-fill, minmax(324px, 1fr));
+                        align-items: stretch;
+                        width: 100%;
+                        min-height: auto;
+
+                        > * {
+                            width: 100%;
+                            min-height: auto;
+                            height: auto;
+                            display: flex;
+                        }
+                    }
                 }
 
                 .pagination {
                     height: 64px;
                     background-color: var(--accent-color-secondary-darker);
-                }    
+                }
             }
         }
     }

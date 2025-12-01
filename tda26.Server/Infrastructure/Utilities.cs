@@ -154,5 +154,31 @@ public static class Utilities {
 
             return ipAddress;
         }
+    
+    public static bool IsAllowedMimeType(this IFormFile file) {
+        var allowedMimeTypes = new List<string> {
+            // Documents
+            "application/pdf", // .pdf
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+            "text/plain", // .txt
+
+            // Images
+            "image/png", // .png
+            "image/jpeg", // .jpg, .jpeg
+            "image/gif", // .gif
+
+            // Media
+            "video/mp4", // .mp4
+            "audio/mpeg" // .mp3
+        };
+            
+        var fileMimeType = file.ContentType.ToLowerInvariant().Split(';')[0];
+
+        return allowedMimeTypes.Contains(fileMimeType);
+    }
+    
+    public static bool IsAllowedFileSize(this IFormFile file) {
+        const long maxFileSizeBytes = 30 * 1024 * 1024;
+        return !(file.Length > maxFileSizeBytes);
     }
 }

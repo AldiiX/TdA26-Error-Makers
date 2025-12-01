@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251125122745_AddLecturerUuidToCourse")]
+    partial class AddLecturerUuidToCourse
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,10 +32,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
@@ -71,10 +71,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -96,45 +93,11 @@ namespace tda26.Server.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("ViewCount")
-                        .HasColumnType("int");
-
                     b.HasKey("Uuid");
 
                     b.HasIndex("LecturerUuid");
 
                     b.ToTable("Courses");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("AccountUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("CourseUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Uuid");
-
-                    b.HasIndex("CourseUuid");
-
-                    b.HasIndex("AccountUuid", "CourseUuid")
-                        .IsUnique();
-
-                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -147,10 +110,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -172,10 +132,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
                     b.Property<string>("Description")
                         .HasMaxLength(1048)
@@ -218,10 +175,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
                     b.Property<int>("QuestionCount")
                         .HasColumnType("int");
@@ -336,23 +290,6 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Account", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Course", "Course")
-                        .WithMany("Likes")
-                        .HasForeignKey("CourseUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-
-                    b.Navigation("Course");
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Lecturer", "Lecturer")
@@ -398,8 +335,6 @@ namespace tda26.Server.Migrations
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
                 {
                     b.Navigation("Feed");
-
-                    b.Navigation("Likes");
 
                     b.Navigation("Materials");
 

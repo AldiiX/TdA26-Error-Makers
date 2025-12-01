@@ -12,9 +12,6 @@ public class Quiz : Auditable {
     [MaxLength(128)]
     public string Title { get; set; } = string.Empty;
 
-    public int QuestionCount { get; set; }
-
-    [JsonIgnore]
     public Guid CourseUuid { get; set; }
 
     [ForeignKey("CourseUuid")]

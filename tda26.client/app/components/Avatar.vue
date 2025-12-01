@@ -21,7 +21,7 @@ type AvatarProps = {
 const props = withDefaults(defineProps<AvatarProps>(), {
     size: 16,
     src: null,
-    className: "",
+    class: "",
     backgroundColor: null
 });
 

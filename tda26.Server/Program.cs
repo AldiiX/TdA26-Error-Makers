@@ -32,6 +32,12 @@ public static class Program {
 
     public static void Main(string[] args) {
         var builder = WebApplication.CreateBuilder(args);
+        
+        
+        // Disable detailed logging
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+        builder.Logging.AddFilter("System.Net.Http.HttpClient.ServiceChecker.LogicalHandler", LogLevel.Warning);
+        builder.Logging.AddFilter("System.Net.Http.HttpClient.ServiceChecker.ClientHandler", LogLevel.Warning);
 
         // pripojeni k redisu
         var rhost = ENV.GetValueOrNull("REDIS_IP") ?? ENV["DATABASE_IP"];

@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 
 namespace tda26.Server.Data.Models;
 
-public partial class Course : Auditable {
+public class Course : Auditable {
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
 
@@ -26,7 +25,13 @@ public partial class Course : Auditable {
     [JsonIgnore]
     public ICollection<Like> Likes { get; set; } = new List<Like>();
 
-    public ICollection<Material> Materials { get; set; } = new List<Material>();
+    [JsonIgnore]
+    public Guid? LecturerUuid { get; set; }
+
+    [ForeignKey(nameof(LecturerUuid))]
+    public Lecturer? Lecturer { get; set; } = null!;
+    
+    public ICollection<Material> Materials { get; set; } = new List<Material>(); 
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
-    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>(); 
+    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
 }
