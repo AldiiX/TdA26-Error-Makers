@@ -13,6 +13,8 @@ public class AccountRepository(
 ) : IAccountRepository {
     public async Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
         return await db.Accounts
+            .Include(a => a.Likes)
+                .ThenInclude(l => l.Course)
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
     }
     

@@ -21,4 +21,6 @@ public class Account : Auditable {
 
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
+    
+    public ICollection<Like> Likes { get; set; } = new List<Like>();
 }

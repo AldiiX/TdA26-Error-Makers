@@ -20,6 +20,6 @@ public class Like : Auditable {
 	[JsonIgnore, Required]
 	public Guid CourseUuid { get; set; }
 
-	[ForeignKey("CourseUuid"), JsonIgnore]
+	[ForeignKey("CourseUuid")]
 	public Course Course { get; set; } = null!;
 }

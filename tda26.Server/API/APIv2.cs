@@ -55,6 +55,12 @@ public class APIv2(
     public async Task<IActionResult> Me(CancellationToken ct) {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
+        
+        
+        foreach (var like in acc.Likes) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
 
         return Ok(acc);
     }
