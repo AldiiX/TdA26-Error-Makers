@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,12 @@ public class Account : Auditable {
 
     [MaxLength(32)]
     public string Username { get; set; } = string.Empty;
+
+    [NotMapped]
+    public string FullName => Username;
+
+    [NotMapped]
+    public string FullNameWithoutTitles => Username;
 
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;

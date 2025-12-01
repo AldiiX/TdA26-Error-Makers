@@ -9,7 +9,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
     
     public DbSet<Course> Courses => Set<Course>();
-    
+
+    public DbSet<Like> Likes => Set<Like>();
+
     public DbSet<Material> Materials { get; set; }
     public DbSet<FileMaterial> FileMaterials => Set<FileMaterial>();
     public DbSet<UrlMaterial> UrlMaterials => Set<UrlMaterial>();
@@ -20,10 +22,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // auto update audit properties
     private void SetAuditProperties() {
-        var entries = ChangeTracker.Entries().Where(e => e is { Entity: Auditable, State: EntityState.Added or EntityState.Modified });
+        var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });
+
+        // TODO: zjisteni toho co se zmenilo (chci odstranit, ze pokud lecturer.ViewCount se zmeni tak se to nepocita jako update)
 
         foreach (var entityEntry in entries) {
-            ((Auditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
+            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
         }
     }
 

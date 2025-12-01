@@ -8,6 +8,8 @@ public class ReadCourseResponse {
     public required string Description { get; set; }
     public required DateTime CreatedAt { get; set; }
     public required DateTime UpdatedAt { get; set; }
+    public required int ViewCount { get; set; }
+    public required int LikeCount { get; set; }
     public Guid? LecturerUuid { get; set; }
     public string? ImageUrl { get; set; }
     public Lecturer? Lecturer { get; set; } = null!;

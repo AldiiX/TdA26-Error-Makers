@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import {type Account, type Course, type Material} from "#shared/types";
+    import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Button from "~/components/Button.vue";
     import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -7,7 +7,10 @@
     import Modal from "~/components/Modal.vue";
     import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     import { ref, computed } from "vue";
-    import { Head, Title } from "#components";
+    import { Head, Title, ClientOnly, NuxtLink } from "#components";
+    import NumberExponential from "~/components/NumberExponential.vue";
+    import Avatar from "~/components/Avatar.vue";
+    declare const grecaptcha: gRecaptcha;
 
     definePageMeta({
         layout: "normal-page-layout",
@@ -257,20 +260,36 @@
                 <div :class="$style.fields">
                     <div :class="$style.el">
                         <p :class="$style.title">Počet zhlédnutí</p>
-                        <p :class="$style.item">Samen</p>
+                        <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
                         <p :class="$style.title">Hodnocení</p>
-                        <p :class="$style.item">Samen</p>
+                        <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Něco dalšího</p>
-                        <p :class="$style.item">Samen</p>
+                        <p :class="$style.title">Recenzí</p>
+                        <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                 </div>
-                <div :class="$style.buttons">
-                    <Button button-style="primary" accent-color="primary">Zapsat se</Button>
-                    <Button button-style="secondary" accent-color="secondary">Více informací</Button>
+
+                <div :class="$style.otherinfo">
+                    <NuxtLink :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
+                        <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                        <p>{{ courseSmall?.lecturer?.fullName }}</p>
+                    </NuxtLink>
+
+                    <div :class="$style.rating">
+                        <!-- like a dislike button -->
+                        <div :class="$style.duo">
+                            <div :class="$style.icon"></div>
+                            <p>{{ /*courseSmall?.likeCount*/ 256 }}</p>
+                        </div>
+
+                        <div :class="$style.duo">
+                            <div :class="$style.icon"></div>
+                            <p>Nelíbí se</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -288,33 +307,35 @@
                 </ul>
             </nav>
             <div :class="['liquid-glass']">
-                <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
-                        Přidat nový materiál
-                    </Button>
+                <ClientOnly>
+                    <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
+                        <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                            Přidat nový materiál
+                        </Button>
 
-                    <p v-if="coursePending">Načítání materiálů...</p>
-                    <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
-                    <ul v-else>
-                        <li v-for="material in course.materials" :key="material.uuid">
-                            <MaterialItem
-                                :material="material"
-                                :course="course"
-                                :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
-                                @edit="openUpdateMaterialModal"
-                                @delete="openDeleteMaterialModal"
-                            />
-                        </li>
-                    </ul>
-                </div>
-                <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-<!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-<!--                    <ul v-else>-->
-<!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-<!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-<!--                        </li>-->
-<!--                    </ul>-->
-                </div>
+                        <p v-if="coursePending">Načítání materiálů...</p>
+                        <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
+                        <ul v-else>
+                            <li v-for="material in course.materials" :key="material.uuid">
+                                <MaterialItem
+                                    :material="material"
+                                    :course="course"
+                                    :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
+                                    @edit="openUpdateMaterialModal"
+                                    @delete="openDeleteMaterialModal"
+                                />
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
+    <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+    <!--                    <ul v-else>-->
+    <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+    <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+    <!--                        </li>-->
+    <!--                    </ul>-->
+                    </div>
+                </ClientOnly>
             </div>
         </div>
     </div>
@@ -457,16 +478,22 @@ ul {
                     position: relative;
                     border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%);
                     padding: 0 24px;
+                    flex: 1;
 
 
                     >.title {
                         font-size: 16px;
                         margin-bottom: 8px;
+                        width: max-content;
                     }
-                    >.item {
-                        font-size: 24px;
-                        margin: 0;
+
+                    .nexp {
+                        .item {
+                            font-size: 24px;
+                            margin: 0;
+                        }
                     }
+
 
                     &:last-child {
                         border-right: none;
@@ -479,9 +506,34 @@ ul {
                 }
             }
 
-            >.buttons {
-                display: flex;
-                gap: 12px;
+            >.otherinfo {
+                display: grid;
+                gap: 16px;
+
+                .author {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: unset;
+                    text-decoration: none;
+                    transition-duration: 0.3s;
+
+                    &:hover {
+                        opacity: 0.5;
+                        transition-duration: 0.3s;
+                    }
+
+                    .avatar {
+                        --size: 24px !important;
+                    }
+
+                    p {
+                        margin: 0;
+                        font-weight: 600;
+                        font-size: 16px;
+                        color: var(--text-color-secondary);
+                    }
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ using tda26.Server.Data;
 using tda26.Server.DTOs;
 using tda26.Server.Infrastructure;
 using tda26.Server.Repositories;
+using Account = tda26.Server.Data.Models.Account;
 
 namespace tda26.Server.Services;
 

@@ -43,7 +43,7 @@
 
                 <div :class="$style.btns">
                     <NuxtLink to="/courses">
-                        <Button :class="$style.btn" href="/courses" button-style="primary" >Všechny kurzy</Button>
+                        <Button :class="$style.btn" href="/courses" button-style="primary" accent-color="primary">Všechny kurzy</Button>
                     </NuxtLink>
 
                     <NuxtLink to="/lecturers">

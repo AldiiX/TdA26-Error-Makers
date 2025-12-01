@@ -59,7 +59,7 @@ public static class Utilities {
             // nejdriv enhanced, pak klasicky
             return BCrypt.Net.BCrypt.EnhancedVerify(password, hashedPassword, EnhancedType)
                    || BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        } catch (BCrypt.Net.SaltParseException) {
+        } catch (SaltParseException) {
             Program.Logger.LogError("SaltParseException in Utilities.VerifyPassword");
             return false;
         }
@@ -154,7 +154,8 @@ public static class Utilities {
 
             return ipAddress;
         }
-    
+    }
+
     public static bool IsAllowedMimeType(this IFormFile file) {
         var allowedMimeTypes = new List<string> {
             // Documents

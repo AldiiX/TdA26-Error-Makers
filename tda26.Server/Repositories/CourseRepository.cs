@@ -7,6 +7,7 @@ namespace tda26.Server.Repositories;
 public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
         return await db.Courses
+            .Include(c => c.Lecturer)
             .Include(c => c.Likes)
             .ThenInclude(l => l.Account)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);

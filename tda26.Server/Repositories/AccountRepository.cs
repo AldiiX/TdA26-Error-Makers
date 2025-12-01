@@ -22,7 +22,8 @@ public class AccountRepository(
     }
 
     public async Task<List<Account>> GetAllAsync(CancellationToken ct = default) {
-        return await db.Accounts.ToListAsync(ct);
+        return await db.Accounts
+            .ToListAsync(ct);
     }
 
     public async Task CreateAsync(Account account, CancellationToken ct = default) {

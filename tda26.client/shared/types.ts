@@ -9,6 +9,8 @@ export interface Course {
     //lecturerUuid: string;
     lecturer: Lecturer | null;
     materials?: Material[];
+    likeCount: number,
+    viewCount: number,
 }
 
 export interface Material {
@@ -58,6 +60,13 @@ export interface Lecturer extends Account {
 export interface Account {
     username: string;
     uuid: string,
+    fullName: string,
+    fullNameWithoutTitles: string,
+}
+
+export interface gRecaptcha {
+    ready: (callback: () => void) => void;
+    execute: (siteKey: string, opts: { action: "submit" }) => Promise<string>;
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

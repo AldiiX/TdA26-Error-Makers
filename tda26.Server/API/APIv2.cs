@@ -25,7 +25,7 @@ public class APIv2(
 
     // random picovinky
     private static readonly HttpClient HttpClient = new();
-    public static List<IPAddress> UsedIps = [];
+    public static readonly Dictionary<Guid, List<IPAddress>> UsedIPsForCourse = new();
 
 
 
@@ -369,9 +369,16 @@ public class APIv2(
         var response = await HttpClient.SendAsync(requestMessage, ct);
         var responseContent = await response.Content.ReadAsStringAsync(ct);
 
+        // overeni captcha
         var jsonResponse = JsonNode.Parse(responseContent);
         if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
             return BadRequest(new { error = "Recaptcha verification failed." });
+        }
+
+        // nalezeni kurzu v db
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
         }
 
         // zjisteni jestli ip adresa neni v pouzitych
@@ -380,19 +387,18 @@ public class APIv2(
             return BadRequest(new { error = "Unable to determine client IP address." });
         }
 
-        if (UsedIps.Contains(ipAddress)) {
+        // kontrola jestli uz ip neni v pouzitych
+        if (UsedIPsForCourse.TryGetValue(course.Uuid, out var l) && l.Contains(ipAddress)) {
             return BadRequest(new { error = "You have already used your view for today." });
         }
 
         // ip oznacit jako pouzitou (az po uspesne captcha)
-        UsedIps.Add(ipAddress);
+        if(!UsedIPsForCourse.ContainsKey(course.Uuid)) UsedIPsForCourse.Add(course.Uuid, new List<IPAddress>());
+        UsedIPsForCourse.TryGetValue(course.Uuid, out var list);
+        list ??= [];
+        list.Add(ipAddress);
 
         // aktualizace poctu zobrazeni kurzu
-        var course = await courseRepository.GetByIdAsync(courseUuid, ct);
-        if (course == null) {
-            return NotFound(new { error = "Course not found." });
-        }
-
         course.ViewCount += 1;
         await courseRepository.UpdateAsync(course, ct);
 

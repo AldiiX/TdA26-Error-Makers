@@ -51,8 +51,23 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Data\Models\Course.Like.cs">
+      <Compile Update="Data\Models\Like.cs">
         <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\FeedPost.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\FileMaterial.cs">
+        <DependentUpon>Material.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Material.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Quiz.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\UrlMaterial.cs">
+        <DependentUpon>Material.cs</DependentUpon>
       </Compile>
     </ItemGroup>
 
