@@ -12,20 +12,30 @@ public class AccountRepository(
     AppDbContext db
 ) : IAccountRepository {
     public async Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
-        return await db.Accounts
+        var account = await db.Accounts
             .Include(a => a.Likes)
-                .ThenInclude(l => l.Course)
+            .ThenInclude(l => l.Course)
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
+
+        return account;
     }
     
     public async Task<Account?> GetByUsernameAsync(string username, CancellationToken ct = default) {
-        return await db.Accounts
+        var account = await db.Accounts
+            .Include(a => a.Likes)
+            .ThenInclude(l => l.Course)
             .FirstOrDefaultAsync(a => a.Username == username, ct);
+
+        return account;
     }
 
     public async Task<List<Account>> GetAllAsync(CancellationToken ct = default) {
-        return await db.Accounts
+        var accounts = await db.Accounts
+            .Include(a => a.Likes)
+            .ThenInclude(l => l.Course)
             .ToListAsync(ct);
+
+        return accounts;
     }
 
     public async Task CreateAsync(Account account, CancellationToken ct = default) {

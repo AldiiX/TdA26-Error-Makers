@@ -97,6 +97,12 @@
     const deleteError = ref<string | null>(null);
 
     const editingMaterial = ref<any>(null);
+    const isThisCourseLiked = computed(() => {
+        if (!loggedUser.value || !courseSmall.value) return false;
+        return loggedUser.value.likes.some(like => like.course?.uuid === courseSmall.value!.uuid);
+    });
+
+    const isThisCourseDisliked = computed(() => false);
     
     const openCreateMaterialModal = () => {
         editingMaterial.value = {
@@ -245,6 +251,11 @@
             console.error("Creation failed:", err);
         }
     };
+
+
+    console.log("Course small:", courseSmall);
+    console.log("Course full:", course);
+    console.log(loggedUser);
 </script>
 
 <template>
@@ -259,34 +270,34 @@
             <div :class="['liquid-glass', $style.brief]">
                 <div :class="$style.fields">
                     <div :class="$style.el">
-                        <p :class="$style.title">Počet zhlédnutí</p>
+                        <p :class="$style.title">Zhlédnutí</p>
                         <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Hodnocení</p>
-                        <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <p :class="$style.title">Materiály</p>
+                        <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Recenzí</p>
+                        <p :class="$style.title">Recenze</p>
                         <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                 </div>
 
                 <div :class="$style.otherinfo">
-                    <NuxtLink :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
+                    <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
                         <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
                         <p>{{ courseSmall?.lecturer?.fullName }}</p>
                     </NuxtLink>
 
                     <div :class="$style.rating">
                         <!-- like a dislike button -->
-                        <div :class="$style.duo">
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseLiked }]">
                             <div :class="$style.icon"></div>
-                            <p>{{ /*courseSmall?.likeCount*/ 256 }}</p>
+                            <p>{{ courseSmall?.likeCount }}</p>
                         </div>
 
-                        <div :class="$style.duo">
-                            <div :class="$style.icon"></div>
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseDisliked }]">
+                            <div :class="$style.icon" style="rotate: 180deg"></div>
                             <p>Nelíbí se</p>
                         </div>
                     </div>
@@ -456,6 +467,7 @@ ul {
         display: flex;
         justify-content: space-between;
         gap: 24px;
+        align-items: start;
 
         >p {
             font-size: 18px;
@@ -532,6 +544,50 @@ ul {
                         font-weight: 600;
                         font-size: 16px;
                         color: var(--text-color-secondary);
+                    }
+                }
+
+                .rating {
+                    display: flex;
+                    gap: 12px;
+
+                    .duo {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        cursor: pointer;
+                        user-select: none;
+                        padding: 8px 16px;
+                        border-radius: 999px;
+                        background-color: var(--background-color-3);
+                        transition-duration: 0.3s;
+
+                        &:is(.active) .icon {
+                            mask-image: url(/icons/thumbs_up_filled.svg);
+                        }
+
+                        &:hover {
+                            background-color: var(--background-color-primary);
+                            transition-duration: 0.3s;
+                        }
+
+                        .icon {
+                            width: 16px;
+                            aspect-ratio: 1/1;
+                            background-color: var(--text-color-primary);
+                            border-radius: 4px;
+                            mask-image: url(/icons/thumbs_up_outline.svg);
+                            mask-size: cover;
+                            mask-repeat: no-repeat;
+                            mask-position: center;
+                        }
+
+                        p {
+                            margin: 0;
+                            font-size: 16px;
+                            font-weight: 600;
+                            color: var(--text-color-secondary);
+                        }
                     }
                 }
             }

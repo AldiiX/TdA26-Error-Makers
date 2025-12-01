@@ -55,9 +55,9 @@ public class APIv2(
     public async Task<IActionResult> Me(CancellationToken ct) {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
-        
-        
-        foreach (var like in acc.Likes) {
+
+        // odstraneni policek
+        foreach (var like in acc?.Likes ?? []) {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -75,6 +75,12 @@ public class APIv2(
 
         var acc = await auth.LoginAsync(body.Username, body.Password, ct);
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
+
+        // odstraneni policek
+        foreach (var like in acc?.Likes ?? []) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
 
         return Ok(acc);
     }
@@ -149,6 +155,12 @@ public class APIv2(
         var account = await accounts.GetByIdAsync(uuid, ct);
         if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
 
+        // odstraneni policek
+        foreach (var like in account?.Likes ?? []) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
+
         return account switch {
             Lecturer lecturer => Ok(lecturer),
             _ => Ok(account)
@@ -160,6 +172,14 @@ public class APIv2(
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await courseRepository.GetAllAsync();
+
+        foreach (var c in courses) {
+            c.Materials = [];
+            c.Quizzes = [];
+            c.Feed = [];
+            if(c.Lecturer != null) c.Lecturer.Likes = [];
+        }
+
         return Ok(courses);
     }
     
@@ -173,9 +193,25 @@ public class APIv2(
     
         if (full) {
             var courses = await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max);
+
+            foreach (var c in courses) {
+                c.Materials = [];
+                c.Quizzes = [];
+                c.Feed = [];
+                if(c.Lecturer != null) c.Lecturer.Likes = [];
+            }
+
             return Ok(courses);
         } else {
             var courses = await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max);
+
+            foreach (var c in courses) {
+                c.Materials = [];
+                c.Quizzes = [];
+                c.Feed = [];
+                if(c.Lecturer != null) c.Lecturer.Likes = [];
+            }
+
             return Ok(courses);
         }
     }
@@ -191,16 +227,21 @@ public class APIv2(
             course = await courseRepository.GetByUuidAsyncFull(uuid);
         } else {
             course = await courseRepository.GetByUuidAsync(uuid);
+            course!.Materials = [];
+            course.Quizzes = [];
+            course.Feed = [];
         }
-        
+
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var courses = course.ToReadDto();
-        courses.Materials = courses.Materials.OrderByDescending(m => m.CreatedAt).ToList();
+        if(course.Lecturer != null) course.Lecturer.Likes = [];
+
+        var _course = course.ToReadDto();
+        _course.Materials = _course.Materials.OrderByDescending(m => m.CreatedAt).ToList();
         
-        return Ok(courses);
+        return Ok(_course);
     }
 
     [HttpPut("courses/{uuid:guid}")]
@@ -217,6 +258,10 @@ public class APIv2(
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
 
@@ -240,6 +285,10 @@ public class APIv2(
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
         existingCourse.Name = body.Course.Name;
         existingCourse.Description = body.Course.Description;
 
@@ -343,6 +392,11 @@ public class APIv2(
         if (existingCourse == null) return NotFound();
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
         
         var success = await courseRepository.DeleteAsync(uuid);
         if (!success) {
@@ -386,6 +440,11 @@ public class APIv2(
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
+
+        course.Materials = [];
+        course.Quizzes = [];
+        course.Feed = [];
+        if(course.Lecturer != null) course.Lecturer.Likes = [];
 
         // zjisteni jestli ip adresa neni v pouzitych
         var ipAddress = HttpContext.GetIPAddress();
@@ -610,8 +669,7 @@ public class APIv2(
     }
 
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
-    public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
-    {
+    public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid) {
         var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
@@ -620,8 +678,7 @@ public class APIv2(
         if (material == null)
             return NotFound(new { error = "Material not found." });
 
-        switch (material)
-        {
+        switch (material) {
             case UrlMaterial urlMaterial:
                 return Ok(urlMaterial.ToReadDto());
             case FileMaterial fileMaterial:

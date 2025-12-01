@@ -62,6 +62,10 @@ export interface Account {
     uuid: string,
     fullName: string,
     fullNameWithoutTitles: string,
+    likes: {
+        course: Course | null;
+        uuid: string;
+    }[]
 }
 
 export interface gRecaptcha {

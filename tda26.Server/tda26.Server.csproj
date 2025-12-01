@@ -51,9 +51,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Data\Models\Like.cs">
-        <DependentUpon>Course.cs</DependentUpon>
-      </Compile>
       <Compile Update="Data\Models\FeedPost.cs">
         <DependentUpon>Course.cs</DependentUpon>
       </Compile>

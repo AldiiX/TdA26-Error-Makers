@@ -6,40 +6,40 @@ namespace tda26.Server.Repositories;
 
 public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
-        return await db.Courses
+        var course = await db.Courses
             .Include(c => c.Lecturer)
             .Include(c => c.Likes)
             .ThenInclude(l => l.Account)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
-    }
 
-    public async Task<Course?> GetByIdAsyncFull(Guid uuid, CancellationToken ct = default) {
-        return await db.Courses
-            .Include(c => c.Likes)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Lecturer)
-            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+        return course;
     }
     
     public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
-        return await db.Courses
+        var course = await db.Courses
+            .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+
+        return course;
     }
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
-        return await db.Courses
+        var courses = await db.Courses
             .Include(c => c.Likes)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .ToListAsync(ct);
+
+        return courses;
     }
 
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
-        return await db.Courses
+        var courses = await db.Courses
             .Include(c => c.Likes)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
@@ -47,19 +47,27 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
             .ToListAsync(ct);
+
+        return courses;
     }
 
     public async Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
-        return await db.Courses
+        var courses = await db.Courses
+            .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .Where(c => c.LecturerUuid == lecturerUuid)
             .OrderByDescending(c => c.CreatedAt)
             .Take(max > -1 ? max : int.MaxValue)
             .ToListAsync(ct);
+
+        return courses;
     }
 
     public async Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
-        return await db.Courses
+        var courses = await db.Courses
             .Where(c => c.LecturerUuid == lecturerUuid)
+            .Include(c => c.Likes)
+            .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
@@ -67,6 +75,8 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .OrderByDescending(c => c.CreatedAt)
             .Take(max > -1 ? max : int.MaxValue)
             .ToListAsync(ct);
+
+        return courses;
     }
 
     public async Task CreateAsync(Course course, CancellationToken ct = default) {
