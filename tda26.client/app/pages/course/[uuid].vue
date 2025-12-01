@@ -33,17 +33,15 @@
     const uuid = route.params.uuid as string;
 
     // server small fetch
-    const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`/api/v2/courses/${uuid}`, {
+    const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
         query: { full: false },
         key: `course-${uuid}-small`,
     });
 
     if (courseSmallError.value || !courseSmall.value) {
-        console.error("Course small fetch returned null.");
+        console.error("Error loading small course:", courseSmallError.value);
         await navigateTo('/courses');
     }
-
-
 
     // client full fetch
     const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
