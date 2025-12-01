@@ -284,21 +284,23 @@
                 </div>
 
                 <div :class="$style.otherinfo">
-                    <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
-                        <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
-                        <p>{{ courseSmall?.lecturer?.fullName }}</p>
-                    </NuxtLink>
+                    <div :class="$style.authorAndRating">
+                        <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
+                            <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                            <p>{{ courseSmall?.lecturer?.fullName }}</p>
+                        </NuxtLink>
 
-                    <div :class="$style.rating">
-                        <!-- like a dislike button -->
-                        <div :class="[$style.duo, { [$style.active]: isThisCourseLiked }]">
-                            <div :class="$style.icon"></div>
-                            <p>{{ courseSmall?.likeCount }}</p>
-                        </div>
+                        <div :class="$style.rating">
+                            <!-- like a dislike button -->
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseLiked }]">
+                                <div :class="$style.icon"></div>
+                                <p>{{ courseSmall?.likeCount }}</p>
+                            </div>
 
-                        <div :class="[$style.duo, { [$style.active]: isThisCourseDisliked }]">
-                            <div :class="$style.icon" style="rotate: 180deg"></div>
-                            <p>Nelíbí se</p>
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseDisliked }]">
+                                <div :class="$style.icon" style="rotate: 180deg"></div>
+                                <p>Nelíbí se</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -522,71 +524,79 @@ ul {
                 display: grid;
                 gap: 16px;
 
-                .author {
+                .authorAndRating {
                     display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
                     align-items: center;
-                    gap: 8px;
-                    color: unset;
-                    text-decoration: none;
-                    transition-duration: 0.3s;
+                    gap: 16px;
 
-                    &:hover {
-                        opacity: 0.5;
-                        transition-duration: 0.3s;
-                    }
-
-                    .avatar {
-                        --size: 24px !important;
-                    }
-
-                    p {
-                        margin: 0;
-                        font-weight: 600;
-                        font-size: 16px;
-                        color: var(--text-color-secondary);
-                    }
-                }
-
-                .rating {
-                    display: flex;
-                    gap: 12px;
-
-                    .duo {
+                    .author {
                         display: flex;
                         align-items: center;
                         gap: 8px;
-                        cursor: pointer;
-                        user-select: none;
-                        padding: 8px 16px;
-                        border-radius: 999px;
-                        background-color: var(--background-color-3);
+                        color: unset;
+                        text-decoration: none;
                         transition-duration: 0.3s;
 
-                        &:is(.active) .icon {
-                            mask-image: url(/icons/thumbs_up_filled.svg);
-                        }
-
                         &:hover {
-                            background-color: var(--background-color-primary);
+                            opacity: 0.5;
                             transition-duration: 0.3s;
                         }
 
-                        .icon {
-                            width: 16px;
-                            aspect-ratio: 1/1;
-                            background-color: var(--text-color-primary);
-                            border-radius: 4px;
-                            mask-image: url(/icons/thumbs_up_outline.svg);
-                            mask-size: cover;
-                            mask-repeat: no-repeat;
-                            mask-position: center;
+                        .avatar {
+                            --size: 24px !important;
                         }
 
                         p {
                             margin: 0;
-                            font-size: 16px;
                             font-weight: 600;
+                            font-size: 16px;
                             color: var(--text-color-secondary);
+                        }
+                    }
+
+                    .rating {
+                        display: flex;
+                        gap: 12px;
+
+                        .duo {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            cursor: pointer;
+                            user-select: none;
+                            padding: 8px 16px;
+                            border-radius: 999px;
+                            background-color: var(--background-color-3);
+                            transition-duration: 0.3s;
+
+                            &:is(.active) .icon {
+                                mask-image: url(/icons/thumbs_up_filled.svg);
+                            }
+
+                            &:hover {
+                                background-color: var(--background-color-primary);
+                                transition-duration: 0.3s;
+                            }
+
+                            .icon {
+                                width: 16px;
+                                aspect-ratio: 1/1;
+                                background-color: var(--text-color-primary);
+                                border-radius: 4px;
+                                mask-image: url(/icons/thumbs_up_outline.svg);
+                                mask-size: cover;
+                                mask-repeat: no-repeat;
+                                mask-position: center;
+                            }
+
+                            p {
+                                margin: 0;
+                                font-size: 16px;
+                                font-weight: 600;
+                                color: var(--text-color-secondary);
+                            }
                         }
                     }
                 }
