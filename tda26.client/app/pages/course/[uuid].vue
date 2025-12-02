@@ -1,13 +1,16 @@
 <script setup lang="ts">
-    import {type Account, type Course, type Material} from "#shared/types";
+    import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Button from "~/components/Button.vue";
     import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
-    import CourseForm from "~/components/pagespecific/CourseForm.vue";
     import Modal from "~/components/Modal.vue";
     import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
-    import { ref, computed } from "vue";
-    import { Head, Title } from "#components";
+    import {computed, ref} from "vue";
+    import {ClientOnly, Head, NuxtLink, Title} from "#components";
+    import NumberExponential from "~/components/NumberExponential.vue";
+    import Avatar from "~/components/Avatar.vue";
+
+    declare const grecaptcha: gRecaptcha;
 
     definePageMeta({
         layout: "normal-page-layout",
@@ -29,12 +32,14 @@
         ]
     });
 
+    const loggedUser = useState<Account | null>('loggedAccount');
     const route = useRoute();
     const uuid = route.params.uuid as string;
 
     // server small fetch
     const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
         query: { full: false },
+        server: true,
         key: `course-${uuid}-small`,
     });
 
@@ -54,8 +59,7 @@
         console.error("Error loading full course:", courseError.value);
     }
     
-    const loggedUser = useState<Account | null>('loggedAccount');
-
+    const ratingLoading = ref<boolean>(false);
     const menuItems = ['Materiály', 'Aktivita'];
     const selectedItem = ref(menuItems[0]);
     
@@ -63,6 +67,30 @@
         selectedItem.value = item;
     };
 
+    const getHostname = (url?: string) => {
+        try {
+            return url ? new URL(url).hostname : ''
+        } catch {
+            return ''
+        }
+    }
+
+    // frontendove poslani view eventu
+    onMounted(async () => {
+        const captchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
+
+        await fetch(`/api/v2/courses/${uuid}/view`, {
+            method: 'POST',
+            body: JSON.stringify({ token: captchaToken }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    })
+    
     const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | null>(null);
     let selectedMaterial = ref<Material | null>(null);
     
@@ -70,7 +98,22 @@
     const deleteError = ref<string | null>(null);
 
     const editingMaterial = ref<any>(null);
-    
+
+    const isThisCourseLiked = computed(() => {
+        if (!loggedUser.value || !courseSmall.value) return false;
+        return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+    });
+
+    const isThisCourseDisliked = computed(() => {
+        if (!loggedUser.value || !courseSmall.value) return false;
+        return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+    });
+
+    const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
+    const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
+
+
+
     const openCreateMaterialModal = () => {
         editingMaterial.value = {
             name: "",
@@ -218,6 +261,83 @@
             console.error("Creation failed:", err);
         }
     };
+
+async function addRating(rating: "like" | "dislike" | null) {
+    if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
+
+    const baseUrl = getBaseUrl();
+    const uuid = courseSmall.value.uuid;
+    const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
+
+    switch (rating) {
+        case "like": {
+            if (isThisCourseLiked.value) {
+                isThisCourseLikedDesign.value = false;
+                rating = null;
+            } else {
+                isThisCourseLikedDesign.value = true;
+                isThisCourseDislikedDesign.value = false;
+            }
+        } break;
+
+        case "dislike": {
+            if (isThisCourseDisliked.value) {
+                isThisCourseDislikedDesign.value = false;
+                rating = null;
+            } else {
+                isThisCourseDislikedDesign.value = true;
+                isThisCourseLikedDesign.value = false;
+            }
+        } break;
+    }
+
+    try {
+        ratingLoading.value = true;
+
+        await $fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: { type: rating }
+        });
+
+        // spusteni vsech refreshu paralelne
+        const userPromise = $fetch<Account>(baseUrl + `/api/v2/me`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+
+        const courseSmallPromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: false },
+        });
+
+        const coursePromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: true },
+        });
+
+        const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
+            userPromise,
+            courseSmallPromise,
+            coursePromise,
+        ]);
+
+        // hromadne prirazeni dat az po dokonceni vsech requestu
+        loggedUser.value = updatedUser ?? null;
+        courseSmall.value = updatedCourseSmall;
+        course.value = updatedCourse;
+    }
+
+    catch(err) {
+        console.error("Error updating rating:", err);
+    }
+
+    finally {
+        ratingLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -232,21 +352,39 @@
             <div :class="['liquid-glass', $style.brief]">
                 <div :class="$style.fields">
                     <div :class="$style.el">
-                        <p :class="$style.title">Počet zhlédnutí</p>
-                        <p :class="$style.item">Samen</p>
+                        <p :class="$style.title">Zhlédnutí</p>
+                        <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Hodnocení</p>
-                        <p :class="$style.item">Samen</p>
+                        <p :class="$style.title">Materiály</p>
+                        <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Něco dalšího</p>
-                        <p :class="$style.item">Samen</p>
+                        <p :class="$style.title">Recenze</p>
+                        <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                 </div>
-                <div :class="$style.buttons">
-                    <Button button-style="primary" accent-color="primary">Zapsat se</Button>
-                    <Button button-style="secondary" accent-color="secondary">Více informací</Button>
+
+                <div :class="$style.otherinfo">
+                    <div :class="$style.authorAndRating">
+                        <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
+                            <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                            <p>{{ courseSmall?.lecturer?.fullName }}</p>
+                        </NuxtLink>
+
+                        <div :class="$style.rating">
+                            <!-- like a dislike button -->
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
+                                <div :class="$style.icon"></div>
+                                <p>{{ courseSmall?.likeCount }}</p>
+                            </div>
+
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
+                                <div :class="$style.icon" style="rotate: 180deg"></div>
+                                <p>Nelíbí se</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -264,33 +402,35 @@
                 </ul>
             </nav>
             <div :class="['liquid-glass']">
-                <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
-                        Přidat nový materiál
-                    </Button>
+                <ClientOnly>
+                    <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
+                        <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                            Přidat nový materiál
+                        </Button>
 
-                    <p v-if="coursePending">Načítání materiálů...</p>
-                    <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
-                    <ul v-else>
-                        <li v-for="material in course.materials" :key="material.uuid">
-                            <MaterialItem
-                                :material="material"
-                                :course="course"
-                                :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
-                                @edit="openUpdateMaterialModal"
-                                @delete="openDeleteMaterialModal"
-                            />
-                        </li>
-                    </ul>
-                </div>
-                <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-<!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-<!--                    <ul v-else>-->
-<!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-<!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-<!--                        </li>-->
-<!--                    </ul>-->
-                </div>
+                        <p v-if="coursePending">Načítání materiálů...</p>
+                        <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
+                        <ul v-else>
+                            <li v-for="material in course.materials" :key="material.uuid">
+                                <MaterialItem
+                                    :material="material"
+                                    :course="course"
+                                    :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
+                                    @edit="openUpdateMaterialModal"
+                                    @delete="openDeleteMaterialModal"
+                                />
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
+    <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+    <!--                    <ul v-else>-->
+    <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+    <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+    <!--                        </li>-->
+    <!--                    </ul>-->
+                    </div>
+                </ClientOnly>
             </div>
         </div>
     </div>
@@ -324,7 +464,7 @@
             </div>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
-        
+
         <!-- UPDATE -->
         <Modal
             :enabled="enabledModal === 'updateMaterial'"
@@ -333,7 +473,7 @@
             :modalStyle="{ maxWidth: '800px' }"
         >
             <h3>Úprava materiálu</h3>
-            
+
             <MaterialFormItem
                 v-if="editingMaterial"
                 v-model="editingMaterial"
@@ -354,7 +494,7 @@
                     Uložit změny
                 </Button>
             </div>
-            
+
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
 
@@ -411,6 +551,7 @@ ul {
         display: flex;
         justify-content: space-between;
         gap: 24px;
+        align-items: start;
 
         >p {
             font-size: 18px;
@@ -433,16 +574,22 @@ ul {
                     position: relative;
                     border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%);
                     padding: 0 24px;
+                    flex: 1;
 
 
                     >.title {
                         font-size: 16px;
                         margin-bottom: 8px;
+                        width: max-content;
                     }
-                    >.item {
-                        font-size: 24px;
-                        margin: 0;
+
+                    .nexp {
+                        .item {
+                            font-size: 24px;
+                            margin: 0;
+                        }
                     }
+
 
                     &:last-child {
                         border-right: none;
@@ -455,9 +602,86 @@ ul {
                 }
             }
 
-            >.buttons {
-                display: flex;
-                gap: 12px;
+            >.otherinfo {
+                display: grid;
+                gap: 16px;
+
+                .authorAndRating {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16px;
+
+                    .author {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        color: unset;
+                        text-decoration: none;
+                        transition-duration: 0.3s;
+
+                        &:hover {
+                            opacity: 0.5;
+                            transition-duration: 0.3s;
+                        }
+
+                        .avatar {
+                            --size: 24px !important;
+                        }
+
+                        p {
+                            margin: 0;
+                            font-weight: 600;
+                            font-size: 16px;
+                            color: var(--text-color-secondary);
+                        }
+                    }
+
+                    .rating {
+                        display: flex;
+                        gap: 12px;
+
+                        .duo {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            cursor: pointer;
+                            user-select: none;
+                            padding: 8px 16px;
+                            border-radius: 999px;
+                            background-color: var(--background-color-3);
+                            transition-duration: 0.3s;
+
+                            &:is(.active) .icon {
+                                mask-image: url(/icons/thumbs_up_filled.svg);
+                            }
+
+                            &:hover {
+                                background-color: var(--background-color-primary);
+                                transition-duration: 0.3s;
+                            }
+
+                            .icon {
+                                width: 16px;
+                                aspect-ratio: 1/1;
+                                background-color: var(--text-color-primary);
+                                border-radius: 4px;
+                                mask-image: url(/icons/thumbs_up_outline.svg);
+                                mask-size: cover;
+                                mask-repeat: no-repeat;
+                                mask-position: center;
+                            }
+
+                            p {
+                                margin: 0;
+                                font-size: 16px;
+                                font-weight: 600;
+                                color: var(--text-color-secondary);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

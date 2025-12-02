@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251126163324_AddViewCount")]
+    partial class AddViewCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,9 +88,6 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<Guid?>("LecturerUuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -101,9 +101,38 @@ namespace tda26.Server.Migrations
 
                     b.HasKey("Uuid");
 
-                    b.HasIndex("LecturerUuid");
-
                     b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("AccountUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CourseUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("CourseUuid");
+
+                    b.HasIndex("AccountUuid", "CourseUuid")
+                        .IsUnique();
+
+                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -192,6 +221,9 @@ namespace tda26.Server.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
 
+                    b.Property<int>("QuestionCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -205,44 +237,6 @@ namespace tda26.Server.Migrations
                     b.HasIndex("CourseUuid");
 
                     b.ToTable("Quizzes");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("AccountUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("CourseUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("CreatedAt"));
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("varchar(8)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Uuid");
-
-                    b.HasIndex("AccountUuid", "CourseUuid")
-                        .IsUnique();
-
-                    b.ToTable("Ratings");
-
-                    b.HasDiscriminator().HasValue("Rating");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Lecturer", b =>
@@ -340,24 +334,23 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.Like", b =>
+            modelBuilder.Entity("tda26.Server.Data.Models.Course+Like", b =>
                 {
-                    b.HasBaseType("tda26.Server.Data.Models.Rating");
-
-                    b.HasIndex("CourseUuid");
-
-                    b.ToTable("Ratings");
-
-                    b.HasDiscriminator().HasValue("Like");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Lecturer", "Lecturer")
+                    b.HasOne("tda26.Server.Data.Models.Account", "Account")
                         .WithMany()
-                        .HasForeignKey("LecturerUuid");
+                        .HasForeignKey("AccountUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Lecturer");
+                    b.HasOne("tda26.Server.Data.Models.Course", "Course")
+                        .WithMany("Likes")
+                        .HasForeignKey("CourseUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -391,33 +384,6 @@ namespace tda26.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Account", "Account")
-                        .WithMany("Ratings")
-                        .HasForeignKey("AccountUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Like", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Course", "Course")
-                        .WithMany("Likes")
-                        .HasForeignKey("CourseUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
-                {
-                    b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>

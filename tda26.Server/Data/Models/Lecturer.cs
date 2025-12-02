@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace tda26.Server.Data.Models;
 
@@ -12,6 +13,29 @@ public class Lecturer : Account {
     [MaxLength(512)] public string? PictureUrl { get; set; }
     [MaxLength(128)] public string? Claim { get; set; }
     [MaxLength(100)] public string? Location { get; set; }
+    [NotMapped] public new string FullName {
+        get {
+            var names = new List<string>();
+            if (!string.IsNullOrWhiteSpace(TitleBefore))
+                names.Add(TitleBefore);
+            names.Add(FirstName);
+            if (!string.IsNullOrWhiteSpace(MiddleName))
+                names.Add(MiddleName);
+            names.Add(LastName);
+            if (!string.IsNullOrWhiteSpace(TitleAfter))
+                names.Add(TitleAfter);
+            return string.Join(" ", names);
+        }
+    }
+    [NotMapped] public new string FullNameWithoutTitles {
+        get {
+            var names = new List<string> { FirstName };
+            if (!string.IsNullOrWhiteSpace(MiddleName))
+                names.Add(MiddleName);
+            names.Add(LastName);
+            return string.Join(" ", names);
+        }
+    }
     public ushort PricePerHour { get; set; }
     public ICollection<string> MobileNumbers { get; set; } = new List<string>();
     public ICollection<string> Emails { get; set; } =  new List<string>();
