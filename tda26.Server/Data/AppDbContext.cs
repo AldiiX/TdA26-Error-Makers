@@ -10,7 +10,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     
     public DbSet<Course> Courses => Set<Course>();
 
+
+    public DbSet<Rating> Ratings { get; set; }
     public DbSet<Like> Likes => Set<Like>();
+    public DbSet<Dislike> Dislikes => Set<Dislike>();
 
     public DbSet<Material> Materials { get; set; }
     public DbSet<FileMaterial> FileMaterials => Set<FileMaterial>();

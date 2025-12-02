@@ -8,7 +8,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
             .Include(c => c.Lecturer)
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
@@ -17,7 +17,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     
     public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
@@ -30,7 +30,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
         var courses = await db.Courses
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .ToListAsync(ct);
@@ -40,7 +40,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
         var courses = await db.Courses
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
@@ -53,7 +53,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         var courses = await db.Courses
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Where(c => c.LecturerUuid == lecturerUuid)
             .OrderByDescending(c => c.CreatedAt)
@@ -66,7 +66,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<List<Course>> GetByLecturerUuidAsyncFull(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         var courses = await db.Courses
             .Where(c => c.LecturerUuid == lecturerUuid)
-            .Include(c => c.Likes)
+            .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)

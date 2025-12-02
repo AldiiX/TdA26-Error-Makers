@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
@@ -20,7 +22,8 @@ public class APIv2(
     ICourseRepository courseRepository,
     IAccountRepository accounts,
     IMaterialAccessService materialAccessService,
-    IMaterialRepository materialRepository
+    IMaterialRepository materialRepository,
+    AppDbContext db
 ) : Controller {
 
     // random picovinky
@@ -57,7 +60,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         // odstraneni policek
-        foreach (var like in acc?.Likes ?? []) {
+        foreach (var like in acc?.Ratings ?? []) {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -77,7 +80,7 @@ public class APIv2(
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
 
         // odstraneni policek
-        foreach (var like in acc?.Likes ?? []) {
+        foreach (var like in acc?.Ratings ?? []) {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -156,7 +159,7 @@ public class APIv2(
         if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
 
         // odstraneni policek
-        foreach (var like in account?.Likes ?? []) {
+        foreach (var like in account?.Ratings ?? []) {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -177,7 +180,7 @@ public class APIv2(
             c.Materials = [];
             c.Quizzes = [];
             c.Feed = [];
-            if(c.Lecturer != null) c.Lecturer.Likes = [];
+            if(c.Lecturer != null) c.Lecturer.Ratings = [];
         }
 
         return Ok(courses);
@@ -198,7 +201,7 @@ public class APIv2(
                 c.Materials = [];
                 c.Quizzes = [];
                 c.Feed = [];
-                if(c.Lecturer != null) c.Lecturer.Likes = [];
+                if(c.Lecturer != null) c.Lecturer.Ratings = [];
             }
 
             return Ok(courses);
@@ -209,7 +212,7 @@ public class APIv2(
                 c.Materials = [];
                 c.Quizzes = [];
                 c.Feed = [];
-                if(c.Lecturer != null) c.Lecturer.Likes = [];
+                if(c.Lecturer != null) c.Lecturer.Ratings = [];
             }
 
             return Ok(courses);
@@ -236,7 +239,7 @@ public class APIv2(
             return NotFound(new { error = "Course not found." });
         }
 
-        if(course.Lecturer != null) course.Lecturer.Likes = [];
+        if(course.Lecturer != null) course.Lecturer.Ratings = [];
 
         var _course = course.ToReadDto();
         _course.Materials = _course.Materials.OrderByDescending(m => m.CreatedAt).ToList();
@@ -261,7 +264,7 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
 
@@ -288,7 +291,7 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         existingCourse.Name = body.Course.Name;
         existingCourse.Description = body.Course.Description;
 
@@ -396,13 +399,65 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Likes = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         
         var success = await courseRepository.DeleteAsync(uuid);
         if (!success) {
             return NotFound(new { error = "Course not found." });
         }
 
+        return NoContent();
+    }
+
+    [HttpPost("courses/{uuid:guid}/rating")]
+    public async Task<IActionResult> LikeOrDislikeCourse([FromRoute] Guid uuid, [FromBody] LikeCourseRequest body, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        var course = await courseRepository.GetByUuidAsync(uuid, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var existingRating = await db.Ratings
+            .FirstOrDefaultAsync(r => r.AccountUuid == acc.Uuid && r.CourseUuid == course.Uuid, ct);
+
+        if (existingRating != null) {
+            db.Ratings.Remove(existingRating);
+        }
+
+        switch (body.Type) {
+            case "like": {
+                var newRating = new Like {
+                    AccountUuid = acc.Uuid,
+                    CourseUuid = course.Uuid,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+
+                db.Likes.Add(newRating);
+            } break;
+
+            case "dislike": {
+                var newRating = new Dislike {
+                    AccountUuid = acc.Uuid,
+                    CourseUuid = course.Uuid,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+
+                db.Dislikes.Add(newRating);
+            } break;
+
+            case null:
+                // zadny novy rating, jen odstraneni stavajiciho
+                break;
+
+            default:
+                return BadRequest(new { error = "Invalid rating type. Must be 'like' or 'dislike' or null." });
+        }
+
+        await db.SaveChangesAsync(ct);
         return NoContent();
     }
 
@@ -444,7 +499,7 @@ public class APIv2(
         course.Materials = [];
         course.Quizzes = [];
         course.Feed = [];
-        if(course.Lecturer != null) course.Lecturer.Likes = [];
+        if(course.Lecturer != null) course.Lecturer.Ratings = [];
 
         // zjisteni jestli ip adresa neni v pouzitych
         var ipAddress = HttpContext.GetIPAddress();

@@ -3,13 +3,13 @@
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Button from "~/components/Button.vue";
     import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
-    import CourseForm from "~/components/pagespecific/CourseForm.vue";
     import Modal from "~/components/Modal.vue";
     import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
-    import { ref, computed } from "vue";
-    import { Head, Title, ClientOnly, NuxtLink } from "#components";
+    import {computed, ref} from "vue";
+    import {ClientOnly, Head, NuxtLink, Title} from "#components";
     import NumberExponential from "~/components/NumberExponential.vue";
     import Avatar from "~/components/Avatar.vue";
+
     declare const grecaptcha: gRecaptcha;
 
     definePageMeta({
@@ -32,12 +32,14 @@
         ]
     });
 
+    const loggedUser = useState<Account | null>('loggedAccount');
     const route = useRoute();
     const uuid = route.params.uuid as string;
 
     // server small fetch
     const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
         query: { full: false },
+        server: true,
         key: `course-${uuid}-small`,
     });
 
@@ -57,8 +59,7 @@
         console.error("Error loading full course:", courseError.value);
     }
     
-    const loggedUser = useState<Account | null>('loggedAccount');
-
+    const ratingLoading = ref<boolean>(false);
     const menuItems = ['Materiály', 'Aktivita'];
     const selectedItem = ref(menuItems[0]);
     
@@ -97,13 +98,22 @@
     const deleteError = ref<string | null>(null);
 
     const editingMaterial = ref<any>(null);
+
     const isThisCourseLiked = computed(() => {
         if (!loggedUser.value || !courseSmall.value) return false;
-        return loggedUser.value.likes.some(like => like.course?.uuid === courseSmall.value!.uuid);
+        return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
     });
 
-    const isThisCourseDisliked = computed(() => false);
-    
+    const isThisCourseDisliked = computed(() => {
+        if (!loggedUser.value || !courseSmall.value) return false;
+        return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+    });
+
+    const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
+    const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
+
+
+
     const openCreateMaterialModal = () => {
         editingMaterial.value = {
             name: "",
@@ -252,10 +262,82 @@
         }
     };
 
+async function addRating(rating: "like" | "dislike" | null) {
+    if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
 
-    console.log("Course small:", courseSmall);
-    console.log("Course full:", course);
-    console.log(loggedUser);
+    const baseUrl = getBaseUrl();
+    const uuid = courseSmall.value.uuid;
+    const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
+
+    switch (rating) {
+        case "like": {
+            if (isThisCourseLiked.value) {
+                isThisCourseLikedDesign.value = false;
+                rating = null;
+            } else {
+                isThisCourseLikedDesign.value = true;
+                isThisCourseDislikedDesign.value = false;
+            }
+        } break;
+
+        case "dislike": {
+            if (isThisCourseDisliked.value) {
+                isThisCourseDislikedDesign.value = false;
+                rating = null;
+            } else {
+                isThisCourseDislikedDesign.value = true;
+                isThisCourseLikedDesign.value = false;
+            }
+        } break;
+    }
+
+    try {
+        ratingLoading.value = true;
+
+        await $fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: { type: rating }
+        });
+
+        // spusteni vsech refreshu paralelne
+        const userPromise = $fetch<Account>(baseUrl + `/api/v2/me`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+
+        const courseSmallPromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: false },
+        });
+
+        const coursePromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: true },
+        });
+
+        const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
+            userPromise,
+            courseSmallPromise,
+            coursePromise,
+        ]);
+
+        // hromadne prirazeni dat az po dokonceni vsech requestu
+        loggedUser.value = updatedUser ?? null;
+        courseSmall.value = updatedCourseSmall;
+        course.value = updatedCourse;
+    }
+
+    catch(err) {
+        console.error("Error updating rating:", err);
+    }
+
+    finally {
+        ratingLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -292,12 +374,12 @@
 
                         <div :class="$style.rating">
                             <!-- like a dislike button -->
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseLiked }]">
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
                                 <div :class="$style.icon"></div>
                                 <p>{{ courseSmall?.likeCount }}</p>
                             </div>
 
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseDisliked }]">
+                            <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
                                 <div :class="$style.icon" style="rotate: 180deg"></div>
                                 <p>Nelíbí se</p>
                             </div>
@@ -382,7 +464,7 @@
             </div>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
-        
+
         <!-- UPDATE -->
         <Modal
             :enabled="enabledModal === 'updateMaterial'"
@@ -391,7 +473,7 @@
             :modalStyle="{ maxWidth: '800px' }"
         >
             <h3>Úprava materiálu</h3>
-            
+
             <MaterialFormItem
                 v-if="editingMaterial"
                 v-model="editingMaterial"
@@ -412,7 +494,7 @@
                     Uložit změny
                 </Button>
             </div>
-            
+
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
 

@@ -20,10 +20,7 @@ public class Course : Auditable {
     public int ViewCount { get; set; } = 0;
 
     [NotMapped]
-    public int LikeCount => Likes?.Count ?? 0;
-
-    [JsonIgnore]
-    public ICollection<Like> Likes { get; set; } = new List<Like>();
+    public int LikeCount => Likes.ToList().Count;
 
     [JsonIgnore]
     public Guid? LecturerUuid { get; set; }
@@ -34,4 +31,13 @@ public class Course : Auditable {
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
+
+    [JsonIgnore]
+    public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
+    [NotMapped, JsonIgnore]
+    public IEnumerable<Like> Likes => Ratings.OfType<Like>();
+
+    [NotMapped, JsonIgnore]
+    public IEnumerable<Dislike> Dislikes => Ratings.OfType<Dislike>();
 }

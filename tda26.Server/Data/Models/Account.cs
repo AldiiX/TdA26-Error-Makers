@@ -22,5 +22,12 @@ public class Account : Auditable {
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
     
-    public ICollection<Like> Likes { get; set; } = new List<Like>();
+    [JsonIgnore]
+    public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
+    [NotMapped]
+    public IEnumerable<Like> Likes => Ratings.OfType<Like>();
+
+    [NotMapped]
+    public IEnumerable<Dislike> Dislikes => Ratings.OfType<Dislike>();
 }

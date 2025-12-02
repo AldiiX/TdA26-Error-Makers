@@ -13,7 +13,7 @@ public class AccountRepository(
 ) : IAccountRepository {
     public async Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default) {
         var account = await db.Accounts
-            .Include(a => a.Likes)
+            .Include(a => a.Ratings)
             .ThenInclude(l => l.Course)
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
 
@@ -22,7 +22,7 @@ public class AccountRepository(
     
     public async Task<Account?> GetByUsernameAsync(string username, CancellationToken ct = default) {
         var account = await db.Accounts
-            .Include(a => a.Likes)
+            .Include(a => a.Ratings)
             .ThenInclude(l => l.Course)
             .FirstOrDefaultAsync(a => a.Username == username, ct);
 
@@ -31,7 +31,7 @@ public class AccountRepository(
 
     public async Task<List<Account>> GetAllAsync(CancellationToken ct = default) {
         var accounts = await db.Accounts
-            .Include(a => a.Likes)
+            .Include(a => a.Ratings)
             .ThenInclude(l => l.Course)
             .ToListAsync(ct);
 
