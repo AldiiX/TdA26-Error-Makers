@@ -117,7 +117,7 @@
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
-        // scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
+        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
         page.value = newPage;
     };
 
@@ -131,58 +131,75 @@
     
     const goToInput = ref<number | null>(null);
 
-    const visiblePages = computed(() => {
+    const visiblePages = computed<(number | "...")[]>(() => {
         const total = totalPages.value;
         const current = page.value;
 
-        if (total <= 7) {
-            // malý počet → zobraz všechny
+        if (total <= 8) {
             return Array.from({ length: total }, (_, i) => i + 1);
         }
 
-        const pages: (number | "...")[] = [];
+        const slots = new Array(8).fill("...") as (number | "...")[];
 
-        // první stránka vždy
-        pages.push(1);
+        slots[0] = 1;
+        slots[7] = total;
 
-        const windowSize = 5;
-        let start = current - Math.floor(windowSize / 2);
-        let end = current + Math.floor(windowSize / 2);
+        let c1 = current - 1;
+        let c2 = current;
+        let c3 = current + 1;
+        let c4 = current + 2;
 
-        // oprava okna na začátku
-        if (start <= 2) {
-            start = 2;
-            end = start + windowSize - 1;
+        if (current <= 5) {
+            c1 = 2;
+            c2 = 3;
+            c3 = 4;
+            c4 = 5;
+            slots[6] = 6;
         }
 
-        // oprava okna na konci
-        if (end >= total - 1) {
-            end = total - 1;
-            start = end - windowSize + 1;
-            if (start < 2) start = 2;
+        else if (current >= total - 2) {
+            c4 = total - 1;
+            c3 = total - 2;
+            c2 = total - 3;
+            c1 = total - 4;
         }
 
-        // tečky na začátku
-        if (start > 2) {
-            pages.push("...");
+        if (current <= 5) {
+            return [1, 2, 3, 4, 5, 6, "...", total];
+        }
+        
+        c1 = Math.max(2, Math.min(total - 1, c1));
+        c2 = Math.max(2, Math.min(total - 1, c2));
+        c3 = Math.max(2, Math.min(total - 1, c3));
+        c4 = Math.max(2, Math.min(total - 1, c4));
+
+        slots[2] = c1;
+        slots[3] = c2;
+        slots[4] = c3;
+        slots[5] = c4;
+
+        if (c1 === 2) slots[1] = 2;
+        else slots[1] = "...";
+
+        if (c4 === total - 1) slots[6] = total - 1;
+        else slots[6] = "...";
+
+        const finalSlots: (number | "...")[] = [];
+        const used = new Set<number>();
+
+        for (const s of slots) {
+            if (typeof s === "number") {
+                if (used.has(s)) continue;
+                used.add(s);
+            }
+            finalSlots.push(s);
         }
 
-        // přidání stránek okna
-        for (let i = start; i <= end; i++) {
-            pages.push(i);
-        }
-
-        // tečky na konci
-        if (end < total - 1) {
-            pages.push("...");
-        }
-
-        // poslední stránka vždy
-        pages.push(total);
-
-        return pages;
+        return finalSlots;
     });
-    
+
+
+
 </script>
 
 <template>

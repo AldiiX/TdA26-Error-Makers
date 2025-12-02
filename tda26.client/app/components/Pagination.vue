@@ -93,6 +93,7 @@ const goNext = () => goToPage(props.page + 1);
         display: flex;
         align-items: center;
         justify-content: center;
+        font-family: "Dosis", sans-serif;
 
         border-radius: 100%;
         color: var(--text-color-primary);
@@ -116,6 +117,8 @@ const goNext = () => goToPage(props.page + 1);
         display: flex;
         align-items: center;
         justify-content: center;
+        font-family: "Dosis" ,sans-serif;
+        font-weight: 900;
         font-size: 16px;
         opacity: 0.5;
         user-select: none;
