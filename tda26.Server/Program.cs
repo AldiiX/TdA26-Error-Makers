@@ -180,7 +180,6 @@ public static class Program {
         builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
         builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
-        builder.Services.AddScoped<IQuizRepository, QuizRepository>();
         
         // Nastaveni
         builder.Services.Configure<CustomMinioOptions>(options =>

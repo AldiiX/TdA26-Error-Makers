@@ -2,6 +2,7 @@
 
 namespace tda26.Server.Repositories;
 
+[Obsolete]
 public interface IMaterialRepository {
     Task<Material?> GetMaterialByUuidAsync(Guid materialUuid, CancellationToken ct = default);
     
