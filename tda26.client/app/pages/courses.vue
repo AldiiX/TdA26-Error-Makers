@@ -325,6 +325,7 @@
                         :page="page"
                         :total-pages="totalPages"
                         :visible-pages="visiblePages"
+                        :class="$style.pagination"
                         @update:page="goToPage"
                     />
                 </div>
@@ -646,8 +647,8 @@
                 }
 
                 .pagination {
-                    height: 64px;
-                    background-color: var(--accent-color-secondary-darker);
+                    margin-top: 32px;
+                    display: flex;
                 }
             }
         }
