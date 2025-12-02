@@ -6,16 +6,47 @@
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Blob from "~/components/Blob.vue";
     import Tag from "~/components/Tag.vue";
-    import { watch } from 'vue';
     
     definePageMeta({
         layout: "normal-page-layout"
     });
 
+    // client-side fetch courses
+    onMounted(async () => {
+        try {
+            const res = await fetch(getBaseUrl() + '/api/v2/courses', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!res.ok) {
+                throw new Error('Failed to fetch courses');
+            }
+            const data = await res.json();
+            courses.value = data;
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+        }
+    });
+
+    const courses = ref<Course[] | null>(null);
+    
+    // Filtrovani a strankovani
+    
+    const page = ref(1);
+    const PAGE_SIZE = 8;
+    
+    const searchQuery = ref("");
+    
+    // Filtrovani 
+    const sort = ref<'new' | 'old'>('new');
+    const activeTags = ref<string[]>([]);
+    
     const allTags = computed(() => {
         const map = new Map<string, { uuid: string; displayName: string }>();
 
-        courses.value.forEach(course => {
+        courses.value?.forEach(course => {
             course.tags?.forEach(tag => {
                 map.set(tag.uuid, tag);
             });
@@ -23,25 +54,37 @@
 
         return Array.from(map.values());
     });
-
-    const searchQuery = ref("");
-    
-    const activeTags = ref<string[]>([]);
-    
     const toggleTag = (uuid: string) => {
         if (activeTags.value.includes(uuid)) {
             activeTags.value = activeTags.value.filter(t => t !== uuid);
         } else {
             activeTags.value.push(uuid);
         }
-        
+
         page.value = 1;
     };
 
+    const sortedCourses = computed(() => {
+        if (!courses.value) return [];
+        let list = [...courses.value];
+
+        switch (sort.value) {
+            case 'new':
+                return list.sort(
+                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+            case 'old':
+                return list.sort(
+                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                );
+            default:
+                return list;
+        }
+    });
     const filteredCourses = computed(() => {
         let list = sortedCourses.value;
 
-        // Tagy
+        // Tagy(Filtry)
         if (activeTags.value.length > 0) {
             list = list.filter(course =>
                 course.tags?.some(tag => activeTags.value.includes(tag.uuid))
@@ -49,6 +92,16 @@
         }
 
         // Vyhledávání
+
+        const normalize = (str: string) => {
+            return str
+                .normalize("NFD")          // oddělí diakritiku
+                .replace(/\p{Diacritic}/gu, "") // odstraní diakritiku
+                .replace(/\s+/g, " ")      // více mezer → 1 mezera
+                .trim()                    // ořízne mezery
+                .toLowerCase();
+        };
+        
         const query = normalize(searchQuery.value);
 
         if (query !== "") {
@@ -67,46 +120,10 @@
 
         return list;
     });
-
-
-
-
-    const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/courses');
-    const courses = computed(() => _courses.value ?? []);
-
-    const sort = ref<'new' | 'old'>('new');
-
-    const normalize = (str: string) => {
-        return str
-            .normalize("NFD")          // oddělí diakritiku
-            .replace(/\p{Diacritic}/gu, "") // odstraní diakritiku
-            .replace(/\s+/g, " ")      // více mezer → 1 mezera
-            .trim()                    // ořízne mezery
-            .toLowerCase();
-    };
-    const sortedCourses = computed(() => {
-        let list = [...courses.value];
-
-        switch (sort.value) {
-            case 'new':
-                return list.sort(
-                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-            case 'old':
-                return list.sort(
-                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                );
-            default:
-                return list;
-        }
-    });
-    
-    // TODO: pagination, filtering, add sort with rating and views
     
     
-    const page = ref(1);
-    const PAGE_SIZE = 8;
-
+    
+    // Strankovani
     const paginatedCourses = computed(() => {
         const list = filteredCourses.value;
         const start = (page.value - 1) * PAGE_SIZE;
@@ -116,9 +133,7 @@
     const totalPages = computed(() => {
         return Math.ceil(filteredCourses.value.length / PAGE_SIZE);
     });
-
-
-
+    
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -202,9 +217,7 @@
 
         return finalSlots;
     });
-
-
-
+    
 </script>
 
 <template>
@@ -233,7 +246,6 @@
     </Teleport>
     
     <section :class="$style.section">
-        
         <div :class="$style.topContainer">
             <div :class="$style.left">
                 <h1 :class="$style.nadpis">Kurzy</h1>
@@ -299,12 +311,15 @@
                 </div>
 
                 <div :class="$style.courses">
-                    <div :class="$style.coursesList">
-                        <CourseCard
-                            v-for="course in paginatedCourses"
-                            :course="course"
-                            :key="course.uuid"
-                        />
+                    <div :class="$style.coursesWrapper">
+                        <div :class="$style.coursesList">
+                            <CourseCard
+                                v-for="(course, i) in paginatedCourses"
+                                :course="course"
+                                :key="course.uuid"
+                                :reveal-delay-ms="i * 200"
+                            />
+                        </div>
                     </div>
                     <Pagination
                         :page="page"
@@ -608,20 +623,31 @@
                     }
                 }
             }
+            
+            .courses{
+                .coursesWrapper {
+                    min-height: 50vh;
 
-            .courses {
-                display: flex;
-                flex-direction: column;
-                gap: 32px;
+                    .coursesList {
+                        display: grid;
+                        gap: 32px;
+                        grid-template-columns: repeat(auto-fill, minmax(324px, 1fr));
+                        align-items: stretch;
+                        width: 100%;
+                        min-height: auto;
 
-                .coursesList {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 32px;
-                    align-items: stretch;
-                    padding: 8px;
+                        > * {
+                            width: 100%;
+                            min-height: auto;
+                            height: auto;
+                            display: flex;
+                        }
+                    }
+                }
 
-                    min-height: calc(80vh - 64px - 32px);
+                .pagination {
+                    height: 64px;
+                    background-color: var(--accent-color-secondary-darker);
                 }
             }
         }
