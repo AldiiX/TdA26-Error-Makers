@@ -6,6 +6,7 @@
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Blob from "~/components/Blob.vue";
     import Tag from "~/components/Tag.vue";
+    import { watch } from 'vue';
     
     definePageMeta({
         layout: "normal-page-layout"
@@ -26,13 +27,15 @@
     const searchQuery = ref("");
     
     const activeTags = ref<string[]>([]);
-
+    
     const toggleTag = (uuid: string) => {
         if (activeTags.value.includes(uuid)) {
             activeTags.value = activeTags.value.filter(t => t !== uuid);
         } else {
             activeTags.value.push(uuid);
         }
+        
+        page.value = 1;
     };
 
     const filteredCourses = computed(() => {
@@ -99,6 +102,8 @@
     });
     
     // TODO: pagination, filtering, add sort with rating and views
+    
+    
     const page = ref(1);
     const PAGE_SIZE = 8;
 
