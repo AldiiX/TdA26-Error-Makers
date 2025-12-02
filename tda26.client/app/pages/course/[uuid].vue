@@ -270,6 +270,11 @@ async function addRating(rating: "like" | "dislike" | null) {
     const uuid = courseSmall.value.uuid;
     const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
 
+    // Store previous state for rollback
+    const previousLikedDesign = isThisCourseLikedDesign.value;
+    const previousDislikedDesign = isThisCourseDislikedDesign.value;
+    const previousLikeCount = optimisticLikeCount.value;
+
     switch (rating) {
         case "like": {
             if (isThisCourseLiked.value) {
@@ -344,6 +349,10 @@ async function addRating(rating: "like" | "dislike" | null) {
 
     catch(err) {
         console.error("Error updating rating:", err);
+        // Rollback optimistic updates on error
+        isThisCourseLikedDesign.value = previousLikedDesign;
+        isThisCourseDislikedDesign.value = previousDislikedDesign;
+        optimisticLikeCount.value = previousLikeCount;
     }
 
     finally {
