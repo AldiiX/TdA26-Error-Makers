@@ -118,7 +118,7 @@
         if (newCount !== undefined) {
             optimisticLikeCount.value = newCount;
         }
-    });
+    }, { immediate: true });
 
 
 
@@ -351,7 +351,7 @@ async function addRating(rating: "like" | "dislike" | null) {
         loggedUser.value = updatedUser ?? null;
         courseSmall.value = updatedCourseSmall;
         course.value = updatedCourse;
-        optimisticLikeCount.value = updatedCourseSmall.likeCount ?? 0;
+        // optimisticLikeCount is automatically synced via watcher
     }
 
     catch(err) {
