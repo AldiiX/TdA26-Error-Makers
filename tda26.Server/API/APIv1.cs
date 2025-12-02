@@ -637,4 +637,37 @@ public class APIv1(
 
         return Ok(quiz.ToReadDto());
     }
+
+    [HttpDelete("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
+    public async Task<IActionResult> DeleteQuizFromCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.Quizzes
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .Include(q => q.Questions)
+            .ThenInclude(qn => qn.Options)
+            .FirstOrDefaultAsync();
+        
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found." });
+        
+        // Remove options and questions
+        foreach (var question in quiz.Questions.ToList()) {
+            foreach (var option in question.Options.ToList()) {
+                db.QuestionOptions.Remove(option);
+            }
+            db.Questions.Remove(question);
+        }
+        
+        db.Quizzes.Remove(quiz);
+        await db.SaveChangesAsync();
+        
+        return NoContent();
+    }
 }
