@@ -111,6 +111,7 @@
 
     const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
     const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
+    const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
 
 
 
@@ -272,21 +273,31 @@ async function addRating(rating: "like" | "dislike" | null) {
     switch (rating) {
         case "like": {
             if (isThisCourseLiked.value) {
+                // Unliking: remove the like
                 isThisCourseLikedDesign.value = false;
+                optimisticLikeCount.value--;
                 rating = null;
             } else {
+                // Liking (either from no rating or from dislike)
                 isThisCourseLikedDesign.value = true;
                 isThisCourseDislikedDesign.value = false;
+                optimisticLikeCount.value++;
             }
         } break;
 
         case "dislike": {
             if (isThisCourseDisliked.value) {
+                // Removing dislike: no change to like count
                 isThisCourseDislikedDesign.value = false;
                 rating = null;
             } else {
+                // Disliking (either from no rating or from like)
                 isThisCourseDislikedDesign.value = true;
                 isThisCourseLikedDesign.value = false;
+                // If transitioning from like to dislike, remove the like
+                if (isThisCourseLiked.value) {
+                    optimisticLikeCount.value--;
+                }
             }
         } break;
     }
@@ -328,6 +339,7 @@ async function addRating(rating: "like" | "dislike" | null) {
         loggedUser.value = updatedUser ?? null;
         courseSmall.value = updatedCourseSmall;
         course.value = updatedCourse;
+        optimisticLikeCount.value = updatedCourseSmall.likeCount ?? 0;
     }
 
     catch(err) {
@@ -361,7 +373,7 @@ async function addRating(rating: "like" | "dislike" | null) {
                     </div>
                     <div :class="$style.el">
                         <p :class="$style.title">Recenze</p>
-                        <NumberExponential :value="courseSmall?.likeCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <NumberExponential :value="optimisticLikeCount" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                 </div>
 
@@ -376,7 +388,7 @@ async function addRating(rating: "like" | "dislike" | null) {
                             <!-- like a dislike button -->
                             <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
                                 <div :class="$style.icon"></div>
-                                <p>{{ courseSmall?.likeCount }}</p>
+                                <p>{{ optimisticLikeCount }}</p>
                             </div>
 
                             <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
