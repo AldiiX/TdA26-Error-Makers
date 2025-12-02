@@ -113,6 +113,13 @@
     const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
     const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
 
+    // Keep optimistic count in sync with fetched data
+    watch(() => courseSmall.value?.likeCount, (newCount) => {
+        if (newCount !== undefined) {
+            optimisticLikeCount.value = newCount;
+        }
+    });
+
 
 
     const openCreateMaterialModal = () => {
@@ -277,7 +284,7 @@ async function addRating(rating: "like" | "dislike" | null) {
 
     switch (rating) {
         case "like": {
-            if (isThisCourseLiked.value) {
+            if (isThisCourseLikedDesign.value) {
                 // Unliking: remove the like
                 isThisCourseLikedDesign.value = false;
                 optimisticLikeCount.value--;
@@ -291,18 +298,18 @@ async function addRating(rating: "like" | "dislike" | null) {
         } break;
 
         case "dislike": {
-            if (isThisCourseDisliked.value) {
+            if (isThisCourseDislikedDesign.value) {
                 // Removing dislike: no change to like count
                 isThisCourseDislikedDesign.value = false;
                 rating = null;
             } else {
                 // Disliking (either from no rating or from like)
-                isThisCourseDislikedDesign.value = true;
-                isThisCourseLikedDesign.value = false;
                 // If transitioning from like to dislike, remove the like
-                if (isThisCourseLiked.value) {
+                if (isThisCourseLikedDesign.value) {
                     optimisticLikeCount.value--;
                 }
+                isThisCourseDislikedDesign.value = true;
+                isThisCourseLikedDesign.value = false;
             }
         } break;
     }
