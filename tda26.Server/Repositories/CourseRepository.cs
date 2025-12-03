@@ -7,6 +7,7 @@ namespace tda26.Server.Repositories;
 public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
+            .Include(c => c.Tags)
             .Include(c => c.Lecturer)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
@@ -17,6 +18,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     
     public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
+            .Include(c => c.Tags)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
@@ -28,8 +30,9 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
         return course;
     }
 
-    public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {
+    public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {            
         var courses = await db.Courses
+            .Include(c => c.Tags)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
@@ -40,6 +43,7 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
         var courses = await db.Courses
+            .Include(c => c.Tags)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)

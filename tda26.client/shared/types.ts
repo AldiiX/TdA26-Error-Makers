@@ -6,9 +6,11 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
-    //lecturerUuid: string;
-    lecturer: Lecturer | null;
+    // quizzes: Quiz[];
     materials?: Material[];
+    // feed: FeedPost[];
+    tags: Tag[] | null;
+    lecturer: Lecturer | null;
     likeCount: number,
     viewCount: number,
 }
@@ -74,6 +76,12 @@ interface Rating {
 export interface gRecaptcha {
     ready: (callback: () => void) => void;
     execute: (siteKey: string, opts: { action: "submit" }) => Promise<string>;
+}
+export interface Tag{
+    uuid: string,
+    displayName: string,
+    createdAt: string,
+    updatedAt: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

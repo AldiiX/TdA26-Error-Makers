@@ -5,14 +5,11 @@
     import NumberExponential from "~/components/NumberExponential.vue";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Blob from "~/components/Blob.vue";
+    import Tag from "~/components/Tag.vue";
     
     definePageMeta({
         layout: "normal-page-layout"
     });
-
-
-
-    const courses = ref<Course[] | null>(null);
 
     // client-side fetch courses
     onMounted(async () => {
@@ -33,8 +30,38 @@
         }
     });
 
+    const courses = ref<Course[] | null>(null);
+    
+    // Filtrovani a strankovani
+    
+    const page = ref(1);
+    const PAGE_SIZE = 8;
+    
+    const searchQuery = ref("");
+    
+    // Filtrovani 
+    const activeTags = ref<string[]>([]);
+    
+    const allTags = computed(() => {
+        const map = new Map<string, { uuid: string; displayName: string }>();
 
+        courses.value?.forEach(course => {
+            course.tags?.forEach(tag => {
+                map.set(tag.uuid, tag);
+            });
+        });
 
+        return Array.from(map.values());
+    });
+    const toggleTag = (uuid: string) => {
+        if (activeTags.value.includes(uuid)) {
+            activeTags.value = activeTags.value.filter(t => t !== uuid);
+        } else {
+            activeTags.value.push(uuid);
+        }
+
+        page.value = 1;
+    };
 
     const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new');
     const sortedCourses = computed(() => {
@@ -57,23 +84,59 @@
                 return list.sort((a, b) => b.likeCount - a.likeCount);
         }
     });
-    
-    // TODO: pagination, filtering, add sort with rating and views
-    const page = ref(1);
-    const PAGE_SIZE = 8;
+    const filteredCourses = computed(() => {
+        let list = sortedCourses.value;
 
+        // Tagy(Filtry)
+        if (activeTags.value.length > 0) {
+            list = list.filter(course =>
+                course.tags?.some(tag => activeTags.value.includes(tag.uuid))
+            );
+        }
+
+        // Vyhledávání
+
+        const normalize = (str: string) => {
+            return str
+                .normalize("NFD")          // oddělí diakritiku
+                .replace(/\p{Diacritic}/gu, "") // odstraní diakritiku
+                .replace(/\s+/g, " ")      // více mezer → 1 mezera
+                .trim()                    // ořízne mezery
+                .toLowerCase();
+        };
+        
+        const query = normalize(searchQuery.value);
+
+        if (query !== "") {
+            list = list.filter(course => {
+                const name = normalize(course.name);
+                const desc = normalize(course.description ?? "");
+                const tags = course.tags?.map(t => normalize(t.displayName)) ?? [];
+
+                return (
+                    name.includes(query) ||
+                    desc.includes(query) ||
+                    tags.some(t => t.includes(query))
+                );
+            });
+        }
+
+        return list;
+    });
+    
+    
+    
+    // Strankovani
     const paginatedCourses = computed(() => {
-        if (!courses.value) return [];
-        const list = sortedCourses.value;
+        const list = filteredCourses.value;
         const start = (page.value - 1) * PAGE_SIZE;
         return list.slice(start, start + PAGE_SIZE);
     });
 
     const totalPages = computed(() => {
-        if (!courses.value) return 0;
-        return Math.ceil(sortedCourses.value.length / PAGE_SIZE);
+        return Math.ceil(filteredCourses.value.length / PAGE_SIZE);
     });
-
+    
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -82,12 +145,81 @@
     };
 
     const goToNextPage = () => {
-        goToPage(page.value + 1);
+        if (page.value < totalPages.value) goToPage(page.value + 1);
     };
 
     const goToLastPage = () => {
-        goToPage(page.value - 1);
+        if (page.value > 1) goToPage(page.value - 1);
     };
+    
+    const goToInput = ref<number | null>(null);
+
+    const visiblePages = computed<(number | "...")[]>(() => {
+        const total = totalPages.value;
+        const current = page.value;
+
+        if (total <= 8) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+
+        const slots = new Array(8).fill("...") as (number | "...")[];
+
+        slots[0] = 1;
+        slots[7] = total;
+
+        let c1 = current - 1;
+        let c2 = current;
+        let c3 = current + 1;
+        let c4 = current + 2;
+
+        if (current <= 5) {
+            c1 = 2;
+            c2 = 3;
+            c3 = 4;
+            c4 = 5;
+            slots[6] = 6;
+        }
+
+        else if (current >= total - 2) {
+            c4 = total - 1;
+            c3 = total - 2;
+            c2 = total - 3;
+            c1 = total - 4;
+        }
+
+        if (current <= 5) {
+            return [1, 2, 3, 4, 5, 6, "...", total];
+        }
+        
+        c1 = Math.max(2, Math.min(total - 1, c1));
+        c2 = Math.max(2, Math.min(total - 1, c2));
+        c3 = Math.max(2, Math.min(total - 1, c3));
+        c4 = Math.max(2, Math.min(total - 1, c4));
+
+        slots[2] = c1;
+        slots[3] = c2;
+        slots[4] = c3;
+        slots[5] = c4;
+
+        if (c1 === 2) slots[1] = 2;
+        else slots[1] = "...";
+
+        if (c4 === total - 1) slots[6] = total - 1;
+        else slots[6] = "...";
+
+        const finalSlots: (number | "...")[] = [];
+        const used = new Set<number>();
+
+        for (const s of slots) {
+            if (typeof s === "number") {
+                if (used.has(s)) continue;
+                used.add(s);
+            }
+            finalSlots.push(s);
+        }
+
+        return finalSlots;
+    });
     
 </script>
 
@@ -146,10 +278,18 @@
                     <p>Filtry</p>
                     <div :class="[$style.searchBar, 'liquid-glass']">
                         <div :class="$style.searchIcon"></div>
-                        <input type="text" placeholder="Hledat kurz..." />
+                        <input type="text"
+                               placeholder="Hledat kurz..."
+                               v-model="searchQuery" />
                     </div>
                     <div :class="$style.sortOptions">
-
+                        <Tag
+                            v-for="tag in allTags"
+                            :key="tag.uuid"
+                            :tag="tag"
+                            :active="activeTags.includes(tag.uuid)"
+                            @toggle="toggleTag"
+                        />
                     </div>
                 </div>
             </div>
@@ -168,8 +308,16 @@
                                 :data-active="sort === 'old'"
                                 @click="sort = 'old'">Nejstarší
                         </button>
-                        <button type="button" :class="$style.sortOption">Nejlepe hodnocení</button>
-                        <button type="button" :class="$style.sortOption">Nejvíce zhlédnutí</button>
+                        <button type="button" 
+                                :class="$style.sortOption"
+                                :data-active="sort === 'byLikes'"
+                                @click="sort = 'byLikes'">Nejlepe hodnocení
+                        </button>
+                        <button type="button" 
+                                :class="$style.sortOption"
+                                :data-active="sort === 'byViews'"
+                                @click="sort = 'byViews'">Nejvíce zhlédnutí
+                        </button>
                     </div>
                 </div>
 
@@ -184,12 +332,13 @@
                             />
                         </div>
                     </div>
-                    <div :class="$style.pagination">
-                        <!-- Pagination controls will go here -->
-                        <p @click="goToLastPage()">zpet</p>
-                        <p>Stránka {{ page }} z {{ totalPages }}</p>
-                        <p @click="goToNextPage()">dopredu</p>
-                    </div>
+                    <Pagination
+                        :page="page"
+                        :total-pages="totalPages"
+                        :visible-pages="visiblePages"
+                        :class="$style.pagination"
+                        @update:page="goToPage"
+                    />
                 </div>
             </div>
         </div>
@@ -410,7 +559,6 @@
                         font-size: 18px;
                         color: var(--text-color-secondary);
                         background: transparent;
-                        font-family: 'Dosis', sans-serif;
 
                         &::placeholder {
                             color: var(--text-color-secondary);
@@ -420,6 +568,10 @@
                 }
 
                 .sortOptions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    padding: 8px;
+                    gap: 12px;
                     margin-top: 32px;
                     height: calc(100% - 64px - 32px);
                     background-color: var(--background-color-secondary);
@@ -463,7 +615,6 @@
                         padding: 8px 12px;
                         border-radius: 10px;
                         font-size: 16px;
-                        font-family: 'Dosis', sans-serif;
                         color: var(--text-color-secondary);
                         cursor: pointer;
                         transition-duration: 0.3s;
@@ -474,6 +625,12 @@
                             background-color: var(--accent-color-secondary-theme);
                             color: var(--accent-color-secondary-theme-text);
                             outline: none;
+                        }
+
+                        &[data-active="true"] {
+                            background-color: var(--accent-color-primary);
+                            color: var(--accent-color-primary-text);
+                            font-weight: 600;
                         }
                     }
                 }
@@ -501,8 +658,8 @@
                 }
 
                 .pagination {
-                    height: 64px;
-                    background-color: var(--accent-color-secondary-darker);
+                    margin-top: 32px;
+                    display: flex;
                 }
             }
         }

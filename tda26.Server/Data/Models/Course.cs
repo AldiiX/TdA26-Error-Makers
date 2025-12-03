@@ -29,7 +29,11 @@ public class Course : Auditable {
     public Lecturer? Lecturer { get; set; } = null!;
     
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
+  
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
+    
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+  
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
 
     [JsonIgnore]
