@@ -40,7 +40,6 @@
     const searchQuery = ref("");
     
     // Filtrovani 
-    const sort = ref<'new' | 'old'>('new');
     const activeTags = ref<string[]>([]);
     
     const allTags = computed(() => {
@@ -309,8 +308,16 @@
                                 :data-active="sort === 'old'"
                                 @click="sort = 'old'">Nejstarší
                         </button>
-                        <button type="button" :class="$style.sortOption">Nejlepe hodnocení</button>
-                        <button type="button" :class="$style.sortOption">Nejvíce zhlédnutí</button>
+                        <button type="button" 
+                                :class="$style.sortOption"
+                                :data-active="sort === 'byLikes'"
+                                @click="sort = 'byLikes'">Nejlepe hodnocení
+                        </button>
+                        <button type="button" 
+                                :class="$style.sortOption"
+                                :data-active="sort === 'byViews'"
+                                @click="sort = 'byViews'">Nejvíce zhlédnutí
+                        </button>
                     </div>
                 </div>
 

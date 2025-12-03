@@ -223,6 +223,27 @@ namespace tda26.Server.Migrations
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Uuid");
+
+                    b.ToTable("Tags");
+                });
+            
             modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
                 {
                     b.Property<Guid>("Uuid")
