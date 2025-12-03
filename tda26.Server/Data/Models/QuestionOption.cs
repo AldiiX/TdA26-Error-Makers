@@ -11,6 +11,7 @@ public class QuestionOption {
     public Question Question { get; set; } = null!;
 
     [Required] public string Text { get; set; } = string.Empty;
-
+    
+    public required int Order { get; set; }
     public bool IsCorrect { get; set; }
 }

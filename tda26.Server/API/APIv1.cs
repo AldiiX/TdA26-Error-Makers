@@ -390,7 +390,8 @@ public class APIv1(
                         var option = new QuestionOption {
                             Text = optionText,
                             IsCorrect = i == singleDto.CorrectIndex,
-                            Question = singleChoiceQuestion
+                            Question = singleChoiceQuestion,
+                            Order = i
                         };
 
                         singleChoiceQuestion.Options.Add(option);
@@ -413,12 +414,13 @@ public class APIv1(
                         var option = new QuestionOption {
                             Text = optionText,
                             IsCorrect = multipleDto.CorrectIndices.Contains(i),
-                            Question = multipleChoiceQuestion
+                            Question = multipleChoiceQuestion,
+                            Order = i
                         };
 
                         multipleChoiceQuestion.Options.Add(option);
                     }
-
+                    
                     newQuiz.Questions.Add(multipleChoiceQuestion);
                     break;
 
@@ -443,7 +445,7 @@ public class APIv1(
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
             .Include(q => q.Questions)
-            .ThenInclude(qn => qn.Options)
+                .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
 
         if (quiz == null || quiz.CourseUuid != course.Uuid)
@@ -520,7 +522,8 @@ public class APIv1(
                             {
                                 Text = optionText,
                                 IsCorrect = i == dto.CorrectIndex,
-                                Question = newQuestion
+                                Question = newQuestion,
+                                Order = i
                             };
 
                             newQuestion.Options.Add(option);
@@ -554,7 +557,8 @@ public class APIv1(
                         {
                             Text = optionText,
                             IsCorrect = i == dto.CorrectIndex,
-                            Question = existingQuestion
+                            Question = existingQuestion,
+                            Order = i
                         };
                         
                         db.QuestionOptions.Add(option);
@@ -585,7 +589,8 @@ public class APIv1(
                             {
                                 Text = optionText,
                                 IsCorrect = dto.CorrectIndices.Contains(i),
-                                Question = newQuestion
+                                Question = newQuestion,
+                                Order = i
                             };
 
                             newQuestion.Options.Add(option);
@@ -619,7 +624,8 @@ public class APIv1(
                         {
                             Text = optionText,
                             IsCorrect = dto.CorrectIndices.Contains(i),
-                            Question = existingQuestion
+                            Question = existingQuestion,
+                            Order = i
                         };
                         
                         db.QuestionOptions.Add(option);
@@ -669,5 +675,78 @@ public class APIv1(
         await db.SaveChangesAsync();
         
         return NoContent();
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/submit")]
+    public async Task<IActionResult> SubmitQuiz(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid,
+        [FromBody] CreateQuizSubmissionRequest body
+    ) {
+        var course = await db.Courses
+            .Where(c => c.Uuid == courseUuid)
+            .FirstOrDefaultAsync();
+        
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.Quizzes
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .Include(q => q.Questions)
+            .ThenInclude(qn => qn.Options)
+            .FirstOrDefaultAsync();
+        
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found." });
+
+        int totalQuestions = quiz.Questions.Count;
+        int correctAnswers = 0;
+        var correctPerQuestion = new List<bool>();
+
+        foreach (var question in quiz.Questions) {
+            var submission = body.Answers.FirstOrDefault(a => a.Uuid == question.Uuid);
+            if (submission == null) continue;
+
+            bool isCorrect = false;
+            
+            question.Options = question.Options.OrderBy(o => o.Order).ToList();
+
+            switch (question) {
+                case SingleChoiceQuestion scq:
+                    var correctOptionIndex = scq.Options.ToList().FindIndex(o => o.IsCorrect);
+                    if (submission.SelectedIndex == correctOptionIndex) {
+                        isCorrect = true;
+                    }
+                    break;
+
+                case MultipleChoiceQuestion mcq:
+                    var correctIndices = mcq.Options
+                        .Select((o, index) => new { o.IsCorrect, index })
+                        .Where(x => x.IsCorrect)
+                        .Select(x => x.index)
+                        .ToHashSet();
+
+                    if (submission.SelectedIndices != null &&
+                        submission.SelectedIndices.Count == correctIndices.Count &&
+                        submission.SelectedIndices.All(i => correctIndices.Contains(i))) {
+                        isCorrect = true;
+                    }
+                    break;
+            }
+            
+            if (isCorrect) correctAnswers++;
+            correctPerQuestion.Add(isCorrect);
+        }
+
+        var response = new {
+            quizUuid,
+            score = correctAnswers,
+            maxScore = totalQuestions,
+            correctPerQuestion,
+            submittedAt = DateTime.UtcNow
+        };
+
+        return Ok(response);
     }
 }

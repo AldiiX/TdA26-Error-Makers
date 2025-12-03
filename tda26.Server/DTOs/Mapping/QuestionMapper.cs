@@ -13,12 +13,12 @@ public static class QuestionMapper {
                 Type = "singleChoice",
                 Question = single.Text,
                 Options = single.Options
-                    .OrderBy(o => o.Uuid)
+                    .OrderBy(o => o.Order)
                     .Select(o => o.Text)
                     .ToList(),
 
                 CorrectIndex = single.Options
-                    .OrderBy(o => o.Uuid)
+                    .OrderBy(o => o.Order)
                     .Select((opt, idx) => new { opt, idx })
                     .First(x => x.opt.IsCorrect).idx
             },
@@ -29,12 +29,12 @@ public static class QuestionMapper {
                 Type = "multipleChoice",
                 Question = multi.Text,
                 Options = multi.Options
-                    .OrderBy(o => o.Uuid)
+                    .OrderBy(o => o.Order)
                     .Select(o => o.Text)
                     .ToList(),
 
                 CorrectIndices = multi.Options
-                    .OrderBy(o => o.Uuid)
+                    .OrderBy(o => o.Order)
                     .Select((opt, idx) => new { opt, idx })
                     .Where(x => x.opt.IsCorrect)
                     .Select(x => x.idx)
