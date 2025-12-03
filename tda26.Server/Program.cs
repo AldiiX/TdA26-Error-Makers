@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using dotenv.net;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -149,7 +150,9 @@ public static class Program {
         );
 
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()/*.AddJsonOptions(options => {
+            options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        })*/;
         builder.Services.AddHttpContextAccessor();
 
         // openapi generator (vestaveny v asp.net core)

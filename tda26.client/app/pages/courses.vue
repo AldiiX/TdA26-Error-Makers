@@ -64,11 +64,13 @@
         page.value = 1;
     };
 
+    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new');
     const sortedCourses = computed(() => {
         if (!courses.value) return [];
         let list = [...courses.value];
 
         switch (sort.value) {
+            default:
             case 'new':
                 return list.sort(
                     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -77,8 +79,10 @@
                 return list.sort(
                     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                 );
-            default:
-                return list;
+            case 'byViews':
+                return list.sort((a, b) => b.viewCount - a.viewCount);
+            case 'byLikes':
+                return list.sort((a, b) => b.likeCount - a.likeCount);
         }
     });
     const filteredCourses = computed(() => {
@@ -226,7 +230,7 @@
     </Head>
     
     <Teleport to="#teleports">
-        <div :class="$style.blob"></div>
+<!--        <div :class="$style.blob"></div>   TODO: udělat toto pěkným     -->
         <Blob
             top="120vh"
             right="1vw"

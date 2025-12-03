@@ -30,7 +30,11 @@ useHead({
     ],
 
     script: [
-
+        { // recaptcha
+            src: 'https://www.google.com/recaptcha/api.js?render=6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL',
+            async: true,
+            defer: true,
+        },
     ],
 
     noscript: [

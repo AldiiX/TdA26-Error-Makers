@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202183930_AddRatings")]
+    partial class AddRatings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace tda26.Server.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
-
-            modelBuilder.Entity("CourseTag", b =>
-                {
-                    b.Property<Guid>("CoursesUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("TagsUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("CoursesUuid", "TagsUuid");
-
-                    b.HasIndex("TagsUuid");
-
-                    b.ToTable("CourseTag");
-                });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
@@ -222,20 +210,12 @@ namespace tda26.Server.Migrations
                     b.ToTable("Quizzes");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
             modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
                 {
                     b.Property<Guid>("Uuid")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
                     b.Property<Guid>("AccountUuid")
                         .HasColumnType("char(36)");
 
@@ -258,7 +238,6 @@ namespace tda26.Server.Migrations
 
                     b.HasKey("Uuid");
 
-                    b.ToTable("Tags");
                     b.HasIndex("AccountUuid", "CourseUuid")
                         .IsUnique();
 
@@ -364,22 +343,6 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });
 
-            modelBuilder.Entity("CourseTag", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Course", null)
-                        .WithMany()
-                        .HasForeignKey("CoursesUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                });
-                
             modelBuilder.Entity("tda26.Server.Data.Models.Like", b =>
                 {
                     b.HasBaseType("tda26.Server.Data.Models.Rating");

@@ -11,6 +11,8 @@ export interface Course {
     // feed: FeedPost[];
     tags: Tag[] | null;
     lecturer: Lecturer | null;
+    likeCount: number,
+    viewCount: number,
 }
 
 export interface Material {
@@ -60,6 +62,20 @@ export interface Lecturer extends Account {
 export interface Account {
     username: string;
     uuid: string,
+    fullName: string,
+    fullNameWithoutTitles: string,
+    likes: Rating[];
+    dislikes: Rating[];
+}
+
+interface Rating {
+    course: Course | null,
+    uuid: string
+}
+
+export interface gRecaptcha {
+    ready: (callback: () => void) => void;
+    execute: (siteKey: string, opts: { action: "submit" }) => Promise<string>;
 }
 export interface Tag{
     uuid: string,

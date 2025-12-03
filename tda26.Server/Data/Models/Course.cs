@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
-public class Course : IAuditable {
+public class Course : Auditable {
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
 
@@ -14,12 +14,13 @@ public class Course : IAuditable {
     [MaxLength(1048)]
     public string Description { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-    public DateTime UpdatedAt { get; set; } = DateTime.Now;
-
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
+
+    public int ViewCount { get; set; } = 0;
+
+    [NotMapped]
+    public int LikeCount => Likes.ToList().Count;
 
     [JsonIgnore]
     public Guid? LecturerUuid { get; set; }
@@ -28,8 +29,19 @@ public class Course : IAuditable {
     public Lecturer? Lecturer { get; set; } = null!;
     
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
+  
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
-    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>(); 
     
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+  
+    public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
+
+    [JsonIgnore]
+    public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
+    [NotMapped, JsonIgnore]
+    public IEnumerable<Like> Likes => Ratings.OfType<Like>();
+
+    [NotMapped, JsonIgnore]
+    public IEnumerable<Dislike> Dislikes => Ratings.OfType<Dislike>();
 }
