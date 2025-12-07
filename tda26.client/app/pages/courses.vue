@@ -298,26 +298,26 @@
                 <div :class="$style.filtersTop">
                     <p>Seřadit: </p>
                     <div :class="$style.sortOptionsList">
-                        <button type="button" 
+                        <p 
                                 :class="$style.sortOption" 
                                 :data-active="sort === 'new'"
                                 @click="sort = 'new'">Nejnovější
-                        </button>
-                        <button type="button" 
+                        </p>
+                        <p 
                                 :class="$style.sortOption" 
                                 :data-active="sort === 'old'"
                                 @click="sort = 'old'">Nejstarší
-                        </button>
-                        <button type="button" 
+                        </p>
+                        <p 
                                 :class="$style.sortOption"
                                 :data-active="sort === 'byLikes'"
                                 @click="sort = 'byLikes'">Nejlepe hodnocení
-                        </button>
-                        <button type="button" 
+                        </p>
+                        <p 
                                 :class="$style.sortOption"
                                 :data-active="sort === 'byViews'"
                                 @click="sort = 'byViews'">Nejvíce zhlédnutí
-                        </button>
+                        </p>
                     </div>
                 </div>
 
@@ -522,7 +522,7 @@
 
             .filtersLeft {
                 
-                p{
+                >p{
                     font-size: 36px;
                     font-weight: 700;
                     margin: 24px 24px;

@@ -13,13 +13,13 @@ const toggle = () => emit("toggle", props.tag.uuid)
 </script>
 
 <template>
-    <button
+    <p
         class="tag"
         :data-active="active"
         @click="toggle"
     >
         {{ tag.displayName }}
-    </button>
+    </p>
 </template>
 
 <style scoped>
