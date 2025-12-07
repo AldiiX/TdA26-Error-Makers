@@ -231,7 +231,8 @@ body {
 
 @font-face {
     font-family: 'Dosis';
-    src: url("../public/fonts/dosis.ttf")  format('truetype');
+    src: url("/fonts/dosis.ttf")  format('truetype');
+    font-display: swap;
 }
 
 

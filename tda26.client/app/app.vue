@@ -27,6 +27,7 @@ useHead({
 
     link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'preload', as: 'font', type: 'font/ttf', href: '/fonts/dosis.ttf', crossorigin: 'anonymous' },
     ],
 
     script: [
