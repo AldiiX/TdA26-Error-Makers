@@ -64,40 +64,37 @@ public class AuthService(
         return acc;
     }
 
-    /*public async Task<Account?> RegisterAsync(string username, string email, string plainPassword, string? displayName, CancellationToken ct = default) {
-        var hashed = Utilities.EncryptPassword(plainPassword);
-        await using var conn = await db.OpenAsync(ct);
+    public async Task<Account?> RegisterAsync(string username, string plainPassword, CancellationToken ct = default)
+    {
+        var existing = await accounts.GetByUsernameAsync(username, ct);
+        if (existing != null) return null;
 
-        await using var cmd = new NpgsqlCommand(@"
-            insert into accounts (uuid, username, display_name, email, password, created_at)
-            values (gen_random_uuid(), @u, @d, @e, @p, now());
-            select * from accounts where username = @u and email = @e;
-        ", conn);
+        var hashedPassword = Utilities.HashPassword(plainPassword);
 
-        cmd.Parameters.AddWithValue("u", username);
-        cmd.Parameters.AddWithValue("d", (object?)displayName ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("e", email);
-        cmd.Parameters.AddWithValue("p", hashed);
+        var acc = new Account {
+            Uuid = Guid.NewGuid(),
+            Username = username,
+            Password = hashedPassword,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
 
-        try {
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
-            if (!await reader.ReadAsync(ct)) return null;
+        await accounts.CreateAsync(acc, ct);
 
-            return new Account(
-                reader.GetGuid("uuid"),
-                reader.GetString("username"),
-                reader.GetString("display_name"),
-                reader.GetString("avatar_url"),
-                reader.GetString("email"),
-                reader.GetString("password"),
-                reader.GetDateTime("created_at"),
-                Enum.TryParse<Account.AccountPlan>(reader.GetString("plan"), out var plan) ? plan : Account.AccountPlan.FREE
-            );
-        } catch (NpgsqlException e) when (e.SqlState == "23505") {
-            return null;
-        }
+        var json = new AccountSessionDto {
+            Uuid = acc.Uuid,
+            Username = acc.Username,
+            Password = acc.Password,
+            CreatedAt = acc.CreatedAt,
+            UpdatedAt = acc.UpdatedAt
+        };
+
+        http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
+        http.HttpContext.Items["loggedaccount"] = json;
+
+        return acc;
     }
-    */
+
 
     public async Task<Account?> ReAuthFromContextOrNullAsync(CancellationToken ct = default) {
         if (http.HttpContext == null) return null;

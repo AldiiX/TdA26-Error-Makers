@@ -11,14 +11,16 @@ definePageMeta({
     layout: "normal-page-layout"
 });
 
-const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-if (loggedAccount.value) {
-    navigateTo("/");
-}
+// const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+// if (loggedAccount.value) {
+//     navigateTo("/");
+// }
 
 // state
 const showPassword = ref(false);
+const showPasswordApprove = ref(false);
 const password = ref("");
+const passwordApprove = ref("");
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
 
@@ -26,6 +28,10 @@ const errorMsg = ref<string | null>(null);
 function togglePassword() {
     // prepina zobrazeni hesla
     showPassword.value = !showPassword.value;
+}
+function togglePasswordApprove() {
+    // prepina zobrazeni podtvrzeni hesla
+    showPasswordApprove.value = !showPasswordApprove.value;
 }
 
 async function submitLoginForm(event: Event) {
@@ -37,7 +43,7 @@ async function submitLoginForm(event: Event) {
     errorMsg.value = null;
 
     try {
-        const res = await $fetch<Account | null>("/api/v2/auth/login", {
+        const res = await $fetch<Account | null>("/api/v2/", {
             method: "POST",
             body: formDataObj
         });
@@ -58,7 +64,7 @@ async function submitLoginForm(event: Event) {
 
 <template>
     <Head>
-        <Title>Login • Think different Academy</Title>
+        <Title>Register • Think different Academy</Title>
     </Head>
 
     <CircleBlurBlob top="10vw" left="-10vw" blur="10vw" color="var(--accent-color-secondary-theme)" />
@@ -67,7 +73,7 @@ async function submitLoginForm(event: Event) {
     <main :class="$style.page">
         <section :class="[$style.card]" aria-labelledby="login-title">
             <header :class="$style.header">
-                <h1 id="login-title" :class="[$style.title, 'text-gradient']">Přihlášení</h1>
+                <h1 id="login-title" :class="[$style.title, 'text-gradient']">Zaregistrovat se.</h1>
                 <p :class="$style.subtitle">Think different Academy</p>
             </header>
 
@@ -85,9 +91,23 @@ async function submitLoginForm(event: Event) {
                         placeholder="jan.novak"
                     />
                 </div>
+                
+                <div :class="$style.group">
+                    <label :class="$style.label" for="email">E-mailová adresa</label>
+                    <Input
+                        id="email"
+                        style="width: 100%"
+                        name="email"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="email"
+                        required
+                        placeholder="jannovak@seznam.cz"
+                    />
+                </div>
 
                 <div :class="$style.group">
-                    <label :class="$style.label" for="password">Heslo</label>
+                    <label :class="$style.label" for="passwordApprove">Heslo</label>
                     <div :class="$style.passwordRow">
                         <Input
                             v-model="password"
@@ -98,29 +118,53 @@ async function submitLoginForm(event: Event) {
                             name="password"
                             :type="showPassword ? 'text' : 'password'"
                         />
-
+                        
                         <button
-                                :class="$style.toggle"
-                                type="button"
-                                @click="togglePassword"
-                                :aria-pressed="showPassword"
-                                aria-controls="password"
-                                aria-label="Zobrazit nebo skrýt heslo"
+                            :class="$style.toggle"
+                            type="button"
+                            @click="togglePassword"
+                            :aria-pressed="showPassword"
+                            aria-controls="password"
+                            aria-label="Zobrazit nebo skrýt heslo"
                         >
                             {{ showPassword ? 'Skrýt' : 'Zobrazit' }}
+                        </button>
+                    </div>
+                </div>
+                <div :class="$style.group">
+                    <label :class="$style.label" for="password">Potvrzení hesla</label>
+                    <div :class="$style.passwordRow">
+                        <Input
+                            v-model="passwordApprove"
+                            style="width: 100%"
+                            placeholder="••••••••"
+                            aria-describedby="password-help"
+                            required
+                            name="password"
+                            :type="showPasswordApprove ? 'text' : 'password'"
+                        />
+                        <button
+                            :class="$style.toggle"
+                            type="button"
+                            @click="togglePasswordApprove"
+                            :aria-pressed="showPasswordApprove"
+                            aria-controls="password"
+                            aria-label="Zobrazit nebo skrýt heslo"
+                        >
+                            {{ showPasswordApprove ? 'Skrýt' : 'Zobrazit' }}
                         </button>
                     </div>
                 </div>
 
 
                 <ButtonComponent button-style="primary" accent-color="primary" :class="$style.button" type="submit" :loading="isLoading">
-                    Přihlásit se
+                    Zaregistrovat se
                 </ButtonComponent>
 
                 <p v-if="errorMsg" :class="$style.error" id="form-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
                 <div :class="$style.actions">
-<!--                    <a href="/forgot-password">Zapomněl jsi heslo?</a>-->
+                    <!--                    <a href="/forgot-password">Zapomněl jsi heslo?</a>-->
                 </div>
             </form>
         </section>
