@@ -21,11 +21,10 @@ public class Course : IAuditable {
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
 
-    [JsonIgnore]
     public Guid? LecturerUuid { get; set; }
 
     [ForeignKey(nameof(LecturerUuid))]
-    public Lecturer? Lecturer { get; set; } = null!;
+    public Account? Lecturer { get; set; }
     
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 

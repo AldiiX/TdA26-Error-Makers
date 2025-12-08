@@ -11,13 +11,21 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
     }
     
-    public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
-        return await db.Courses
-            .Include(c => c.Lecturer)
+    public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default)
+    {
+        var course = await db.Courses
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+
+        if (course == null)
+            return null;
+
+        course.Lecturer = await db.Lecturers
+            .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid, ct);
+
+        return course;
     }
 
     public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {

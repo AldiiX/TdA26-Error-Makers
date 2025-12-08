@@ -9,6 +9,7 @@ export interface Course {
     //lecturerUuid: string;
     lecturer: Lecturer | null;
     materials?: Material[];
+    quizzes?: Quiz[];
 }
 
 export interface Material {
@@ -29,6 +30,27 @@ export interface MaterialFormModel {
     url?: string | null;
     file?: File | null;
     description?: string | null;
+}
+
+export interface Quiz {
+    uuid: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    attemptsCount: number;
+    course: Course;
+    questions: Question[];
+}
+
+export interface Question {
+    uuid: string;
+    text: string;
+    options: string[];
+}
+
+export interface QuestionOption {
+    text: string;
+    isCorrect: boolean;
 }
 
 export interface CourseFormModel {

@@ -58,7 +58,9 @@
     
     const loggedUser = useState<Account | null>('loggedAccount');
 
-    const menuItems = ['Materiály', 'Aktivita'];
+    console.log(loggedUser?.value?.uuid, course?.value?.lecturer?.uuid)
+
+    const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
     const selectedItem = ref(menuItems[0]);
     
     const selectItem = (item: string) => {
@@ -220,6 +222,12 @@
             console.error("Creation failed:", err);
         }
     };
+    
+    const ownsCourse = computed(() => {
+        if (!loggedUser.value || !courseSmall.value) return false;
+        console.log(courseSmall.value.lecturer);
+        return loggedUser.value?.uuid === courseSmall.value?.lecturer?.uuid;
+    });
 </script>
 
 <template>
@@ -267,7 +275,7 @@
             </nav>
             <div :class="['liquid-glass']">
                 <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                    <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                    <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
                         Přidat nový materiál
                     </Button>
 
@@ -278,10 +286,24 @@
                             <MaterialItem
                                 :material="material"
                                 :course="course"
-                                :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
+                                :edit-mode="ownsCourse"
                                 @edit="openUpdateMaterialModal"
                                 @delete="openDeleteMaterialModal"
                             />
+                        </li>
+                    </ul>
+                </div>
+                <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
+<!--                    <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">-->
+<!--                        Přidat nový kvíz-->
+<!--                    </Button>-->
+
+                    <p v-if="coursePending">Načítání kvízů...</p>
+                    <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
+                    <ul v-else>
+                        <li v-for="quiz in course.quizzes" :key="quiz.uuid">
+                            <p>{{ quiz.uuid }}</p>
+                            <p>{{ quiz.title }}</p>
                         </li>
                     </ul>
                 </div>

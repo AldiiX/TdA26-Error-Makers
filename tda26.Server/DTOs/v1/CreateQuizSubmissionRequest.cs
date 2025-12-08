@@ -8,4 +8,5 @@ public class AnswerSubmission {
     public Guid Uuid { get; set; }
     public int? SelectedIndex { get; set; }
     public List<int>? SelectedIndices { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }

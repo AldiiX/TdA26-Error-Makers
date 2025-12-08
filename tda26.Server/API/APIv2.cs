@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
+using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
@@ -19,7 +20,8 @@ public class APIv2(
     ICourseRepository courseRepository,
     IAccountRepository accounts,
     IMaterialAccessService materialAccessService,
-    IMaterialRepository materialRepository
+    IMaterialRepository materialRepository,
+    AppDbContext db
 ) : Controller {
 
     [HttpGet]
@@ -176,6 +178,7 @@ public class APIv2(
         
         if (full) {
             course = await courseRepository.GetByUuidAsyncFull(uuid);
+            Console.WriteLine(course?.Lecturer?.Uuid);
         } else {
             course = await courseRepository.GetByUuidAsync(uuid);
         }
