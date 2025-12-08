@@ -16,11 +16,11 @@ public class MaterialRepository(
     public async Task AddMaterialAsync(Guid courseUuid, Material material, CancellationToken ct = default) {
         var course = await db.Courses
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+        
         if (course == null) {
             throw new Exception("Course not found.");
         }
-
-        material.CourseUuid = course.Uuid;
+        
         db.Materials.Add(material);
         await db.SaveChangesAsync(ct);
     }
