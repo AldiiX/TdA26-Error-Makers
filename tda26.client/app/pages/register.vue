@@ -22,7 +22,10 @@ const showPasswordApprove = ref(false);
 const password = ref("");
 const passwordApprove = ref("");
 const isLoading = ref(false);
-const errorMsg = ref<string | null>(null);
+const errorMsg = ref<string[]>([]);
+
+
+
 
 // handlers
 function togglePassword() {
@@ -34,16 +37,70 @@ function togglePasswordApprove() {
     showPasswordApprove.value = !showPasswordApprove.value;
 }
 
-async function submitLoginForm(event: Event) {
+function validaceEmailu(email: string): boolean {
+    const val = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return val.test(email.toLowerCase());
+}
+
+const passwordRules = computed(() => ([
+    { text: "Alespoň 8 znaků", pass: password.value.length >= 8 },
+    { text: "Alespoň 1 malé písmeno", pass: /[a-z]/.test(password.value) },
+    { text: "Alespoň 1 velké písmeno", pass: /[A-Z]/.test(password.value) },
+    { text: "Alespoň 1 číslo", pass: /[0-9]/.test(password.value) },
+    {
+        text: "Alespoň 1 speciální znak",
+        pass: /[!@#$%^&*()_\-+={}[\]:";'<>?,./\\|`~]/.test(password.value)
+    },
+    {
+        text: "Hesla se shodují",
+        pass: password.value.length > 0 && password.value === passwordApprove.value
+    }
+]));
+
+async function submitRegisterForm(event: Event) {
     const target = event.target as HTMLFormElement;
     const formData = new FormData(target);
     const formDataObj = Object.fromEntries(formData.entries());
 
     isLoading.value = true;
-    errorMsg.value = null;
+    errorMsg.value = [];
+
+    if (!validaceEmailu(email.value)) {
+        errorMsg.value.push("Neplatný formát e-mailu.");
+        isLoading.value = false;
+        return;
+    }
+
+    if (password.value.length < 8) {
+        errorMsg.value.push("Heslo musí mít alespoň 8 znaků.");
+    }
+    
+    if (!/[A-Z]/.test(password.value)) {
+        errorMsg.value.push("Heslo musí obsahovat alespoň jedno velké písmeno.");
+    }
+    
+    if (!/[a-z]/.test(password.value)) {
+        errorMsg.value.push("Heslo musí obsahovat alespoň jedno malé písmeno.");
+    }
+    
+    if (password.value !== passwordApprove.value) {
+        errorMsg.value.push("Hesla se neshodují.");
+    }
+    if (!/[0-9]/.test(password.value)) {
+        errorMsg.value.push("Heslo musí obsahovat alespoň jedno číslo.");
+    }
+    if (!/[!@#$%^&*()_\-+={}[\]:";'<>?,./\\|`~]/.test(password.value)) {
+        errorMsg.value.push("Heslo musí obsahovat alespoň jeden speciální znak.");
+    }
+    
+    if (errorMsg.value.length > 0) {
+        isLoading.value = false;
+        return;
+    }
+
 
     try {
-        const res = await $fetch<Account | null>("/api/v2/", {
+        const res = await $fetch<Account | null>("/api/v2/register", {
             method: "POST",
             body: formDataObj
         });
@@ -55,7 +112,7 @@ async function submitLoginForm(event: Event) {
         // presmerovani na dashboard
         await navigateTo("/");
     } catch (err: any) {
-        errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
+        errorMsg.value = ["Uživatelské jméno nebo e-mail už existuje."];
     } finally {
         isLoading.value = false;
     }
@@ -77,7 +134,7 @@ async function submitLoginForm(event: Event) {
                 <p :class="$style.subtitle">Think different Academy</p>
             </header>
 
-            <form :class="[$style.form]" @submit.prevent="submitLoginForm" aria-describedby="form-error" :aria-busy="isLoading">
+            <form :class="[$style.form]" @submit.prevent="submitRegisterForm" aria-describedby="form-error" :aria-busy="isLoading">
                 <div :class="$style.group">
                     <label :class="$style.label" for="username">Uživatelské jméno</label>
                     <Input
@@ -95,6 +152,7 @@ async function submitLoginForm(event: Event) {
                 <div :class="$style.group">
                     <label :class="$style.label" for="email">E-mailová adresa</label>
                     <Input
+                        v-model="email"
                         id="email"
                         style="width: 100%"
                         name="email"
@@ -161,12 +219,25 @@ async function submitLoginForm(event: Event) {
                     Zaregistrovat se
                 </ButtonComponent>
 
-                <p v-if="errorMsg" :class="$style.error" id="form-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
-
+                <div :class="$style.error" v-if="password.length > 0">
+                    <p
+                        v-for="(rule, i) in passwordRules"
+                        :key="i"
+                        :class="[
+                            $style['error-item'],
+                            rule.pass ? $style['rule-done'] : ''
+                        ]"
+                    >
+                        {{ rule.text }}
+                    </p>
+                </div>
+                
                 <div :class="$style.actions">
                     <!--                    <a href="/forgot-password">Zapomněl jsi heslo?</a>-->
                 </div>
             </form>
+            
+            
         </section>
     </main>
 </template>
@@ -226,10 +297,25 @@ async function submitLoginForm(event: Event) {
     gap: 14px;
 }
 
+.rule-done {
+    color: var(--accent-color-secondary-theme) !important;       
+    text-decoration: line-through;   
+    opacity: 1 !important;
+    transition: 0.25s ease;
+}
+
+.rule-done::before {
+    background-color: var(--accent-color-secondary-theme) !important;  
+}
+
 .error {
-    color: var(--accent-color-secondary-theme);
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    color: var(--accent-color-primary);
     width: fit-content;
     font-size: 14px;
+    font-weight: 700;
     text-align: center;
     margin: 0 auto;
 
@@ -238,6 +324,27 @@ async function submitLoginForm(event: Event) {
         background: #fdecec;
         border-color: #f6c1c1;
     }
+}
+
+.error-item {
+    position: relative;
+    display: flex;
+    height: auto;
+    margin: 0;
+    text-align: left;
+    text-decoration: none;
+    padding-left: 18px; 
+}
+
+.error-item::before {
+    content: "";
+    width: 6px;              
+    height: 6px;
+    background-color: var(--accent-color-primary);  
+    border-radius: 50%;     
+    position: absolute;
+    left: 0;                
+    top: 6px;               
 }
 
 .group {
