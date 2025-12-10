@@ -23,7 +23,7 @@ const password = ref("");
 const passwordApprove = ref("");
 const isLoading = ref(false);
 const errorMsg = ref<string[]>([]);
-
+const email = ref("");
 
 
 
@@ -66,37 +66,20 @@ async function submitRegisterForm(event: Event) {
     errorMsg.value = [];
 
     if (!validaceEmailu(email.value)) {
-        errorMsg.value.push("Neplatný formát e-mailu.");
+        errorMsg.value.push("Neplatný formát e-mailu");
         isLoading.value = false;
         return;
     }
+    
+    for (const rule of passwordRules.value) {
+        if (!rule.pass) errorMsg.value.push(rule.text);
+    }
 
-    if (password.value.length < 8) {
-        errorMsg.value.push("Heslo musí mít alespoň 8 znaků.");
-    }
-    
-    if (!/[A-Z]/.test(password.value)) {
-        errorMsg.value.push("Heslo musí obsahovat alespoň jedno velké písmeno.");
-    }
-    
-    if (!/[a-z]/.test(password.value)) {
-        errorMsg.value.push("Heslo musí obsahovat alespoň jedno malé písmeno.");
-    }
-    
-    if (password.value !== passwordApprove.value) {
-        errorMsg.value.push("Hesla se neshodují.");
-    }
-    if (!/[0-9]/.test(password.value)) {
-        errorMsg.value.push("Heslo musí obsahovat alespoň jedno číslo.");
-    }
-    if (!/[!@#$%^&*()_\-+={}[\]:";'<>?,./\\|`~]/.test(password.value)) {
-        errorMsg.value.push("Heslo musí obsahovat alespoň jeden speciální znak.");
-    }
-    
     if (errorMsg.value.length > 0) {
         isLoading.value = false;
         return;
     }
+    
 
 
     try {
@@ -219,21 +202,30 @@ async function submitRegisterForm(event: Event) {
                     Zaregistrovat se
                 </ButtonComponent>
 
-                <div :class="$style.error" v-if="password.length > 0">
-                    <p
-                        v-for="(rule, i) in passwordRules"
-                        :key="i"
-                        :class="[
-                            $style['error-item'],
-                            rule.pass ? $style['rule-done'] : ''
-                        ]"
-                    >
-                        {{ rule.text }}
-                    </p>
-                </div>
-                
-                <div :class="$style.actions">
-                    <!--                    <a href="/forgot-password">Zapomněl jsi heslo?</a>-->
+                <div :class="$style.errorGrid">
+
+                    <!-- Vetsi chyby (Mail, existujici uzivatel) -->
+                    <template v-if="errorMsg.length > 0">
+                        <p
+                            v-for="(err, i) in errorMsg"
+                            :key="'err-'+i"
+                            :class="$style.errorItem"
+                        >
+                            {{ err }}
+                        </p>
+                    </template>
+
+                    <!-- Password rules -->
+                    <template v-if="password.length > 0">
+                        <p
+                            v-for="(rule, i) in passwordRules"
+                            :key="'rule-'+i"
+                            :class="[ $style.errorItem, rule.pass ? $style.ruleDone : '' ]"
+                        >
+                            {{ rule.text }}
+                        </p>
+                    </template>
+
                 </div>
             </form>
             
@@ -297,15 +289,30 @@ async function submitRegisterForm(event: Event) {
     gap: 14px;
 }
 
-.rule-done {
-    color: var(--accent-color-secondary-theme) !important;       
-    text-decoration: line-through;   
-    opacity: 1 !important;
-    transition: 0.25s ease;
+.errorGrid {
+    display: grid;
+    gap: 6px; 
 }
 
-.rule-done::before {
-    background-color: var(--accent-color-secondary-theme) !important;  
+.errorItem {
+    color: var(--accent-color-primary);
+    margin: 0;
+    font-size: 18px;
+    padding-left: 14px;
+    
+    &::before {
+        content: "•";
+        display: inline-block;
+        margin-right: 6px;
+        font-weight: 900;
+    }
+}
+
+.ruleDone {
+    text-decoration: line-through;
+    color: var(--accent-color-secondary-theme);
+    opacity: 1 !important;
+    transition: 0.25s ease;
 }
 
 .error {
@@ -324,27 +331,6 @@ async function submitRegisterForm(event: Event) {
         background: #fdecec;
         border-color: #f6c1c1;
     }
-}
-
-.error-item {
-    position: relative;
-    display: flex;
-    height: auto;
-    margin: 0;
-    text-align: left;
-    text-decoration: none;
-    padding-left: 18px; 
-}
-
-.error-item::before {
-    content: "";
-    width: 6px;              
-    height: 6px;
-    background-color: var(--accent-color-primary);  
-    border-radius: 50%;     
-    position: absolute;
-    left: 0;                
-    top: 6px;               
 }
 
 .group {
