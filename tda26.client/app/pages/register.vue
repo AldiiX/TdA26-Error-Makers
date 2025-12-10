@@ -52,7 +52,7 @@ const passwordRules = computed(() => ([
         pass: /[!@#$%^&*()_\-+={}[\]:";'<>?,./\\|`~]/.test(password.value)
     },
     {
-        text: "Hesla se shodují",
+        text: "Hesla se musí shodovat",
         pass: password.value.length > 0 && password.value === passwordApprove.value
     }
 ]));
