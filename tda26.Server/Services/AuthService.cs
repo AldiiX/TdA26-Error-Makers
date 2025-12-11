@@ -64,7 +64,7 @@ public class AuthService(
         return acc;
     }
 
-    public async Task<Account?> RegisterAsync(string username, string plainPassword, CancellationToken ct = default)
+    public async Task<Account?> RegisterAsync(string username, string email, string plainPassword,  CancellationToken ct = default)
     {
         var existing = await accounts.GetByUsernameAsync(username, ct);
         if (existing != null) return null;
@@ -74,6 +74,7 @@ public class AuthService(
         var acc = new Account {
             Uuid = Guid.NewGuid(),
             Username = username,
+            PrimaryEmail = email,
             Password = hashedPassword,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now

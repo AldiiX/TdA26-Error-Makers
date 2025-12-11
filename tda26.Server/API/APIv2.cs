@@ -117,7 +117,8 @@ public class APIv2(
             });
         }
 
-        var acc = await auth.RegisterAsync(body.Username, body.Password, ct);
+        var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, ct);
+
         if (acc == null)
         {
             return new ConflictObjectResult(new
