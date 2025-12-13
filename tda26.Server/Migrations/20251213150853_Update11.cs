@@ -6,15 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class QuizzesTableCreationsAndUpdates : Migration
+    public partial class Update11 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "QuestionCount",
+            migrationBuilder.AddColumn<int>(
+                name: "AttemptsCount",
                 table: "Quizzes",
-                newName: "AttemptsCount");
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.CreateTable(
                 name: "Questions",
@@ -24,7 +26,6 @@ namespace tda26.Server.Migrations
                     QuizUuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     Text = table.Column<string>(type: "varchar(1048)", maxLength: 1048, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Order = table.Column<int>(type: "int", nullable: false),
                     Discriminator = table.Column<string>(type: "varchar(34)", maxLength: 34, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
@@ -69,6 +70,7 @@ namespace tda26.Server.Migrations
                     QuestionUuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     Text = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    Order = table.Column<int>(type: "int", nullable: false),
                     IsCorrect = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
@@ -189,10 +191,9 @@ namespace tda26.Server.Migrations
             migrationBuilder.DropTable(
                 name: "QuizResults");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "AttemptsCount",
-                table: "Quizzes",
-                newName: "QuestionCount");
+                table: "Quizzes");
         }
     }
 }

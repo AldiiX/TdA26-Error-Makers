@@ -197,11 +197,70 @@ namespace tda26.Server.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(34)
+                        .HasColumnType("varchar(34)");
+
+                    b.Property<Guid>("QuizUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1048)
+                        .HasColumnType("varchar(1048)");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("QuizUuid");
+
+                    b.ToTable("Questions");
+
+                    b.HasDiscriminator().HasValue("Question");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuestionOption", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("QuestionUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("QuestionUuid");
+
+                    b.ToTable("QuestionOptions");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.Quiz", b =>
                 {
                     b.Property<Guid>("Uuid")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
+
+                    b.Property<int>("AttemptsCount")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("CourseUuid")
                         .HasColumnType("char(36)");
@@ -225,6 +284,70 @@ namespace tda26.Server.Migrations
                     b.HasIndex("CourseUuid");
 
                     b.ToTable("Quizzes");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswer", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("QuestionUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("QuizResultUuid")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("QuestionUuid");
+
+                    b.HasIndex("QuizResultUuid");
+
+                    b.ToTable("QuizAnswers");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswerOption", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("AnswerUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("OptionUuid")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("AnswerUuid");
+
+                    b.HasIndex("OptionUuid");
+
+                    b.ToTable("QuizAnswerOptions");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizResult", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("QuizUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("QuizUuid");
+
+                    b.ToTable("QuizResults");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
@@ -384,6 +507,20 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.MultipleChoiceQuestion", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.Question");
+
+                    b.HasDiscriminator().HasValue("MultipleChoiceQuestion");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.SingleChoiceQuestion", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.Question");
+
+                    b.HasDiscriminator().HasValue("SingleChoiceQuestion");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.Dislike", b =>
                 {
                     b.HasBaseType("tda26.Server.Data.Models.Rating");
@@ -419,7 +556,7 @@ namespace tda26.Server.Migrations
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
                 {
-                    b.HasOne("tda26.Server.Data.Models.Lecturer", "Lecturer")
+                    b.HasOne("tda26.Server.Data.Models.Account", "Lecturer")
                         .WithMany()
                         .HasForeignKey("LecturerUuid");
 
@@ -448,6 +585,28 @@ namespace tda26.Server.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Quiz", "Quiz")
+                        .WithMany("Questions")
+                        .HasForeignKey("QuizUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuestionOption", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Question", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.Quiz", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Course", "Course")
@@ -457,6 +616,55 @@ namespace tda26.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswer", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tda26.Server.Data.Models.QuizResult", "QuizResult")
+                        .WithMany("Answers")
+                        .HasForeignKey("QuizResultUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("QuizResult");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswerOption", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.QuizAnswer", "Answer")
+                        .WithMany("SelectedOptions")
+                        .HasForeignKey("AnswerUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tda26.Server.Data.Models.QuestionOption", "Option")
+                        .WithMany()
+                        .HasForeignKey("OptionUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Answer");
+
+                    b.Navigation("Option");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizResult", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
@@ -492,6 +700,26 @@ namespace tda26.Server.Migrations
                     b.Navigation("Quizzes");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
+                {
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.Quiz", b =>
+                {
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswer", b =>
+                {
+                    b.Navigation("SelectedOptions");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.QuizResult", b =>
+                {
+                    b.Navigation("Answers");
                 });
 #pragma warning restore 612, 618
         }
