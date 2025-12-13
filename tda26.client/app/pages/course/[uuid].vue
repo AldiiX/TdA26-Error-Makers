@@ -8,6 +8,7 @@
     import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
     import { ref, computed } from "vue";
     import { Head, Title } from "#components";
+    import QuizItem from "~/components/pagespecific/QuizItem.vue";
 
     definePageMeta({
         layout: "normal-page-layout",
@@ -58,10 +59,8 @@
     
     const loggedUser = useState<Account | null>('loggedAccount');
 
-    console.log(loggedUser?.value?.uuid, course?.value?.lecturer?.uuid)
-
     const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
-    const selectedItem = ref(menuItems[0]);
+    const selectedItem = ref(menuItems[1]); // TODO: change to default
     
     const selectItem = (item: string) => {
         selectedItem.value = item;
@@ -108,7 +107,7 @@
         try {
             let updatedMaterial;
     
-            if (material.type === "url") {
+            if (material.type === 1) {
                 // JSON update
                 updatedMaterial = await $fetch<Material>(url, {
                     method: "PUT",
@@ -302,8 +301,11 @@
                     <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
                     <ul v-else>
                         <li v-for="quiz in course.quizzes" :key="quiz.uuid">
-                            <p>{{ quiz.uuid }}</p>
-                            <p>{{ quiz.title }}</p>
+                            <QuizItem
+                                :quiz="quiz"
+                                :course="course"
+                                :edit-mode="ownsCourse"
+                            />
                         </li>
                     </ul>
                 </div>
@@ -418,6 +420,7 @@
     margin: 0;
     overflow: visible;
     width: fit-content;
+    padding-bottom: 4px;
 }
 
 ul {

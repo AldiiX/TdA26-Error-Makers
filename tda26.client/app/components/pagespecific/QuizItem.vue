@@ -1,17 +1,17 @@
 ﻿<script setup lang="ts">
-import type {Material} from "#shared/types";
+import type {Material, Quiz} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 
 const props = defineProps<{
-    material: Material,
+    quiz: Quiz,
     course: { uuid: string },
     editMode?: boolean
 }>();
 
 const emit = defineEmits<{
-    (e: "edit", material: Material): void;
-    (e: "delete", material: Material): void;
+    (e: "edit", quiz: Quiz): void;
+    (e: "delete", quiz: Quiz): void;
 }>();
 
 const getHostname = (url?: string) => {
@@ -24,55 +24,33 @@ const getHostname = (url?: string) => {
 </script>
 
 <template>
-    <!-- FILE MATERIAL -->
-    <template v-if="material.type === 0">
-        <div :class="$style.material">
-            <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
-                <div :class="$style.fileIcon"></div>
+    <div :class="$style.element">
+        <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+<!--                <div :class="$style.favicon">-->
+<!--                    <img v-if="quiz.faviconUrl" :src="quiz.faviconUrl" alt="Favicon" />-->
+<!--                </div>-->
 
-                <div :class="$style.fileInfo">
-                    <p :title="material.name">{{ material.name }}</p>
-                    <div :class="$style.fileDetails">
-                        <p>{{ material.fileUrl?.match(/\.([^.]+)$/)?.[1]?.toUpperCase() ?? "JINÉ" }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
-                    </div>
+            <div :class="$style.specificInfo">
+                <p :title="quiz.title">{{ quiz.title }}</p>
+                <div :class="$style.fileDetails">
+                <p>{{ new Date(quiz.createdAt).toLocaleDateString() }}</p>
                 </div>
-                <p :class="$style.description">{{ material.description }}</p>
-            </NuxtLink>
-            
-            <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" @click="emit('edit', material)" style="width: 100%">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" @click="emit('delete', material)" style="width: 100%">Smazat</Button>
             </div>
-        </div>
-    </template>
-
-    <!-- URL MATERIAL -->
-    <template v-else-if="material.type === 1">
-        <div :class="$style.material">
-            <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer">
-                <div :class="$style.favicon">
-                    <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" />
-                </div>
-
-                <div :class="$style.fileInfo">
-                    <p :title="material.name">{{ material.name }}</p>
-                    <div :class="$style.fileDetails">
-                        <p>{{ getHostname(material.url) }} • {{ new Date(material.createdAt).toLocaleDateString() }}</p>
-                    </div>
-                </div>
-                <p :class="$style.description">{{ material.description }}</p>
+            <span :class="$style.divider"></span>
+<!--                <p :class="$style.description">{{ quiz.description }}</p>-->
+        </NuxtLink>
+        
+        <div v-if="editMode" :class="$style.editButtons">
+            <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}/edit`">
+                <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>
-            
-            <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" @click="emit('edit', material)" style="width: 100%">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" @click="emit('delete', material)" style="width: 100%">Smazat</Button>
-            </div>
+            <Button button-style="secondary" accent-color="secondary" @click="emit('delete', quiz)" style="width: 100%">Smazat</Button>
         </div>
-    </template>
+    </div>
 </template>
 
 <style module lang="scss">
-.material {
+.element {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -87,7 +65,15 @@ const getHostname = (url?: string) => {
     &:hover {
         background-color: color-mix(in srgb, var(--accent-color-primary) 5%, var(--background-color-secondary) 95%);
     }
-
+    
+    .divider {
+        width: 1px;
+        height: 36px;
+        align-self: stretch;
+        border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+        display: block;
+    }
+    
     .info {
         display: flex;
         align-items: center;
@@ -111,12 +97,11 @@ const getHostname = (url?: string) => {
             opacity: 0.6;
         }
 
-        .fileInfo {
+        .specificInfo {
             display: flex;
-            flex-direction: column;
             gap: 4px;
-            border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
-            width: clamp(150px, 25%, 250px);
+            flex-direction: column;
+            //width: clamp(150px, 25%, 250px);
 
             p {
                 margin: 0;
@@ -125,6 +110,7 @@ const getHostname = (url?: string) => {
                 overflow: hidden;
                 white-space: nowrap;
                 padding-right: 8px;
+                padding-bottom: 2px;
             }
             
             .fileDetails >p {

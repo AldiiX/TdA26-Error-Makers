@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
@@ -13,7 +14,7 @@ public class Quiz : IAuditable {
     
     public Guid CourseUuid { get; set; }
 
-    [ForeignKey("CourseUuid")]
+    [ForeignKey("CourseUuid"), JsonIgnore]
     public Course Course { get; set; } = null!;
     
     public ICollection<Question> Questions { get; set; } = new List<Question>();

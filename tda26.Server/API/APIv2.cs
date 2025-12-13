@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -177,20 +178,28 @@ public class APIv2(
         Course? course;
         
         if (full) {
-            course = await courseRepository.GetByUuidAsyncFull(uuid);
-            Console.WriteLine(course?.Lecturer?.Uuid);
+            course = await db.Courses
+                .Include(c => c.Materials
+                    .OrderByDescending(m => m.CreatedAt))
+                .Include(c => c.Quizzes)
+                .Include(c => c.Feed)
+                .FirstOrDefaultAsync(c => c.Uuid == uuid);
+
+            if (course == null) return NotFound(new { error = "Course not found." });
+
+            course.Lecturer = await db.Lecturers
+                .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid);
         } else {
-            course = await courseRepository.GetByUuidAsync(uuid);
+            course = await db.Courses
+                .Include(c => c.Lecturer)
+                .FirstOrDefaultAsync(c => c.Uuid == uuid);
         }
         
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
-
-        var courses = course.ToReadDto();
-        courses.Materials = courses.Materials.OrderByDescending(m => m.CreatedAt).ToList();
         
-        return Ok(courses);
+        return Ok(course);
     }
 
     [HttpPut("courses/{uuid:guid}")]
