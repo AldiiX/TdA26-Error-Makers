@@ -46,7 +46,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 continue;
             }
 
-            // If no properties were actually modified (e.g., only navigation properties like Ratings changed
+            // If no scalar properties were actually modified (e.g., only navigation properties like Ratings changed
             // when Likes/Dislikes are added/removed), don't update UpdatedAt
             if (modifiedProperties.Count == 0) {
                 continue;
