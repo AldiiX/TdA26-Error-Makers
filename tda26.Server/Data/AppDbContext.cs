@@ -27,9 +27,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private void SetAuditProperties() {
         var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });
 
-        // TODO: zjisteni toho co se zmenilo (chci odstranit, ze pokud lecturer.ViewCount se zmeni tak se to nepocita jako update)
-
         foreach (var entityEntry in entries) {
+            // For newly added entities, always set UpdatedAt
+            if (entityEntry.State == EntityState.Added) {
+                ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
+                continue;
+            }
+
+            // For modified entities, check which properties were actually modified
+            // Skip UpdatedAt update if only ViewCount or navigation properties changed
+            var modifiedProperties = entityEntry.Properties
+                .Where(p => p.IsModified)
+                .Select(p => p.Metadata.Name)
+                .ToList();
+
+            // If only ViewCount changed, don't update UpdatedAt
+            if (entityEntry.Entity is Course && modifiedProperties.Count == 1 && modifiedProperties.Contains("ViewCount")) {
+                continue;
+            }
+
+            // If no properties were actually modified (e.g., only navigation properties changed), don't update UpdatedAt
+            if (modifiedProperties.Count == 0) {
+                continue;
+            }
+
             ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
         }
     }

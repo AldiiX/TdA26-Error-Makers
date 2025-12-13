@@ -89,8 +89,6 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     }
 
     public async Task UpdateAsync(Course course, CancellationToken ct = default) {
-        course.UpdatedAt = DateTime.Now;
-        
         db.Courses.Update(course);
         await db.SaveChangesAsync(ct);
     }
