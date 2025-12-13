@@ -242,13 +242,14 @@ public class APIv2(
             course = await db.Courses
                 .Include(c => c.Lecturer)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid);
-            course!.Materials = [];
+
+            if (course == null) {
+                return NotFound(new { error = "Course not found." });
+            }
+            
+            course.Materials = [];
             course.Quizzes = [];
             course.Feed = [];
-        }
-
-        if (course == null) {
-            return NotFound(new { error = "Course not found." });
         }
         
         if(course.Lecturer != null) course.Lecturer.Ratings = [];
