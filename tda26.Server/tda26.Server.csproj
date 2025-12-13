@@ -47,10 +47,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Migrations\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Compile Update="Data\Models\FeedPost.cs">
         <DependentUpon>Course.cs</DependentUpon>
       </Compile>
