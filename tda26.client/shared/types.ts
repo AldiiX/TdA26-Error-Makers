@@ -19,7 +19,7 @@ export interface Course {
 export interface Material {
     uuid: string;
     name: string;
-    type: "url" | "file";
+    type: number;
     url?: string;
     fileUrl?: string;
     createdAt: string;
