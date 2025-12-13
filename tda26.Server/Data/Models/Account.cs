@@ -12,6 +12,9 @@ public class Account : Auditable {
 
     [MaxLength(32)]
     public string Username { get; set; } = string.Empty;
+    
+    [MaxLength(128)]
+    public string PrimaryEmail { get; set; } = string.Empty;
 
     [NotMapped]
     public string FullName => Username;

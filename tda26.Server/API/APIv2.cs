@@ -24,7 +24,8 @@ public class APIv2(
     IMaterialAccessService materialAccessService,
     IMaterialRepository materialRepository,
     AppDbContext db
-) : Controller {
+) : Controller
+{
 
     // random picovinky
     private static readonly HttpClient HttpClient = new();
@@ -33,34 +34,40 @@ public class APIv2(
 
 
     [HttpGet]
-    public IActionResult Index() {
-        return Ok(new {
+    public IActionResult Index()
+    {
+        return Ok(new
+        {
             status = "ok",
             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             message = "This is API version 2.",
         });
     }
 
-    #if DEBUG
+#if DEBUG
     [HttpGet("gpw")]
-    public IActionResult GeneratePassword([FromQuery] string password) {
+    public IActionResult GeneratePassword([FromQuery] string password)
+    {
         var hashedPassword = Utilities.EncryptPassword(password);
-        return Ok(new {
+        return Ok(new
+        {
             password,
             hashedPassword
         });
     }
-    #endif
+#endif
 
 
     // auth
     [HttpGet("me")]
-    public async Task<IActionResult> Me(CancellationToken ct) {
+    public async Task<IActionResult> Me(CancellationToken ct)
+    {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
         // odstraneni policek
-        foreach (var like in acc?.Ratings ?? []) {
+        foreach (var like in acc?.Ratings ?? [])
+        {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -69,9 +76,12 @@ public class APIv2(
     }
 
     [HttpPost("auth/login")]
-    public async Task<IActionResult> Login([FromBody] AuthLoginRequest body, CancellationToken ct) {
-        if(string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password)) {
-            return new BadRequestObjectResult(new {
+    public async Task<IActionResult> Login([FromBody] AuthLoginRequest body, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password))
+        {
+            return new BadRequestObjectResult(new
+            {
                 message = "Username and password are required."
             });
         }
@@ -80,7 +90,8 @@ public class APIv2(
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
 
         // odstraneni policek
-        foreach (var like in acc?.Ratings ?? []) {
+        foreach (var like in acc?.Ratings ?? [])
+        {
             like.Account = null;
             like.Course.Lecturer = null;
         }
@@ -89,13 +100,50 @@ public class APIv2(
     }
 
     [HttpPost("auth/logout")]
-    public async Task<IActionResult> Logout(CancellationToken ct) {
+    public async Task<IActionResult> Logout(CancellationToken ct)
+    {
         await auth.LogoutAsync(ct);
         return Ok(new { message = "Logged out successfully." });
     }
-    
 
-    // lecturers
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] AuthRegisterRequest body, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password))
+        {
+            return new BadRequestObjectResult(new
+            {
+                message = "Username and password are required."
+            });
+        }
+
+        var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, ct);
+
+        if (acc == null)
+        {
+            return new ConflictObjectResult(new
+            {
+                message = "Username already exists."
+            });
+        }
+
+        foreach (var like in acc?.Ratings ?? [])
+        {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
+
+        return new CreatedAtActionResult(
+            actionName: nameof(GetAccount),
+            controllerName: "APIv2",
+            routeValues: new { uuid = acc.Uuid },
+            value: acc
+        );
+    }
+
+
+
+// lecturers
     [HttpGet("lecturers")]
     public async Task<IActionResult> GetLecturers(CancellationToken ct) {
         var all = await lecturers.GetAllAsync(ct);

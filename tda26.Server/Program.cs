@@ -73,7 +73,7 @@ public static class Program {
         // Primary Connection Configuration
         var primaryConnectionStringBuilder = new MySqlConnectionStringBuilder {
             Server = ENV["DATABASE_IP"],
-            UserID = ENV.GetValueOrNull("DATABASE_USER") ?? "tda26",
+            UserID = ENV["DATABASE_USER"],
             Password = ENV["DATABASE_PASSWORD"],
             Database = ENV["DATABASE_DBNAME"],
             Pooling = true,

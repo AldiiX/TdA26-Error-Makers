@@ -58,6 +58,5 @@ public class AccountRepository(
         await db.SaveChangesAsync(ct);
             
         return true;
-
     }
 }
