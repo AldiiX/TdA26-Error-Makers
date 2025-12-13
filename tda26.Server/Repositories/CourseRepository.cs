@@ -89,7 +89,15 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     }
 
     public async Task UpdateAsync(Course course, CancellationToken ct = default) {
-        db.Courses.Update(course);
+        // Check if entity is already being tracked by EF
+        var entry = db.Entry(course);
+        
+        // If the entity is not being tracked (Detached), we need to attach/update it
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(course);
+        }
+        // If entity is already tracked, EF will automatically detect changes
+        
         await db.SaveChangesAsync(ct);
     }
 
