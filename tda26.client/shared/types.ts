@@ -48,8 +48,9 @@ export interface Quiz {
 
 export interface Question {
     uuid: string;
-    text: string;
+    question: string;
     options: string[];
+    type: "singleChoice" | "multipleChoice";
 }
 
 export interface QuestionOption {
