@@ -39,14 +39,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             var modifiedProperties = entityEntry.Properties
                 .Where(p => p.IsModified)
                 .Select(p => p.Metadata.Name)
-                .ToList();
+                .ToHashSet();
 
-            // If only ViewCount changed, don't update UpdatedAt
-            if (entityEntry.Entity is Course && modifiedProperties.Count == 1 && modifiedProperties.Contains("ViewCount")) {
+            // If only ViewCount changed, don't update UpdatedAt (metric changes shouldn't trigger timestamp updates)
+            if (entityEntry.Entity is Course && modifiedProperties.Count == 1 && modifiedProperties.Contains(nameof(Course.ViewCount))) {
                 continue;
             }
 
-            // If no properties were actually modified (e.g., only navigation properties changed), don't update UpdatedAt
+            // If no properties were actually modified (e.g., only navigation properties like Ratings changed
+            // when Likes/Dislikes are added/removed), don't update UpdatedAt
             if (modifiedProperties.Count == 0) {
                 continue;
             }
