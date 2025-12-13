@@ -5,13 +5,15 @@ using System.Text.Json.Serialization;
 namespace tda26.Server.Data.Models;
 
 [Table("Quizzes")]
-public class Quiz : IAuditable {
-    [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
-    [Required, MaxLength(128)] public string Title { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime UpdatedAt { get; set; } = DateTime.Now;
-    public int AttemptsCount { get; set; }
+public class Quiz : Auditable {
+    [Key]
+    public Guid Uuid { get; set; } = Guid.NewGuid();
+
+    [Required, MaxLength(128)]
+    public string Title { get; set; } = string.Empty;
     
+    public int AttemptsCount { get; set; }
+
     public Guid CourseUuid { get; set; }
 
     [ForeignKey("CourseUuid"), JsonIgnore]

@@ -50,6 +50,30 @@
       <Folder Include="Migrations\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Data\Models\FeedPost.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\FileMaterial.cs">
+        <DependentUpon>Material.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Material.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Quiz.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\UrlMaterial.cs">
+        <DependentUpon>Material.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Rating.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Like.cs">
+        <DependentUpon>Rating.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
     <!-- definice DEBUG a RELEASE promennych -->
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
         <DefineConstants>DEBUG;TRACE;DEVELOPMENT</DefineConstants>

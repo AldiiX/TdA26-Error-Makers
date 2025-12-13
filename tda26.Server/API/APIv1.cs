@@ -91,7 +91,7 @@ public class APIv1(
 
         var adminLecturer = await accountRepository.GetByUsernameAsync("lecturer");
 
-        var newCourse = new Data.Models.Course {
+        var newCourse = new Course {
             Name = body.Name,
             Description = body.Description,
             LecturerUuid = adminLecturer?.Uuid ?? null

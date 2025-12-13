@@ -19,7 +19,6 @@ export default defineNuxtRouteMiddleware(async () => {
 
         catch (e) {}
 
-
         loggedAccount.value = account;
         //console.log(loggedAccount.value)
     }

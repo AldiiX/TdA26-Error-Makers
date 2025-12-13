@@ -15,6 +15,8 @@ public static class CourseMapper
             UpdatedAt = course.UpdatedAt,
             ImageUrl = course.ImageUrl,
             Lecturer = course.Lecturer,
+            ViewCount = course.ViewCount,
+            LikeCount = course.LikeCount,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => q.ToReadDto()).ToList(),
             Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList()

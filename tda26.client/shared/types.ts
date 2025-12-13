@@ -10,12 +10,16 @@ export interface Course {
     lecturer: Lecturer | null;
     materials?: Material[];
     quizzes?: Quiz[];
+    // feed: FeedPost[];
+    tags: Tag[] | null;
+    likeCount: number,
+    viewCount: number,
 }
 
 export interface Material {
     uuid: string;
     name: string;
-    type: number;
+    type: "url" | "file";
     url?: string;
     fileUrl?: string;
     createdAt: string;
@@ -80,6 +84,26 @@ export interface Lecturer extends Account {
 export interface Account {
     username: string;
     uuid: string,
+    fullName: string,
+    fullNameWithoutTitles: string,
+    likes: Rating[];
+    dislikes: Rating[];
+}
+
+interface Rating {
+    course: Course | null,
+    uuid: string
+}
+
+export interface gRecaptcha {
+    ready: (callback: () => void) => void;
+    execute: (siteKey: string, opts: { action: "submit" }) => Promise<string>;
+}
+export interface Tag{
+    uuid: string,
+    displayName: string,
+    createdAt: string,
+    updatedAt: string,
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];

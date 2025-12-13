@@ -22,6 +22,8 @@ type Props = {
     /** startovni hodnota, ze ktere se bude pripocitavat */
     start?: number;
     numberClass?: string;
+    class?: string;
+    containerClass?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -93,7 +95,7 @@ const formatted = computed(() => {
 </script>
 
 <template>
-  <div :class="$style.counter">
+  <div :class="[$style.counter, props.class, props.containerClass]">
     <p :class="[$style.number, props.numberClass]">
       {{ props.prefix }}{{ formatted }}{{ props.suffix }}
     </p>

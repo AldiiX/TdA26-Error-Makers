@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
@@ -24,6 +25,12 @@ public class APIv2(
     IMaterialRepository materialRepository,
     AppDbContext db
 ) : Controller {
+
+    // random picovinky
+    private static readonly HttpClient HttpClient = new();
+    public static readonly Dictionary<Guid, List<IPAddress>> UsedIPsForCourse = new();
+
+
 
     [HttpGet]
     public IActionResult Index() {
@@ -52,6 +59,12 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
+        // odstraneni policek
+        foreach (var like in acc?.Ratings ?? []) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
+
         return Ok(acc);
     }
 
@@ -65,6 +78,12 @@ public class APIv2(
 
         var acc = await auth.LoginAsync(body.Username, body.Password, ct);
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
+
+        // odstraneni policek
+        foreach (var like in acc?.Ratings ?? []) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
 
         return Ok(acc);
     }
@@ -139,6 +158,12 @@ public class APIv2(
         var account = await accounts.GetByIdAsync(uuid, ct);
         if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
 
+        // odstraneni policek
+        foreach (var like in account?.Ratings ?? []) {
+            like.Account = null;
+            like.Course.Lecturer = null;
+        }
+
         return account switch {
             Lecturer lecturer => Ok(lecturer),
             _ => Ok(account)
@@ -150,6 +175,14 @@ public class APIv2(
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await courseRepository.GetAllAsync();
+
+        foreach (var c in courses) {
+            c.Materials = [];
+            c.Quizzes = [];
+            c.Feed = [];
+            if(c.Lecturer != null) c.Lecturer.Ratings = [];
+        }
+
         return Ok(courses);
     }
     
@@ -163,9 +196,25 @@ public class APIv2(
     
         if (full) {
             var courses = await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max);
+
+            foreach (var c in courses) {
+                c.Materials = [];
+                c.Quizzes = [];
+                c.Feed = [];
+                if(c.Lecturer != null) c.Lecturer.Ratings = [];
+            }
+
             return Ok(courses);
         } else {
             var courses = await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max);
+
+            foreach (var c in courses) {
+                c.Materials = [];
+                c.Quizzes = [];
+                c.Feed = [];
+                if(c.Lecturer != null) c.Lecturer.Ratings = [];
+            }
+
             return Ok(courses);
         }
     }
@@ -193,12 +242,17 @@ public class APIv2(
             course = await db.Courses
                 .Include(c => c.Lecturer)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid);
+            course!.Materials = [];
+            course.Quizzes = [];
+            course.Feed = [];
         }
-        
+
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
         
+        if(course.Lecturer != null) course.Lecturer.Ratings = [];
+
         return Ok(course);
     }
 
@@ -216,6 +270,10 @@ public class APIv2(
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
 
@@ -239,6 +297,10 @@ public class APIv2(
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         existingCourse.Name = body.Course.Name;
         existingCourse.Description = body.Course.Description;
 
@@ -342,11 +404,132 @@ public class APIv2(
         if (existingCourse == null) return NotFound();
 
         if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        existingCourse.Materials = [];
+        existingCourse.Quizzes = [];
+        existingCourse.Feed = [];
+        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
         
         var success = await courseRepository.DeleteAsync(uuid);
         if (!success) {
             return NotFound(new { error = "Course not found." });
         }
+
+        return NoContent();
+    }
+
+    [HttpPost("courses/{uuid:guid}/rating")]
+    public async Task<IActionResult> LikeOrDislikeCourse([FromRoute] Guid uuid, [FromBody] LikeCourseRequest body, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        var course = await courseRepository.GetByUuidAsync(uuid, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var existingRating = await db.Ratings
+            .FirstOrDefaultAsync(r => r.AccountUuid == acc.Uuid && r.CourseUuid == course.Uuid, ct);
+
+        if (existingRating != null) {
+            db.Ratings.Remove(existingRating);
+        }
+
+        switch (body.Type) {
+            case "like": {
+                var newRating = new Like {
+                    AccountUuid = acc.Uuid,
+                    CourseUuid = course.Uuid,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+
+                db.Likes.Add(newRating);
+            } break;
+
+            case "dislike": {
+                var newRating = new Dislike {
+                    AccountUuid = acc.Uuid,
+                    CourseUuid = course.Uuid,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+
+                db.Dislikes.Add(newRating);
+            } break;
+
+            case null:
+                // zadny novy rating, jen odstraneni stavajiciho
+                break;
+
+            default:
+                return BadRequest(new { error = "Invalid rating type. Must be 'like' or 'dislike' or null." });
+        }
+
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/view")] // TODO: pripadne casove omezeni resetu ip
+    public async Task<IActionResult> UpdateCourseViewCount(
+        [FromRoute] Guid courseUuid,
+        [FromBody] CaptchaTokenRequest ctr,
+        CancellationToken ct
+    ) {
+        // overeni captchy
+        using var requestMessage = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://www.google.com/recaptcha/api/siteverify"
+        );
+
+        var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+            { "secret", Program.ENV["RECAPTCHA_SECRET_KEY"] },
+            { "response", ctr.Token }
+            // { "remoteip", HttpContext.GetIPAddress()?.ToString() ?? "" } // volitelne pro recaptchu
+        });
+
+        requestMessage.Content = formData;
+
+        var response = await HttpClient.SendAsync(requestMessage, ct);
+        var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+        // overeni captcha
+        var jsonResponse = JsonNode.Parse(responseContent);
+        if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+            return BadRequest(new { error = "Recaptcha verification failed." });
+        }
+
+        // nalezeni kurzu v db
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        course.Materials = [];
+        course.Quizzes = [];
+        course.Feed = [];
+        if(course.Lecturer != null) course.Lecturer.Ratings = [];
+
+        // zjisteni jestli ip adresa neni v pouzitych
+        var ipAddress = HttpContext.GetIPAddress();
+        if (ipAddress == null) {
+            return BadRequest(new { error = "Unable to determine client IP address." });
+        }
+
+        // kontrola jestli uz ip neni v pouzitych
+        if (UsedIPsForCourse.TryGetValue(course.Uuid, out var l) && l.Contains(ipAddress)) {
+            return BadRequest(new { error = "You have already used your view for today." });
+        }
+
+        // ip oznacit jako pouzitou (az po uspesne captcha)
+        if(!UsedIPsForCourse.ContainsKey(course.Uuid)) UsedIPsForCourse.Add(course.Uuid, new List<IPAddress>());
+        UsedIPsForCourse.TryGetValue(course.Uuid, out var list);
+        list ??= [];
+        list.Add(ipAddress);
+
+        // aktualizace poctu zobrazeni kurzu
+        course.ViewCount += 1;
+        await courseRepository.UpdateAsync(course, ct);
 
         return NoContent();
     }
@@ -550,8 +733,7 @@ public class APIv2(
     }
 
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
-    public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid)
-    {
+    public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid) {
         var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
@@ -560,8 +742,7 @@ public class APIv2(
         if (material == null)
             return NotFound(new { error = "Material not found." });
 
-        switch (material)
-        {
+        switch (material) {
             case UrlMaterial urlMaterial:
                 return Ok(urlMaterial.ToReadDto());
             case FileMaterial fileMaterial:

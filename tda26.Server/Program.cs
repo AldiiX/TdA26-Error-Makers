@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using dotenv.net;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;

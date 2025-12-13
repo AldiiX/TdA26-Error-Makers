@@ -61,7 +61,7 @@ const revealStyle = computed(() => {
                             :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
                     />
                     <p :class="$style.text">
-                        {{ lecturerDisplayName }}
+                        {{ course?.lecturer?.fullNameWithoutTitles }}
                         <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
                     </p>
                 </NuxtLink>
@@ -75,11 +75,11 @@ const revealStyle = computed(() => {
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
                         <div style="mask-image: url(/icons/star.svg)"></div>
-                        <p>6</p>
+                        <p>{{ course.likeCount }}</p>
                     </div>
                     <div :class="$style.info">
                         <div style="mask-image: url(/icons/views.svg)"></div>
-                        <p>5</p>
+                        <p>{{ course.viewCount }}</p>
                     </div>
                 </div>
 
