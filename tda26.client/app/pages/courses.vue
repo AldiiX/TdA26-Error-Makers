@@ -1,142 +1,229 @@
 ﻿<script setup lang="ts">
     import { Head, Title } from '#components';
     import CourseCard from '~/components/pagespecific/CourseCard.vue';
-    import type {Course, Lecturer} from '#shared/types';
-    import NumberExponential from "~/components/NumberExponential.vue";
-    import getBaseUrl from "#shared/utils/getBaseUrl";
-    import Blob from "~/components/Blob.vue";
-    import Tag from "~/components/Tag.vue";
-    
+    import type { Course } from '#shared/types';
+    import NumberExponential from '~/components/NumberExponential.vue';
+    import getBaseUrl from '#shared/utils/getBaseUrl';
+    import Blob from '~/components/Blob.vue';
+    import Tag from '~/components/Tag.vue';
+    import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue';
+    import Pagination from '~/components/Pagination.vue';
+
     definePageMeta({
-        layout: "normal-page-layout"
+        layout: 'normal-page-layout'
     });
 
-    // client-side fetch courses
-    onMounted(async () => {
-        try {
-            const res = await fetch(getBaseUrl() + '/api/v2/courses', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!res.ok) {
-                throw new Error('Failed to fetch courses');
-            }
-            const data = await res.json();
-            courses.value = data;
-        } catch (error) {
-            console.error('Error fetching courses:', error);
-        }
-    });
+    type TagItem = { uuid: string; displayName: string };
 
-    const courses = ref<Course[] | null>(null);
-    
-    // Filtrovani a strankovani
-    
-    const page = ref(1);
+    type IndexedCourse = {
+        course: Course;
+        createdAtMs: number;
+        categoryLabel: string | null;
+        tagUuids: string[];
+        searchText: string;
+    };
+
     const PAGE_SIZE = 8;
-    
-    const searchQuery = ref("");
-    
-    // Filtrovani 
-    const activeTags = ref<string[]>([]);
-    
-    const allTags = computed(() => {
-        const map = new Map<string, { uuid: string; displayName: string }>();
 
-        courses.value?.forEach(course => {
-            course.tags?.forEach(tag => {
-                map.set(tag.uuid, tag);
-            });
-        });
+    // sdilena cache mezi navigacemi
+    const courses = useState<Course[] | null>('allCourses', () => null);
 
-        return Array.from(map.values());
-    });
-    const toggleTag = (uuid: string) => {
-        if (activeTags.value.includes(uuid)) {
-            activeTags.value = activeTags.value.filter(t => t !== uuid);
-        } else {
-            activeTags.value.push(uuid);
+    // lazy fetch = neshodi render/navigaci, ale dotahne data po mountu :contentReference[oaicite:2]{index=2}
+    // getCachedData = kdyz mas uz data, pouzije je a nerefetchnne :contentReference[oaicite:3]{index=3}
+    const { pending, error } = useLazyFetch<Course[]>('/api/v2/courses', {
+        baseURL: getBaseUrl(),
+        key: 'allCourses',
+        server: false,
+        immediate: true,
+        getCachedData: () => courses.value ?? undefined,
+        onResponse({ response }) {
+            courses.value = (response as any)._data as Course[];
         }
+    });
+
+    watch(
+        error,
+        (e) => {
+            if (e) {
+                // logneme jen pro debug
+                console.error('error fetching courses:', e);
+            }
+        },
+        { immediate: true }
+    );
+
+    // filtrovani a strankovani
+    const page = ref(1);
+    const searchQuery = ref('');
+
+    // filtry
+    const activeTags = ref<string[]>([]);
+    const activeCategory = ref<string | null>(null);
+
+    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new');
+
+    function normalizeText(str: string): string {
+        return (str ?? '')
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+    }
+
+    // debounce pro vyhledavani
+    const debouncedQuery = ref('');
+    let queryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    watch(
+        searchQuery,
+        (val) => {
+            if (queryTimer) {
+                clearTimeout(queryTimer);
+            }
+            queryTimer = setTimeout(() => {
+                debouncedQuery.value = val;
+            }, 200);
+        },
+        { immediate: true }
+    );
+
+    const activeTagSet = computed(() => new Set(activeTags.value));
+
+    // kategorie + tagy pro vybranou kategorii v jednom pruchodu daty
+    const categoryIndex = computed(() => {
+        const map = new Map<string, { tags: Map<string, TagItem> }>();
+        const list = courses.value ?? [];
+
+        for (const course of list) {
+            const label = course.category?.label;
+            if (!label) continue;
+
+            let entry = map.get(label);
+            if (!entry) {
+                entry = { tags: new Map<string, TagItem>() };
+                map.set(label, entry);
+            }
+
+            for (const tag of course.tags ?? []) {
+                entry.tags.set(tag.uuid, { uuid: tag.uuid, displayName: tag.displayName });
+            }
+        }
+
+        return map;
+    });
+
+    const allCategories = computed(() => {
+        return Array.from(categoryIndex.value.keys()).sort((a, b) => a.localeCompare(b));
+    });
+
+    const categoryTags = computed(() => {
+        if (!activeCategory.value) return [];
+        const tags = categoryIndex.value.get(activeCategory.value)?.tags;
+        if (!tags) return [];
+
+        return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
+    });
+
+    const toggleTag = (uuid: string) => {
+        activeTags.value = activeTags.value.includes(uuid)
+            ? activeTags.value.filter((t) => t !== uuid)
+            : [...activeTags.value, uuid];
 
         page.value = 1;
     };
 
-    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new');
-    const sortedCourses = computed(() => {
-        if (!courses.value) return [];
-        let list = [...courses.value];
+    function setCategory(category: string | null) {
+        activeCategory.value = activeCategory.value === category ? null : category;
+        activeTags.value = [];
+        page.value = 1;
+    }
+
+    // predpocitany index pro hledani/sort
+    const indexedCourses = computed<IndexedCourse[]>(() => {
+        const list = courses.value ?? [];
+
+        return list.map((course) => {
+            const createdAtMs = Number.isFinite(Date.parse(course.createdAt))
+                ? Date.parse(course.createdAt)
+                : 0;
+
+            const categoryLabel = course.category?.label ?? null;
+            const tagUuids = (course.tags ?? []).map((t) => t.uuid);
+
+            const searchText = normalizeText(
+                [
+                    course.name,
+                    course.description ?? '',
+                    (course.tags ?? []).map((t) => t.displayName).join(' ')
+                ].join(' ')
+            );
+
+            return {
+                course,
+                createdAtMs,
+                categoryLabel,
+                tagUuids,
+                searchText
+            };
+        });
+    });
+
+    const sortedCourses = computed<IndexedCourse[]>(() => {
+        const list = indexedCourses.value.slice();
 
         switch (sort.value) {
             default:
             case 'new':
-                return list.sort(
-                    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
+                list.sort((a, b) => b.createdAtMs - a.createdAtMs);
+                break;
             case 'old':
-                return list.sort(
-                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                );
+                list.sort((a, b) => a.createdAtMs - b.createdAtMs);
+                break;
             case 'byViews':
-                return list.sort((a, b) => b.viewCount - a.viewCount);
+                list.sort((a, b) => (b.course.viewCount ?? 0) - (a.course.viewCount ?? 0));
+                break;
             case 'byLikes':
-                return list.sort((a, b) => b.likeCount - a.likeCount);
-        }
-    });
-    const filteredCourses = computed(() => {
-        let list = sortedCourses.value;
-
-        // Tagy(Filtry)
-        if (activeTags.value.length > 0) {
-            list = list.filter(course =>
-                course.tags?.some(tag => activeTags.value.includes(tag.uuid))
-            );
-        }
-
-        // Vyhledávání
-
-        const normalize = (str: string) => {
-            return str
-                .normalize("NFD")          // oddělí diakritiku
-                .replace(/\p{Diacritic}/gu, "") // odstraní diakritiku
-                .replace(/\s+/g, " ")      // více mezer → 1 mezera
-                .trim()                    // ořízne mezery
-                .toLowerCase();
-        };
-        
-        const query = normalize(searchQuery.value);
-
-        if (query !== "") {
-            list = list.filter(course => {
-                const name = normalize(course.name);
-                const desc = normalize(course.description ?? "");
-                const tags = course.tags?.map(t => normalize(t.displayName)) ?? [];
-
-                return (
-                    name.includes(query) ||
-                    desc.includes(query) ||
-                    tags.some(t => t.includes(query))
-                );
-            });
+                list.sort((a, b) => (b.course.likeCount ?? 0) - (a.course.likeCount ?? 0));
+                break;
         }
 
         return list;
     });
-    
-    
-    
-    // Strankovani
-    const paginatedCourses = computed(() => {
-        const list = filteredCourses.value;
-        const start = (page.value - 1) * PAGE_SIZE;
-        return list.slice(start, start + PAGE_SIZE);
+
+    const filteredCourses = computed<Course[]>(() => {
+        let list = sortedCourses.value;
+
+        if (activeCategory.value) {
+            list = list.filter((c) => c.categoryLabel === activeCategory.value);
+        }
+
+        if (activeTagSet.value.size > 0) {
+            list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)));
+        }
+
+        const query = normalizeText(debouncedQuery.value);
+        if (query) {
+            list = list.filter((c) => c.searchText.includes(query));
+        }
+
+        return list.map((x) => x.course);
+    });
+
+    watch([sort, debouncedQuery], () => {
+        page.value = 1;
     });
 
     const totalPages = computed(() => {
-        return Math.ceil(filteredCourses.value.length / PAGE_SIZE);
+        const total = Math.ceil(filteredCourses.value.length / PAGE_SIZE);
+        return total > 0 ? total : 1;
     });
-    
+
+    const paginatedCourses = computed(() => {
+        const start = (page.value - 1) * PAGE_SIZE;
+        return filteredCourses.value.slice(start, start + PAGE_SIZE);
+    });
+
     const goToPage = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -144,17 +231,7 @@
         page.value = newPage;
     };
 
-    const goToNextPage = () => {
-        if (page.value < totalPages.value) goToPage(page.value + 1);
-    };
-
-    const goToLastPage = () => {
-        if (page.value > 1) goToPage(page.value - 1);
-    };
-    
-    const goToInput = ref<number | null>(null);
-
-    const visiblePages = computed<(number | "...")[]>(() => {
+    const visiblePages = computed<(number | '...')[]>(() => {
         const total = totalPages.value;
         const current = page.value;
 
@@ -162,97 +239,70 @@
             return Array.from({ length: total }, (_, i) => i + 1);
         }
 
-        const slots = new Array(8).fill("...") as (number | "...")[];
+        const result: (number | '...')[] = [];
+        const push = (v: number | '...') => {
+            if (result[result.length - 1] === v) return;
+            result.push(v);
+        };
 
-        slots[0] = 1;
-        slots[7] = total;
+        push(1);
 
-        let c1 = current - 1;
-        let c2 = current;
-        let c3 = current + 1;
-        let c4 = current + 2;
+        const start = Math.max(2, current - 2);
+        const end = Math.min(total - 1, current + 2);
 
-        if (current <= 5) {
-            c1 = 2;
-            c2 = 3;
-            c3 = 4;
-            c4 = 5;
-            slots[6] = 6;
+        if (start > 2) push('...');
+
+        for (let i = start; i <= end; i++) {
+            push(i);
         }
 
-        else if (current >= total - 2) {
-            c4 = total - 1;
-            c3 = total - 2;
-            c2 = total - 3;
-            c1 = total - 4;
-        }
+        if (end < total - 1) push('...');
 
-        if (current <= 5) {
-            return [1, 2, 3, 4, 5, 6, "...", total];
-        }
-        
-        c1 = Math.max(2, Math.min(total - 1, c1));
-        c2 = Math.max(2, Math.min(total - 1, c2));
-        c3 = Math.max(2, Math.min(total - 1, c3));
-        c4 = Math.max(2, Math.min(total - 1, c4));
+        push(total);
 
-        slots[2] = c1;
-        slots[3] = c2;
-        slots[4] = c3;
-        slots[5] = c4;
-
-        if (c1 === 2) slots[1] = 2;
-        else slots[1] = "...";
-
-        if (c4 === total - 1) slots[6] = total - 1;
-        else slots[6] = "...";
-
-        const finalSlots: (number | "...")[] = [];
-        const used = new Set<number>();
-
-        for (const s of slots) {
-            if (typeof s === "number") {
-                if (used.has(s)) continue;
-                used.add(s);
+        while (result.length > 8) {
+            const firstDots = result.indexOf('...');
+            if (firstDots !== -1) {
+                result.splice(firstDots, 1);
+            } else {
+                result.splice(1, 1);
             }
-            finalSlots.push(s);
         }
 
-        return finalSlots;
+        return result;
     });
-    
 </script>
 
 <template>
     <Head>
         <Title>Kurzy • Think different Academy</Title>
     </Head>
-    
+
     <Teleport to="#teleports">
-<!--        <div :class="$style.blob"></div>   TODO: udělat toto pěkným     -->
         <Blob
-            top="120vh"
-            right="1vw"
-            left="unset"
-            background="linear-gradient(0deg, var(--accent-color-primary) 0%, transparent 80%)"
-            style="opacity: 0.5"
-            :class="$style.blob1"
+                top="120vh"
+                right="1vw"
+                left="unset"
+                background="linear-gradient(0deg, var(--accent-color-primary) 0%, transparent 80%)"
+                style="opacity: 0.5"
+                :class="$style.blob1"
         />
         <Blob
-            top="100vh"
-            left="2vw"
-            right="unset"
-            background="linear-gradient(0deg, transparent 0%, var(--accent-color-secondary-theme)  80%)"
-            style="opacity: 0.5"
-            :class="$style.blob2"
+                top="100vh"
+                left="2vw"
+                right="unset"
+                background="linear-gradient(0deg, transparent 0%, var(--accent-color-secondary-theme)  80%)"
+                style="opacity: 0.5"
+                :class="$style.blob2"
         />
     </Teleport>
-    
+
     <section :class="$style.section">
         <div :class="$style.topContainer">
             <div :class="$style.left">
                 <h1 :class="$style.nadpis">Kurzy</h1>
-                <p :class="$style.podnapis">Objev naši širokou nabídku kurzů, které pokrývají různé oblasti technologií a programování.
+                <p :class="$style.podnapis">
+                    Objev naši širokou nabídku kurzů, které pokrývají různé oblasti technologií a programování.
                     Ať už jsi začátečník nebo pokročilý, máme pro tebe kurz, který ti pomůže rozvíjet tvé dovednosti a znalosti.
                 </p>
             </div>
@@ -260,8 +310,14 @@
             <div :class="$style.right">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
-                        <NumberExponential :value="courses?.length ?? 0" :decimals="0" :duration-ms="1500" :locale="'cs-CZ'" :format-options="{ useGrouping: true }" :number-class="$style.number"/>
-<!--                        <p :class="$style.number">{{ courses?.length }}</p>-->
+                        <NumberExponential
+                                :value="courses?.length ?? 0"
+                                :decimals="0"
+                                :duration-ms="1500"
+                                :locale="'cs-CZ'"
+                                :format-options="{ useGrouping: true }"
+                                :number-class="$style.number"
+                        />
                         <p :class="$style.text">Kurzů</p>
                     </div>
                     <div :class="$style.row">
@@ -271,96 +327,123 @@
                 </div>
             </div>
         </div>
-        
+
         <div :class="$style.bottomContainer">
-            <div :class="$style.left">
+            <div :class="[$style.left]">
                 <div :class="$style.filtersLeft">
                     <p>Filtry</p>
-                    <div :class="[$style.searchBar, 'liquid-glass']">
+                    <div :class="[$style.searchBar]">
                         <div :class="$style.searchIcon"></div>
-                        <input type="text"
-                               placeholder="Hledat kurz..."
-                               v-model="searchQuery" />
-                    </div>
-                    <div :class="$style.sortOptions">
-                        <Tag
-                            v-for="tag in allTags"
-                            :key="tag.uuid"
-                            :tag="tag"
-                            :active="activeTags.includes(tag.uuid)"
-                            @toggle="toggleTag"
+                        <input
+                                type="text"
+                                placeholder="Hledat kurz..."
+                                v-model="searchQuery"
                         />
                     </div>
+
+                    <SmoothSizeWrapper style="width: 100%">
+                        <div :class="[$style.categories, $style.cont]" v-if="allCategories?.length > 0">
+                            <p>Kategorie</p>
+
+                            <div :class="$style.list">
+                                <p
+                                        v-for="category in allCategories"
+                                        :key="category"
+                                        :class="$style.tag"
+                                        :data-active="activeCategory === category"
+                                        @click="setCategory(category)"
+                                >
+                                    {{ category }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div :class="[$style.tags, $style.cont]" v-if="activeCategory !== null && categoryTags?.length > 0">
+                            <p>Tagy</p>
+
+                            <div :class="$style.sortOptions">
+                                <Tag
+                                        v-for="tag in categoryTags"
+                                        :key="tag.uuid"
+                                        :tag="tag"
+                                        :active="activeTags.includes(tag.uuid)"
+                                        @toggle="toggleTag"
+                                />
+                            </div>
+                        </div>
+                    </SmoothSizeWrapper>
                 </div>
             </div>
-            
+
             <div :class="$style.right">
                 <div :class="$style.filtersTop">
                     <p>Seřadit: </p>
                     <div :class="$style.sortOptionsList">
-                        <p 
-                                :class="$style.sortOption" 
+                        <p
+                                :class="$style.sortOption"
                                 :data-active="sort === 'new'"
-                                @click="sort = 'new'">Nejnovější
-                        </p>
-                        <p 
-                                :class="$style.sortOption" 
+                                @click="sort = 'new'"
+                        >Nejnovější</p>
+                        <p
+                                :class="$style.sortOption"
                                 :data-active="sort === 'old'"
-                                @click="sort = 'old'">Nejstarší
-                        </p>
-                        <p 
+                                @click="sort = 'old'"
+                        >Nejstarší</p>
+                        <p
                                 :class="$style.sortOption"
                                 :data-active="sort === 'byLikes'"
-                                @click="sort = 'byLikes'">Nejlepe hodnocení
-                        </p>
-                        <p 
+                                @click="sort = 'byLikes'"
+                        >Nejlepe hodnocení</p>
+                        <p
                                 :class="$style.sortOption"
                                 :data-active="sort === 'byViews'"
-                                @click="sort = 'byViews'">Nejvíce zhlédnutí
-                        </p>
+                                @click="sort = 'byViews'"
+                        >Nejvíce zhlédnutí</p>
                     </div>
                 </div>
 
                 <div :class="$style.courses">
                     <div :class="$style.coursesWrapper">
-                        <div :class="$style.coursesList">
+                        <div :class="$style.loading" v-if="courses === null"></div>
+
+                        <div :class="$style.coursesList" v-else-if="paginatedCourses.length > 0">
                             <CourseCard
-                                v-for="(course, i) in paginatedCourses"
-                                :course="course"
-                                :key="course.uuid"
-                                :reveal-delay-ms="i * 200"
+                                    v-for="(course, i) in paginatedCourses"
+                                    :course="course"
+                                    :key="course.uuid"
+                                    :reveal-delay-ms="i * 200"
                             />
                         </div>
+
+                        <p v-else style="padding: 16px; color: var(--text-color-secondary);">
+                            Nenašli jsme žádné kurzy podle zadaných filtrů.
+                        </p>
                     </div>
+
                     <Pagination
-                        :page="page"
-                        :total-pages="totalPages"
-                        :visible-pages="visiblePages"
-                        :class="$style.pagination"
-                        @update:page="goToPage"
+                            v-if="totalPages > 1"
+                            :page="page"
+                            :total-pages="totalPages"
+                            :visible-pages="visiblePages"
+                            :class="$style.pagination"
+                            @update:page="goToPage"
                     />
                 </div>
             </div>
         </div>
     </section>
-    
 </template>
 
 <style module lang="scss">
-
-
-
+/* zbytek stylu nechavam stejny */
 .blob {
     width: 100vw;
     height: 100vh;
     position: absolute;
-    //top: 0;
     left: 0;
     z-index: -1;
     animation: sdoksapkdf 1.5s forwards ease;
     top: -25vh;
-
-    // tady blob jako celek postupne mizi do pruhledna
     mask-image: linear-gradient(to bottom, #000 20%, transparent 85%);
 
     &::before {
@@ -375,7 +458,6 @@
         z-index: 0;
     }
 }
-
 
 .blob1 {
     animation: asdsasafasfasfhhdmg1 3s forwards ease;
@@ -393,55 +475,27 @@
 }
 
 @keyframes asdsasafasfasfhhdmg1 {
-    0% {
-        opacity: 0;
-        transform: translate(-40px, 80px);
-    }
-
-    20% {
-        opacity: 0;
-        transform: translate(-10px, 60px);
-    }
-
-    100% {
-        opacity: 0.5;
-        transform: translate(-50px, 0);
-    }
+    0% { opacity: 0; transform: translate(-40px, 80px); }
+    20% { opacity: 0; transform: translate(-10px, 60px); }
+    100% { opacity: 0.5; transform: translate(-50px, 0); }
 }
 
 @keyframes asdsasafasfasfhhdmg2 {
-    0% {
-        opacity: 0;
-        transform: translate(-80px, 40px);
-    }
-
-    20% {
-        opacity: 0;
-        transform: translate(-60px, 10px);
-    }
-
-    100% {
-        opacity: 0.5;
-        transform: translate(0, -50px);
-    }
+    0% { opacity: 0; transform: translate(-80px, 40px); }
+    20% { opacity: 0; transform: translate(-60px, 10px); }
+    100% { opacity: 0.5; transform: translate(0, -50px); }
 }
 
 @keyframes sdoksapkdf {
-    from {
-        transform: translateY(-80px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(-80px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .section{
     display: flex;
     flex-direction: column;
     gap: 64px;
-    
+
     .topContainer {
         display: flex;
         justify-content: space-between;
@@ -464,7 +518,6 @@
                 max-width: 700px;
                 color: var(--text-color-secondary);
             }
-
         }
 
         .right {
@@ -488,7 +541,6 @@
                     align-items: center;
                     gap: 8px;
 
-
                     .number, .text {
                         color: var(--accent-color-secondary-theme-text);
                         font-size: 22px;
@@ -508,37 +560,39 @@
         width: 100%;
         min-height: 90vh;
         gap: 64px;
-
+        align-items: start;
 
         .left {
             display: flex;
             flex-direction: column;
-            width: 256px;
-            height: 100vh;
+            min-width: 348px;
+            width: 22%;
             border-radius: 24px;
-            padding-top: 8px;
+            padding: 32px;
+            overflow: hidden;
 
             @extend .liquid-glass;
 
             .filtersLeft {
-                
                 >p{
                     font-size: 36px;
                     font-weight: 700;
-                    margin: 24px 24px;
+                    margin: 0;
+                    margin-bottom: 16px;
                 }
+
                 .searchBar {
-                    height: 48px;
-                    background-color: var(--accent-color-secondary);
+                    width: 100%;
+                    background-color: var(--background-color-3);
                     display: flex;
                     align-items: center;
                     justify-self: center;
                     gap: 10px;
-                    width: 80%;
                     border-radius: 12px;
-                    padding: 16px;
+                    padding: 12px 16px;
                     transition: all 0.2s ease-in-out;
                     border: none;
+                    font-family: Dosis, sans-serif;
 
                     .searchIcon {
                         mask-image: url('../../public/icons/search.svg');
@@ -567,14 +621,49 @@
                     }
                 }
 
-                .sortOptions {
-                    display: flex;
-                    flex-wrap: wrap;
-                    padding: 8px;
-                    gap: 12px;
+                .cont {
                     margin-top: 32px;
-                    height: calc(100% - 64px - 32px);
-                    background-color: var(--background-color-secondary);
+
+                    &:is(.categories) {
+                        .list {
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 8px;
+
+                            .tag {
+                                background-color: var(--background-color-3);
+                                padding: 8px 16px;
+                                border-radius: 999px;
+                                margin: 0;
+                                font-size: 14px;
+                                cursor: pointer;
+                                user-select: none;
+                                transition-duration: 0.3s;
+                            }
+
+                            .tag:hover {
+                                background: var(--background-color-primary);
+                            }
+
+                            .tag[data-active="true"] {
+                                background: var(--accent-color-primary);
+                                color: var(--accent-color-primary-text);
+                            }
+                        }
+                    }
+
+                    >p {
+                        font-size: 20px;
+                        font-weight: 600;
+                        margin: 0;
+                        margin-bottom: 12px;
+                    }
+
+                    .sortOptions {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                    }
                 }
             }
         }
@@ -585,7 +674,7 @@
             gap: 32px;
             min-width: 0;
             flex: 1 1 auto;
-            
+
             .filtersTop {
                 display: flex;
                 align-items: center;
@@ -596,11 +685,13 @@
                 border-radius: 24px;
 
                 @extend .liquid-glass;
-                
+
                 >p {
                     font-size: 18px;
                     color: var(--text-color-secondary);
                     margin-right: 48px;
+                    margin-left: 12px;
+                    font-weight: 600;
                 }
 
                 .sortOptionsList{
@@ -630,20 +721,29 @@
                         &[data-active="true"] {
                             background-color: var(--accent-color-primary);
                             color: var(--accent-color-primary-text);
-                            font-weight: 600;
                         }
                     }
                 }
             }
-            
+
             .courses{
                 .coursesWrapper {
                     min-height: 50vh;
 
+                    .loading {
+                        width: 64px;
+                        height: 64px;
+                        mask: url('../../public/icons/loading1.svg');
+                        mask-size: contain;
+                        mask-repeat: no-repeat;
+                        mask-position: center;
+                        background-color: var(--accent-color-secondary-theme);
+                    }
+
                     .coursesList {
                         display: grid;
                         gap: 32px;
-                        grid-template-columns: repeat(auto-fill, minmax(324px, 1fr));
+                        grid-template-columns: repeat(auto-fill, minmax(348px, 1fr));
                         align-items: stretch;
                         width: 100%;
                         min-height: auto;

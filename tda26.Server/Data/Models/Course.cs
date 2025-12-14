@@ -27,6 +27,12 @@ public class Course : Auditable {
 
     [ForeignKey(nameof(LecturerUuid))]
     public Lecturer? Lecturer { get; set; } = null!;
+
+    [JsonIgnore]
+    public Guid? CategoryUuid { get; set; }
+
+    [ForeignKey(nameof(CategoryUuid))]
+    public Category? Category { get; set; } = null!;
     
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
   
