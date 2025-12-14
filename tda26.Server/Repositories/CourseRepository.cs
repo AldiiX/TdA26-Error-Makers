@@ -96,7 +96,8 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
         if (entry.State == EntityState.Detached) {
             db.Courses.Update(course);
         }
-        // If entity is already tracked, EF will automatically detect changes
+        // If entity is already tracked, EF will automatically detect property changes during SaveChangesAsync,
+        // allowing SetAuditProperties to properly identify which specific properties changed.
         
         await db.SaveChangesAsync(ct);
     }
