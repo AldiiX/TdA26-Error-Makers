@@ -264,6 +264,25 @@ button,input,textarea,select {
     backdrop-filter: blur(8px) saturate(1.6);
 }
 
+@mixin liquid-glass($size: 30px, $alpha-bg: 0.75, $alpha-border: 1) {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / $alpha-bg);
+    border: 1px solid rgb(from var(--background-color-secondary) r g b / $alpha-border);
+    backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@mixin editable {
+    border: 2px dashed var(--text-color) !important;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: text;
+    transition: all 0.2s;
+
+    &:focus {
+        outline: none;
+    }
+}
+
 .error-text {
     color: #FF4C4C;
     font-weight: 600;

@@ -47,15 +47,12 @@ export interface Quiz {
 }
 
 export interface Question {
-    uuid: string;
+    uuid?: string;
     question: string;
     options: string[];
     type: "singleChoice" | "multipleChoice";
-}
-
-export interface QuestionOption {
-    text: string;
-    isCorrect: boolean;
+    correctIndex?: number;
+    correctIndices?: number[];
 }
 
 export interface CourseFormModel {

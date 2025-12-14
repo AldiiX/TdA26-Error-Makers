@@ -1,8 +1,9 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {Course, Quiz} from "#shared/types";
+import type {Course, Question, Quiz} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
+import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -21,30 +22,74 @@ if (quizError.value) {
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
-const selectedIndices = ref<number[]>([]);
+const mapQuestionToDto = (q: Question) => {
+    if (q.type === "singleChoice") {
+        return {
+            ...(q.uuid ? { uuid: q.uuid } : {}),
+            type: "singleChoice",
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex!,
+        };
+    }
 
-const selectOption = (index: number) => {
-    if (!quiz.value) return;
-    const currentType = quiz.value.questions?.[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]?.type;
+    if (q.type === "multipleChoice") {
+        return {
+            ...(q.uuid ? { uuid: q.uuid } : {}),
+            type: "multipleChoice",
+            question: q.question,
+            options: q.options,
+            correctIndices: q.correctIndices ?? [],
+        };
+    }
+
+    throw new Error("Unknown question type");
+};
+
+const saveQuiz = async () => {
+    if (!quiz.value || !canSave) return;
+
+    console.log("Saving quiz:", quiz.value);
     
-    switch (currentType) {
-        case "singleChoice":
-            if (selectedIndices.value.includes(index)) {
-                selectedIndices.value = selectedIndices.value.filter(i => i !== index);
-                return;
-            }
-            
-            selectedIndices.value = [index];
-            break;
-        case "multipleChoice":
-            if (selectedIndices.value.includes(index)) {
-                selectedIndices.value = selectedIndices.value.filter(i => i !== index);
-            } else {
-                selectedIndices.value.push(index);
-            }
-            break;
-        default:
-            console.warn("Unknown question type:", currentType);
+    const dto = {
+        uuid: quiz.value!.uuid,
+        title: quiz.value!.title,
+        attemptsCount: quiz.value!.attemptsCount,
+        questions: quiz.value!.questions.map(mapQuestionToDto),
+    };
+
+    await $fetch(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
+        method: 'PUT',
+        body: dto,
+    });
+};
+
+const updateQuestion = (i: number, patch: Partial<Question>) => {
+    if (!quiz.value) return;
+
+    quiz.value.questions.splice(i, 1, {
+        ...quiz.value.questions[i],
+        ...patch,
+    } as Question);
+
+    const q = quiz.value.questions[i];
+    if (!q) return;
+    
+    canSave.value = !(
+        q.correctIndex === undefined &&
+        (!q.correctIndices || q.correctIndices.length === 0)
+    );
+};
+
+const currentQuestion = computed(() =>
+    quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
+);
+
+const canSave = ref(false);
+
+const updateTitle = (newTitle: string) => {
+    if (quiz.value) {
+        quiz.value.title = newTitle;
     }
 };
 
@@ -55,25 +100,32 @@ const selectOption = (index: number) => {
         <Title>Úprava kvízu • Think different Academy</Title>
     </Head>
 
-    <div :class="$style.quizContainer" v-if="quiz">
-        <p>{{ quiz.title }}</p>
-        <div :class="$style.questionContainer">
-            <div :class="$style.title">
-                <p>{{ quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]?.question }}</p>
-            </div>
-            <ul>
-                <li v-for="(option, index) in quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]?.options" :key="index">
-                    <Button 
-                        :button-style="selectedIndices.includes(index) ? 'primary' : 'tertiary'"
-                        @click="selectOption(index)"
-                    >{{ option }}</Button>
-                </li>
-            </ul>
-        </div>
+    <div :class="[$style.editMode, $style.quizContainer]" v-if="quiz">
+        <p
+            :class="$style.editable"
+            :contenteditable="true"
+            @input="updateTitle(($event.target as HTMLElement).innerText)"
+        >{{ quiz.title }}</p>
+        <QuizQuestionCard
+            v-if="quiz && currentQuestion && uuid"
+            :question="currentQuestion"
+            :edit-mode="true"
+            @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+        />
+        
+        <Button @click="saveQuiz" :disabled="!canSave">Save</Button>
     </div>
 </template>
 
 <style module lang="scss">
+@use "../../../../../app" as *;
+
+.editMode {
+    .editable {
+        @include editable;
+    }
+}
+
 .quizContainer {
     display: flex;
     flex-direction: column;
@@ -86,49 +138,6 @@ const selectOption = (index: number) => {
         font-weight: 600;
         margin: 0;
         text-align: center;
-    }
-    
-    .questionContainer {
-        padding: 16px;
-        border-radius: 8px;
-        background-color: var(--background-color-secondary);
-        height: 300px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-direction: column;
-        box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/0.6), 0 0 8px rgba(0, 0, 0, 0.04);
-        
-        .title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            
-            p {
-                font-size: 32px;
-            }
-        }
-        
-        ul {
-            list-style: none;
-            display: grid;
-            gap: 12px 16px;
-            margin: 16px 0 0;
-            grid-template-columns: repeat(2, 1fr);
-            width: 100%;
-            padding: 0 16px;
-            
-            li {
-                display: flex;
-                justify-content: center;
-                
-                button {
-                    width: 100%;
-                    border: none;
-                }
-            }
-        }
     }
 }
 </style>
