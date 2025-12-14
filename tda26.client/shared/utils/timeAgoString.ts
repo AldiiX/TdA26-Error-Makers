@@ -3,6 +3,8 @@
     const date = new Date(raw);
     const diff = Date.now() - date.getTime();
     const s = Math.floor(diff / 1000);
+
+    if(s <= 0) return "právě teď";
     if (s < 60) return s === 1 ? "před 1 sekundou" : `před ${s} sekundami`;
     const m = Math.floor(s / 60);
     if (m < 60) return m === 1 ? "před 1 minutou" : `před ${m} minutami`;
