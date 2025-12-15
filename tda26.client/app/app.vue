@@ -5,6 +5,7 @@ import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
 import { NuxtLink, ClientOnly, NuxtLayout } from '#components';
 import type {WebTheme} from "#shared/types";
 import MobileMenu from "~/components/MobileMenu.vue";
+import { Notivue, NotivueSwipe, Notification } from 'notivue';
 
 // state
 const route = useRoute();
@@ -84,6 +85,13 @@ useHead({
 
     <!-- Mobile menu -->
     <MobileMenu />
+
+    <!-- toasty přes notivue -->
+    <Notivue v-slot="item">
+        <NotivueSwipe :item="item">
+            <Notification :item="item" />
+        </NotivueSwipe>
+    </Notivue>
 
     <NuxtLayout>
         <NuxtPage />
