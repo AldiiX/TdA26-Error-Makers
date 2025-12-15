@@ -1,378 +1,378 @@
 <script setup lang="ts">
-    import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
-    import getBaseUrl from "#shared/utils/getBaseUrl";
-    import Button from "~/components/Button.vue";
-    import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
-    import Modal from "~/components/Modal.vue";
-    import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
-    import { ref, computed } from "vue";
-    import QuizItem from "~/components/pagespecific/QuizItem.vue";
-    import {ClientOnly, Head, NuxtLink, Title} from "#components";
-    import NumberExponential from "~/components/NumberExponential.vue";
-    import Avatar from "~/components/Avatar.vue";
+import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
+import Button from "~/components/Button.vue";
+import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+import Modal from "~/components/Modal.vue";
+import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
+import { ref, computed } from "vue";
+import QuizItem from "~/components/pagespecific/QuizItem.vue";
+import {ClientOnly, Head, NuxtLink, Title} from "#components";
+import NumberExponential from "~/components/NumberExponential.vue";
+import Avatar from "~/components/Avatar.vue";
 
-    declare const grecaptcha: gRecaptcha;
+declare const grecaptcha: gRecaptcha;
 
-    definePageMeta({
-        layout: "normal-page-layout",
-        alias: ["/courses/:uuid"],
-        middleware: [
-            defineNuxtRouteMiddleware(async (to) => {                
-                const uuid = to.params.uuid as string;
-                
-                // pokud chybi uuid
-                if (!uuid) {
-                    return navigateTo("/courses");
-                }
+definePageMeta({
+    layout: "normal-page-layout",
+    alias: ["/courses/:uuid"],
+    middleware: [
+        defineNuxtRouteMiddleware(async (to) => {
+            const uuid = to.params.uuid as string;
 
-                // pokud je stranka /courses/:uuid, perm presmeruje na /course/:uuid
-                if (to.path.startsWith("/courses/")) {
-                    return navigateTo(`/course/${uuid}`);
-                }
-            })
-        ]
-    });
+            // pokud chybi uuid
+            if (!uuid) {
+                return navigateTo("/courses");
+            }
 
-    const loggedUser = useState<Account | null>('loggedAccount');
-    const route = useRoute();
-    const uuid = route.params.uuid as string;
+            // pokud je stranka /courses/:uuid, perm presmeruje na /course/:uuid
+            if (to.path.startsWith("/courses/")) {
+                return navigateTo(`/course/${uuid}`);
+            }
+        })
+    ]
+});
 
-    // server small fetch
-    const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
-        query: { full: false },
-        server: true,
-        key: `course-${uuid}-small`,
-    });
+const loggedUser = useState<Account | null>('loggedAccount');
+const route = useRoute();
+const uuid = route.params.uuid as string;
 
-    if (courseSmallError.value || !courseSmall.value) {
-        console.error("Error loading small course:", courseSmallError.value);
-        await navigateTo('/courses');
+// server small fetch
+const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+    query: { full: false },
+    server: true,
+    key: `course-${uuid}-small`,
+});
+
+if (courseSmallError.value || !courseSmall.value) {
+    console.error("Error loading small course:", courseSmallError.value);
+    await navigateTo('/courses');
+}
+
+// client full fetch
+const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+    query: { full: true },
+    server: false,
+    key: `course-${uuid}-full`,
+});
+
+if (courseError.value) {
+    console.error("Error loading full course:", courseError.value);
+}
+
+const ratingLoading = ref<boolean>(false);
+const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
+const selectedItem = ref(menuItems[1]); // TODO: change to default
+
+const selectItem = (item: string) => {
+    selectedItem.value = item;
+};
+
+const getHostname = (url?: string) => {
+    try {
+        return url ? new URL(url).hostname : ''
+    } catch {
+        return ''
     }
+}
 
-    // client full fetch
-    const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
-        query: { full: true },
-        server: false,
-        key: `course-${uuid}-full`,
-    });
+// frontendove poslani view eventu
+onMounted(async () => {
+    const captchaToken = await grecaptcha.execute(
+        "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+        { action: "submit" }
+    );
 
-    if (courseError.value) {
-        console.error("Error loading full course:", courseError.value);
-    }
-    
-    const ratingLoading = ref<boolean>(false);
-    const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
-    const selectedItem = ref(menuItems[1]); // TODO: change to default
-    
-    const selectItem = (item: string) => {
-        selectedItem.value = item;
-    };
-
-    const getHostname = (url?: string) => {
-        try {
-            return url ? new URL(url).hostname : ''
-        } catch {
-            return ''
+    await fetch(`/api/v2/courses/${uuid}/view`, {
+        method: 'POST',
+        body: JSON.stringify({ token: captchaToken }),
+        headers: {
+            'Content-Type': 'application/json'
         }
-    }
+    });
+})
 
-    // frontendove poslani view eventu
-    onMounted(async () => {
-        const captchaToken = await grecaptcha.execute(
-            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
-            { action: "submit" }
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | null>(null);
+let selectedMaterial = ref<Material | null>(null);
+
+const updateError = ref<string | null>(null);
+const deleteError = ref<string | null>(null);
+
+const editingMaterial = ref<any>(null);
+
+const isThisCourseLiked = computed(() => {
+    if (!loggedUser.value || !courseSmall.value) return false;
+    return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+});
+
+const isThisCourseDisliked = computed(() => {
+    if (!loggedUser.value || !courseSmall.value) return false;
+    return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+});
+
+const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
+const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
+const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
+
+// Keep optimistic count in sync with fetched data
+watch(() => courseSmall.value?.likeCount, (newCount) => {
+    if (newCount !== undefined) {
+        optimisticLikeCount.value = newCount;
+    }
+}, { immediate: true });
+
+
+
+const openCreateMaterialModal = () => {
+    editingMaterial.value = {
+        name: "",
+        description: "",
+        type: "file",
+        file: null,
+        url: ""
+    };
+    enabledModal.value = "createMaterial";
+};
+
+const openUpdateMaterialModal = (material: Material) => {
+    selectedMaterial.value = material;
+    editingMaterial.value = JSON.parse(JSON.stringify(material)); // deep clone
+    enabledModal.value = "updateMaterial";
+};
+
+const openDeleteMaterialModal = (material: Material) => {
+    selectedMaterial.value = material;
+    enabledModal.value = 'deleteMaterial';
+};
+
+const handleMaterialUpdate = async () => {
+    if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
+
+    const material = selectedMaterial.value;
+    const edited = editingMaterial.value;
+
+    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
+
+    try {
+        let updatedMaterial;
+
+        if (material.type === 1) {
+            // JSON update
+            updatedMaterial = await $fetch<Material>(url, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: {
+                    name: edited.name,
+                    description: edited.description,
+                    url: edited.url,
+                }
+            });
+        } else {
+            // FILE MATERIAL UPDATE (multipart/form-data)
+            const form = new FormData();
+            form.append("Name", edited.name ?? "");
+            form.append("Description", edited.description ?? "");
+
+            // if a NEW FILE was selected
+            if (edited.file instanceof File) {
+                form.append("File", edited.file);
+            }
+
+            console.log("Submitting form data:", {
+                Name: edited.name,
+                Description: edited.description,
+                File: edited.file instanceof File ? edited.file.name : "No new file"
+            });
+
+            updatedMaterial = await $fetch<Material>(url, {
+                method: "PUT",
+                body: form
+            });
+        }
+
+        // update local state
+        course.value.materials = course.value.materials!.map(m =>
+            m.uuid === updatedMaterial.uuid ? updatedMaterial : m
         );
 
-        await fetch(`/api/v2/courses/${uuid}/view`, {
-            method: 'POST',
-            body: JSON.stringify({ token: captchaToken }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-    })
-    
-    const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | null>(null);
-    let selectedMaterial = ref<Material | null>(null);
-    
-    const updateError = ref<string | null>(null);
-    const deleteError = ref<string | null>(null);
+        enabledModal.value = null;
 
-    const editingMaterial = ref<any>(null);
+    } catch (err) {
+        console.error("Update failed:", err);
+    }
+};
 
-    const isThisCourseLiked = computed(() => {
-        if (!loggedUser.value || !courseSmall.value) return false;
-        return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+const handleMaterialDelete = async () => {
+    if (!course.value || !course.value.materials) return;
+
+    await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
+        method: 'DELETE'
+    }).then(() => {
+        // remove from local state
+        course.value!.materials = course.value!.materials!.filter(m => m.uuid !== selectedMaterial.value?.uuid);
+        enabledModal.value = null;
+        deleteError.value = null;
+    }).catch((err) => {
+        console.error("Error deleting material:", err);
+        deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
     });
+};
 
-    const isThisCourseDisliked = computed(() => {
-        if (!loggedUser.value || !courseSmall.value) return false;
-        return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
-    });
+const handleMaterialCreate = async () => {
+    if (!course.value || !editingMaterial.value) return;
 
-    const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
-    const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
-    const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
+    const edited = editingMaterial.value;
 
-    // Keep optimistic count in sync with fetched data
-    watch(() => courseSmall.value?.likeCount, (newCount) => {
-        if (newCount !== undefined) {
-            optimisticLikeCount.value = newCount;
-        }
-    }, { immediate: true });
+    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
 
+    try {
+        let createdMaterial;
 
-
-    const openCreateMaterialModal = () => {
-        editingMaterial.value = {
-            name: "",
-            description: "",
-            type: "file",
-            file: null,
-            url: ""
-        };
-        enabledModal.value = "createMaterial";
-    };
-    
-    const openUpdateMaterialModal = (material: Material) => {
-        selectedMaterial.value = material;
-        editingMaterial.value = JSON.parse(JSON.stringify(material)); // deep clone
-        enabledModal.value = "updateMaterial";
-    };
-    
-    const openDeleteMaterialModal = (material: Material) => {
-        selectedMaterial.value = material;
-        enabledModal.value = 'deleteMaterial';
-    };
-
-    const handleMaterialUpdate = async () => {
-        if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
-    
-        const material = selectedMaterial.value;
-        const edited = editingMaterial.value;
-    
-        const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
-    
-        try {
-            let updatedMaterial;
-    
-            if (material.type === 1) {
-                // JSON update
-                updatedMaterial = await $fetch<Material>(url, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: {
-                        name: edited.name,
-                        description: edited.description,
-                        url: edited.url,
-                    }
-                });
-            } else {
-                // FILE MATERIAL UPDATE (multipart/form-data)
-                const form = new FormData();
-                form.append("Name", edited.name ?? "");
-                form.append("Description", edited.description ?? "");
-    
-                // if a NEW FILE was selected
-                if (edited.file instanceof File) {
-                    form.append("File", edited.file);
-                }
-
-                console.log("Submitting form data:", {
-                    Name: edited.name,
-                    Description: edited.description,
-                    File: edited.file instanceof File ? edited.file.name : "No new file"
-                });
-    
-                updatedMaterial = await $fetch<Material>(url, {
-                    method: "PUT",
-                    body: form
-                });
-            }
-    
-            // update local state
-            course.value.materials = course.value.materials!.map(m =>
-                m.uuid === updatedMaterial.uuid ? updatedMaterial : m
-            );
-    
-            enabledModal.value = null;
-    
-        } catch (err) {
-            console.error("Update failed:", err);
-        }
-    };
-    
-    const handleMaterialDelete = async () => {
-        if (!course.value || !course.value.materials) return;
-        
-        await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
-            method: 'DELETE'
-        }).then(() => {
-            // remove from local state
-            course.value!.materials = course.value!.materials!.filter(m => m.uuid !== selectedMaterial.value?.uuid);
-            enabledModal.value = null;
-            deleteError.value = null;
-        }).catch((err) => {
-            console.error("Error deleting material:", err);
-            deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
-        });
-    };
-    
-    const handleMaterialCreate = async () => {
-        if (!course.value || !editingMaterial.value) return;
-        
-        const edited = editingMaterial.value;
-        
-        const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
-        
-        try {
-            let createdMaterial;
-            
-            if (edited.type === "url") {
-                // JSON create
-                createdMaterial = await $fetch<Material>(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: {
-                        type: "url",
-                        name: edited.name,
-                        description: edited.description,
-                        url: edited.url,
-                    }
-                });
-            } else {
-                // FILE MATERIAL CREATE (multipart/form-data)
-                const form = new FormData();
-                form.append("Type", "file");
-                form.append("Name", edited.name ?? "");
-                form.append("Description", edited.description ?? "");
-                form.append("File", edited.file);
-                
-                if (edited.file instanceof File) {
-                    form.append("File", edited.file);
-                } else {
-                    throw new Error("No file selected for file material.");
-                }
-                
-                createdMaterial = await $fetch<Material>(url, {
-                    method: "POST",
-                    body: form
-                });
-            }
-            
-            // add to local state
-            course.value.materials = course.value.materials ?? [];
-            course.value.materials.unshift(createdMaterial);
-            
-            enabledModal.value = null;
-            
-        } catch (err) {
-            console.error("Creation failed:", err);
-        }
-    };
-    
-    const ownsCourse = computed(() => {
-        if (!loggedUser.value || !courseSmall.value) return false;
-        console.log(courseSmall.value.lecturer);
-        return loggedUser.value?.uuid === courseSmall.value?.lecturer?.uuid;
-    });
-
-    async function addRating(rating: "like" | "dislike" | null) {
-        if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
-    
-        const baseUrl = getBaseUrl();
-        const uuid = courseSmall.value.uuid;
-        const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
-    
-        // Store previous state for rollback
-        const previousLikedDesign = isThisCourseLikedDesign.value;
-        const previousDislikedDesign = isThisCourseDislikedDesign.value;
-        const previousLikeCount = optimisticLikeCount.value;
-    
-        switch (rating) {
-            case "like": {
-                if (isThisCourseLikedDesign.value) {
-                    // Unliking: remove the like
-                    isThisCourseLikedDesign.value = false;
-                    optimisticLikeCount.value--;
-                    rating = null;
-                } else {
-                    // Liking (either from no rating or from dislike)
-                    isThisCourseLikedDesign.value = true;
-                    isThisCourseDislikedDesign.value = false;
-                    optimisticLikeCount.value++;
-                }
-            } break;
-    
-            case "dislike": {
-                if (isThisCourseDislikedDesign.value) {
-                    // Removing dislike: no change to like count
-                    isThisCourseDislikedDesign.value = false;
-                    rating = null;
-                } else {
-                    // Disliking (either from no rating or from like)
-                    // If transitioning from like to dislike, remove the like
-                    if (isThisCourseLikedDesign.value) {
-                        optimisticLikeCount.value--;
-                    }
-                    isThisCourseDislikedDesign.value = true;
-                    isThisCourseLikedDesign.value = false;
-                }
-            } break;
-        }
-    
-        try {
-            ratingLoading.value = true;
-    
-            await $fetch(url, {
+        if (edited.type === "url") {
+            // JSON create
+            createdMaterial = await $fetch<Material>(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: { type: rating }
+                body: {
+                    type: "url",
+                    name: edited.name,
+                    description: edited.description,
+                    url: edited.url,
+                }
             });
-    
-            // spusteni vsech refreshu paralelne
-            const userPromise = $fetch<Account>(baseUrl + `/api/v2/me`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
+        } else {
+            // FILE MATERIAL CREATE (multipart/form-data)
+            const form = new FormData();
+            form.append("Type", "file");
+            form.append("Name", edited.name ?? "");
+            form.append("Description", edited.description ?? "");
+            form.append("File", edited.file);
+
+            if (edited.file instanceof File) {
+                form.append("File", edited.file);
+            } else {
+                throw new Error("No file selected for file material.");
+            }
+
+            createdMaterial = await $fetch<Material>(url, {
+                method: "POST",
+                body: form
             });
-    
-            const courseSmallPromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-                query: { full: false },
-            });
-    
-            const coursePromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-                query: { full: true },
-            });
-    
-            const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
-                userPromise,
-                courseSmallPromise,
-                coursePromise,
-            ]);
-    
-            // hromadne prirazeni dat az po dokonceni vsech requestu
-            loggedUser.value = updatedUser ?? null;
-            courseSmall.value = updatedCourseSmall;
-            course.value = updatedCourse;
-            // optimisticLikeCount is automatically synced via watcher
         }
-    
-        catch(err) {
-            console.error("Error updating rating:", err);
-            // Rollback optimistic updates on error
-            isThisCourseLikedDesign.value = previousLikedDesign;
-            isThisCourseDislikedDesign.value = previousDislikedDesign;
-            optimisticLikeCount.value = previousLikeCount;
-        }
-    
-        finally {
-            ratingLoading.value = false;
-        }
+
+        // add to local state
+        course.value.materials = course.value.materials ?? [];
+        course.value.materials.unshift(createdMaterial);
+
+        enabledModal.value = null;
+
+    } catch (err) {
+        console.error("Creation failed:", err);
     }
+};
+
+const ownsCourse = computed(() => {
+    if (!loggedUser.value || !courseSmall.value) return false;
+    console.log(courseSmall.value.lecturer);
+    return loggedUser.value?.uuid === courseSmall.value?.lecturer?.uuid;
+});
+
+async function addRating(rating: "like" | "dislike" | null) {
+    if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
+
+    const baseUrl = getBaseUrl();
+    const uuid = courseSmall.value.uuid;
+    const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
+
+    // Store previous state for rollback
+    const previousLikedDesign = isThisCourseLikedDesign.value;
+    const previousDislikedDesign = isThisCourseDislikedDesign.value;
+    const previousLikeCount = optimisticLikeCount.value;
+
+    switch (rating) {
+        case "like": {
+            if (isThisCourseLikedDesign.value) {
+                // Unliking: remove the like
+                isThisCourseLikedDesign.value = false;
+                optimisticLikeCount.value--;
+                rating = null;
+            } else {
+                // Liking (either from no rating or from dislike)
+                isThisCourseLikedDesign.value = true;
+                isThisCourseDislikedDesign.value = false;
+                optimisticLikeCount.value++;
+            }
+        } break;
+
+        case "dislike": {
+            if (isThisCourseDislikedDesign.value) {
+                // Removing dislike: no change to like count
+                isThisCourseDislikedDesign.value = false;
+                rating = null;
+            } else {
+                // Disliking (either from no rating or from like)
+                // If transitioning from like to dislike, remove the like
+                if (isThisCourseLikedDesign.value) {
+                    optimisticLikeCount.value--;
+                }
+                isThisCourseDislikedDesign.value = true;
+                isThisCourseLikedDesign.value = false;
+            }
+        } break;
+    }
+
+    try {
+        ratingLoading.value = true;
+
+        await $fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: { type: rating }
+        });
+
+        // spusteni vsech refreshu paralelne
+        const userPromise = $fetch<Account>(baseUrl + `/api/v2/me`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+
+        const courseSmallPromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: false },
+        });
+
+        const coursePromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            query: { full: true },
+        });
+
+        const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
+            userPromise,
+            courseSmallPromise,
+            coursePromise,
+        ]);
+
+        // hromadne prirazeni dat az po dokonceni vsech requestu
+        loggedUser.value = updatedUser ?? null;
+        courseSmall.value = updatedCourseSmall;
+        course.value = updatedCourse;
+        // optimisticLikeCount is automatically synced via watcher
+    }
+
+    catch(err) {
+        console.error("Error updating rating:", err);
+        // Rollback optimistic updates on error
+        isThisCourseLikedDesign.value = previousLikedDesign;
+        isThisCourseDislikedDesign.value = previousDislikedDesign;
+        optimisticLikeCount.value = previousLikeCount;
+    }
+
+    finally {
+        ratingLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -423,7 +423,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div :class="$style.details">
             <nav>
                 <ul>
@@ -442,7 +442,7 @@
                         <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
                             Přidat nový materiál
                         </Button>
-    
+
                         <p v-if="coursePending">Načítání materiálů...</p>
                         <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
                         <ul v-else>
@@ -461,7 +461,7 @@
                         <!--                    <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">-->
                         <!--                        Přidat nový kvíz-->
                         <!--                    </Button>-->
-    
+
                         <p v-if="coursePending">Načítání kvízů...</p>
                         <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
                         <ul v-else>
@@ -475,12 +475,12 @@
                         </ul>
                     </div>
                     <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-    <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-    <!--                    <ul v-else>-->
-    <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-    <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-    <!--                        </li>-->
-    <!--                    </ul>-->
+                        <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+                        <!--                    <ul v-else>-->
+                        <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+                        <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+                        <!--                        </li>-->
+                        <!--                    </ul>-->
                     </div>
                 </ClientOnly>
             </div>
@@ -516,7 +516,7 @@
             </div>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
-        
+
         <!-- UPDATE -->
         <Modal
             :enabled="enabledModal === 'updateMaterial'"
@@ -525,7 +525,7 @@
             :modalStyle="{ maxWidth: '800px' }"
         >
             <h3>Úprava materiálu</h3>
-            
+
             <MaterialFormItem
                 v-if="editingMaterial"
                 v-model="editingMaterial"
@@ -546,7 +546,7 @@
                     Uložit změny
                 </Button>
             </div>
-            
+
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
 
@@ -599,7 +599,7 @@ ul {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    
+
     >.info {
         display: flex;
         justify-content: space-between;
@@ -610,7 +610,7 @@ ul {
             font-size: 18px;
             margin-bottom: 6px;
         }
-        
+
         .brief {
             display: flex;
             flex-direction: column;
@@ -737,16 +737,16 @@ ul {
             }
         }
     }
-    
-    
+
+
     .details {
         margin-top: 32px;
-        
+
         nav {
             ul {
                 display: flex;
                 gap: 24px;
-                
+
                 li {
                     font-size: 18px;
                     padding-bottom: 8px;
@@ -755,7 +755,7 @@ ul {
                     user-select: none;
                     opacity: .6;
                     font-weight: 600;
-                    
+
                     &:hover {
                         color: var(--accent-color-secondary-theme);
                         opacity: 1;
@@ -773,7 +773,7 @@ ul {
                         border-radius: 4px;
                         transition: all 0.3s;
                     }
-                    
+
                     &.active {
                         border-bottom: none;
                         position: relative;
@@ -787,7 +787,7 @@ ul {
                 }
             }
         }
-        
+
         >div {
             padding: 24px;
             border-radius: 16px;
@@ -798,9 +798,9 @@ ul {
         .materials {
             .addMaterialButton {
                 margin-bottom: 16px;
-                
+
             }
-            
+
             ul {
                 display: flex;
                 flex-direction: column;

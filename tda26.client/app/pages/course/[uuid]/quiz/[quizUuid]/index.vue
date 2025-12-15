@@ -1,0 +1,112 @@
+﻿<script setup lang="ts">
+import { Head, Title } from '#components';
+import type {AnswerSubmission, Course, Question, Quiz} from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
+import Button from "~/components/Button.vue";
+import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
+
+definePageMeta({
+    layout: "normal-page-layout"
+});
+
+const { uuid, quizUuid } = useRoute().params;
+
+const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
+    key: `course-${uuid}-quiz-${quizUuid}`,
+});
+
+if (quizError.value) {
+    console.error("Error fetching quiz:", quizError.value);
+    await navigateTo(`/course/${uuid}`);
+}
+
+const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
+
+const currentQuestion = computed(() =>
+    quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
+);
+
+const savedResponses = ref<AnswerSubmission[]>([]);
+
+const incrementQuestionIndex = (i: number) => {
+    if (!quiz.value) return;
+    
+    const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
+    if (newIndex < 0) return;
+    if (newIndex >= quiz.value.questions.length) {
+        endQuiz();
+        return;
+    }
+    
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
+};
+
+const updateSelectedIndices = (i: number, selectedIndices: number[]) => {
+    if (!quiz.value) return;
+
+    const question = quiz.value.questions[i];
+    if (!question) return;
+
+    savedResponses.value[i] = {
+        uuid: question.uuid!,
+        selectedIndex: question.type === "singleChoice" ? selectedIndices[0] : undefined,
+        selectedIndices: question.type === "multipleChoice" ? selectedIndices : undefined,
+    };
+};
+
+const endQuiz = async () => {
+    const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/submit`, {
+        method: 'POST',
+        body: {
+            answers: savedResponses.value,
+        }
+    });
+
+    console.log("Quiz submitted, response:", response);
+
+    await navigateTo(`/course/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`);
+};
+
+</script>
+
+<template>
+    <Head>
+        <Title>Kvíz • Think different Academy</Title>
+    </Head>
+
+    <div :class="[$style.quizContainer]" v-if="quiz">
+        <p>{{ quiz.title }}</p>
+        <QuizQuestionCard
+            v-if="quiz && currentQuestion && uuid"
+            :question="currentQuestion"
+            @update:selectedOption="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+        />
+
+        <Button @click="incrementQuestionIndex(1)">Pokračovat</Button>
+    </div>
+</template>
+
+<style module lang="scss">
+@use "../../../../../app" as *;
+
+.editMode {
+    .editable {
+        @include editable;
+    }
+}
+
+.quizContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 500px;
+    margin: auto;
+
+    >p {
+        font-size: 48px;
+        font-weight: 600;
+        margin: 0;
+        text-align: center;
+    }
+}
+</style>

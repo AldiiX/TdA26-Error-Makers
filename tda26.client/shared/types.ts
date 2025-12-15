@@ -105,3 +105,9 @@ export interface Tag{
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];
+
+export interface AnswerSubmission {
+    uuid: string;
+    selectedIndex?: number;
+    selectedIndices?: number[];
+}

@@ -955,4 +955,82 @@ public class APIv2(
 
         return Ok(fileMaterial.ToReadDto());
     }
+    
+    // Kvizy
+    
+    [HttpPost("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/submit")]
+    public async Task<IActionResult> SubmitQuiz(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid,
+        [FromBody] CreateQuizSubmissionRequest body
+    ) {
+        var course = await db.Courses
+            .Where(c => c.Uuid == courseUuid)
+            .FirstOrDefaultAsync();
+        
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.Quizzes
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .Include(q => q.Questions)
+            .ThenInclude(qn => qn.Options)
+            .FirstOrDefaultAsync();
+        
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found." });
+
+        int totalQuestions = quiz.Questions.Count;
+        int correctAnswers = 0;
+        var correctPerQuestion = new List<bool>();
+
+        foreach (var question in quiz.Questions) {
+            var submission = body.Answers.FirstOrDefault(a => a.Uuid == question.Uuid);
+            if (submission == null) continue;
+
+            bool isCorrect = false;
+            
+            question.Options = question.Options.OrderBy(o => o.Order).ToList();
+
+            switch (question) {
+                case SingleChoiceQuestion scq:
+                    var correctOptionIndex = scq.Options.ToList().FindIndex(o => o.IsCorrect);
+                    if (submission.SelectedIndex == correctOptionIndex) {
+                        isCorrect = true;
+                    }
+                    break;
+
+                case MultipleChoiceQuestion mcq:
+                    var correctIndices = mcq.Options
+                        .Select((o, index) => new { o.IsCorrect, index })
+                        .Where(x => x.IsCorrect)
+                        .Select(x => x.index)
+                        .ToHashSet();
+
+                    if (submission.SelectedIndices != null &&
+                        submission.SelectedIndices.Count == correctIndices.Count &&
+                        submission.SelectedIndices.All(i => correctIndices.Contains(i))) {
+                        isCorrect = true;
+                    }
+                    break;
+            }
+            
+            if (isCorrect) correctAnswers++;
+            correctPerQuestion.Add(isCorrect);
+        }
+        
+        var quizResult = new QuizResult {
+            QuizUuid = quiz.Uuid,
+            Score = correctAnswers,
+            CompletedAt = DateTime.UtcNow
+        };
+        
+        db.QuizResults.Add(quizResult);
+        await db.SaveChangesAsync();
+
+        return Ok(new {
+            resultUuid = quizResult.Uuid
+        });
+    }
 }

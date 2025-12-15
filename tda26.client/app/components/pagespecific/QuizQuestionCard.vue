@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'update:question', value: Partial<Question>): void;
+    (e: 'update:selectedOption', selectedIndices: number[]): void;
 }>();
 
 const updateQuestionText = (e: Event) => {
@@ -65,6 +66,8 @@ const selectOption = (index: number) => {
 };
 
 const syncFromQuestion = () => {
+    if (!props.editMode) return;
+    
     if (props.question.type === "singleChoice" && props.question.correctIndex != null) {
         selectedIndices.value = [props.question.correctIndex];
         return;
@@ -80,13 +83,18 @@ const syncFromQuestion = () => {
 
 watch(
     () => props.question,
-    syncFromQuestion,
+    () => {
+        selectedIndices.value = [];
+        syncFromQuestion();
+    },
     { immediate: true, deep: true }
 );
 
 const emitSelectionUpdate = () => {
     const count = selectedIndices.value.length;
     const prevType = props.question.type;
+    
+    emit('update:selectedOption', [...selectedIndices.value]);
 
     if (count === 1) {
         const nextType = "singleChoice";
@@ -130,7 +138,7 @@ emitSelectionUpdate();
                 @input="editMode && updateQuestionText($event)"
             >{{ question.question }}</p>
         </div>
-        <ul>
+        <ul :key="question.uuid">
             <li v-for="(option, index) in question.options" :key="index">
                 <Button
                     :button-style="selectedIndices.includes(index) ? 'primary' : 'tertiary'"

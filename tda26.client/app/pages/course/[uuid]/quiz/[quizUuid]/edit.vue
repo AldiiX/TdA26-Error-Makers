@@ -65,6 +65,8 @@ const saveQuiz = async () => {
 };
 
 const updateQuestion = (i: number, patch: Partial<Question>) => {
+    // TODO: when updating question it sets it to the back. instead keep the position
+    
     if (!quiz.value) return;
 
     quiz.value.questions.splice(i, 1, {

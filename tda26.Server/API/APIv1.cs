@@ -738,6 +738,15 @@ public class APIv1(
             if (isCorrect) correctAnswers++;
             correctPerQuestion.Add(isCorrect);
         }
+        
+        var quizResult = new QuizResult {
+            QuizUuid = quiz.Uuid,
+            Score = correctAnswers,
+            CompletedAt = DateTime.UtcNow
+        };
+        
+        db.QuizResults.Add(quizResult);
+        await db.SaveChangesAsync();
 
         var response = new {
             quizUuid,
