@@ -11,6 +11,8 @@ public abstract class Question {
     public Quiz Quiz { get; set; } = null!;
 
     [Required, MaxLength(1048)] public string Text { get; set; } = string.Empty;
+    
+    public int Order { get; set; }
 
     public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();
 }

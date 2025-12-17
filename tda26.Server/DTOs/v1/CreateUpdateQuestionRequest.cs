@@ -5,4 +5,5 @@ public abstract class CreateUpdateQuestionRequest {
     public string Type { get; set; } = null!;
     public string Question { get; set; } = null!;
     public List<string> Options { get; set; } = new();
+    public int Order { get; set; }
 }

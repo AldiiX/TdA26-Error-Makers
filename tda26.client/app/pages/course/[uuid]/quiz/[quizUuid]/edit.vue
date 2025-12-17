@@ -55,7 +55,10 @@ const saveQuiz = async () => {
         uuid: quiz.value!.uuid,
         title: quiz.value!.title,
         attemptsCount: quiz.value!.attemptsCount,
-        questions: quiz.value!.questions.map(mapQuestionToDto),
+        questions: quiz.value!.questions.map((q, index) => ({
+            ...mapQuestionToDto(q),
+            order: index,
+        })),
     };
 
     await $fetch(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {

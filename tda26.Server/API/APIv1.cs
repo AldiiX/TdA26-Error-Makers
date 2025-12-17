@@ -352,7 +352,8 @@ public class APIv1(
 
         var quizzes = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
-            .Include(q => q.Questions)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
             .ThenInclude(qn => qn.Options)
             .ToListAsync();
 
@@ -382,7 +383,8 @@ public class APIv1(
 
                     var singleChoiceQuestion = new SingleChoiceQuestion {
                         Text = singleDto.Question,
-                        Quiz = newQuiz
+                        Quiz = newQuiz,
+                        Order = questionDto.Order
                     };
 
                     for (int i = 0; i < singleDto.Options.Count; i++) {
@@ -406,7 +408,8 @@ public class APIv1(
 
                     var multipleChoiceQuestion = new MultipleChoiceQuestion {
                         Text = multipleDto.Question,
-                        Quiz = newQuiz
+                        Quiz = newQuiz,
+                        Order = questionDto.Order
                     };
 
                     for (int i = 0; i < multipleDto.Options.Count; i++) {
@@ -444,7 +447,8 @@ public class APIv1(
         var quiz = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
                 .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
 
@@ -467,7 +471,8 @@ public class APIv1(
         var quiz = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
             .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
         
@@ -512,7 +517,8 @@ public class APIv1(
                         var newQuestion = new SingleChoiceQuestion
                         {
                             Text = dto.Question,
-                            Quiz = quiz
+                            Quiz = quiz,
+                            Order = dtoBase.Order
                         };
 
                         for (int i = 0; i < dto.Options.Count; i++)
@@ -579,7 +585,8 @@ public class APIv1(
                         var newQuestion = new MultipleChoiceQuestion
                         {
                             Text = dto.Question,
-                            Quiz = quiz
+                            Quiz = quiz,
+                            Order = dtoBase.Order
                         };
 
                         for (int i = 0; i < dto.Options.Count; i++)
@@ -656,7 +663,8 @@ public class APIv1(
         var quiz = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
             .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
         
@@ -693,8 +701,9 @@ public class APIv1(
         var quiz = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
-            .ThenInclude(qn => qn.Options)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
+                .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
         
         if (quiz == null)
