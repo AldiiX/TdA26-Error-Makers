@@ -179,6 +179,8 @@ emitSelectionUpdate();
         flex: 1;
         text-align: center;
         max-width: 90%;
+        position: relative;
+        z-index: 5;
 
         p {
             font-size: 32px;
@@ -193,6 +195,8 @@ emitSelectionUpdate();
         grid-template-columns: repeat(2, 1fr);
         width: 100%;
         padding: 0 16px;
+        position: relative;
+        z-index: 5;
 
         li {
             display: flex;

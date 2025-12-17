@@ -25,7 +25,7 @@ const getHostname = (url?: string) => {
 
 <template>
     <div :class="$style.element">
-        <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+        <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info">
 <!--                <div :class="$style.favicon">-->
 <!--                    <img v-if="quiz.faviconUrl" :src="quiz.faviconUrl" alt="Favicon" />-->
 <!--                </div>-->

@@ -95,6 +95,16 @@ const updateTitle = (newTitle: string) => {
     }
 };
 
+const incrementQuestion = (i: number) => {
+    if (!quiz.value) return;
+    
+    const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
+    if (newIndex < 0) return;
+    if (newIndex >= quiz.value.questions.length) return;
+    
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
+};
+
 </script>
 
 <template>
@@ -115,7 +125,12 @@ const updateTitle = (newTitle: string) => {
             @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
         />
         
-        <Button @click="saveQuiz" :disabled="!canSave">Save</Button>
+        <div :class="$style.controls">
+            <p @click="incrementQuestion(-1)">&lt;</p>
+            <p @click="incrementQuestion(1)">&gt;</p>
+        </div>
+        
+        <Button @click="saveQuiz" :disabled="!canSave">Uložit otázku</Button>
     </div>
 </template>
 
@@ -129,6 +144,7 @@ const updateTitle = (newTitle: string) => {
 }
 
 .quizContainer {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -140,6 +156,25 @@ const updateTitle = (newTitle: string) => {
         font-weight: 600;
         margin: 0;
         text-align: center;
+    }
+    
+    .controls {
+        position: absolute;
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-color-secondary);
+        user-select: none;
+        padding: 0 16px;
+        margin-top: 8px;
+        width: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        
+        p {
+            font-size: 48px;
+            cursor: pointer;
+            margin: 0;
+        }
     }
 }
 </style>
