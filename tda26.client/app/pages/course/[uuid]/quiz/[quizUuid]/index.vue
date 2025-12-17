@@ -67,6 +67,38 @@ const endQuiz = async () => {
     await navigateTo(`/course/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`);
 };
 
+const incrementQuestion = (i: number) => {
+    if (!quiz.value) return;
+
+    const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
+    
+    if (newIndex < 0) return;
+    if (newIndex >= quiz.value.questions.length) return;
+
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
+};
+
+const setQuestionIndex = (i: number) => {
+    if (!quiz.value) return;
+    if (i < 0 || i >= quiz.value.questions.length) return;
+
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = i;
+
+    // console.log(savedResponses.value)
+    // console.log(
+    //     savedResponses.value[
+    //         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value
+    //         ]?.selectedIndex !== undefined
+    //         ? [
+    //             savedResponses.value[
+    //                 kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value
+    //                 ]!.selectedIndex!
+    //         ]
+    //         : savedResponses.value[
+    //         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value
+    //         ]?.selectedIndices ?? [])
+};
+
 </script>
 
 <template>
@@ -75,12 +107,38 @@ const endQuiz = async () => {
     </Head>
 
     <div :class="[$style.quizContainer]" v-if="quiz">
+        <ul :class="$style.questionProgress">
+            <li 
+                v-for="(_, i) in quiz.questions"
+                :key="i"
+                :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
+                @click="setQuestionIndex(i)"
+            >{{ i + 1 }}</li>
+        </ul>
         <p>{{ quiz.title }}</p>
         <QuizQuestionCard
             v-if="quiz && currentQuestion && uuid"
             :question="currentQuestion"
             @update:selectedOption="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+            :selected-option="
+              savedResponses[
+                kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
+              ]?.selectedIndex !== undefined
+                ? [
+                    savedResponses[
+                      kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
+                    ]!.selectedIndex!
+                  ]
+                : savedResponses[
+                    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
+                  ]?.selectedIndices ?? []
+            "
         />
+
+<!--        <div :class="$style.controls">-->
+<!--            <p @click="incrementQuestion(-1)">&lt;</p>-->
+<!--            <p @click="incrementQuestion(1)">&gt;</p>-->
+<!--        </div>-->
 
         <Button @click="incrementQuestionIndex(1)">Pokračovat</Button>
     </div>
@@ -101,12 +159,62 @@ const endQuiz = async () => {
     gap: 16px;
     width: 500px;
     margin: auto;
+    position: relative;
 
     >p {
         font-size: 48px;
         font-weight: 600;
         margin: 0;
         text-align: center;
+    }
+
+    .controls {
+        position: absolute;
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-color-secondary);
+        user-select: none;
+        padding: 0 16px;
+        margin-top: 8px;
+        width: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+
+        p {
+            font-size: 48px;
+            cursor: pointer;
+            margin: 0;
+        }
+    }
+    
+    .questionProgress {
+        list-style: none;
+        display: flex;
+        gap: 8px;
+        padding: 0;
+        margin: 0;
+        justify-content: center;
+        transition: all 0.3s;
+
+        li {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--background-color-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .active {
+            background-color: var(--accent-color-primary);
+            color: white;
+        }
     }
 }
 </style>

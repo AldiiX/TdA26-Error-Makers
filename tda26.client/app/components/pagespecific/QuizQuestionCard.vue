@@ -4,7 +4,8 @@ import Button from "~/components/Button.vue";
 
 const props = defineProps<{
     question: Question,
-    editMode?: boolean
+    editMode?: boolean,
+    selectedOption?: number[]
 }>();
 
 const emit = defineEmits<{
@@ -29,7 +30,7 @@ const updateOptionText = (index: number, e: Event) => {
     });
 };
 
-const selectedIndices = ref<number[]>([]);
+const selectedIndices = ref<number[]>(props.selectedOption ?? []);
 
 const selectOption = (index: number) => {
     const currentType = props.question.type;
@@ -66,7 +67,10 @@ const selectOption = (index: number) => {
 };
 
 const syncFromQuestion = () => {
-    if (!props.editMode) return;
+    if (!props.editMode) {
+        selectedIndices.value = props.selectedOption ?? [];
+        return
+    }
     
     if (props.question.type === "singleChoice" && props.question.correctIndex != null) {
         selectedIndices.value = [props.question.correctIndex];
@@ -78,7 +82,7 @@ const syncFromQuestion = () => {
         return;
     }
 
-    selectedIndices.value = [];
+    selectedIndices.value = props.selectedOption ?? [];
 };
 
 watch(
