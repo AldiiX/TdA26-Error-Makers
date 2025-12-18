@@ -13,6 +13,8 @@ const emit = defineEmits<{
     (e: 'update:question', value: Partial<Question>): void;
     (e: 'update:selectedOption', selectedIndices: number[]): void;
     (e: 'deleteQuestion', question: Question): void;
+    (e: 'addQuestionOption'): void;
+    (e: 'removeQuestionOption', index: number): void;
 }>();
 
 const updateQuestionText = (e: Event) => {
@@ -151,7 +153,7 @@ const isDeleteModalOpen = ref(false);
                 @input="editMode && updateQuestionText($event)"
             >{{ question.question }}</p>
         </div>
-        <ul :key="question.uuid">
+        <ul :key="question.options.length">
             <li v-for="(option, index) in question.options" :key="index">
                 <Button
                     :button-style="selectedIndices.includes(index) ? 'primary' : 'tertiary'"
@@ -159,7 +161,17 @@ const isDeleteModalOpen = ref(false);
                     :class="[$style.editable]"
                     :contenteditable="editMode"
                     @input="editMode && updateOptionText(index, $event)"
-                >{{ option }}</Button>
+                >{{ option }} <span 
+                    :class="$style.removeOption"
+                    v-if="editMode"
+                    @click="emit('removeQuestionOption', index)"
+                ></span></Button>
+            </li>
+            <li v-if="editMode && question.options.length < 6">
+                <Button
+                    button-style="tertiary"
+                    @click="emit('addQuestionOption')"
+                >+</Button>
             </li>
         </ul>
     </div>
@@ -204,7 +216,7 @@ const isDeleteModalOpen = ref(false);
     padding: 16px;
     border-radius: 8px;
     background-color: var(--background-color-secondary);
-    height: 300px;
+    min-height: 300px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -265,6 +277,28 @@ const isDeleteModalOpen = ref(false);
                 width: 100%;
                 max-width: 210px;
                 border: none !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                
+                .removeOption {
+                    display: inline-block;
+                    width: 16px;
+                    height: 16px;
+                    background-color: var(--text-color-secondary);
+                    mask-image: url('/icons/x.svg');
+                    mask-size: cover;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    cursor: pointer;
+                    vertical-align: middle;
+                    opacity: 0.6;
+                    margin-left: auto;
+
+                    &:hover {
+                        opacity: 1;
+                    }
+                }
             }
         }
     }

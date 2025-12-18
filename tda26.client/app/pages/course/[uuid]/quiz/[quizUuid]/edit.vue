@@ -183,14 +183,51 @@ const onDrop = () => {
     dragTo.value = null;
 };
 
-onMounted(() => {
-    window.addEventListener("beforeunload", (e) => {
-        if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
+// onMounted(() => {
+//     window.addEventListener("beforeunload", (e) => {
+//         if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
+//
+//         e.preventDefault();
+//         e.returnValue = "";
+//     });
+// });
 
-        e.preventDefault();
-        e.returnValue = "";
-    });
+const addQuestionOption = (i: number) => {
+    if (!quiz.value) return;
+    
+    const question = quiz.value.questions[i];
+    if (!question) return;
+    
+    question.options.push(`Možnost ${question.options.length + 1}`);
+    
+    updateQuestion(i, { options: question.options });
+    
+    questionRenderRemountKey.value++;
+};
+
+const questionRenderRemountKey = ref(0);
+
+const questionRenderKey = computed(() => {
+    const q = currentQuestion.value;
+    if (!q) return 0;
+
+    console.log("Question render key:", q.uuid, questionRenderRemountKey.value);
+
+    return `${q.uuid ?? 'new'}-${questionRenderRemountKey.value}`;
 });
+
+const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
+    if (!quiz.value) return;
+
+    const question = quiz.value.questions[questionIndex];
+    if (!question) return;
+
+    question.options.splice(optionIndex, 1);
+
+    updateQuestion(questionIndex, { options: question.options });
+
+    questionRenderRemountKey.value++;
+};
 
 </script>
 
@@ -233,9 +270,12 @@ onMounted(() => {
         <QuizQuestionCard
             v-if="quiz && currentQuestion && uuid"
             :question="currentQuestion"
+            :key="questionRenderKey"
             :edit-mode="true"
             @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
             @deleteQuestion="deleteQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
+            @addQuestionOption="addQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
+            @removeQuestionOption="removeQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
         />
         
 <!--        <div :class="$style.controls">-->
@@ -359,6 +399,7 @@ onMounted(() => {
                 mask-position: center;
                 mask-repeat: no-repeat;
                 background-color: var(--text-color-secondary);
+                cursor: pointer;
             }
         }
     }
