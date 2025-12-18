@@ -20,6 +20,13 @@ if (quizError.value) {
     await navigateTo(`/course/${uuid}`);
 }
 
+const oldQuiz = ref<Quiz | null>(null);
+watch(quiz, (newQuiz) => {
+    if (newQuiz) {
+        oldQuiz.value = JSON.parse(JSON.stringify(newQuiz));
+    }
+}, { immediate: true });
+
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
 const mapQuestionToDto = (q: Question) => {
@@ -65,11 +72,12 @@ const saveQuiz = async () => {
         method: 'PUT',
         body: dto,
     });
+    
+    oldQuiz.value = JSON.parse(JSON.stringify(quiz.value));
+    alert("Kvíz byl úspěšně uložen.");
 };
 
-const updateQuestion = (i: number, patch: Partial<Question>) => {
-    // TODO: when updating question it sets it to the back. instead keep the position
-    
+const updateQuestion = (i: number, patch: Partial<Question>) => {    
     if (!quiz.value) return;
 
     quiz.value.questions.splice(i, 1, {
@@ -93,9 +101,9 @@ const currentQuestion = computed(() =>
 const canSave = ref(false);
 
 const updateTitle = (newTitle: string) => {
-    if (quiz.value) {
-        quiz.value.title = newTitle;
-    }
+    if (!quiz.value) return;
+    
+    quiz.value.title = newTitle;
 };
 
 const incrementQuestion = (i: number) => {
@@ -108,6 +116,47 @@ const incrementQuestion = (i: number) => {
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
 };
 
+const setQuestionIndex = (i: number) => {
+    if (!quiz.value) return;
+    if (i < 0 || i >= quiz.value.questions.length) return;
+
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = i;
+};
+
+const addQuestion = () => {
+    if (!quiz.value) return;
+
+    quiz.value.questions.push({
+        type: "singleChoice",
+        question: "Nová otázka",
+        options: ["Možnost 1", "Možnost 2"],
+        correctIndex: 0,
+    });
+
+    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = quiz.value.questions.length - 1;
+};
+
+const deleteQuestion = (i: number) => {
+    if (!quiz.value) return;
+    if (i < 0 || i >= quiz.value.questions.length) return;
+
+    quiz.value.questions.splice(i, 1);
+
+    if (kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value >= quiz.value.questions.length) {
+        kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = quiz.value.questions.length - 1;
+    }
+};
+
+
+onMounted(() => {
+    window.addEventListener("beforeunload", (e) => {
+        if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
+        
+        e.preventDefault();
+        e.returnValue = "";
+    });
+});
+
 </script>
 
 <template>
@@ -116,6 +165,18 @@ const incrementQuestion = (i: number) => {
     </Head>
 
     <div :class="[$style.editMode, $style.quizContainer]" v-if="quiz">
+        <ul :class="$style.questionProgress">
+            <li
+                v-for="(_, i) in quiz.questions"
+                :key="i"
+                :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
+                @click="setQuestionIndex(i)"
+            >{{ i + 1 }}</li>
+            <li 
+                :class="$style.add"
+                @click="addQuestion"
+            >+</li>
+        </ul>
         <p
             :class="$style.editable"
             :contenteditable="true"
@@ -126,14 +187,15 @@ const incrementQuestion = (i: number) => {
             :question="currentQuestion"
             :edit-mode="true"
             @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+            @deleteQuestion="deleteQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
         />
         
-        <div :class="$style.controls">
-            <p @click="incrementQuestion(-1)">&lt;</p>
-            <p @click="incrementQuestion(1)">&gt;</p>
-        </div>
+<!--        <div :class="$style.controls">-->
+<!--            <p @click="incrementQuestion(-1)">&lt;</p>-->
+<!--            <p @click="incrementQuestion(1)">&gt;</p>-->
+<!--        </div>-->
         
-        <Button @click="saveQuiz" :disabled="!canSave">Uložit otázku</Button>
+        <Button @click="saveQuiz" :disabled="!canSave">Uložit</Button>
     </div>
 </template>
 
@@ -177,6 +239,41 @@ const incrementQuestion = (i: number) => {
             font-size: 48px;
             cursor: pointer;
             margin: 0;
+        }
+    }
+    
+    .questionProgress {
+        list-style: none;
+        display: flex;
+        gap: 8px;
+        padding: 0;
+        margin: 0;
+        justify-content: center;
+        transition: all 0.3s;
+
+        li {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--background-color-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .active {
+            background-color: var(--accent-color-primary);
+            color: white;
+        }
+        
+        .add {
+            font-size: 24px;
+            font-weight: 600;
         }
     }
 }

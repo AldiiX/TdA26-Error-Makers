@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import type {Question} from "#shared/types";
 import Button from "~/components/Button.vue";
+import Modal from "~/components/Modal.vue";
 
 const props = defineProps<{
     question: Question,
@@ -11,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: 'update:question', value: Partial<Question>): void;
     (e: 'update:selectedOption', selectedIndices: number[]): void;
+    (e: 'deleteQuestion', question: Question): void;
 }>();
 
 const updateQuestionText = (e: Event) => {
@@ -131,10 +133,17 @@ const emitSelectionUpdate = () => {
 };
 
 emitSelectionUpdate();
+
+const isDeleteModalOpen = ref(false);
 </script>
 
 <template>
     <div :class="[editMode && $style.editMode, $style.questionContainer]">
+        <span 
+            v-if="editMode"
+            :class="$style.deleteButton"
+            @click="isDeleteModalOpen = true"
+        ></span>
         <div :class="$style.title">
             <p 
                 :class="[$style.editable]" 
@@ -154,6 +163,26 @@ emitSelectionUpdate();
             </li>
         </ul>
     </div>
+    
+    <Modal 
+        v-if="editMode"
+        :enabled="isDeleteModalOpen"
+        @close="isDeleteModalOpen = false"
+        can-be-closed-by-clicking-outside
+    >
+        <h3>Opravdu si přeješ smazat tuto otázku?</h3>
+        <p>Tuto akci nelze vrátit zpět.</p>
+        <div :class="$style.modalButtons">
+            <Button button-style="tertiary" @click="isDeleteModalOpen = false">Zrušit</Button>
+            <Button
+                button-style="primary"
+                accent-color="secondary"
+                @click="emit('deleteQuestion', question); isDeleteModalOpen = false"
+            >
+                Smazat otázku
+            </Button>
+        </div>
+    </Modal>
 </template>
 
 <style module lang="scss">
@@ -163,6 +192,12 @@ emitSelectionUpdate();
     .editable {
         @include editable;
     }
+}
+
+.modalButtons {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
 }
 
 .questionContainer {
@@ -175,6 +210,26 @@ emitSelectionUpdate();
     justify-content: space-between;
     flex-direction: column;
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/0.6), 0 0 8px rgba(0, 0, 0, 0.04);
+    position: relative;
+    
+    .deleteButton {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 32px;
+        height: 32px;
+        background-color: var(--color-error);
+        mask-image: url('/icons/trash.svg');
+        mask-size: cover;
+        mask-position: center;
+        mask-repeat: no-repeat;
+        cursor: pointer;
+        transition: opacity 0.2s;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
 
     .title {
         display: flex;
