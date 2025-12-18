@@ -1,66 +1,102 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
-    import CourseCard from '~/components/pagespecific/CourseCard.vue';
-    import type { Course } from '#shared/types';
-    import NumberExponential from '~/components/NumberExponential.vue';
-    import getBaseUrl from '#shared/utils/getBaseUrl';
-    import Blob from '~/components/Blob.vue';
-    import Tag from '~/components/Tag.vue';
-    import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue';
-    import Pagination from '~/components/Pagination.vue';
+    import { Head, Title } from '#components'
+    import CourseCard from '~/components/pagespecific/CourseCard.vue'
+    import type { Course } from '#shared/types'
+    import NumberExponential from '~/components/NumberExponential.vue'
+    import getBaseUrl from '#shared/utils/getBaseUrl'
+    import Blob from '~/components/Blob.vue'
+    import Tag from '~/components/Tag.vue'
+    import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue'
+    import Pagination from '~/components/Pagination.vue'
 
     definePageMeta({
         layout: 'normal-page-layout'
-    });
+    })
 
-    type TagItem = { uuid: string; displayName: string };
+    type TagItem = { uuid: string; displayName: string }
 
     type IndexedCourse = {
-        course: Course;
-        createdAtMs: number;
-        categoryLabel: string | null;
-        tagUuids: string[];
-        searchText: string;
-    };
+        course: Course
+        createdAtMs: number
+        categoryLabel: string | null
+        tagUuids: string[]
+        searchText: string
+    }
 
-    const PAGE_SIZE = 8;
+    const PAGE_SIZE = 8
+    const FIRST_FETCH_LIMIT = 25
 
     // sdilena cache mezi navigacemi
-    const courses = useState<Course[] | null>('allCourses', () => null);
+    const courses = useState<Course[] | null>('allCourses', () => null)
 
-    // lazy fetch = neshodi render/navigaci, ale dotahne data po mountu :contentReference[oaicite:2]{index=2}
-    // getCachedData = kdyz mas uz data, pouzije je a nerefetchnne :contentReference[oaicite:3]{index=3}
-    const { pending, error } = useLazyFetch<Course[]>('/api/v2/courses', {
+    // ochrany proti opakovanemu full fetchi
+    const fullFetchRunning = ref(false)
+    const hasFetchedAllCourses = useState<boolean>('hasFetchedAllCourses', () => false)
+
+    async function fetchAllCoursesIfNeeded() {
+        if (hasFetchedAllCourses.value) { return }
+        if (fullFetchRunning.value) { return }
+        if (!courses.value) { return }
+
+        // kdyz prvni fetch vratil mene nez limit, dalsi data uz pravdepodobne nejsou
+        if (courses.value.length < FIRST_FETCH_LIMIT) {
+            hasFetchedAllCourses.value = true
+            return
+        }
+
+        fullFetchRunning.value = true
+        try {
+            const allCourses = await $fetch<Course[]>('/api/v2/courses', {
+                baseURL: getBaseUrl()
+            })
+
+            courses.value = allCourses
+            hasFetchedAllCourses.value = true
+        } catch (e) {
+            // kdyz se full fetch nepovede, nechceme to zamknout navzdy
+            console.error('error fetching all courses:', e)
+        } finally {
+            fullFetchRunning.value = false
+        }
+    }
+
+    const { pending, error } = useLazyFetch<Course[]>(`/api/v2/courses?limit=${FIRST_FETCH_LIMIT}`, {
         baseURL: getBaseUrl(),
-        key: 'allCourses',
+        key: `allCourses:limit:${FIRST_FETCH_LIMIT}`,
         server: false,
         immediate: true,
         getCachedData: () => courses.value ?? undefined,
         onResponse({ response }) {
-            courses.value = (response as any)._data as Course[];
+            courses.value = (response as any)._data as Course[]
+            void fetchAllCoursesIfNeeded()
         }
-    });
+    })
+
+    // kdyz data prisla z cache, onresponse se nespusti, tak tohle zajisti upgrade fetch i v tom pripade
+    watch(() => courses.value?.length, () => {
+        void fetchAllCoursesIfNeeded()
+    }, { immediate: true })
 
     watch(
         error,
         (e) => {
             if (e) {
                 // logneme jen pro debug
-                console.error('error fetching courses:', e);
+                console.error('error fetching courses:', e)
             }
         },
         { immediate: true }
-    );
+    )
 
     // filtrovani a strankovani
-    const page = ref(1);
-    const searchQuery = ref('');
+    const page = ref(1)
+    const searchQuery = ref('')
 
     // filtry
-    const activeTags = ref<string[]>([]);
-    const activeCategory = ref<string | null>(null);
+    const activeTags = ref<string[]>([])
+    const activeCategory = ref<string | null>(null)
 
-    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new');
+    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
 
     function normalizeText(str: string): string {
         return (str ?? '')
@@ -68,88 +104,88 @@
             .replace(/\p{Diacritic}/gu, '')
             .replace(/\s+/g, ' ')
             .trim()
-            .toLowerCase();
+            .toLowerCase()
     }
 
     // debounce pro vyhledavani
-    const debouncedQuery = ref('');
-    let queryTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedQuery = ref('')
+    let queryTimer: ReturnType<typeof setTimeout> | null = null
 
     watch(
         searchQuery,
         (val) => {
             if (queryTimer) {
-                clearTimeout(queryTimer);
+                clearTimeout(queryTimer)
             }
             queryTimer = setTimeout(() => {
-                debouncedQuery.value = val;
-            }, 200);
+                debouncedQuery.value = val
+            }, 200)
         },
         { immediate: true }
-    );
+    )
 
-    const activeTagSet = computed(() => new Set(activeTags.value));
+    const activeTagSet = computed(() => new Set(activeTags.value))
 
     // kategorie + tagy pro vybranou kategorii v jednom pruchodu daty
     const categoryIndex = computed(() => {
-        const map = new Map<string, { tags: Map<string, TagItem> }>();
-        const list = courses.value ?? [];
+        const map = new Map<string, { tags: Map<string, TagItem> }>()
+        const list = courses.value ?? []
 
         for (const course of list) {
-            const label = course.category?.label;
-            if (!label) continue;
+            const label = course.category?.label
+            if (!label) continue
 
-            let entry = map.get(label);
+            let entry = map.get(label)
             if (!entry) {
-                entry = { tags: new Map<string, TagItem>() };
-                map.set(label, entry);
+                entry = { tags: new Map<string, TagItem>() }
+                map.set(label, entry)
             }
 
             for (const tag of course.tags ?? []) {
-                entry.tags.set(tag.uuid, { uuid: tag.uuid, displayName: tag.displayName });
+                entry.tags.set(tag.uuid, { uuid: tag.uuid, displayName: tag.displayName })
             }
         }
 
-        return map;
-    });
+        return map
+    })
 
     const allCategories = computed(() => {
-        return Array.from(categoryIndex.value.keys()).sort((a, b) => a.localeCompare(b));
-    });
+        return Array.from(categoryIndex.value.keys()).sort((a, b) => a.localeCompare(b))
+    })
 
     const categoryTags = computed(() => {
-        if (!activeCategory.value) return [];
-        const tags = categoryIndex.value.get(activeCategory.value)?.tags;
-        if (!tags) return [];
+        if (!activeCategory.value) return []
+        const tags = categoryIndex.value.get(activeCategory.value)?.tags
+        if (!tags) return []
 
-        return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
-    });
+        return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
+    })
 
-    const toggleTag = (uuid: string) => {
+    function toggleTag(uuid: string) {
         activeTags.value = activeTags.value.includes(uuid)
             ? activeTags.value.filter((t) => t !== uuid)
-            : [...activeTags.value, uuid];
+            : [...activeTags.value, uuid]
 
-        page.value = 1;
-    };
+        page.value = 1
+    }
 
     function setCategory(category: string | null) {
-        activeCategory.value = activeCategory.value === category ? null : category;
-        activeTags.value = [];
-        page.value = 1;
+        activeCategory.value = activeCategory.value === category ? null : category
+        activeTags.value = []
+        page.value = 1
     }
 
     // predpocitany index pro hledani/sort
     const indexedCourses = computed<IndexedCourse[]>(() => {
-        const list = courses.value ?? [];
+        const list = courses.value ?? []
 
         return list.map((course) => {
             const createdAtMs = Number.isFinite(Date.parse(course.createdAt))
                 ? Date.parse(course.createdAt)
-                : 0;
+                : 0
 
-            const categoryLabel = course.category?.label ?? null;
-            const tagUuids = (course.tags ?? []).map((t) => t.uuid);
+            const categoryLabel = course.category?.label ?? null
+            const tagUuids = (course.tags ?? []).map((t) => t.uuid)
 
             const searchText = normalizeText(
                 [
@@ -157,7 +193,7 @@
                     course.description ?? '',
                     (course.tags ?? []).map((t) => t.displayName).join(' ')
                 ].join(' ')
-            );
+            )
 
             return {
                 course,
@@ -165,112 +201,112 @@
                 categoryLabel,
                 tagUuids,
                 searchText
-            };
-        });
-    });
+            }
+        })
+    })
 
     const sortedCourses = computed<IndexedCourse[]>(() => {
-        const list = indexedCourses.value.slice();
+        const list = indexedCourses.value.slice()
 
         switch (sort.value) {
             default:
             case 'new':
-                list.sort((a, b) => b.createdAtMs - a.createdAtMs);
-                break;
+                list.sort((a, b) => b.createdAtMs - a.createdAtMs)
+                break
             case 'old':
-                list.sort((a, b) => a.createdAtMs - b.createdAtMs);
-                break;
+                list.sort((a, b) => a.createdAtMs - b.createdAtMs)
+                break
             case 'byViews':
-                list.sort((a, b) => (b.course.viewCount ?? 0) - (a.course.viewCount ?? 0));
-                break;
+                list.sort((a, b) => (b.course.viewCount ?? 0) - (a.course.viewCount ?? 0))
+                break
             case 'byLikes':
-                list.sort((a, b) => (b.course.likeCount ?? 0) - (a.course.likeCount ?? 0));
-                break;
+                list.sort((a, b) => (b.course.likeCount ?? 0) - (a.course.likeCount ?? 0))
+                break
         }
 
-        return list;
-    });
+        return list
+    })
 
     const filteredCourses = computed<Course[]>(() => {
-        let list = sortedCourses.value;
+        let list = sortedCourses.value
 
         if (activeCategory.value) {
-            list = list.filter((c) => c.categoryLabel === activeCategory.value);
+            list = list.filter((c) => c.categoryLabel === activeCategory.value)
         }
 
         if (activeTagSet.value.size > 0) {
-            list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)));
+            list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)))
         }
 
-        const query = normalizeText(debouncedQuery.value);
+        const query = normalizeText(debouncedQuery.value)
         if (query) {
-            list = list.filter((c) => c.searchText.includes(query));
+            list = list.filter((c) => c.searchText.includes(query))
         }
 
-        return list.map((x) => x.course);
-    });
+        return list.map((x) => x.course)
+    })
 
     watch([sort, debouncedQuery], () => {
-        page.value = 1;
-    });
+        page.value = 1
+    })
 
     const totalPages = computed(() => {
-        const total = Math.ceil(filteredCourses.value.length / PAGE_SIZE);
-        return total > 0 ? total : 1;
-    });
+        const total = Math.ceil(filteredCourses.value.length / PAGE_SIZE)
+        return total > 0 ? total : 1
+    })
 
     const paginatedCourses = computed(() => {
-        const start = (page.value - 1) * PAGE_SIZE;
-        return filteredCourses.value.slice(start, start + PAGE_SIZE);
-    });
+        const start = (page.value - 1) * PAGE_SIZE
+        return filteredCourses.value.slice(start, start + PAGE_SIZE)
+    })
 
-    const goToPage = (newPage: number) => {
-        if (newPage < 1 || newPage > totalPages.value) return;
+    function goToPage(newPage: number) {
+        if (newPage < 1 || newPage > totalPages.value) return
 
-        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' });
-        page.value = newPage;
-    };
+        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' })
+        page.value = newPage
+    }
 
     const visiblePages = computed<(number | '...')[]>(() => {
-        const total = totalPages.value;
-        const current = page.value;
+        const total = totalPages.value
+        const current = page.value
 
         if (total <= 8) {
-            return Array.from({ length: total }, (_, i) => i + 1);
+            return Array.from({ length: total }, (_, i) => i + 1)
         }
 
-        const result: (number | '...')[] = [];
+        const result: (number | '...')[] = []
         const push = (v: number | '...') => {
-            if (result[result.length - 1] === v) return;
-            result.push(v);
-        };
+            if (result[result.length - 1] === v) return
+            result.push(v)
+        }
 
-        push(1);
+        push(1)
 
-        const start = Math.max(2, current - 2);
-        const end = Math.min(total - 1, current + 2);
+        const start = Math.max(2, current - 2)
+        const end = Math.min(total - 1, current + 2)
 
-        if (start > 2) push('...');
+        if (start > 2) push('...')
 
         for (let i = start; i <= end; i++) {
-            push(i);
+            push(i)
         }
 
-        if (end < total - 1) push('...');
+        if (end < total - 1) push('...')
 
-        push(total);
+        push(total)
 
         while (result.length > 8) {
-            const firstDots = result.indexOf('...');
+            const firstDots = result.indexOf('...')
             if (firstDots !== -1) {
-                result.splice(firstDots, 1);
+                result.splice(firstDots, 1)
             } else {
-                result.splice(1, 1);
+                result.splice(1, 1)
             }
         }
 
-        return result;
-    });
+        return result
+    })
 </script>
 
 <template>

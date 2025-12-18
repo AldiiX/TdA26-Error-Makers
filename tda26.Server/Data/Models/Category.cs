@@ -10,4 +10,7 @@ public class Category : Auditable {
 
 	[MaxLength(64)]
 	public string Label { get; set; } = string.Empty;
+
+	[MaxLength(512)]
+	public string? Icon { get; set; } = null;
 }

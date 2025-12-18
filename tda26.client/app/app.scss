@@ -27,6 +27,7 @@ $desktopBreakpoint: 1800px;
     --accent-color-secondary-theme-text: #ffffff;
     --accent-color-secondary-transparent-01: rgba(145, 245, 173, 0.1);
     --accent-color-secondary-transparent-03: rgba(145, 245, 173, 0.3);
+    --accent-color-secondary-transparent-06: rgba(145, 245, 173, 0.6);
     --accent-color-secondary-darker: #44b684;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
@@ -237,7 +238,7 @@ body {
 
 
 .grecaptcha-badge {
-    display: none;
+    display: none !important;
 }
 
 

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace tda26.Server.Data.Models;
 
@@ -16,6 +17,9 @@ public class Course : Auditable {
 
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
+
+    [NotMapped]
+    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : ImageUrl;
 
     public int ViewCount { get; set; } = 0;
 

@@ -20,8 +20,8 @@
         background: 'linear-gradient(180deg, var(--accent-color-secondary-transparent-03), var(--accent-color))',
     });
 
-    const randomPickedNumber = Math.floor(Math.random() * 4) + 1;
-    const randomBlob = `url(/images/blobs/blob${randomPickedNumber}.svg)`;
+    const randomPickedNumber = useState<number>("blob-pick", () => Math.floor(Math.random() * 4) + 1)
+    const randomBlob = computed(() => `url(/images/blobs/blob${randomPickedNumber.value}.svg)`);
 </script>
 
 <template>
