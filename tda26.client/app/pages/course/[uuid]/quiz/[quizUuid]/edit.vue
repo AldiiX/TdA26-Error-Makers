@@ -147,11 +147,46 @@ const deleteQuestion = (i: number) => {
     }
 };
 
+const dragFrom = ref<number | null>(null);
+const dragTo = ref<number | null>(null);
+
+const moveQuestion = (from: number, to: number) => {
+    if (!quiz.value) return;
+    if (from === to) return;
+
+    const items = quiz.value.questions;
+    const [moved] = items.splice(from, 1);
+    
+    if (!moved) return;
+    
+    items.splice(to, 0, moved);
+
+    const active = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value;
+
+    if (active === from) {
+        kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = to;
+    } else if (from < active && active <= to) {
+        kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value--;
+    } else if (to <= active && active < from) {
+        kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value++;
+    }
+
+    canSave.value = true;
+};
+
+const onDrop = () => {
+    if (dragFrom.value !== null && dragTo.value !== null) {
+        moveQuestion(dragFrom.value, dragTo.value);
+    }
+
+    dragFrom.value = null;
+    dragTo.value = null;
+};
 
 onMounted(() => {
     window.addEventListener("beforeunload", (e) => {
         if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
-        
+
         e.preventDefault();
         e.returnValue = "";
     });
@@ -169,13 +204,26 @@ onMounted(() => {
             <li
                 v-for="(_, i) in quiz.questions"
                 :key="i"
-                :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
+                draggable="true"
+                :class="[
+                    i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex && $style.active, 
+                    i === dragFrom && $style.ghost
+                ]"
+                @dragstart="dragFrom = i"
+                @dragover.prevent="dragTo = i"
+                @drop.prevent="onDrop"
+                @dragleave="dragTo = null"
+                @dragend="() => {
+                    dragFrom = null;
+                    dragTo = null;
+                }"
                 @click="setQuestionIndex(i)"
-            >{{ i + 1 }}</li>
-            <li 
-                :class="$style.add"
-                @click="addQuestion"
-            >+</li>
+            >
+                <span :class="$style.dragHandle">⋮⋮</span>
+                {{ i + 1 }}
+            </li>
+
+            <li :class="$style.add" @click="addQuestion"></li>
         </ul>
         <p
             :class="$style.editable"
@@ -250,7 +298,12 @@ onMounted(() => {
         margin: 0;
         justify-content: center;
         transition: all 0.3s;
-
+        
+        .draggableGroup {
+            display: flex;
+            gap: 8px;
+        }
+        
         li {
             width: 32px;
             height: 32px;
@@ -261,9 +314,26 @@ onMounted(() => {
             justify-content: center;
             font-weight: 600;
             color: var(--text-color-secondary);
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s;
             user-select: none;
+            
+            &:active {
+                cursor: grabbing;
+            }
+            
+            .dragHandle {
+                 font-size: 13px;
+                 line-height: 1;
+                 opacity: 0.5;
+                 margin-right: 4px;
+                 cursor: grab;
+                 pointer-events: none;
+             }
+        }
+
+        .ghost {
+            opacity: 0.4;
         }
 
         .active {
@@ -274,6 +344,22 @@ onMounted(() => {
         .add {
             font-size: 24px;
             font-weight: 600;
+            position: relative;
+            
+            &:before {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 16px;
+                height: 16px;
+                mask-image: url('/icons/plus.svg');
+                mask-size: cover;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                background-color: var(--text-color-secondary);
+            }
         }
     }
 }

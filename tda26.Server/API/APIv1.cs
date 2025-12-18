@@ -550,6 +550,7 @@ public class APIv1(
                     }
                     
                     existingQuestion.Text = dto.Question;
+                    existingQuestion.Order = dtoBase.Order;
                     
                     // Clear options
                     foreach (var option in existingQuestion.Options.ToList())
@@ -618,6 +619,7 @@ public class APIv1(
                     }
                     
                     existingQuestion.Text = dto.Question;
+                    existingQuestion.Order = dtoBase.Order;
                     
                     // Clear options
                     foreach (var option in existingQuestion.Options.ToList())
