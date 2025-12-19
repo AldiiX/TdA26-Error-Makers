@@ -94,10 +94,6 @@ const updateQuestion = (i: number, patch: Partial<Question>) => {
     );
 };
 
-const currentQuestion = computed(() =>
-    quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
-);
-
 const canSave = ref(false);
 
 const updateTitle = (newTitle: string) => {
@@ -145,6 +141,9 @@ const deleteQuestion = (i: number) => {
     if (kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value >= quiz.value.questions.length) {
         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = quiz.value.questions.length - 1;
     }
+
+    canSave.value = true;
+    questionRenderRemountKey.value++;
 };
 
 const dragFrom = ref<number | null>(null);
@@ -183,6 +182,7 @@ const onDrop = () => {
     dragTo.value = null;
 };
 
+// TODO: re-enable unsaved changes warning
 // onMounted(() => {
 //     window.addEventListener("beforeunload", (e) => {
 //         if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
@@ -208,12 +208,14 @@ const addQuestionOption = (i: number) => {
 const questionRenderRemountKey = ref(0);
 
 const questionRenderKey = computed(() => {
-    const q = currentQuestion.value;
+    const q = quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value];
     if (!q) return 0;
+    
+    const index = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value;
 
-    console.log("Question render key:", q.uuid, questionRenderRemountKey.value);
+    console.log("Question render key:", index, q.uuid, questionRenderRemountKey.value);
 
-    return `${q.uuid ?? 'new'}-${questionRenderRemountKey.value}`;
+    return `${index}-${q.uuid ?? 'new'}-${questionRenderRemountKey.value}`;
 });
 
 const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
@@ -239,8 +241,8 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
     <div :class="[$style.editMode, $style.quizContainer]" v-if="quiz">
         <ul :class="$style.questionProgress">
             <li
-                v-for="(_, i) in quiz.questions"
-                :key="i"
+                v-for="(q, i) in quiz.questions"
+                :key="q.uuid ?? i"
                 draggable="true"
                 :class="[
                     i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex && $style.active, 
@@ -268,8 +270,8 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
             @input="updateTitle(($event.target as HTMLElement).innerText)"
         >{{ quiz.title }}</p>
         <QuizQuestionCard
-            v-if="quiz && currentQuestion && uuid"
-            :question="currentQuestion"
+            v-if="quiz && quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex] && uuid"
+            :question="quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]!"
             :key="questionRenderKey"
             :edit-mode="true"
             @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"

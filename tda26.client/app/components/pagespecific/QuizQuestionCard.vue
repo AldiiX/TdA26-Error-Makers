@@ -92,6 +92,7 @@ const syncFromQuestion = () => {
 watch(
     () => props.question,
     () => {
+        console.log("Question changed to:", props.question);
         selectedIndices.value = [];
         syncFromQuestion();
     },
