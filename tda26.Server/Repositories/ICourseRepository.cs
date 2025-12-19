@@ -15,11 +15,11 @@ public interface ICourseRepository {
     /// <summary>
     /// Gets all courses. Does not include related entities.
     /// </summary>
-    Task<List<Course>> GetAllAsync(CancellationToken ct = default);
+    Task<List<Course>> GetAllAsync(uint limit = 0, CancellationToken ct = default);
     /// <summary>
     /// Gets all courses, including related entities (Materials, Quizzes, Feed).
     /// </summary>
-    Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default);
+    Task<List<Course>> GetAllAsyncFull(uint limit = 0, CancellationToken ct = default);
     
     /// <summary>
     /// Gets all courses taught by a specific lecturer identified by their UUID.

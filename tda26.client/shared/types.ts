@@ -13,6 +13,12 @@ export interface Course {
     lecturer: Lecturer | null;
     likeCount: number,
     viewCount: number,
+    imageUrlOrDefault: string,
+    image: string | null,
+    category: {
+        uuid: string,
+        label: string,
+    }
 }
 
 export interface Material {

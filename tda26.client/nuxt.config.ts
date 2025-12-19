@@ -38,6 +38,15 @@ export default defineNuxtConfig({
             '/api/**': {
                 proxy: `${target}/api/**`
             },
+
+            '/**': {
+                prerender: false
+            },
+
+            '/': {
+                prerender: true,
+                ssr: true,
+            }
         },
 
         devProxy: {

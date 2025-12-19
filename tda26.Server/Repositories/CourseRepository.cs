@@ -8,9 +8,11 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsync(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
             .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .Include(c => c.Lecturer)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
         return course;
@@ -19,37 +21,51 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
     public async Task<Course?> GetByUuidAsyncFull(Guid uuid, CancellationToken ct = default) {
         var course = await db.Courses
             .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
+            .Include(c => c.Category)
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
         return course;
     }
 
-    public async Task<List<Course>> GetAllAsync(CancellationToken ct = default) {            
+    public async Task<List<Course>> GetAllAsync(uint limit = 0, CancellationToken ct = default) {
+        var isLimited = limit > 0;
+
         var courses = await db.Courses
             .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
+            .Include(c => c.Category)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(isLimited ? (int) limit : int.MaxValue)
             .ToListAsync(ct);
 
         return courses;
     }
 
-    public async Task<List<Course>> GetAllAsyncFull(CancellationToken ct = default) {
+    public async Task<List<Course>> GetAllAsyncFull(uint limit = 0, CancellationToken ct = default) {
+        var isLimited = limit > 0;
+
         var courses = await db.Courses
             .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
             .Include(c => c.Lecturer)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(isLimited ? (int) limit : int.MaxValue)
             .ToListAsync(ct);
 
         return courses;
@@ -57,8 +73,11 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
 
     public async Task<List<Course>> GetByLecturerUuidAsync(Guid lecturerUuid, int max = -1, CancellationToken ct = default) {
         var courses = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
             .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
             .Where(c => c.LecturerUuid == lecturerUuid)
             .OrderByDescending(c => c.CreatedAt)
             .Take(max > -1 ? max : int.MaxValue)
@@ -76,6 +95,9 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
             .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
             .OrderByDescending(c => c.CreatedAt)
             .Take(max > -1 ? max : int.MaxValue)
             .ToListAsync(ct);

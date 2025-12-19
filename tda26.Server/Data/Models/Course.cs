@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace tda26.Server.Data.Models;
 
@@ -17,6 +18,9 @@ public class Course : Auditable {
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
 
+    [NotMapped]
+    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : ImageUrl;
+
     public int ViewCount { get; set; } = 0;
 
     [NotMapped]
@@ -27,6 +31,12 @@ public class Course : Auditable {
 
     [ForeignKey(nameof(LecturerUuid))]
     public Lecturer? Lecturer { get; set; } = null!;
+
+    [JsonIgnore]
+    public Guid? CategoryUuid { get; set; }
+
+    [ForeignKey(nameof(CategoryUuid))]
+    public Category? Category { get; set; } = null!;
     
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
   
