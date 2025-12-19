@@ -142,7 +142,10 @@ const deleteQuestion = (i: number) => {
         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = quiz.value.questions.length - 1;
     }
 
-    canSave.value = true;
+    if (quiz.value.questions.length === 0) {
+        canSave.value = false;
+    }
+    
     questionRenderRemountKey.value++;
 };
 

@@ -280,7 +280,7 @@ button,input,textarea,select {
 @mixin editable {
     border: 2px dashed var(--text-color) !important;
     padding: 8px;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: text;
     transition: all 0.2s;
 

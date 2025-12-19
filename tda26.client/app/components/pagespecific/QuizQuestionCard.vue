@@ -172,7 +172,8 @@ const isDeleteModalOpen = ref(false);
                 <Button
                     button-style="tertiary"
                     @click="emit('addQuestionOption')"
-                >+</Button>
+                    :class="$style.addOptionButton"
+                ></Button>
             </li>
         </ul>
     </div>
@@ -277,6 +278,7 @@ const isDeleteModalOpen = ref(false);
             button {
                 width: 100%;
                 max-width: 210px;
+                min-height: 40px;
                 border: none !important;
                 display: flex;
                 align-items: center;
@@ -301,6 +303,19 @@ const isDeleteModalOpen = ref(false);
                     }
                 }
             }
+        }
+        
+        .addOptionButton::before {
+            content: '';
+            mask-image: url('/icons/plus.svg');
+            mask-size: cover;
+            mask-position: center;
+            mask-repeat: no-repeat;
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            background-color: var(--text-color-secondary);
+            position: absolute;
         }
     }
 }
