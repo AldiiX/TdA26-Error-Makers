@@ -53,13 +53,52 @@ const mapQuestionToDto = (q: Question) => {
     throw new Error("Unknown question type");
 };
 
-const saveQuiz = async () => {
-    if (!quiz.value || !canSave) return;
+const recheckQuiz = () => {
+    if (!quiz.value) {
+        canSave.value = false;
+        return;
+    }
 
-    console.log("Saving quiz:", quiz.value);
+    if (!quiz.value.title?.trim()) {
+        canSave.value = false;
+        return;
+    }
+    if (quiz.value.questions.length === 0) {
+        canSave.value = false;
+        return;
+    }
+
+    canSave.value = quiz.value.questions.every(isQuestionValid);
+}
+
+const canSave = ref(false);
+
+const isQuestionValid = (q: Question): boolean => {
+    if (!q.question?.trim()) return false;
+    if (!q.options || q.options.length < 2) return false;
+    if (q.options.some(o => !o.trim())) return false;
+    
+    if (q.correctIndex === undefined) {
+        return (
+            Array.isArray(q.correctIndices) &&
+            q.correctIndices.length > 0 &&
+            q.correctIndices.every(
+                i => i >= 0 && i < q.options.length
+            )
+        );
+    } else {
+        return (
+            q.correctIndex >= 0 &&
+            q.correctIndex < q.options.length
+        );
+    }
+};
+
+const saveQuiz = async () => {
+    if (!quiz.value || !canSave.value) return;
     
     const dto = {
-        uuid: quiz.value!.uuid,
+        uuid: quiz.value!.uuid.startsWith("new-") ? undefined : quiz.value!.uuid,
         title: quiz.value!.title,
         attemptsCount: quiz.value!.attemptsCount,
         questions: quiz.value!.questions.map((q, index) => ({
@@ -88,13 +127,8 @@ const updateQuestion = (i: number, patch: Partial<Question>) => {
     const q = quiz.value.questions[i];
     if (!q) return;
     
-    canSave.value = !(
-        q.correctIndex === undefined &&
-        (!q.correctIndices || q.correctIndices.length === 0)
-    );
+    recheckQuiz();
 };
-
-const canSave = ref(false);
 
 const updateTitle = (newTitle: string) => {
     if (!quiz.value) return;
@@ -123,6 +157,7 @@ const addQuestion = () => {
     if (!quiz.value) return;
 
     quiz.value.questions.push({
+        uuid: "new-" + crypto.randomUUID(),
         type: "singleChoice",
         question: "Nová otázka",
         options: ["Možnost 1", "Možnost 2"],
@@ -142,9 +177,7 @@ const deleteQuestion = (i: number) => {
         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = quiz.value.questions.length - 1;
     }
 
-    if (quiz.value.questions.length === 0) {
-        canSave.value = false;
-    }
+    recheckQuiz();
     
     questionRenderRemountKey.value++;
 };
@@ -173,7 +206,7 @@ const moveQuestion = (from: number, to: number) => {
         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value++;
     }
 
-    canSave.value = true;
+    recheckQuiz();
 };
 
 const onDrop = () => {
@@ -215,8 +248,6 @@ const questionRenderKey = computed(() => {
     if (!q) return 0;
     
     const index = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value;
-
-    console.log("Question render key:", index, q.uuid, questionRenderRemountKey.value);
 
     return `${index}-${q.uuid ?? 'new'}-${questionRenderRemountKey.value}`;
 });

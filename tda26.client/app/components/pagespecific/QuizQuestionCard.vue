@@ -90,13 +90,12 @@ const syncFromQuestion = () => {
 };
 
 watch(
-    () => props.question,
+    () => props.question.uuid,
     () => {
-        console.log("Question changed to:", props.question);
         selectedIndices.value = [];
         syncFromQuestion();
     },
-    { immediate: true, deep: true }
+    { immediate: true }
 );
 
 const emitSelectionUpdate = () => {
