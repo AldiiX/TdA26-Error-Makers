@@ -68,6 +68,21 @@
       <Compile Update="Data\Models\Like.cs">
         <DependentUpon>Rating.cs</DependentUpon>
       </Compile>
+      <Compile Update="Data\Models\Category.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Tag.cs">
+        <DependentUpon>Course.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Dislike.cs">
+        <DependentUpon>Rating.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Admin.cs">
+        <DependentUpon>Account.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Lecturer.cs">
+        <DependentUpon>Account.cs</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>

@@ -11,6 +11,7 @@ $desktopBreakpoint: 1800px;
     --text-color-primary: #080808;
     --text-color: var(--text-color-primary);
     --text-color-secondary: #404040;
+    --text-color-3: #dddddd;
     --background-color-primary: #F6F6F6;
     --background-color: var(--background-color-primary);
     --background-color-secondary: #FFFFFF;
@@ -27,6 +28,7 @@ $desktopBreakpoint: 1800px;
     --accent-color-secondary-theme-text: #ffffff;
     --accent-color-secondary-transparent-01: rgba(145, 245, 173, 0.1);
     --accent-color-secondary-transparent-03: rgba(145, 245, 173, 0.3);
+    --accent-color-secondary-transparent-06: rgba(145, 245, 173, 0.6);
     --accent-color-secondary-darker: #44b684;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
@@ -161,10 +163,13 @@ a {
     -webkit-tap-highlight-color: transparent;
 }
 
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
 }
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+
+.fade-enter-from,
+.fade-leave-to {
     opacity: 0;
 }
 
@@ -243,7 +248,7 @@ body {
 
 
 .grecaptcha-badge {
-    display: none;
+    display: none !important;
 }
 
 

@@ -1,19 +1,30 @@
 <script setup lang="ts">
     import Header from "~/components/Header.vue";
     import Footer from "~/components/Footer.vue";
-    import Input from "~/components/Input.vue";
     import Button from "~/components/Button.vue";
     import { Head, Title, NuxtLink } from '#components';
     import TypeWriter from "~/components/TypeWriter.vue";
     import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
     import BlurText from "~/components/BlurText.vue";
     import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
+    import Input from "~/components/Input.vue";
 
     const theme = useState("theme");
 
     definePageMeta({
         alias: "/"
     })
+
+
+    // hledani kurzu
+    const searchQuery = ref<string>("");
+
+    async function submitSearchQuery() {
+        if (searchQuery.value.trim() === "") return;
+
+        // presmerovani na stranku s vysledky hledani
+        await navigateTo(`/courses?search=${encodeURIComponent(searchQuery.value.trim())}`);
+    }
 </script>
 
 
@@ -51,7 +62,10 @@
                     </NuxtLink>
                 </div>
 
-                <Input :class="$style.input" placeholder="Najdi kurz nebo lektora..." />
+                <div :class="$style.inputWrapper">
+                    <Input :class="$style.input" placeholder="Najdi kurz podle názvu nebo popisu..." v-model="searchQuery" @keyup.enter="submitSearchQuery" />
+                    <div :class="$style.submit" @click="submitSearchQuery"></div>
+                </div>
             </div>
 
             <div :class="$style.right">
@@ -146,11 +160,39 @@
                 opacity: 0.7;
             }
 
-            .input {
-                font-size: clamp(0px, 1.5vw, 20px);
-                width: 100%;
-                padding: 20px;
+            .inputWrapper {
+                position: relative;
+
+                .input {
+                    font-size: clamp(0px, 1.5vw, 20px);
+                    width: 100%;
+                    padding: 20px;
+                    padding-right: 64px;
+                }
+
+                .submit {
+                    width: 32px;
+                    height: 32px;
+                    position: absolute;
+                    top: 50%;
+                    right: 16px;
+                    transform: translateY(-50%);
+                    mask-image: url('../../public/icons/search.svg');
+                    mask-size: cover;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    background-color: var(--text-color-secondary);
+                    opacity: 0.5;
+                    cursor: pointer;
+                    transition-duration: 0.3s;
+
+                    &:hover {
+                        opacity: 0.8;
+                        transition-duration: 0.3s;
+                    }
+                }
             }
+
 
             >.btns {
                 display: flex;
