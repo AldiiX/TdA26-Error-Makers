@@ -26,7 +26,7 @@ public class Course : Auditable {
     public Guid? LecturerUuid { get; set; }
 
     [ForeignKey(nameof(LecturerUuid))]
-    public Lecturer? Lecturer { get; set; } = null!;
+    public Account? Lecturer { get; set; } = null!;
 
     [JsonIgnore]
     public Guid? CategoryUuid { get; set; }

@@ -294,7 +294,9 @@ public class APIv2(
             if (course == null) return NotFound(new { error = "Course not found." });
 
             course.Lecturer = await db.Lecturers
-                .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid);
+                .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid, ct);
+
+            Console.WriteLine(course.LecturerUuid + " " + course.Lecturer?.Uuid);
         } else {
             course = await db.Courses
                 .Include(c => c.Lecturer)

@@ -286,6 +286,10 @@ const ownsCourse = computed(() => {
     return loggedUser.value?.uuid === courseSmall.value?.lecturer?.uuid;
 });
 
+onMounted(() => {
+    console.log(loggedUser.value, courseSmall.value, ownsCourse.value);
+});
+
 async function addRating(rating: "like" | "dislike" | null) {
     if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
 
