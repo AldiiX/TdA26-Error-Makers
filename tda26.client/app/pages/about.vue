@@ -47,10 +47,10 @@
         { name: "Nuxt.js", category: "Frontend", icon: "nuxt" },
         { name: "Vue.js", category: "Frontend", icon: "vue" },
         { name: "SASS", category: "Frontend", icon: "sass" },
-        { name: "C#", category: "Backend", icon: "csharp" },
-        { name: ".NET", category: "Backend", icon: "dotnet" },
+        { name: ".NET (C#)", category: "Backend", icon: "dotnet" },
         { name: "MySQL", category: "Databáze", icon: "mysql" },
-        { name: "Redis", category: "Databáze", icon: "redis" }
+        { name: "Redis", category: "Databáze", icon: "redis" },
+        { name: "MinIO", category: "Objektová databáze", icon: "minio" }
     ];
 </script>
 
@@ -300,6 +300,10 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-top: 24px;
+
+    >div {
+        font-family: Dosis, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 }
 
 .techCard {
