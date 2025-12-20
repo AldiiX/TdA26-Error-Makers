@@ -165,7 +165,21 @@ const isDeleteModalOpen = ref(false);
         </div>
         <ul :key="question.options.length">
             <li v-for="(option, index) in question.options" :key="index">
+                <div
+                    v-if="mode === 'edit'"
+                    @click="selectOption(index)"
+                    :class="[
+                        $style.editable,
+                        selectedIndices.includes(index) && $style.selected
+                        ]"
+                    :contenteditable="mode === 'edit'"
+                    @input="mode === 'edit' && updateOptionText(index, $event)"
+                >{{ option }} <span
+                    :class="$style.removeOption"
+                    @click="emit('removeQuestionOption', index)"
+                ></span></div>
                 <Button
+                    v-else
                     :button-style="selectedIndices.includes(index) && mode !== 'result' ? 'primary' : 'tertiary'"
                     @click="selectOption(index)"
                     :class="[
@@ -174,13 +188,7 @@ const isDeleteModalOpen = ref(false);
                             mode === 'result' && question.selectedIndices?.includes(index) && (!question.correctIndices?.includes(index) && question.correctIndex !== index) && $style.selectedIncorrectAnswer,
                             mode === 'result' && !question.selectedIndices?.includes(index) && (question.correctIndices?.includes(index) || question.correctIndex === index) && $style.missedCorrectAnswer
                         ]"
-                    :contenteditable="mode === 'edit'"
-                    @input="mode === 'edit' && updateOptionText(index, $event)"
-                >{{ option }} <span 
-                    :class="$style.removeOption"
-                    v-if="mode === 'edit'"
-                    @click="emit('removeQuestionOption', index)"
-                ></span></Button>
+                >{{ option }}</Button>
             </li>
             <li v-if="mode === 'edit' && question.options.length < 6">
                 <Button
@@ -323,7 +331,7 @@ const isDeleteModalOpen = ref(false);
             display: flex;
             justify-content: center;
 
-            button {
+            button, >div {
                 width: 100%;
                 max-width: 210px;
                 min-height: 40px;
@@ -331,6 +339,11 @@ const isDeleteModalOpen = ref(false);
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                
+                &.selected {
+                    background-color: var(--accent-color-primary);
+                    color: var(--accent-color-primary-text);
+                }
                 
                 .removeOption {
                     display: inline-block;
