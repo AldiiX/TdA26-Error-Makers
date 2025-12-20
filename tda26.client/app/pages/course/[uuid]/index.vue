@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -50,7 +50,7 @@ if (courseSmallError.value || !courseSmall.value) {
 }
 
 // client full fetch
-const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
     query: { full: true },
     server: false,
     key: `course-${uuid}-full`,
@@ -59,6 +59,13 @@ const { data: course, pending: coursePending, error: courseError } = useFetch<Co
 if (courseError.value) {
     console.error("Error loading full course:", courseError.value);
 }
+
+const course = ref<Course | null>(_course.value ?? null);
+
+watch(_course, (val) => {
+    if (!val) return;
+    course.value = structuredClone(val);
+}, { immediate: true });
 
 const ratingLoading = ref<boolean>(false);
 const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
@@ -92,8 +99,9 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
+let selectedQuiz = ref<Quiz | null>(null);
 
 const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
@@ -373,6 +381,22 @@ async function addRating(rating: "like" | "dislike" | null) {
         ratingLoading.value = false;
     }
 }
+
+const handleQuizDelete = async () => {
+    if (!course.value || !course.value.quizzes) return;
+
+    await $fetch<void>(getBaseUrl() + `/api/v1/courses/${course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
+        method: 'DELETE'
+    }).then(() => {
+        course.value!.quizzes = course.value!.quizzes!.filter(q => q.uuid !== selectedQuiz.value?.uuid);
+        enabledModal.value = null;
+        deleteError.value = null;
+    }).catch((err) => {
+        console.error("Error deleting quiz:", err);
+        deleteError.value = "Nepodařilo se smazat kvíz. Zkuste to prosím znovu.";
+    });
+};
+
 </script>
 
 <template>
@@ -470,6 +494,7 @@ async function addRating(rating: "like" | "dislike" | null) {
                                     :quiz="quiz"
                                     :course="course"
                                     :edit-mode="ownsCourse"
+                                    @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
                                 />
                             </li>
                         </ul>
@@ -567,6 +592,28 @@ async function addRating(rating: "like" | "dislike" | null) {
                     @click="handleMaterialDelete"
                 >
                     Smazat materiál
+                </Button>
+            </div>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+        </Modal>
+
+        <!-- DELETE QUIZ -->
+        <Modal
+            :enabled="enabledModal === 'deleteQuiz'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
+            <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
+            <p>Tuto akci nelze vrátit zpět.</p>
+            <div :class="$style.modalButtons">
+                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="handleQuizDelete"
+                >
+                    Smazat kvíz
                 </Button>
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
