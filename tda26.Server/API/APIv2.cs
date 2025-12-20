@@ -1023,14 +1023,144 @@ public class APIv2(
         var quizResult = new QuizResult {
             QuizUuid = quiz.Uuid,
             Score = correctAnswers,
-            CompletedAt = DateTime.UtcNow
+            CompletedAt = DateTime.UtcNow,
+            Answers = body.Answers.Select(a => {
+                var answer = new QuizAnswer {
+                    QuestionUuid = a.Uuid,
+                    SelectedOptions = new List<QuizAnswerOption>()
+                };
+
+                var question = quiz.Questions.FirstOrDefault(q => q.Uuid == a.Uuid);
+                if (question != null) {
+                    question.Options = question.Options.OrderBy(o => o.Order).ToList();
+
+                    switch (question) {
+                        case SingleChoiceQuestion scq:
+                            if (a.SelectedIndex.HasValue && a.SelectedIndex.Value >= 0 && a.SelectedIndex.Value < scq.Options.Count) {
+                                var selectedOption = scq.Options.ElementAt(a.SelectedIndex.Value);
+                                answer.SelectedOptions.Add(new QuizAnswerOption {
+                                    OptionUuid = selectedOption.Uuid
+                                });
+                            }
+                            break;
+
+                        case MultipleChoiceQuestion mcq:
+                            if (a.SelectedIndices != null) {
+                                foreach (var index in a.SelectedIndices) {
+                                    if (index >= 0 && index < mcq.Options.Count) {
+                                        var selectedOption = mcq.Options.ElementAt(index);
+                                        answer.SelectedOptions.Add(new QuizAnswerOption {
+                                            OptionUuid = selectedOption.Uuid
+                                        });
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }
+
+                return answer;
+            }).ToList()
         };
+
+        quiz.AttemptsCount++;
         
         db.QuizResults.Add(quizResult);
         await db.SaveChangesAsync();
 
         return Ok(new {
             resultUuid = quizResult.Uuid
+        });
+    }
+
+    [HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/results/{resultUuid:guid}")]
+    public async Task<IActionResult> GetQuizResult(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid,
+        [FromRoute] Guid resultUuid
+    ) {
+        var course = await db.Courses
+            .Where(c => c.Uuid == courseUuid)
+            .FirstOrDefaultAsync();
+        
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+        
+        var quiz = await db.Quizzes
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .Include(q => q.Questions
+                .OrderBy(qs => qs.Order))
+                .ThenInclude(qn => qn.Options)
+            .FirstOrDefaultAsync();
+
+        if (quiz == null || quiz.CourseUuid != course.Uuid)
+            return NotFound(new { error = "Quiz not found in the specified course." });
+        
+        var quizResult = await db.QuizResults
+            .Where(qr => qr.Uuid == resultUuid)
+            .Include(qr => qr.Answers)
+                .ThenInclude(a => a.SelectedOptions)
+            .FirstOrDefaultAsync();
+        
+        if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
+            return NotFound(new { error = "Quiz result not found for the specified quiz." });
+        
+        var quizDto = quiz.ToReadDto();
+
+        foreach (ReadQuestionResponse question in quizDto.Questions) {
+            var answer = quizResult.Answers.FirstOrDefault(a => a.QuestionUuid == question.Uuid);
+            
+            if (answer == null) continue;
+            
+            var selectedIndices = answer.SelectedOptions.Select(selectedOpt => quiz.Questions.First(q => q.Uuid == question.Uuid)
+                    .Options.OrderBy(o => o.Order)
+                    .ToList()
+                    .FindIndex(o => o.Uuid == selectedOpt.OptionUuid))
+                .Where(optionIndex => optionIndex >= 0)
+                .ToList();
+            
+            question.SelectedIndices = selectedIndices;
+            
+            switch (question)
+            {
+                case ReadSingleChoiceQuestionResponse scq:
+                {
+                    var correctIndex = quiz.Questions
+                        .OfType<SingleChoiceQuestion>()
+                        .First(q => q.Uuid == question.Uuid)
+                        .Options
+                        .OrderBy(o => o.Order)
+                        .ToList()
+                        .FindIndex(o => o.IsCorrect);
+                
+                    question.IsCorrect = selectedIndices.Count == 1 && selectedIndices[0] == correctIndex;
+                    break;
+                }
+                case ReadMultipleChoiceQuestionResponse mcq:
+                {
+                    var correctIndices = quiz.Questions
+                        .OfType<MultipleChoiceQuestion>()
+                        .First(q => q.Uuid == question.Uuid)
+                        .Options
+                        .Select((o, index) => new { o.IsCorrect, index })
+                        .Where(x => x.IsCorrect)
+                        .Select(x => x.index)
+                        .ToHashSet();
+                
+                    question.IsCorrect = selectedIndices.Count == correctIndices.Count &&
+                                         selectedIndices.All(i => correctIndices.Contains(i));
+                    break;
+                }
+            }
+        }
+        
+        return Ok(new {
+            uuid = quizResult.Uuid,
+            quiz = quizDto,
+            score = quizResult.Score,
+            totalQuestions = quiz.Questions.Count,
+            completedAt = quizResult.CompletedAt
         });
     }
 }

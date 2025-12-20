@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {AnswerSubmission, Course, Question, Quiz} from "#shared/types";
+import type {QuizResult} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
@@ -9,78 +9,49 @@ definePageMeta({
     layout: "normal-page-layout"
 });
 
-const { uuid, quizUuid } = useRoute().params;
+const { uuid, quizUuid, resultUuid } = useRoute().params;
 
-const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
+const { data: result, pending: resultPending, error: resultError } = await useFetch<QuizResult>(() => getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/results/${resultUuid}`, {
     key: `course-${uuid}-quiz-${quizUuid}`,
 });
 
-if (quizError.value) {
-    console.error("Error fetching quiz:", quizError.value);
+if (resultError.value) {
+    console.error("Error fetching quiz result:", resultError.value);
     await navigateTo(`/course/${uuid}`);
 }
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
 const currentQuestion = computed(() =>
-    quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
+    result.value?.quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
 );
 
-const savedResponses = ref<AnswerSubmission[]>([]);
-
 const incrementQuestionIndex = (i: number) => {
-    if (!quiz.value) return;
-    
+    if (!result.value) return;
+
     const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
     if (newIndex < 0) return;
-    if (newIndex >= quiz.value.questions.length) {
-        endQuiz();
+    if (newIndex >= result.value.quiz.questions.length) {
         return;
     }
-    
+
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
 };
 
-const updateSelectedIndices = (i: number, selectedIndices: number[]) => {
-    if (!quiz.value) return;
-
-    const question = quiz.value.questions[i];
-    if (!question) return;
-
-    savedResponses.value[i] = {
-        uuid: question.uuid!,
-        selectedIndex: question.type === "singleChoice" ? selectedIndices[0] : undefined,
-        selectedIndices: question.type === "multipleChoice" ? selectedIndices : undefined,
-    };
-};
-
-const endQuiz = async () => {
-    const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/submit`, {
-        method: 'POST',
-        body: {
-            answers: savedResponses.value,
-        }
-    });
-
-    console.log("Quiz submitted, response:", response);
-    
-    window.location.href = `/course/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`;
-};
-
 const incrementQuestion = (i: number) => {
-    if (!quiz.value) return;
+    if (!result.value) return;
 
     const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
-    
+
     if (newIndex < 0) return;
-    if (newIndex >= quiz.value.questions.length) return;
+    if (newIndex >= result.value.quiz.questions.length) return;
 
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
 };
 
 const setQuestionIndex = (i: number) => {
-    if (!quiz.value) return;
-    if (i < 0 || i >= quiz.value.questions.length) return;
+    if (!result.value) return;
+    if (i < 0 || i >= result.value.quiz.questions.length) return;
 
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = i;
 
@@ -103,36 +74,30 @@ const setQuestionIndex = (i: number) => {
 
 <template>
     <Head>
-        <Title>Kvíz • Think different Academy</Title>
+        <Title>Výsledek kvízu • Think different Academy</Title>
     </Head>
 
-    <div :class="[$style.quizContainer]" v-if="quiz">
+    <div :class="$style.container" v-if="result">
+        <div :class="$style.scoreSection">
+            <h1>Výsledek kvízu {{ result.quiz.title }}</h1>
+            <p>Skóre: {{ result.score }} / {{ result.quiz.questions.length }} ({{ ((result.score / result.quiz.questions.length) * 100).toFixed(0) }}%)</p>
+        </div>
         <ul :class="$style.questionProgress">
-            <li 
-                v-for="(_, i) in quiz.questions"
+            <li
+                v-for="(q, i) in result.quiz.questions"
                 :key="i"
-                :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
+                :class="[
+                    i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex && $style.active,
+                    q.isCorrect ? $style.correct : $style.incorrect
+                    ]"
                 @click="setQuestionIndex(i)"
             >{{ i + 1 }}</li>
         </ul>
-        <p>{{ quiz.title }}</p>
         <QuizQuestionCard
-            v-if="quiz && currentQuestion && uuid"
+            v-if="result && currentQuestion && uuid"
             :question="currentQuestion"
-            @update:selectedOption="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
-            :selected-option="
-              savedResponses[
-                kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
-              ]?.selectedIndex !== undefined
-                ? [
-                    savedResponses[
-                      kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
-                    ]!.selectedIndex!
-                  ]
-                : savedResponses[
-                    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
-                  ]?.selectedIndices ?? []
-            "
+            mode="result"
+            :selected-option="result.quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]?.selectedIndices ?? []"
         />
 
         <div :class="$style.controls">
@@ -142,27 +107,38 @@ const setQuestionIndex = (i: number) => {
             >Předchozí</Button>
             <Button
                 @click="incrementQuestionIndex(1)"
-            >{{ kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === quiz.questions.length - 1 ? "Dokončit" : "Další" }}</Button>
+                :disabled="kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === result.quiz.questions.length - 1"
+            >Další</Button>
         </div>
     </div>
 </template>
 
 <style module lang="scss">
-@use "../../../../../app" as *;
-
-.editMode {
-    .editable {
-        @include editable;
-    }
-}
-
-.quizContainer {
+.container {
     display: flex;
     flex-direction: column;
     gap: 16px;
     width: 500px;
     margin: auto;
     position: relative;
+    
+    .scoreSection {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        
+        h1 {
+            font-size: 48px;
+            margin: 0;
+        }
+        
+        p {
+            font-size: 20px;
+            margin: 0;
+        }
+    }
 
     >p {
         font-size: 48px;
@@ -175,12 +151,12 @@ const setQuestionIndex = (i: number) => {
         display: flex;
         justify-content: space-between;
         gap: 16px;
-
+        
         button {
             width: 100%;
         }
     }
-    
+
     .questionProgress {
         list-style: none;
         display: flex;
@@ -203,10 +179,18 @@ const setQuestionIndex = (i: number) => {
             cursor: pointer;
             transition: all 0.2s;
             user-select: none;
+
+            &.correct {
+                border: 2px solid var(--color-success);
+            }
+
+            &.incorrect {
+                border: 2px solid var(--color-error);
+            }
         }
-        
+
         .active {
-            background-color: var(--accent-color-primary);
+            background-color: var(--accent-color-primary) !important;
             color: white;
         }
     }

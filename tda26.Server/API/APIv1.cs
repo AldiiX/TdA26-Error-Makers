@@ -755,6 +755,8 @@ public class APIv1(
             Score = correctAnswers,
             CompletedAt = DateTime.UtcNow
         };
+
+        quiz.AttemptsCount++;
         
         db.QuizResults.Add(quizResult);
         await db.SaveChangesAsync();

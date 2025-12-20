@@ -37,6 +37,9 @@ const getHostname = (url?: string) => {
                 </div>
             </div>
             <span :class="$style.divider"></span>
+            <div :class="$style.description">
+                <p>{{ quiz.attemptsCount }} dokončení</p>
+            </div>
 <!--                <p :class="$style.description">{{ quiz.description }}</p>-->
         </NuxtLink>
         
@@ -69,7 +72,6 @@ const getHostname = (url?: string) => {
     .divider {
         width: 1px;
         height: 36px;
-        align-self: stretch;
         border-right: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
         display: block;
     }
@@ -129,18 +131,11 @@ const getHostname = (url?: string) => {
 
         .description {
             margin-left: 10px;
-            height: 100%;
-            font-size: 14px;
-            color: var(--text-color-secondary);
-            display: -webkit-box;
-            
-            //-webkit-line-clamp: 3;
-            //-webkit-box-orient: vertical;
-            //
-            //overflow: hidden;
-            //text-overflow: ellipsis;
-            //line-height: 1.2;
-            //max-height: calc(1.2em * 3);
+            p {
+                margin: 0;
+                font-size: 14px;
+                color: var(--text-color-secondary);
+            }
         }
     }
     

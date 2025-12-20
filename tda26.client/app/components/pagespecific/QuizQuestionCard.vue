@@ -3,11 +3,13 @@ import type {Question} from "#shared/types";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     question: Question,
-    editMode?: boolean,
+    mode?: "play" | "edit" | "result",
     selectedOption?: number[]
-}>();
+}>(), {
+    mode: "play",
+});
 
 const emit = defineEmits<{
     (e: 'update:question', value: Partial<Question>): void;
@@ -37,9 +39,11 @@ const updateOptionText = (index: number, e: Event) => {
 const selectedIndices = ref<number[]>(props.selectedOption ?? []);
 
 const selectOption = (index: number) => {
+    if (props.mode === 'result') return;
+    
     const currentType = props.question.type;
     
-    if (props.editMode) {
+    if (props.mode === 'edit') {
         if (selectedIndices.value.includes(index)) {
             selectedIndices.value = selectedIndices.value.filter(i => i !== index);
         } else {
@@ -71,9 +75,9 @@ const selectOption = (index: number) => {
 };
 
 const syncFromQuestion = () => {
-    if (!props.editMode) {
+    if (props.mode !== 'edit') {
         selectedIndices.value = props.selectedOption ?? [];
-        return
+        return;
     }
     
     if (props.question.type === "singleChoice" && props.question.correctIndex != null) {
@@ -99,6 +103,8 @@ watch(
 );
 
 const emitSelectionUpdate = () => {
+    if (props.mode === 'result') return;
+    
     const count = selectedIndices.value.length;
     const prevType = props.question.type;
     
@@ -140,34 +146,43 @@ const isDeleteModalOpen = ref(false);
 </script>
 
 <template>
-    <div :class="[editMode && $style.editMode, $style.questionContainer]">
+    <div :class="[
+        mode === 'edit' && $style.editMode, 
+        mode === 'result' && $style.resultMode, $style.questionContainer,
+        (mode === 'result' && question.isCorrect) ? $style.correct : $style.incorrect
+        ]">
         <span 
-            v-if="editMode"
+            v-if="mode === 'edit'"
             :class="$style.deleteButton"
             @click="isDeleteModalOpen = true"
         ></span>
         <div :class="$style.title">
             <p 
                 :class="[$style.editable]" 
-                :contenteditable="editMode"
-                @input="editMode && updateQuestionText($event)"
+                :contenteditable="mode === 'edit'"
+                @input="mode === 'edit' && updateQuestionText($event)"
             >{{ question.question }}</p>
         </div>
         <ul :key="question.options.length">
             <li v-for="(option, index) in question.options" :key="index">
                 <Button
-                    :button-style="selectedIndices.includes(index) ? 'primary' : 'tertiary'"
+                    :button-style="selectedIndices.includes(index) && mode !== 'result' ? 'primary' : 'tertiary'"
                     @click="selectOption(index)"
-                    :class="[$style.editable]"
-                    :contenteditable="editMode"
-                    @input="editMode && updateOptionText(index, $event)"
+                    :class="[
+                            $style.editable, 
+                            mode === 'result' && question.selectedIndices?.includes(index) && (question.correctIndices?.includes(index) || question.correctIndex === index) && $style.selectedCorrectAnswer,
+                            mode === 'result' && question.selectedIndices?.includes(index) && (!question.correctIndices?.includes(index) && question.correctIndex !== index) && $style.selectedIncorrectAnswer,
+                            mode === 'result' && !question.selectedIndices?.includes(index) && (question.correctIndices?.includes(index) || question.correctIndex === index) && $style.missedCorrectAnswer
+                        ]"
+                    :contenteditable="mode === 'edit'"
+                    @input="mode === 'edit' && updateOptionText(index, $event)"
                 >{{ option }} <span 
                     :class="$style.removeOption"
-                    v-if="editMode"
+                    v-if="mode === 'edit'"
                     @click="emit('removeQuestionOption', index)"
                 ></span></Button>
             </li>
-            <li v-if="editMode && question.options.length < 6">
+            <li v-if="mode === 'edit' && question.options.length < 6">
                 <Button
                     button-style="tertiary"
                     @click="emit('addQuestionOption')"
@@ -178,7 +193,7 @@ const isDeleteModalOpen = ref(false);
     </div>
     
     <Modal 
-        v-if="editMode"
+        v-if="mode === 'edit'"
         :enabled="isDeleteModalOpen"
         @close="isDeleteModalOpen = false"
         can-be-closed-by-clicking-outside
@@ -204,6 +219,40 @@ const isDeleteModalOpen = ref(false);
 .editMode {
     .editable {
         @include editable;
+    }
+}
+
+.resultMode {
+    .editable {
+        //pointer-events: none;
+    }
+    
+    button {
+        cursor: default;
+        
+        &:hover {
+            opacity: 1 !important;
+            background-color: inherit !important;
+        }
+    }
+    
+    .missedCorrectAnswer {
+        background-color: color-mix(in srgb, var(--color-success) 10%, var(--background-color-secondary) 90%) !important;
+        border: 2px dashed var(--color-success) !important;
+        color: var(--color-success-text) !important;
+        opacity: 0.85;
+    }
+    
+    .selectedIncorrectAnswer {
+        background-color: color-mix(in srgb, var(--color-error) 20%, var(--background-color-secondary) 80%) !important;
+        border: 2px solid var(--color-error) !important;
+        color: var(--color-error-text) !important;
+    }
+
+    .selectedCorrectAnswer {
+        background-color: color-mix(in srgb, var(--color-success) 20%, var(--background-color-secondary) 80%) !important;
+        border: 2px solid var(--color-success) !important;
+        color: var(--color-success-text) !important;
     }
 }
 

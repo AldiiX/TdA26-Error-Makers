@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
@@ -7,7 +8,7 @@ public class QuestionOption {
     [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
 
     public Guid QuestionUuid { get; set; }
-    [ForeignKey("QuestionUuid")]
+    [JsonIgnore, ForeignKey("QuestionUuid")]
     public Question Question { get; set; } = null!;
 
     [Required] public string Text { get; set; } = string.Empty;

@@ -53,6 +53,16 @@ export interface Question {
     type: "singleChoice" | "multipleChoice";
     correctIndex?: number;
     correctIndices?: number[];
+    selectedIndices?: number[];
+    isCorrect?: boolean;
+}
+
+export interface QuizResult {
+    uuid: string;
+    quiz: Quiz;
+    score: number;
+    totalQuestions: number;
+    completedAt: string;
 }
 
 export interface CourseFormModel {
