@@ -9,4 +9,8 @@ public interface IAccountRepository {
     Task CreateAsync(Account account, CancellationToken ct = default);
     Task UpdateAsync(Account account, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid uuid, CancellationToken ct = default);
+    
+    // Lightweight methods for authentication without loading relationships
+    Task<Account?> GetByIdLightAsync(Guid uuid, CancellationToken ct = default);
+    Task<Account?> GetByUsernameLightAsync(string username, CancellationToken ct = default);
 }

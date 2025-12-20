@@ -59,4 +59,18 @@ public class AccountRepository(
             
         return true;
     }
+    
+    public async Task<Account?> GetByIdLightAsync(Guid uuid, CancellationToken ct = default) {
+        var account = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
+
+        return account;
+    }
+    
+    public async Task<Account?> GetByUsernameLightAsync(string username, CancellationToken ct = default) {
+        var account = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Username == username, ct);
+
+        return account;
+    }
 }
