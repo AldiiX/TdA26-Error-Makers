@@ -13,6 +13,7 @@ export interface Course {
     lecturer: Lecturer | null;
     likeCount: number,
     viewCount: number,
+    imageUrl: string | null,
     imageUrlOrDefault: string,
     image: string | null,
     category: {

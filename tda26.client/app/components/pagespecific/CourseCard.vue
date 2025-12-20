@@ -41,9 +41,9 @@ const revealStyle = computed(() => {
     <div :class="$style.container" :style="revealStyle">
         <div :class="$style.top">
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image"></div>
+                <div :class="$style.image" v-if="course.imageUrl" :style="{ '--bg': `url(${course.imageUrl})` }"></div>
 
-                <template v-if="!course.image">
+                <template v-if="!course.imageUrl">
                     <div :class="$style.blob1"></div>
                     <div :class="$style.blob2"></div>
                     <div :class="$style.blob3"></div>
@@ -170,12 +170,23 @@ const revealStyle = computed(() => {
             transition: filter 0.3s;
             position: relative;
 
+            >* {
+                pointer-events: none;
+            }
+
             &:hover {
-                filter: brightness(0.9);
+                filter: brightness(0.75);
                 transition-duration: 0.3s;
             }
 
-            .image {}
+            .image {
+                width: 100%;
+                height: 100%;
+                background-image: var(--bg);
+                background-size: cover;
+                background-position: center;
+                position: absolute;
+            }
 
             .blob1 {
                 width: 32px;

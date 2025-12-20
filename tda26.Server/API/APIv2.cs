@@ -233,6 +233,13 @@ public class APIv2(
 
         return Ok(courses);
     }
+
+    [HttpGet("course-categories")]
+    public async Task<IActionResult> GetCoursesCategories(CancellationToken ct = default) {
+        var categories = db.Categories.ToList();
+
+        return Ok(categories);
+    }
     
     [HttpGet("me/courses")]
     public async Task<IActionResult> GetMyCourses(

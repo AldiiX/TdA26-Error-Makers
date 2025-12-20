@@ -26,6 +26,14 @@
     const PAGE_SIZE = 8
     const FIRST_FETCH_LIMIT = 25
 
+
+
+
+
+    // -----------------------------
+    // fetchovani
+    // ----------------------------
+
     // sdilena cache mezi navigacemi
     const courses = useState<Course[] | null>('allCourses', () => null)
 
@@ -88,9 +96,30 @@
         { immediate: true }
     )
 
+
+
+
+
+    // -----------------------------
+    // query param sync (?search=...)
+    // -----------------------------
+    const route = useRoute()
+    const router = useRouter()
+
+    function getQueryString(value: unknown): string {
+        if (Array.isArray(value)) {
+            return typeof value[0] === 'string' ? value[0] : ''
+        }
+        return typeof value === 'string' ? value : ''
+    }
+
+    const routeSearchQuery = computed(() => getQueryString(route.query.search))
+
     // filtrovani a strankovani
     const page = ref(1)
-    const searchQuery = ref('')
+
+    // init hodnoty z url (aby input sedel hned pri prvnim renderu)
+    const searchQuery = ref(routeSearchQuery.value)
 
     // filtry
     const activeTags = ref<string[]>([])
@@ -124,6 +153,56 @@
         { immediate: true }
     )
 
+    // kdyz se zmeni url (napr. back/forward nebo prime otevreni s jinym query), prepis input
+    const syncingFromRoute = ref(false)
+
+    watch(
+        routeSearchQuery,
+        async (val) => {
+            if (val === searchQuery.value) { return }
+
+            // zabrani zpetne smycce (route -> input -> replace -> route)
+            syncingFromRoute.value = true
+            searchQuery.value = val
+            page.value = 1
+
+            await nextTick()
+            syncingFromRoute.value = false
+        },
+        { immediate: true }
+    )
+
+    // po debounce syncneme url (bez pridani do historie)
+    watch(
+        debouncedQuery,
+        (val) => {
+            if (syncingFromRoute.value) { return }
+
+            const q = val.trim()
+            const current = routeSearchQuery.value.trim()
+
+            if (q === current) { return }
+
+            router.replace({
+                query: {
+                    ...route.query,
+                    // kdyz je prazdny, odstranime parametr z url
+                    search: q || undefined
+                }
+            })
+
+            page.value = 1
+        }
+    )
+
+
+
+
+
+    // -----------------------------
+    // filtrovani, razeni, strankovani
+    // -----------------------------
+
     const activeTagSet = computed(() => new Set(activeTags.value))
 
     // kategorie + tagy pro vybranou kategorii v jednom pruchodu daty
@@ -149,8 +228,21 @@
         return map
     })
 
-    const allCategories = computed(() => {
-        return Array.from(categoryIndex.value.keys()).sort((a, b) => a.localeCompare(b))
+    // fetchnuti categories z api neblokujici
+    const allCategories = useState<any[] | null>('courseCategories', () => null);
+
+    onMounted(async () => {
+        if(allCategories.value !== null) return
+
+        try {
+            const categories = await $fetch<any[]>('/api/v2/course-categories', {
+                baseURL: getBaseUrl()
+            })
+
+            allCategories.value = categories.map((c) => c.label).sort((a, b) => a.localeCompare(b))
+        } catch (e) {
+            console.error('error fetching course categories:', e)
+        }
     })
 
     const categoryTags = computed(() => {
@@ -307,6 +399,17 @@
 
         return result
     })
+
+    // resetovani filteru
+    const isAnyFilterActive = computed<boolean>(() => {
+        return (activeCategory.value !== null || activeTags.value.length > 0 || debouncedQuery.value.trim() !== '') || false
+    })
+
+    function resetAllFilters() {
+        activeCategory.value = null
+        activeTags.value = []
+        searchQuery.value = ''
+    }
 </script>
 
 <template>
@@ -367,7 +470,14 @@
         <div :class="$style.bottomContainer">
             <div :class="[$style.left]">
                 <div :class="$style.filtersLeft">
-                    <p>Filtry</p>
+                    <div :class="$style.nadpis">
+                        <p>Filtry</p>
+
+                        <transition name="fade">
+                            <div :class="$style.resetbutton" v-if="isAnyFilterActive" @click="resetAllFilters"></div>
+                        </transition>
+                    </div>
+
                     <div :class="[$style.searchBar]">
                         <div :class="$style.searchIcon"></div>
                         <input
@@ -378,7 +488,7 @@
                     </div>
 
                     <SmoothSizeWrapper style="width: 100%">
-                        <div :class="[$style.categories, $style.cont]" v-if="allCategories?.length > 0">
+                        <div :class="[$style.categories, $style.cont]" v-if="allCategories && allCategories?.length > 0">
                             <p>Kategorie</p>
 
                             <div :class="$style.list">
@@ -610,12 +720,37 @@
             @extend .liquid-glass;
 
             .filtersLeft {
-                >p{
-                    font-size: 36px;
-                    font-weight: 700;
-                    margin: 0;
+                >.nadpis {
+                    position: relative;
+                    display: flex;
                     margin-bottom: 16px;
+                    align-items: center;
+                    justify-content: space-between;
+
+                    >p{
+                        font-size: 36px;
+                        font-weight: 700;
+                        margin: 0;
+                    }
+
+                    .resetbutton {
+                        width: 16px;
+                        aspect-ratio: 1/1;
+                        background-color: var(--text-color-primary);
+                        mask-image: url('../../public/icons/reset.svg');
+                        mask-size: cover;
+                        mask-position: center;
+                        mask-repeat: no-repeat;
+                        cursor: pointer;
+                        transition-duration: 0.3s;
+
+                        &:hover {
+                            transition-duration: 0.3s   ;
+                            opacity: 0.8;
+                        }
+                    }
                 }
+
 
                 .searchBar {
                     width: 100%;
@@ -653,6 +788,7 @@
                         &::placeholder {
                             color: var(--text-color-secondary);
                             opacity: 0.8;
+                            user-select: none;
                         }
                     }
                 }

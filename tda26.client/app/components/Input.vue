@@ -106,6 +106,7 @@
     border: none;
     box-shadow: var(--input-shadow);
     outline: 2px solid transparent;
+    user-select: none;
 
     &:focus {
         outline: 2px solid var(--accent-color);
