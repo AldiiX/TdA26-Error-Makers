@@ -15,6 +15,7 @@ public static class CourseMapper
             UpdatedAt = course.UpdatedAt,
             ImageUrl = course.ImageUrl,
             Lecturer = course.Lecturer,
+            Account = course.Account,
             ViewCount = course.ViewCount,
             LikeCount = course.LikeCount,
             ImageUrlOrDefault = course.ImageUrlOrDefault,

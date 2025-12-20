@@ -34,7 +34,7 @@ definePageMeta({
     ]
 });
 
-const loggedUser = useState<Account | null>('loggedAccount');
+const loggedAccount = useState<Account | null>('loggedAccount');
 const route = useRoute();
 const uuid = route.params.uuid as string;
 
@@ -110,13 +110,13 @@ const deleteError = ref<string | null>(null);
 const editingMaterial = ref<any>(null);
 
 const isThisCourseLiked = computed(() => {
-    if (!loggedUser.value || !courseSmall.value) return false;
-    return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
 });
 
 const isThisCourseDisliked = computed(() => {
-    if (!loggedUser.value || !courseSmall.value) return false;
-    return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
 });
 
 const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
@@ -281,17 +281,16 @@ const handleMaterialCreate = async () => {
 };
 
 const ownsCourse = computed(() => {
-    if (!loggedUser.value || !courseSmall.value) return false;
-    console.log(courseSmall.value.lecturer);
-    return loggedUser.value?.uuid === courseSmall.value?.lecturer?.uuid;
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value?.uuid === courseSmall.value?.account?.uuid;
 });
 
 onMounted(() => {
-    console.log(loggedUser.value, courseSmall.value, ownsCourse.value);
+    console.log(loggedAccount.value, courseSmall.value, ownsCourse.value);
 });
 
 async function addRating(rating: "like" | "dislike" | null) {
-    if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
+    if (!loggedAccount.value || !courseSmall.value || ratingLoading.value) return;
 
     const baseUrl = getBaseUrl();
     const uuid = courseSmall.value.uuid;
@@ -368,7 +367,7 @@ async function addRating(rating: "like" | "dislike" | null) {
         ]);
 
         // hromadne prirazeni dat az po dokonceni vsech requestu
-        loggedUser.value = updatedUser ?? null;
+        loggedAccount.value = updatedUser ?? null;
         courseSmall.value = updatedCourseSmall;
         course.value = updatedCourse;
         // optimisticLikeCount is automatically synced via watcher
@@ -464,9 +463,9 @@ const handleQuizCreate = async (e: Event) => {
 
                 <div :class="$style.otherinfo">
                     <div :class="$style.authorAndRating">
-                        <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
-                            <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
-                            <p>{{ courseSmall?.lecturer?.fullName }}</p>
+                        <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
+                            <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                            <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
                         </NuxtLink>
 
                         <div :class="$style.rating">
@@ -810,10 +809,13 @@ ul {
                         text-decoration: none;
                         transition-duration: 0.3s;
 
-                        &:hover {
-                            opacity: 0.5;
-                            transition-duration: 0.3s;
+                        &:is(.clickable) {
+                            &:hover {
+                                opacity: 0.5;
+                                transition-duration: 0.3s;
+                            }
                         }
+
 
                         .avatar {
                             --size: 24px !important;

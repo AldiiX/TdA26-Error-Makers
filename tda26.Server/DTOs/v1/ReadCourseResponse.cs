@@ -12,7 +12,8 @@ public class ReadCourseResponse {
     public required int LikeCount { get; set; }
     public string? ImageUrl { get; set; }
     public required string ImageUrlOrDefault { get; set; }
-    public Account? Lecturer { get; set; } = null!;
+    public Lecturer? Lecturer { get; set; } = null!;
+    public Account? Account { get; set; } = null!;
     public required ICollection<ReadMaterialResponse> Materials { get; set; }
     public required ICollection<ReadQuizResponse> Quizzes { get; set; }
     public required ICollection<ReadFeedResponse> Feed { get; set; }

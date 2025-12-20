@@ -8,6 +8,7 @@ export interface Course {
     updatedAt: string;
     //lecturerUuid: string;
     lecturer: Lecturer | null;
+    account: Account | null;
     materials?: Material[];
     quizzes?: Quiz[];
     // feed: FeedPost[];

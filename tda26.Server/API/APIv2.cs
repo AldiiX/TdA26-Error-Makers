@@ -69,7 +69,7 @@ public class APIv2(
         foreach (var like in acc?.Ratings ?? [])
         {
             like.Account = null;
-            like.Course.Lecturer = null;
+            like.Course.Account = null;
         }
 
         return Ok(acc);
@@ -93,7 +93,7 @@ public class APIv2(
         foreach (var like in acc?.Ratings ?? [])
         {
             like.Account = null;
-            like.Course.Lecturer = null;
+            like.Course.Account = null;
         }
 
         return Ok(acc);
@@ -130,7 +130,7 @@ public class APIv2(
         foreach (var like in acc?.Ratings ?? [])
         {
             like.Account = null;
-            like.Course.Lecturer = null;
+            like.Course.Account = null;
         }
 
         return new CreatedAtActionResult(
@@ -209,7 +209,7 @@ public class APIv2(
         // odstraneni policek
         foreach (var like in account?.Ratings ?? []) {
             like.Account = null;
-            like.Course.Lecturer = null;
+            like.Course.Account = null;
         }
 
         return account switch {
@@ -228,7 +228,7 @@ public class APIv2(
             c.Materials = [];
             c.Quizzes = [];
             c.Feed = [];
-            if(c.Lecturer != null) c.Lecturer.Ratings = [];
+            if(c.Account != null) c.Account.Ratings = [];
         }
 
         return Ok(courses);
@@ -257,7 +257,7 @@ public class APIv2(
                 c.Materials = [];
                 c.Quizzes = [];
                 c.Feed = [];
-                if(c.Lecturer != null) c.Lecturer.Ratings = [];
+                if(c.Account != null) c.Account.Ratings = [];
             }
 
             return Ok(courses);
@@ -268,7 +268,7 @@ public class APIv2(
                 c.Materials = [];
                 c.Quizzes = [];
                 c.Feed = [];
-                if(c.Lecturer != null) c.Lecturer.Ratings = [];
+                if(c.Account != null) c.Account.Ratings = [];
             }
 
             return Ok(courses);
@@ -289,17 +289,18 @@ public class APIv2(
                     .OrderByDescending(m => m.CreatedAt))
                 .Include(c => c.Quizzes)
                 .Include(c => c.Feed)
+                .Include(c => c.Account)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
 
-            course.Lecturer = await db.Lecturers
+            /*course.Account = await db.Lecturers
                 .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid, ct);
 
-            Console.WriteLine(course.LecturerUuid + " " + course.Lecturer?.Uuid);
+            Console.WriteLine(course.LecturerUuid + " " + course.Account?.Uuid);*/
         } else {
             course = await db.Courses
-                .Include(c => c.Lecturer)
+                .Include(c => c.Account)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) {
@@ -311,7 +312,7 @@ public class APIv2(
             course.Feed = [];
         }
         
-        if(course.Lecturer != null) course.Lecturer.Ratings = [];
+        if(course.Account != null) course.Account.Ratings = [];
 
         return Ok(course);
     }
@@ -333,7 +334,7 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
+        if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
 
@@ -360,7 +361,7 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
+        if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Course.Name;
         existingCourse.Description = body.Course.Description;
 
@@ -468,7 +469,7 @@ public class APIv2(
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
-        if(existingCourse.Lecturer != null) existingCourse.Lecturer.Ratings = [];
+        if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
 
         var success = await courseRepository.DeleteAsync(uuid, ct);
         if (!success) {
@@ -568,7 +569,7 @@ public class APIv2(
         course.Materials = [];
         course.Quizzes = [];
         course.Feed = [];
-        if(course.Lecturer != null) course.Lecturer.Ratings = [];
+        if(course.Account != null) course.Account.Ratings = [];
 
         // zjisteni jestli ip adresa neni v pouzitych
         var ipAddress = HttpContext.GetIPAddress();
