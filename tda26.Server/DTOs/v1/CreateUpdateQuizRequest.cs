@@ -5,5 +5,12 @@ public class CreateUpdateQuizRequest {
     public string Title { get; set; } = null!;
     public int AttemptsCount { get; set; }
 
-    public List<CreateUpdateQuestionRequest> Questions { get; set; } = new();
+    public List<CreateUpdateQuestionRequest> Questions { get; set; } = new() {
+        new CreateUpdateSingleChoiceQuestionRequest {
+            Type = "singleChoice",
+            Question = "Nová otázka",
+            Options = new List<string> { "Možnost 1", "Možnost 2" },
+            Order = 0
+        }
+    };
 }

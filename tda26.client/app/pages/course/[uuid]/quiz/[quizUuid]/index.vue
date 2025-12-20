@@ -117,7 +117,7 @@ const setQuestionIndex = (i: number) => {
         </ul>
         <p>{{ quiz.title }}</p>
         <QuizQuestionCard
-            v-if="quiz && currentQuestion && uuid"
+            v-if="quiz && currentQuestion && uuid && quiz.questions.length > 0"
             :question="currentQuestion"
             @update:selectedOption="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
             :selected-option="
@@ -135,7 +135,7 @@ const setQuestionIndex = (i: number) => {
             "
         />
 
-        <div :class="$style.controls">
+        <div :class="$style.controls" v-if="quiz.questions.length > 0">
             <Button
                 @click="incrementQuestionIndex(-1)"
                 :disabled="kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === 0"
@@ -143,6 +143,12 @@ const setQuestionIndex = (i: number) => {
             <Button
                 @click="incrementQuestionIndex(1)"
             >{{ kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === quiz.questions.length - 1 ? "Dokončit" : "Další" }}</Button>
+        </div>
+        
+        <div>
+            <p v-if="quiz.questions.length === 0" style="text-align: center;">
+                Tento kvíz neobsahuje žádné otázky.
+            </p>
         </div>
     </div>
 </template>

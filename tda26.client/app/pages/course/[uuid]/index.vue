@@ -10,6 +10,7 @@ import QuizItem from "~/components/pagespecific/QuizItem.vue";
 import {ClientOnly, Head, NuxtLink, Title} from "#components";
 import NumberExponential from "~/components/NumberExponential.vue";
 import Avatar from "~/components/Avatar.vue";
+import Input from "~/components/Input.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -99,7 +100,7 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 
@@ -397,6 +398,39 @@ const handleQuizDelete = async () => {
     });
 };
 
+const handleQuizCreate = async (e: Event) => {
+    if (!course.value) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const quizName = formData.get('createQuizName')?.toString().trim();
+
+    if (!quizName) {
+        updateError.value = "Název kvízu je povinný.";
+        return;
+    }
+
+    try {
+        const newQuiz = await $fetch<Quiz>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/quizzes`,
+            {
+                method: 'POST',
+                body: { title: quizName }
+            }
+        );
+
+        course.value.quizzes = course.value.quizzes ?? [];
+        course.value.quizzes.unshift(newQuiz);
+
+        enabledModal.value = null;
+        updateError.value = null;
+        form.reset();
+    } catch (err) {
+        console.error("Creation failed:", err);
+        updateError.value = "Nepodařilo se vytvořit kvíz. Zkuste to prosím znovu.";
+    }
+};
+
 </script>
 
 <template>
@@ -482,9 +516,9 @@ const handleQuizDelete = async () => {
                         </ul>
                     </div>
                     <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                        <!--                    <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">-->
-                        <!--                        Přidat nový kvíz-->
-                        <!--                    </Button>-->
+                        <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="enabledModal = 'createQuiz'" :class="$style.addMaterialButton">
+                            Přidat nový kvíz
+                        </Button>
 
                         <p v-if="coursePending">Načítání kvízů...</p>
                         <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
@@ -618,6 +652,41 @@ const handleQuizDelete = async () => {
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         </Modal>
+        
+        <!-- CREATE QUIZ -->
+        <Modal
+            :enabled="enabledModal === 'createQuiz'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+            :class-name="$style.createQuizModal"
+        >
+            <h3>Vytvoření nového kvízu</h3>
+            <form 
+                @submit.prevent="handleQuizCreate"
+            >
+                <label for="createQuizName">Název kvízu</label>
+                <Input 
+                    id="createQuizName"
+                    name="createQuizName"
+                    max="128"
+                    required
+                />
+
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        type="submit"
+                    >
+                        Vytvořit kvíz
+                    </Button>
+                </div>
+            </form>
+            <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
     </Teleport>
 </template>
 
@@ -640,6 +709,23 @@ ul {
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+.createQuizModal {
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        label {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+        }
+    }
 }
 
 .course {
