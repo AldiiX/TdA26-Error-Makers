@@ -42,11 +42,6 @@ export default defineNuxtConfig({
             '/**': {
                 prerender: false
             },
-
-            '/': {
-                prerender: true,
-                ssr: true,
-            }
         },
 
         devProxy: {

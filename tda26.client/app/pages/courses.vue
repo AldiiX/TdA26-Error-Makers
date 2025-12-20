@@ -765,7 +765,7 @@
 
                         &:hover {
                             transition-duration: 0.3s;
-                            opacity: 0.8;
+                            opacity: 0.5;
                         }
                     }
                 }
