@@ -41,9 +41,9 @@ const revealStyle = computed(() => {
     <div :class="$style.container" :style="revealStyle">
         <div :class="$style.top">
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image"></div>
+                <div :class="$style.image" v-if="course.imageUrl" :style="{ '--bg': `url(${course.imageUrl})` }"></div>
 
-                <template v-if="!course.image">
+                <template v-if="!course.imageUrl">
                     <div :class="$style.blob1"></div>
                     <div :class="$style.blob2"></div>
                     <div :class="$style.blob3"></div>
@@ -62,21 +62,36 @@ const revealStyle = computed(() => {
                     {{ course.name }}
                 </h1>
 
-                <NuxtLink
-                        v-if="course.lecturer"
-                        :class="$style.author"
-                        :to="`/lecturers/${course.lecturer.uuid}`"
-                >
-                    <Avatar
-                            :class="$style.avatar"
-                            :name="lecturerDisplayName ?? ''"
-                            :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
-                    />
-                    <p :class="$style.text">
-                        {{ course?.lecturer?.fullNameWithoutTitles }}
-                        <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
-                    </p>
-                </NuxtLink>
+                <div :class="$style.authorAndRatingScore">
+                    <NuxtLink
+                            v-if="course.lecturer"
+                            :class="$style.author"
+                            :to="`/lecturers/${course.lecturer.uuid}`"
+                    >
+                        <Avatar
+                                :class="$style.avatar"
+                                :name="lecturerDisplayName ?? ''"
+                                :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
+                        />
+                        <p :class="$style.text">
+                            {{ course?.lecturer?.fullNameWithoutTitles }}
+                            <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
+                        </p>
+                    </NuxtLink>
+
+                    <div :class="$style.rating">
+                        <div
+                            v-for="n in 5"
+                            :key="n"
+                            :class="[
+                                $style.star,
+                                course.ratingScore >= n * 2 ? $style.full : course.ratingScore === n * 2 - 1 ? $style.half : null
+                            ]"
+                        >
+                        </div>
+                    </div>
+                </div>
+
 
                 <div :class="$style.date">
                     <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
@@ -86,7 +101,7 @@ const revealStyle = computed(() => {
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/star.svg)"></div>
+                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"></div>
                         <p>{{ course.likeCount }}</p>
                     </div>
                     <div :class="$style.info">
@@ -170,12 +185,23 @@ const revealStyle = computed(() => {
             transition: filter 0.3s;
             position: relative;
 
+            >* {
+                pointer-events: none;
+            }
+
             &:hover {
-                filter: brightness(0.9);
+                filter: brightness(0.75);
                 transition-duration: 0.3s;
             }
 
-            .image {}
+            .image {
+                width: 100%;
+                height: 100%;
+                background-image: var(--bg);
+                background-size: cover;
+                background-position: center;
+                position: absolute;
+            }
 
             .blob1 {
                 width: 32px;
@@ -286,31 +312,62 @@ const revealStyle = computed(() => {
                 padding-bottom: 3px;
             }
 
-            .author {
+            .authorAndRatingScore {
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 8px;
                 margin: 8px 0;
-                text-decoration: none;
-                transition-duration: 0.3s;
-                width: fit-content;
 
-                &:hover {
-                    opacity: 0.5;
-                    transition-duration: 0.3s;
-                }
-
-                .text {
-                    font-size: 16px;
-                    color: var(--text-color-secondary);
-                    font-weight: 600;
+                .author {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                     margin: 0;
+                    text-decoration: none;
+                    transition-duration: 0.3s;
+                    width: fit-content;
+
+                    &:hover {
+                        opacity: 0.5;
+                        transition-duration: 0.3s;
+                    }
+
+                    .text {
+                        font-size: 16px;
+                        color: var(--text-color-secondary);
+                        font-weight: 600;
+                        margin: 0;
+                    }
+
+                    .avatar {
+                        --size: 24px !important;
+                    }
                 }
 
-                .avatar {
-                    --size: 24px !important;
+                .rating {
+                    display: flex;
+                    gap: 4px;
+
+                    .star {
+                        width: 16px;
+                        aspect-ratio: 1/1;
+                        mask: url(/icons/star.svg);
+                        background: var(--text-color-3);
+                        mask-size: cover;
+                        mask-position: center;
+                        mask-repeat: no-repeat;
+
+                        &:is(.half) {
+                            background: linear-gradient(90deg, var(--accent-color-primary) 50%, var(--text-color-3) 50%);
+                        }
+
+                        &:is(.full) {
+                            background: linear-gradient(90deg, var(--accent-color-primary) 50%, var(--accent-color-primary) 50%);
+                        }
+                    }
                 }
             }
+
 
             .date {
                 .created,

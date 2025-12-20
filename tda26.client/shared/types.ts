@@ -13,8 +13,10 @@ export interface Course {
     lecturer: Lecturer | null;
     likeCount: number,
     viewCount: number,
+    imageUrl: string | null,
     imageUrlOrDefault: string,
     image: string | null,
+    ratingScore: number,
     category: {
         uuid: string,
         label: string,
@@ -72,6 +74,7 @@ export interface Account {
     fullNameWithoutTitles: string,
     likes: Rating[];
     dislikes: Rating[];
+    type: "Account" | "Lecturer" | "Admin"
 }
 
 interface Rating {

@@ -11,6 +11,7 @@ $desktopBreakpoint: 1800px;
     --text-color-primary: #080808;
     --text-color: var(--text-color-primary);
     --text-color-secondary: #404040;
+    --text-color-3: #dddddd;
     --background-color-primary: #F6F6F6;
     --background-color: var(--background-color-primary);
     --background-color-secondary: #FFFFFF;
@@ -156,10 +157,13 @@ a {
     -webkit-tap-highlight-color: transparent;
 }
 
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
 }
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+
+.fade-enter-from,
+.fade-leave-to {
     opacity: 0;
 }
 

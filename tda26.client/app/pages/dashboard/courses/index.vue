@@ -3,6 +3,7 @@ import { Head, Title } from '#components';
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
+import {computed} from "vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -17,6 +18,8 @@ definePageMeta({
 const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses', {
     server: false
 });
+
+const loggedAccount = useState<Account>('loggedAccount');
 const courses = computed(() => _courses.value ?? []);
 
 const sort = ref<'new' | 'old'>('new');
@@ -74,7 +77,10 @@ const goToLastPage = () => {
         <Title>Moje kurzy • Think different Academy</Title>
     </Head>
 
-    <h1 :class="$style.nadpis">Moje kurzy</h1>
+    <h1 :class="$style.nadpis">
+        Moje kurzy
+        <span v-if="loggedAccount.type === 'Admin'" :class="$style.admininfo">(jste Admin, můžete spravovat všechny kurzy)</span>
+    </h1>
 <!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
 
 <!--  TODO: Místo kopírování kódu, tak udělat komponentu pro kurzy na courses a dashboard/courses  -->
@@ -100,6 +106,14 @@ const goToLastPage = () => {
 .nadpis {
     font-size: 64px;
     margin: 0;
+
+    .admininfo {
+        font-size: 16px;
+        color: var(--text-color);
+        opacity: 0.5;
+        margin-left: 16px;
+        font-weight: 500;
+    }
 }
 
 .podnapis {

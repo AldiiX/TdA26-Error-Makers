@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Query;
 namespace tda26.Server.Data.Models;
 
 public class Course : Auditable {
+
+    // mapovani props na sloupce v db
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
 
@@ -18,13 +20,7 @@ public class Course : Auditable {
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
 
-    [NotMapped]
-    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : ImageUrl;
-
     public int ViewCount { get; set; } = 0;
-
-    [NotMapped]
-    public int LikeCount => Likes.ToList().Count;
 
     [JsonIgnore]
     public Guid? LecturerUuid { get; set; }
@@ -49,9 +45,32 @@ public class Course : Auditable {
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
+
+
+
+    // ciste c# nemapovane propy
     [NotMapped, JsonIgnore]
     public IEnumerable<Like> Likes => Ratings.OfType<Like>();
 
     [NotMapped, JsonIgnore]
     public IEnumerable<Dislike> Dislikes => Ratings.OfType<Dislike>();
+
+    [NotMapped]
+    public int LikeCount => Likes.ToList().Count;
+
+    [NotMapped]
+    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : ImageUrl;
+
+    [NotMapped]
+    public byte RatingScore {
+        get {
+            // vypocet score od 0 do 10 na zaklade pomeru like/dislikes + TODO: recenzi (až budou udelany)
+            var likeCount = LikeCount;
+            var dislikeCount = Dislikes.ToList().Count;
+            var totalCount = likeCount + dislikeCount;
+            if (totalCount == 0) return 0;
+            var score = (double) likeCount / totalCount * 10;
+            return (byte) Math.Round(score);
+        }
+    }
 }

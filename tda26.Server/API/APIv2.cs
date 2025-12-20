@@ -233,6 +233,13 @@ public class APIv2(
 
         return Ok(courses);
     }
+
+    [HttpGet("course-categories")]
+    public async Task<IActionResult> GetCoursesCategories(CancellationToken ct = default) {
+        var categories = db.Categories.ToList();
+
+        return Ok(categories);
+    }
     
     [HttpGet("me/courses")]
     public async Task<IActionResult> GetMyCourses(
@@ -244,7 +251,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
     
         if (full) {
-            var courses = await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max, ct);
+            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(0, ct) : await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max, ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
@@ -255,7 +262,7 @@ public class APIv2(
 
             return Ok(courses);
         } else {
-            var courses = await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max, ct);
+            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(0, ct) : await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max, ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
@@ -309,7 +316,7 @@ public class APIv2(
         var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
         if (existingCourse == null) return NotFound();
 
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
@@ -336,7 +343,7 @@ public class APIv2(
         var existingCourse = await courseRepository.GetByUuidAsyncFull(uuid, ct);
         if (existingCourse == null) return NotFound();
 
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
@@ -444,7 +451,7 @@ public class APIv2(
         var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
         if (existingCourse == null) return NotFound();
 
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
@@ -833,7 +840,7 @@ public class APIv2(
         var existingCourse = await courseRepository.GetByUuidAsync(courseUuid, ct);
         if (existingCourse == null) return NotFound();
 
-        if (existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
         var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
         if (material == null || material.CourseUuid != courseUuid) {
@@ -844,7 +851,6 @@ public class APIv2(
 
         return NoContent();
     }
-
 
     [HttpPut("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     [Consumes("application/json")]
@@ -863,7 +869,7 @@ public class APIv2(
             return NotFound(new { error = "Course not found." });
         }
 
-        if (course.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
 
         var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
 
@@ -916,7 +922,7 @@ public class APIv2(
             return NotFound(new { error = "Course not found." });
         }
 
-        if (course.LecturerUuid != acc.Uuid) return Forbid();
+        if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
 
         var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
 

@@ -7,7 +7,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Account> Accounts { get; set; }
     
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
-    
+
+    public DbSet<Admin> Admins => Set<Admin>();
+
     public DbSet<Course> Courses => Set<Course>();
 
     public DbSet<Category> Categories { get; set; }
