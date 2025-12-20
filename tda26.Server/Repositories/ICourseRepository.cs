@@ -2,6 +2,7 @@
 
 namespace tda26.Server.Repositories;
 
+[Obsolete]
 public interface ICourseRepository {
     /// <summary>
     /// Gets a course by its UUID. Does not include related entities.

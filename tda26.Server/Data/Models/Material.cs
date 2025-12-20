@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(FileMaterial), "file")]
+[JsonDerivedType(typeof(UrlMaterial), "url")]
 public class Material : Auditable {
     public enum MaterialType {
         File,
@@ -27,6 +30,6 @@ public class Material : Auditable {
     [JsonIgnore, Required]
     public Guid CourseUuid { get; set; }
 
-    [ForeignKey("CourseUuid")]
+    [ForeignKey("CourseUuid"), JsonIgnore]
     public Course Course { get; set; } = null!;
 }

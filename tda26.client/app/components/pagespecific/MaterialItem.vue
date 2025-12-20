@@ -25,7 +25,7 @@ const getHostname = (url?: string) => {
 
 <template>
     <!-- FILE MATERIAL -->
-    <template v-if="material.type === 'file'">
+    <template v-if="material.type === 0">
         <div :class="$style.material">
             <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
                 <div :class="$style.fileIcon"></div>
@@ -47,7 +47,7 @@ const getHostname = (url?: string) => {
     </template>
 
     <!-- URL MATERIAL -->
-    <template v-else-if="material.type === 'url'">
+    <template v-else-if="material.type === 1">
         <div :class="$style.material">
             <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer">
                 <div :class="$style.favicon">

@@ -9,11 +9,15 @@ public class Quiz : Auditable {
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
 
-    [MaxLength(128)]
+    [Required, MaxLength(128)]
     public string Title { get; set; } = string.Empty;
+    
+    public int AttemptsCount { get; set; }
 
     public Guid CourseUuid { get; set; }
 
-    [ForeignKey("CourseUuid")]
+    [ForeignKey("CourseUuid"), JsonIgnore]
     public Course Course { get; set; } = null!;
+    
+    public ICollection<Question> Questions { get; set; } = new List<Question>();
 }
