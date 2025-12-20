@@ -16,4 +16,5 @@ public class ReadCourseResponse {
     public required ICollection<ReadMaterialResponse> Materials { get; set; }
     public required ICollection<ReadQuizResponse> Quizzes { get; set; }
     public required ICollection<ReadFeedResponse> Feed { get; set; }
+    public required byte RatingScore { get; set; }
 }

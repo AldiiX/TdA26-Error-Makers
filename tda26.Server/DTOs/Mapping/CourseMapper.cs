@@ -20,6 +20,7 @@ public static class CourseMapper
             ImageUrlOrDefault = course.ImageUrlOrDefault,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => new ReadQuizResponse { /* map */ }).ToList(),
-            Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList()
+            Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList(),
+            RatingScore = course.RatingScore,
         };
 }

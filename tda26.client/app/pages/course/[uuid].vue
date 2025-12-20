@@ -389,7 +389,7 @@ async function addRating(rating: "like" | "dislike" | null) {
                     </div>
                     <div :class="$style.el">
                         <p :class="$style.title">Recenze</p>
-                        <NumberExponential :value="optimisticLikeCount" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <NumberExponential :value="0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
                     </div>
                 </div>
 

@@ -42,7 +42,7 @@
     const hasFetchedAllCourses = useState<boolean>('hasFetchedAllCourses', () => false)
 
     async function fetchAllCoursesIfNeeded() {
-        if (hasFetchedAllCourses.value) { return }
+        //if (hasFetchedAllCourses.value) { return }
         if (fullFetchRunning.value) { return }
         if (!courses.value) { return }
 
@@ -405,10 +405,17 @@
         return (activeCategory.value !== null || activeTags.value.length > 0 || debouncedQuery.value.trim() !== '') || false
     })
 
+    const filterButtonClicked = ref(false);
+
     function resetAllFilters() {
         activeCategory.value = null
         activeTags.value = []
         searchQuery.value = ''
+        page.value = 1
+        filterButtonClicked.value = true;
+        setTimeout(() => {
+            filterButtonClicked.value = false;
+        }, 500);
     }
 </script>
 
@@ -474,7 +481,7 @@
                         <p>Filtry</p>
 
                         <transition name="fade">
-                            <div :class="$style.resetbutton" v-if="isAnyFilterActive" @click="resetAllFilters"></div>
+                            <div :class="[$style.resetbutton, { [$style.fadeout]: filterButtonClicked } ]" v-show="isAnyFilterActive" @click="resetAllFilters" :title="'Resetovat filtry'"></div>
                         </transition>
                     </div>
 
@@ -744,8 +751,20 @@
                         cursor: pointer;
                         transition-duration: 0.3s;
 
+                        &:is(.fadeout) {
+                            @keyframes rotateiojsdfodjij {
+                                from { transform: rotate(0deg); opacity: 1; }
+                                to { transform: rotate(360deg); opacity: 0; }
+                            }
+
+                            animation: rotateiojsdfodjij 0.4s forwards ease;
+                            animation-iteration-count: 1;
+                            opacity: 0;
+                            pointer-events: none;
+                        }
+
                         &:hover {
-                            transition-duration: 0.3s   ;
+                            transition-duration: 0.3s;
                             opacity: 0.8;
                         }
                     }
