@@ -54,7 +54,6 @@ public class AuthService(
         var accLight = await accounts.GetByIdLightAsync(sessionAcc.Uuid, ct);
         if (accLight == null || accLight.Password != sessionAcc.Password) return null;
 
-        http.HttpContext!.Items["loggedaccount"] = accLight;
         // Keep session data consistent by storing AccountSessionDto instead of full Account
         var sessionDto = new AccountSessionDto {
             Uuid = accLight.Uuid,
@@ -63,6 +62,7 @@ public class AuthService(
             CreatedAt = accLight.CreatedAt,
             UpdatedAt = accLight.UpdatedAt,
         };
+        http.HttpContext!.Items["loggedaccount"] = sessionDto;
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
         
         // Load full account with relationships for the response

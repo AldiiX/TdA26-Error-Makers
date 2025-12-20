@@ -69,7 +69,7 @@ public class AccountRepository(
     
     public async Task<Account?> GetByUsernameLightAsync(string username, CancellationToken ct = default) {
         var account = await db.Accounts
-            .FirstOrDefaultAsync(a => a.Username == username, ct);
+            .FirstOrDefaultAsync(a => a.Username.ToLower() == username.ToLower(), ct);
 
         return account;
     }
