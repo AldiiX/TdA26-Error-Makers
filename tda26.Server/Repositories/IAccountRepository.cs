@@ -2,6 +2,7 @@ using tda26.Server.Data.Models;
 
 namespace tda26.Server.Repositories;
 
+[Obsolete]
 public interface IAccountRepository {
     Task<Account?> GetByIdAsync(Guid uuid, CancellationToken ct = default);
     Task<Account?> GetByUsernameAsync(string username, CancellationToken ct = default);

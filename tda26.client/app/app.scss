@@ -33,6 +33,9 @@ $desktopBreakpoint: 1800px;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
     --accent-color-additional-3: #2592B8;
+    --color-warning: #ffcc00;
+    --color-error: #ff4444;
+    --color-success: #00cc66;
     --footer-tda-logo: url(../public/icons/Think-different-Academy_LOGO_oficialni-cerne.svg);
     --footer-divider: url("../public/images/wave_light.svg");
     --divider1: url("../public/images/wave2_light.svg");
@@ -77,6 +80,9 @@ $desktopBreakpoint: 1800px;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
     --accent-color-additional-3: #2592B8;
+    --color-warning: #ffcc00;
+    --color-error: #ff4444;
+    --color-success: #00cc66;
     --footer-tda-logo: url("../public/icons/Think-different-Academy_LOGO_oficialni-bile.svg");
     --footer-divider: url("../public/images/wave_dark.svg");
     --divider1: url("../public/images/wave2_dark.svg");
@@ -267,6 +273,25 @@ button,input,textarea,select {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@mixin liquid-glass($size: 30px, $alpha-bg: 0.75, $alpha-border: 1) {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / $alpha-bg);
+    border: 1px solid rgb(from var(--background-color-secondary) r g b / $alpha-border);
+    backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@mixin editable {
+    border: 2px dashed var(--text-color) !important;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: text;
+    transition: all 0.2s;
+
+    &:focus {
+        outline: none;
+    }
 }
 
 .error-text {

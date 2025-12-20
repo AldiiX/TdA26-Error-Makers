@@ -19,15 +19,21 @@ const emit = defineEmits<{
     (e: "delete"): void;
 }>();
 
-const loggedUser = useState<Account | null>("loggedUser");
+const loggedAccount = useState<Account | null>("loggedAccount");
 
 const lecturerDisplayName = computed(() => {
-    const acc = props.course.lecturer;
-    if (!acc) return null;
+    const lecturer = props.course.lecturer;
+    const account = props.course.account;
 
-    return acc.firstName && acc.lastName
-        ? `${acc.firstName} ${acc.lastName}`
-        : acc.username;
+    if(account && !lecturer) {
+        return account.username;
+    }
+
+    if (!lecturer) return null;
+
+    return lecturer.firstName && lecturer.lastName
+        ? `${lecturer.firstName} ${lecturer.lastName}`
+        : lecturer.username;
 });
 
 const revealStyle = computed(() => {
@@ -64,9 +70,9 @@ const revealStyle = computed(() => {
 
                 <div :class="$style.authorAndRatingScore">
                     <NuxtLink
-                            v-if="course.lecturer"
-                            :class="$style.author"
-                            :to="`/lecturers/${course.lecturer.uuid}`"
+                            v-if="course.lecturer || course.account"
+                            :class="[$style.author, { [$style.clickable]: course.lecturer }]"
+                            :to="course.lecturer ? `/lecturers/${course.lecturer?.uuid}` : ''"
                     >
                         <Avatar
                                 :class="$style.avatar"
@@ -74,8 +80,8 @@ const revealStyle = computed(() => {
                                 :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
                         />
                         <p :class="$style.text">
-                            {{ course?.lecturer?.fullNameWithoutTitles }}
-                            <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
+                            {{ course?.lecturer?.fullNameWithoutTitles ?? course?.account?.fullNameWithoutTitles }}
+                            <span v-if="course?.account?.uuid === loggedAccount?.uuid" :class="$style.you">(vy)</span>
                         </p>
                     </NuxtLink>
 
@@ -327,16 +333,25 @@ const revealStyle = computed(() => {
                     transition-duration: 0.3s;
                     width: fit-content;
 
-                    &:hover {
-                        opacity: 0.5;
-                        transition-duration: 0.3s;
+                    &:is(.clickable) {
+                        &:hover {
+                            opacity: 0.5;
+                            transition-duration: 0.3s;
+                        }
                     }
+
 
                     .text {
                         font-size: 16px;
                         color: var(--text-color-secondary);
                         font-weight: 600;
                         margin: 0;
+
+                        .you {
+                            font-size: 14px;
+                            color: var(--accent-color-secondary-theme);
+                            margin-left: 4px;
+                        }
                     }
 
                     .avatar {

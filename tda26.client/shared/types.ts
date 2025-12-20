@@ -6,11 +6,13 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
-    // quizzes: Quiz[];
+    //lecturerUuid: string;
+    lecturer: Lecturer | null;
+    account: Account | null;
     materials?: Material[];
+    quizzes?: Quiz[];
     // feed: FeedPost[];
     tags: Tag[] | null;
-    lecturer: Lecturer | null;
     likeCount: number,
     viewCount: number,
     imageUrl: string | null,
@@ -26,7 +28,7 @@ export interface Course {
 export interface Material {
     uuid: string;
     name: string;
-    type: "url" | "file";
+    type: number;
     url?: string;
     fileUrl?: string;
     createdAt: string;
@@ -41,6 +43,35 @@ export interface MaterialFormModel {
     url?: string | null;
     file?: File | null;
     description?: string | null;
+}
+
+export interface Quiz {
+    uuid: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    attemptsCount: number;
+    course: Course;
+    questions: Question[];
+}
+
+export interface Question {
+    uuid?: string;
+    question: string;
+    options: string[];
+    type: "singleChoice" | "multipleChoice";
+    correctIndex?: number;
+    correctIndices?: number[];
+    selectedIndices?: number[];
+    isCorrect?: boolean;
+}
+
+export interface QuizResult {
+    uuid: string;
+    quiz: Quiz;
+    score: number;
+    totalQuestions: number;
+    completedAt: string;
 }
 
 export interface CourseFormModel {
@@ -94,3 +125,9 @@ export interface Tag{
 }
 
 export type ClassLike = string | undefined | Record<string, boolean | null | undefined> | ClassLike[];
+
+export interface AnswerSubmission {
+    uuid: string;
+    selectedIndex?: number;
+    selectedIndices?: number[];
+}

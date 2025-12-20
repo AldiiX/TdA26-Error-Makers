@@ -26,7 +26,7 @@ public class Course : Auditable {
     public Guid? LecturerUuid { get; set; }
 
     [ForeignKey(nameof(LecturerUuid))]
-    public Lecturer? Lecturer { get; set; } = null!;
+    public Account? Account { get; set; } = null!;
 
     [JsonIgnore]
     public Guid? CategoryUuid { get; set; }
@@ -73,4 +73,7 @@ public class Course : Auditable {
             return (byte) Math.Round(score);
         }
     }
+
+    [NotMapped]
+    public Lecturer? Lecturer => Account as Lecturer;
 }
