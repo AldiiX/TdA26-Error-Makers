@@ -11,10 +11,10 @@ definePageMeta({
     layout: "normal-page-layout"
 });
 
-// const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-// if (loggedAccount.value) {
-//     navigateTo("/");
-// }
+const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+if (loggedAccount.value) {
+    navigateTo("/");
+}
 
 // state
 const showPassword = ref(false);
