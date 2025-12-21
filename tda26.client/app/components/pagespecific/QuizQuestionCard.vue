@@ -133,10 +133,11 @@ const emitSelectionUpdate = () => {
         });
         return;
     }
+
+    console.log("Emitting update for 0 selected", selectedIndices.value, props.question);
     
     // 0 selected
     emit("update:question", {
-        ...props.question,
         correctIndex: undefined,
         correctIndices: [],
     });
