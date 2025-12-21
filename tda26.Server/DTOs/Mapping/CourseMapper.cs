@@ -14,7 +14,10 @@ public static class CourseMapper
             foreach (var rating in course.Account.Ratings ?? [])
             {
                 rating.Account = null;
-                rating.Course.Account = null;
+                if (rating.Course != null)
+                {
+                    rating.Course.Account = null;
+                }
             }
         }
         
