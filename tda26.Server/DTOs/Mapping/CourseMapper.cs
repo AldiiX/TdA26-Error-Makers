@@ -5,8 +5,15 @@ namespace tda26.Server.DTOs.Mapping;
 
 public static class CourseMapper
 {
-    public static ReadCourseResponse ToReadDto(this Course course) =>
-        new()
+    public static ReadCourseResponse ToReadDto(this Course course)
+    {
+        // Clear circular references to prevent infinite loop during serialization
+        // Following the same pattern as APIv2
+        if (course.Account != null) {
+            course.Account.Ratings = [];
+        }
+        
+        return new()
         {
             Uuid = course.Uuid,
             Name = course.Name,
@@ -24,4 +31,5 @@ public static class CourseMapper
             Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList(),
             RatingScore = course.RatingScore,
         };
+    }
 }
