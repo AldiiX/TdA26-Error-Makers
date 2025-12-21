@@ -8,9 +8,14 @@ public static class CourseMapper
     public static ReadCourseResponse ToReadDto(this Course course)
     {
         // Clear circular references to prevent infinite loop during serialization
+        // Following the same pattern as APIv2
         if (course.Account != null)
         {
-            course.Account.Ratings = [];
+            foreach (var rating in course.Account.Ratings ?? [])
+            {
+                rating.Account = null;
+                rating.Course.Account = null;
+            }
         }
         
         return new()
