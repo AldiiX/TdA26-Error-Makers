@@ -6,6 +6,7 @@ import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import type {Account} from "#shared/types";
+import { push } from "notivue";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -33,8 +34,16 @@ async function submitLoginForm(event: Event) {
     const formData = new FormData(target);
     const formDataObj = Object.fromEntries(formData.entries());
 
+    const loginToast = push.promise({
+        title: "Přihlášování",
+        message: "Probíhá ověřování přihlašovacích údajů...",
+        duration: Infinity
+    });
+
     isLoading.value = true;
     errorMsg.value = null;
+
+
 
     try {
         const res = await $fetch<Account | null>("/api/v2/auth/login", {
@@ -42,14 +51,28 @@ async function submitLoginForm(event: Event) {
             body: formDataObj
         });
 
-        // auth objekt
+        if (!res) {
+            throw new Error("Invalid credentials");
+        }
+
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
         loggedAccount.value = res;
 
-        // presmerovani na dashboard
+        loginToast.resolve({
+            message: "Úspěšně přihlášeno! Přesměrovávám...",
+            duration: 1200
+        });
+
         await navigateTo("/");
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
+
+        // prepnuti toastu na error (a nechat chvili zobrazeny)
+        loginToast.resolve({
+            title: "Chyba přihlášení",
+            message: "Zkontroluj uživatelské jméno a heslo a zkus to znovu.",
+            duration: 6000
+        });
     } finally {
         isLoading.value = false;
     }
