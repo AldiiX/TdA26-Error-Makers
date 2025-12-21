@@ -125,7 +125,7 @@ const submitForm = async () => {
 
         <div :class="$style.formGroup">
             <label>Popis *</label>
-            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048"/>
+            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048" required />
         </div>
 
         <div :class="$style.materials">
