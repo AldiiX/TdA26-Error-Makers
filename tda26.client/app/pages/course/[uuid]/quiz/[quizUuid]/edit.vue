@@ -127,6 +127,8 @@ const saveQuiz = async () => {
 const updateQuestion = (i: number, patch: Partial<Question>) => {    
     if (!quiz.value) return;
 
+    console.log("Updating question", i, patch);
+
     quiz.value.questions.splice(i, 1, {
         ...quiz.value.questions[i],
         ...patch,
@@ -134,6 +136,8 @@ const updateQuestion = (i: number, patch: Partial<Question>) => {
 
     const q = quiz.value.questions[i];
     if (!q) return;
+
+    console.log("Updated question", q);
     
     recheckQuiz();
 };
@@ -242,6 +246,8 @@ const addQuestionOption = (i: number) => {
     
     const question = quiz.value.questions[i];
     if (!question) return;
+
+    console.log("Adding option to question", i, question);
     
     question.options.push(`Možnost ${question.options.length + 1}`);
     
