@@ -11,6 +11,7 @@ $desktopBreakpoint: 1800px;
     --text-color-primary: #080808;
     --text-color: var(--text-color-primary);
     --text-color-secondary: #404040;
+    --text-color-3: #dddddd;
     --background-color-primary: #F6F6F6;
     --background-color: var(--background-color-primary);
     --background-color-secondary: #FFFFFF;
@@ -27,10 +28,14 @@ $desktopBreakpoint: 1800px;
     --accent-color-secondary-theme-text: #ffffff;
     --accent-color-secondary-transparent-01: rgba(145, 245, 173, 0.1);
     --accent-color-secondary-transparent-03: rgba(145, 245, 173, 0.3);
+    --accent-color-secondary-transparent-06: rgba(145, 245, 173, 0.6);
     --accent-color-secondary-darker: #44b684;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
     --accent-color-additional-3: #2592B8;
+    --color-warning: #ffcc00;
+    --color-error: #ff4444;
+    --color-success: #00cc66;
     --footer-tda-logo: url(../public/icons/Think-different-Academy_LOGO_oficialni-cerne.svg);
     --footer-divider: url("../public/images/wave_light.svg");
     --divider1: url("../public/images/wave2_light.svg");
@@ -75,6 +80,9 @@ $desktopBreakpoint: 1800px;
     --accent-color-additional-1: #6DD4B1;
     --accent-color-additional-2: #49B3B4;
     --accent-color-additional-3: #2592B8;
+    --color-warning: #ffcc00;
+    --color-error: #ff4444;
+    --color-success: #00cc66;
     --footer-tda-logo: url("../public/icons/Think-different-Academy_LOGO_oficialni-bile.svg");
     --footer-divider: url("../public/images/wave_dark.svg");
     --divider1: url("../public/images/wave2_dark.svg");
@@ -155,10 +163,13 @@ a {
     -webkit-tap-highlight-color: transparent;
 }
 
-.fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
 }
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+
+.fade-enter-from,
+.fade-leave-to {
     opacity: 0;
 }
 
@@ -237,7 +248,7 @@ body {
 
 
 .grecaptcha-badge {
-    display: none;
+    display: none !important;
 }
 
 
@@ -262,6 +273,25 @@ button,input,textarea,select {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@mixin liquid-glass($size: 30px, $alpha-bg: 0.75, $alpha-border: 1) {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.15);
+    background-color: rgb(from var(--background-color-secondary) r g b / $alpha-bg);
+    border: 1px solid rgb(from var(--background-color-secondary) r g b / $alpha-border);
+    backdrop-filter: blur(8px) saturate(1.6);
+}
+
+@mixin editable {
+    border: 2px dashed var(--text-color) !important;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: text;
+    transition: all 0.2s;
+
+    &:focus {
+        outline: none;
+    }
 }
 
 .error-text {

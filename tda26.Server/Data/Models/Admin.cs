@@ -1,3 +1,8 @@
-﻿namespace tda26.Server.Data.Models;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public class Admin : Account { }
+namespace tda26.Server.Data.Models;
+
+public class Admin : Account {
+	[NotMapped]
+	public new AccountType Type => AccountType.Admin;
+}

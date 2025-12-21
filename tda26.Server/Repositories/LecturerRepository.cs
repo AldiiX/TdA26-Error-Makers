@@ -16,9 +16,12 @@ public class LecturerRepository(
         return lecturer;
     }
 
-    public async Task<List<Lecturer>> GetAllAsync(CancellationToken ct = default) {
+    public async Task<List<Lecturer>> GetAllAsync(uint limit = 0, CancellationToken ct = default) {
+        var isLimited = limit > 0;
+
         var lecturers = await db.Lecturers
             .OrderBy(l => l.CreatedAt)
+            .Take(isLimited ? (int) limit : int.MaxValue)
             .ToListAsync(ct);
         
         return lecturers;

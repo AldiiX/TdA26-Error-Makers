@@ -49,7 +49,7 @@
             </div>
             <div :class="$style.bottom">
                 <p>© Think different Academy 2025-2026</p>
-                <p>Vytvořeno týmem Error Makers ze školy <a href="https://educhem.cz" target="_blank">Střední škola EDUCHEM, a.s.</a> pro <a href="https://tourde.app/" target="_blank">Tour de App</a>.</p>
+                <p>Vytvořeno týmem Error Makers ze školy <a href="https://educhem.cz" target="_blank">Střední škola EDUCHEM, a.s.</a> pro <a href="https://tourdeapp.cz/" target="_blank">Tour de App</a>.</p>
             </div>
         </div>
     </footer>

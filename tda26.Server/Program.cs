@@ -9,6 +9,7 @@ using Minio.AspNetCore;
 using MySqlConnector;
 using StackExchange.Redis;
 using tda26.Server.Data;
+using tda26.Server.DTOs.Converters;
 using tda26.Server.Infrastructure;
 using tda26.Server.Options;
 using tda26.Server.Repositories;
@@ -150,9 +151,10 @@ public static class Program {
         );
 
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        builder.Services.AddControllers()/*.AddJsonOptions(options => {
-            options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        })*/;
+        builder.Services.AddControllers().AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
+        });
         builder.Services.AddHttpContextAccessor();
 
         // openapi generator (vestaveny v asp.net core)

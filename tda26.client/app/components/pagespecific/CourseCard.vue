@@ -19,15 +19,21 @@ const emit = defineEmits<{
     (e: "delete"): void;
 }>();
 
-const loggedUser = useState<Account | null>("loggedUser");
+const loggedAccount = useState<Account | null>("loggedAccount");
 
 const lecturerDisplayName = computed(() => {
-    const acc = props.course.lecturer;
-    if (!acc) return null;
+    const lecturer = props.course.lecturer;
+    const account = props.course.account;
 
-    return acc.firstName && acc.lastName
-        ? `${acc.firstName} ${acc.lastName}`
-        : acc.username;
+    if(account && !lecturer) {
+        return account.username;
+    }
+
+    if (!lecturer) return null;
+
+    return lecturer.firstName && lecturer.lastName
+        ? `${lecturer.firstName} ${lecturer.lastName}`
+        : lecturer.username;
 });
 
 const revealStyle = computed(() => {
@@ -41,7 +47,19 @@ const revealStyle = computed(() => {
     <div :class="$style.container" :style="revealStyle">
         <div :class="$style.top">
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image"></div>
+                <div :class="$style.image" v-if="course.imageUrl" :style="{ '--bg': `url(${course.imageUrl})` }"></div>
+
+                <template v-if="!course.imageUrl">
+                    <div :class="$style.blob1"></div>
+                    <div :class="$style.blob2"></div>
+                    <div :class="$style.blob3"></div>
+                    <div :class="$style.blob4"></div>
+                    <div :class="$style.blob5"></div>
+
+                    <div :class="$style.circle">
+                        <div :class="$style.icon" :style="{ maskImage: `url(${course.imageUrlOrDefault})` }"></div>
+                    </div>
+                </template>
             </NuxtLink>
         </div>
         <div :class="$style.bottom">
@@ -50,21 +68,36 @@ const revealStyle = computed(() => {
                     {{ course.name }}
                 </h1>
 
-                <NuxtLink
-                        v-if="course.lecturer"
-                        :class="$style.author"
-                        :to="`/lecturers/${course.lecturer.uuid}`"
-                >
-                    <Avatar
-                            :class="$style.avatar"
-                            :name="lecturerDisplayName ?? ''"
-                            :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
-                    />
-                    <p :class="$style.text">
-                        {{ course?.lecturer?.fullNameWithoutTitles }}
-                        <span v-if="course?.lecturer?.uuid === loggedUser?.uuid">(vy)</span>
-                    </p>
-                </NuxtLink>
+                <div :class="$style.authorAndRatingScore">
+                    <NuxtLink
+                            v-if="course.lecturer || course.account"
+                            :class="[$style.author, { [$style.clickable]: course.lecturer }]"
+                            :to="course.lecturer ? `/lecturers/${course.lecturer?.uuid}` : ''"
+                    >
+                        <Avatar
+                                :class="$style.avatar"
+                                :name="lecturerDisplayName ?? ''"
+                                :src="course.lecturer?.pictureUrl ? course.lecturer.pictureUrl : null"
+                        />
+                        <p :class="$style.text">
+                            {{ course?.lecturer?.fullNameWithoutTitles ?? course?.account?.fullNameWithoutTitles }}
+                            <span v-if="course?.account?.uuid === loggedAccount?.uuid" :class="$style.you">(vy)</span>
+                        </p>
+                    </NuxtLink>
+
+                    <div :class="$style.rating">
+                        <div
+                            v-for="n in 5"
+                            :key="n"
+                            :class="[
+                                $style.star,
+                                course.ratingScore >= n * 2 ? $style.full : course.ratingScore === n * 2 - 1 ? $style.half : null
+                            ]"
+                        >
+                        </div>
+                    </div>
+                </div>
+
 
                 <div :class="$style.date">
                     <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
@@ -74,7 +107,7 @@ const revealStyle = computed(() => {
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/star.svg)"></div>
+                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"></div>
                         <p>{{ course.likeCount }}</p>
                     </div>
                     <div :class="$style.info">
@@ -129,7 +162,7 @@ const revealStyle = computed(() => {
     align-items: center;
     height: 400px;
     width: 350px;
-    border-radius: 16px;
+    border-radius: 24px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
     background-color: var(--background-color-secondary);
 
@@ -152,18 +185,114 @@ const revealStyle = computed(() => {
             display: block;
             min-height: 200px;
             width: 100%;
-            background-color: var(--accent-color-primary);
+            background: linear-gradient(160deg, var(--accent-color-primary), var(--accent-color-primary-darker));
             overflow: hidden;
-            border-radius: 16px;
+            border-radius: 24px;
             transition: filter 0.3s;
+            position: relative;
+
+            >* {
+                pointer-events: none;
+            }
 
             &:hover {
-                filter: brightness(0.9);
+                filter: brightness(0.75);
                 transition-duration: 0.3s;
             }
 
             .image {
+                width: 100%;
+                height: 100%;
+                background-image: var(--bg);
+                background-size: cover;
+                background-position: center;
+                position: absolute;
+            }
 
+            .blob1 {
+                width: 32px;
+                aspect-ratio: 1/1;
+                position: absolute;
+                top: 16%;
+                left: 10%;
+                background: white;
+                opacity: 0.1;
+                mask: linear-gradient(to bottom right, black, transparent);
+                border-radius: 50%;
+            }
+
+            .blob2 {
+                width: 64px;
+                aspect-ratio: 1/1;
+                position: absolute;
+                bottom: 8%;
+                left: 6%;
+                background: black;
+                opacity: 0.1;
+                mask: linear-gradient(to bottom right, black, transparent);
+                border-radius: 50%;
+            }
+
+            .blob3 {
+                width: 24px;
+                aspect-ratio: 1/1;
+                position: absolute;
+                top: 12%;
+                right: 6%;
+                background: black;
+                opacity: 0.1;
+                mask: linear-gradient(to bottom right, black, transparent);
+                border-radius: 50%;
+            }
+
+            .blob4 {
+                width: 92px;
+                aspect-ratio: 1/1;
+                position: absolute;
+                bottom: 12%;
+                right: -6%;
+                background: white;
+                opacity: 0.1;
+                mask: linear-gradient(206deg, black, transparent);
+                border-radius: 50%;
+            }
+
+            .blob5 {
+                width: 48px;
+                aspect-ratio: 1/1;
+                position: absolute;
+                bottom: 2%;
+                right: 12%;
+                background: black;
+                opacity: 0.1;
+                mask: linear-gradient(36deg, black, transparent);
+                border-radius: 50%;
+            }
+
+            .circle {
+                position: absolute;
+                width: calc(64px + 40px);
+                aspect-ratio: 1/1;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--accent-color-secondary-transparent-03), var(--accent-color-secondary-transparent-01));
+                box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
+
+                .icon {
+                    position: absolute;
+                    width: 50%;
+                    height: 50%;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: var(--accent-color-secondary-transparent-06);
+                    mask-size: contain;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    //mask-image: url(/icons/courseicons/paint.svg);
+                }
             }
         }
     }
@@ -182,38 +311,78 @@ const revealStyle = computed(() => {
 
             h1 {
                 margin: 0;
-                font-size: 24px;
+                font-size: 20px;
                 text-overflow: ellipsis;
                 overflow: hidden;
                 white-space: nowrap;
                 padding-bottom: 3px;
             }
 
-            .author {
+            .authorAndRatingScore {
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 8px;
                 margin: 8px 0;
-                text-decoration: none;
-                transition-duration: 0.3s;
-                width: fit-content;
 
-                &:hover {
-                    opacity: 0.5;
-                    transition-duration: 0.3s;
-                }
-
-                .text {
-                    font-size: 16px;
-                    color: var(--text-color-secondary);
-                    font-weight: 600;
+                .author {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                     margin: 0;
+                    text-decoration: none;
+                    transition-duration: 0.3s;
+                    width: fit-content;
+
+                    &:is(.clickable) {
+                        &:hover {
+                            opacity: 0.5;
+                            transition-duration: 0.3s;
+                        }
+                    }
+
+
+                    .text {
+                        font-size: 16px;
+                        color: var(--text-color-secondary);
+                        font-weight: 600;
+                        margin: 0;
+
+                        .you {
+                            font-size: 14px;
+                            color: var(--accent-color-secondary-theme);
+                            margin-left: 4px;
+                        }
+                    }
+
+                    .avatar {
+                        --size: 24px !important;
+                    }
                 }
 
-                .avatar {
-                    --size: 24px !important;
+                .rating {
+                    display: flex;
+                    gap: 4px;
+
+                    .star {
+                        width: 16px;
+                        aspect-ratio: 1/1;
+                        mask: url(/icons/star.svg);
+                        background: var(--text-color-3);
+                        mask-size: cover;
+                        mask-position: center;
+                        mask-repeat: no-repeat;
+
+                        &:is(.half) {
+                            background: linear-gradient(90deg, var(--accent-color-primary) 50%, var(--text-color-3) 50%);
+                        }
+
+                        &:is(.full) {
+                            background: linear-gradient(90deg, var(--accent-color-primary) 50%, var(--accent-color-primary) 50%);
+                        }
+                    }
                 }
             }
+
 
             .date {
                 .created,

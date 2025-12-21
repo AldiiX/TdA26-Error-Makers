@@ -20,7 +20,7 @@ public class AuthService(
 
 
     public async Task<Account?> LoginAsync(string identifier, string plainPassword, CancellationToken ct = default) {
-        var acc = (await accounts.GetAllAsync(ct)).FirstOrDefault(a => a.Username.Equals(identifier, StringComparison.OrdinalIgnoreCase));
+        var acc = await accounts.GetByUsernameLightAsync(identifier, ct);
         if (acc == null) return null;
 
         var json = new AccountSessionDto {
@@ -36,7 +36,9 @@ public class AuthService(
         if (!Utilities.VerifyPassword(plainPassword, acc.Password)) return null;
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
         http.HttpContext.Items["loggedaccount"] = json;
-        return acc;
+        
+        // Load full account with relationships for the response
+        return await accounts.GetByIdAsync(acc.Uuid, ct);
     }
     
     // FIX:
@@ -48,25 +50,28 @@ public class AuthService(
         var sessionAcc = JsonSerializer.Deserialize<AccountSessionDto>(json);
         if (sessionAcc == null) return null;
 
-        var acc = await accounts.GetByIdAsync(sessionAcc.Uuid, ct);
-        if (acc == null || acc.Password != sessionAcc.Password) return null;
+        // First check password without loading relationships
+        var accLight = await accounts.GetByIdLightAsync(sessionAcc.Uuid, ct);
+        if (accLight == null || accLight.Password != sessionAcc.Password) return null;
 
-        http.HttpContext!.Items["loggedaccount"] = acc;
         // Keep session data consistent by storing AccountSessionDto instead of full Account
         var sessionDto = new AccountSessionDto {
-            Uuid = acc.Uuid,
-            Username = acc.Username,
-            Password = acc.Password,
-            CreatedAt = acc.CreatedAt,
-            UpdatedAt = acc.UpdatedAt,
+            Uuid = accLight.Uuid,
+            Username = accLight.Username,
+            Password = accLight.Password,
+            CreatedAt = accLight.CreatedAt,
+            UpdatedAt = accLight.UpdatedAt,
         };
+        http.HttpContext!.Items["loggedaccount"] = sessionDto;
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
-        return acc;
+        
+        // Load full account with relationships for the response
+        return await accounts.GetByIdAsync(sessionAcc.Uuid, ct);
     }
 
     public async Task<Account?> RegisterAsync(string username, string email, string plainPassword,  CancellationToken ct = default)
     {
-        var existing = await accounts.GetByUsernameAsync(username, ct);
+        var existing = await accounts.GetByUsernameLightAsync(username, ct);
         if (existing != null) return null;
 
         var hashedPassword = Utilities.HashPassword(plainPassword);
@@ -93,7 +98,8 @@ public class AuthService(
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
         http.HttpContext.Items["loggedaccount"] = json;
 
-        return acc;
+        // Load full account with relationships for the response
+        return await accounts.GetByIdAsync(acc.Uuid, ct);
     }
 
 

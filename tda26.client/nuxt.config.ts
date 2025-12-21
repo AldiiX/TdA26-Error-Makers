@@ -50,6 +50,10 @@ export default defineNuxtConfig({
             '/api/**': {
                 proxy: `${target}/api/**`
             },
+
+            '/**': {
+                prerender: false
+            },
         },
 
         devProxy: {

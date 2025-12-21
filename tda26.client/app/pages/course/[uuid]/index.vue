@@ -1,277 +1,296 @@
 <script setup lang="ts">
-    import {type Account, type Course, type gRecaptcha, type Material} from "#shared/types";
-    import getBaseUrl from "#shared/utils/getBaseUrl";
-    import Button from "~/components/Button.vue";
-    import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
-    import Modal from "~/components/Modal.vue";
-    import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
-    import {computed, ref} from "vue";
-    import {ClientOnly, Head, NuxtLink, Title} from "#components";
-    import NumberExponential from "~/components/NumberExponential.vue";
-    import Avatar from "~/components/Avatar.vue";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz} from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
+import Button from "~/components/Button.vue";
+import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+import Modal from "~/components/Modal.vue";
+import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
+import { ref, computed } from "vue";
+import QuizItem from "~/components/pagespecific/QuizItem.vue";
+import {ClientOnly, Head, NuxtLink, Title} from "#components";
+import NumberExponential from "~/components/NumberExponential.vue";
+import Avatar from "~/components/Avatar.vue";
+import Input from "~/components/Input.vue";
 
-    declare const grecaptcha: gRecaptcha;
+declare const grecaptcha: gRecaptcha;
 
-    definePageMeta({
-        layout: "normal-page-layout",
-        alias: ["/courses/:uuid"],
-        middleware: [
-            defineNuxtRouteMiddleware(async (to) => {                
-                const uuid = to.params.uuid as string;
-                
-                // pokud chybi uuid
-                if (!uuid) {
-                    return navigateTo("/courses");
-                }
+definePageMeta({
+    layout: "normal-page-layout",
+    alias: ["/courses/:uuid"],
+    middleware: [
+        defineNuxtRouteMiddleware(async (to) => {
+            const uuid = to.params.uuid as string;
 
-                // pokud je stranka /courses/:uuid, perm presmeruje na /course/:uuid
-                if (to.path.startsWith("/courses/")) {
-                    return navigateTo(`/course/${uuid}`);
-                }
-            })
-        ]
-    });
+            // pokud chybi uuid
+            if (!uuid) {
+                return navigateTo("/courses");
+            }
 
-    const loggedUser = useState<Account | null>('loggedAccount');
-    const route = useRoute();
-    const uuid = route.params.uuid as string;
+            // pokud je stranka /courses/:uuid, perm presmeruje na /course/:uuid
+            if (to.path.startsWith("/courses/")) {
+                return navigateTo(`/course/${uuid}`);
+            }
+        })
+    ]
+});
 
-    // server small fetch
-    const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
-        query: { full: false },
-        server: true,
-        key: `course-${uuid}-small`,
-    });
+const loggedAccount = useState<Account | null>('loggedAccount');
+const route = useRoute();
+const uuid = route.params.uuid as string;
 
-    if (courseSmallError.value || !courseSmall.value) {
-        console.error("Error loading small course:", courseSmallError.value);
-        await navigateTo('/courses');
+// server small fetch
+const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+    query: { full: false },
+    server: true,
+    key: `course-${uuid}-small`,
+});
+
+if (courseSmallError.value || !courseSmall.value) {
+    console.error("Error loading small course:", courseSmallError.value);
+    await navigateTo('/courses');
+}
+
+// client full fetch
+const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+    query: { full: true },
+    server: false,
+    key: `course-${uuid}-full`,
+});
+
+if (courseError.value) {
+    console.error("Error loading full course:", courseError.value);
+}
+
+const course = ref<Course | null>(_course.value ?? null);
+
+watch(_course, (val) => {
+    if (!val) return;
+    course.value = structuredClone(val);
+}, { immediate: true });
+
+const ratingLoading = ref<boolean>(false);
+const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
+const selectedItem = ref(menuItems[1]); // TODO: change to default
+
+const selectItem = (item: string) => {
+    selectedItem.value = item;
+};
+
+const getHostname = (url?: string) => {
+    try {
+        return url ? new URL(url).hostname : ''
+    } catch {
+        return ''
     }
+}
 
-    // client full fetch
-    const { data: course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
-        query: { full: true },
-        server: false,
-        key: `course-${uuid}-full`,
-    });
+// frontendove poslani view eventu
+onMounted(async () => {
+    const captchaToken = await grecaptcha.execute(
+        "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+        { action: "submit" }
+    );
 
-    if (courseError.value) {
-        console.error("Error loading full course:", courseError.value);
-    }
-    
-    const ratingLoading = ref<boolean>(false);
-    const menuItems = ['Materiály', 'Aktivita'];
-    const selectedItem = ref(menuItems[0]);
-    
-    const selectItem = (item: string) => {
-        selectedItem.value = item;
-    };
-
-    const getHostname = (url?: string) => {
-        try {
-            return url ? new URL(url).hostname : ''
-        } catch {
-            return ''
+    await fetch(`/api/v2/courses/${uuid}/view`, {
+        method: 'POST',
+        body: JSON.stringify({ token: captchaToken }),
+        headers: {
+            'Content-Type': 'application/json'
         }
-    }
+    });
+})
 
-    // frontendove poslani view eventu
-    onMounted(async () => {
-        const captchaToken = await grecaptcha.execute(
-            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
-            { action: "submit" }
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
+let selectedMaterial = ref<Material | null>(null);
+let selectedQuiz = ref<Quiz | null>(null);
+
+const updateError = ref<string | null>(null);
+const deleteError = ref<string | null>(null);
+
+const editingMaterial = ref<any>(null);
+
+const isThisCourseLiked = computed(() => {
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+});
+
+const isThisCourseDisliked = computed(() => {
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+});
+
+const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
+const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
+const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
+
+// Keep optimistic count in sync with fetched data
+watch(() => courseSmall.value?.likeCount, (newCount) => {
+    if (newCount !== undefined) {
+        optimisticLikeCount.value = newCount;
+    }
+}, { immediate: true });
+
+
+
+const openCreateMaterialModal = () => {
+    editingMaterial.value = {
+        name: "",
+        description: "",
+        type: "file",
+        file: null,
+        url: ""
+    };
+    enabledModal.value = "createMaterial";
+};
+
+const openUpdateMaterialModal = (material: Material) => {
+    selectedMaterial.value = material;
+    editingMaterial.value = JSON.parse(JSON.stringify(material)); // deep clone
+    enabledModal.value = "updateMaterial";
+};
+
+const openDeleteMaterialModal = (material: Material) => {
+    selectedMaterial.value = material;
+    enabledModal.value = 'deleteMaterial';
+};
+
+const handleMaterialUpdate = async () => {
+    if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
+
+    const material = selectedMaterial.value;
+    const edited = editingMaterial.value;
+
+    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
+
+    try {
+        let updatedMaterial;
+
+        if (material.type === 1) {
+            // JSON update
+            updatedMaterial = await $fetch<Material>(url, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: {
+                    name: edited.name,
+                    description: edited.description,
+                    url: edited.url,
+                }
+            });
+        } else {
+            // FILE MATERIAL UPDATE (multipart/form-data)
+            const form = new FormData();
+            form.append("Name", edited.name ?? "");
+            form.append("Description", edited.description ?? "");
+
+            // if a NEW FILE was selected
+            if (edited.file instanceof File) {
+                form.append("File", edited.file);
+            }
+
+            console.log("Submitting form data:", {
+                Name: edited.name,
+                Description: edited.description,
+                File: edited.file instanceof File ? edited.file.name : "No new file"
+            });
+
+            updatedMaterial = await $fetch<Material>(url, {
+                method: "PUT",
+                body: form
+            });
+        }
+
+        // update local state
+        course.value.materials = course.value.materials!.map(m =>
+            m.uuid === updatedMaterial.uuid ? updatedMaterial : m
         );
 
-        await fetch(`/api/v2/courses/${uuid}/view`, {
-            method: 'POST',
-            body: JSON.stringify({ token: captchaToken }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-    })
-    
-    const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | null>(null);
-    let selectedMaterial = ref<Material | null>(null);
-    
-    const updateError = ref<string | null>(null);
-    const deleteError = ref<string | null>(null);
+        enabledModal.value = null;
 
-    const editingMaterial = ref<any>(null);
+    } catch (err) {
+        console.error("Update failed:", err);
+    }
+};
 
-    const isThisCourseLiked = computed(() => {
-        if (!loggedUser.value || !courseSmall.value) return false;
-        return loggedUser.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
+const handleMaterialDelete = async () => {
+    if (!course.value || !course.value.materials) return;
+
+    await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
+        method: 'DELETE'
+    }).then(() => {
+        // remove from local state
+        course.value!.materials = course.value!.materials!.filter(m => m.uuid !== selectedMaterial.value?.uuid);
+        enabledModal.value = null;
+        deleteError.value = null;
+    }).catch((err) => {
+        console.error("Error deleting material:", err);
+        deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
     });
+};
 
-    const isThisCourseDisliked = computed(() => {
-        if (!loggedUser.value || !courseSmall.value) return false;
-        return loggedUser.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
-    });
+const handleMaterialCreate = async () => {
+    if (!course.value || !editingMaterial.value) return;
 
-    const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
-    const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
-    const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
+    const edited = editingMaterial.value;
 
-    // Keep optimistic count in sync with fetched data
-    watch(() => courseSmall.value?.likeCount, (newCount) => {
-        if (newCount !== undefined) {
-            optimisticLikeCount.value = newCount;
-        }
-    }, { immediate: true });
+    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
 
+    try {
+        let createdMaterial;
 
-
-    const openCreateMaterialModal = () => {
-        editingMaterial.value = {
-            name: "",
-            description: "",
-            type: "file",
-            file: null,
-            url: ""
-        };
-        enabledModal.value = "createMaterial";
-    };
-    
-    const openUpdateMaterialModal = (material: Material) => {
-        selectedMaterial.value = material;
-        editingMaterial.value = JSON.parse(JSON.stringify(material)); // deep clone
-        enabledModal.value = "updateMaterial";
-    };
-    
-    const openDeleteMaterialModal = (material: Material) => {
-        selectedMaterial.value = material;
-        enabledModal.value = 'deleteMaterial';
-    };
-
-    const handleMaterialUpdate = async () => {
-        if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
-    
-        const material = selectedMaterial.value;
-        const edited = editingMaterial.value;
-    
-        const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
-    
-        try {
-            let updatedMaterial;
-    
-            if (material.type === "url") {
-                // JSON update
-                updatedMaterial = await $fetch<Material>(url, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: {
-                        name: edited.name,
-                        description: edited.description,
-                        url: edited.url,
-                    }
-                });
-            } else {
-                // FILE MATERIAL UPDATE (multipart/form-data)
-                const form = new FormData();
-                form.append("Name", edited.name ?? "");
-                form.append("Description", edited.description ?? "");
-    
-                // if a NEW FILE was selected
-                if (edited.file instanceof File) {
-                    form.append("File", edited.file);
+        if (edited.type === "url") {
+            // JSON create
+            createdMaterial = await $fetch<Material>(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: {
+                    type: "url",
+                    name: edited.name,
+                    description: edited.description,
+                    url: edited.url,
                 }
+            });
+        } else {
+            // FILE MATERIAL CREATE (multipart/form-data)
+            const form = new FormData();
+            form.append("Type", "file");
+            form.append("Name", edited.name ?? "");
+            form.append("Description", edited.description ?? "");
+            form.append("File", edited.file);
 
-                console.log("Submitting form data:", {
-                    Name: edited.name,
-                    Description: edited.description,
-                    File: edited.file instanceof File ? edited.file.name : "No new file"
-                });
-    
-                updatedMaterial = await $fetch<Material>(url, {
-                    method: "PUT",
-                    body: form
-                });
-            }
-    
-            // update local state
-            course.value.materials = course.value.materials!.map(m =>
-                m.uuid === updatedMaterial.uuid ? updatedMaterial : m
-            );
-    
-            enabledModal.value = null;
-    
-        } catch (err) {
-            console.error("Update failed:", err);
-        }
-    };
-    
-    const handleMaterialDelete = async () => {
-        if (!course.value || !course.value.materials) return;
-        
-        await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
-            method: 'DELETE'
-        }).then(() => {
-            // remove from local state
-            course.value!.materials = course.value!.materials!.filter(m => m.uuid !== selectedMaterial.value?.uuid);
-            enabledModal.value = null;
-            deleteError.value = null;
-        }).catch((err) => {
-            console.error("Error deleting material:", err);
-            deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
-        });
-    };
-    
-    const handleMaterialCreate = async () => {
-        if (!course.value || !editingMaterial.value) return;
-        
-        const edited = editingMaterial.value;
-        
-        const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
-        
-        try {
-            let createdMaterial;
-            
-            if (edited.type === "url") {
-                // JSON create
-                createdMaterial = await $fetch<Material>(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: {
-                        type: "url",
-                        name: edited.name,
-                        description: edited.description,
-                        url: edited.url,
-                    }
-                });
-            } else {
-                // FILE MATERIAL CREATE (multipart/form-data)
-                const form = new FormData();
-                form.append("Type", "file");
-                form.append("Name", edited.name ?? "");
-                form.append("Description", edited.description ?? "");
+            if (edited.file instanceof File) {
                 form.append("File", edited.file);
-                
-                if (edited.file instanceof File) {
-                    form.append("File", edited.file);
-                } else {
-                    throw new Error("No file selected for file material.");
-                }
-                
-                createdMaterial = await $fetch<Material>(url, {
-                    method: "POST",
-                    body: form
-                });
+            } else {
+                throw new Error("No file selected for file material.");
             }
-            
-            // add to local state
-            course.value.materials = course.value.materials ?? [];
-            course.value.materials.unshift(createdMaterial);
-            
-            enabledModal.value = null;
-            
-        } catch (err) {
-            console.error("Creation failed:", err);
+
+            createdMaterial = await $fetch<Material>(url, {
+                method: "POST",
+                body: form
+            });
         }
-    };
+
+        // add to local state
+        course.value.materials = course.value.materials ?? [];
+        course.value.materials.unshift(createdMaterial);
+
+        enabledModal.value = null;
+
+    } catch (err) {
+        console.error("Creation failed:", err);
+    }
+};
+
+const ownsCourse = computed(() => {
+    if (!loggedAccount.value || !courseSmall.value) return false;
+    return loggedAccount.value?.uuid === courseSmall.value?.account?.uuid;
+});
+
+onMounted(() => {
+    console.log(loggedAccount.value, courseSmall.value, ownsCourse.value);
+});
 
 async function addRating(rating: "like" | "dislike" | null) {
-    if (!loggedUser.value || !courseSmall.value || ratingLoading.value) return;
+    if (!loggedAccount.value || !courseSmall.value || ratingLoading.value) return;
 
     const baseUrl = getBaseUrl();
     const uuid = courseSmall.value.uuid;
@@ -348,7 +367,7 @@ async function addRating(rating: "like" | "dislike" | null) {
         ]);
 
         // hromadne prirazeni dat az po dokonceni vsech requestu
-        loggedUser.value = updatedUser ?? null;
+        loggedAccount.value = updatedUser ?? null;
         courseSmall.value = updatedCourseSmall;
         course.value = updatedCourse;
         // optimisticLikeCount is automatically synced via watcher
@@ -366,6 +385,55 @@ async function addRating(rating: "like" | "dislike" | null) {
         ratingLoading.value = false;
     }
 }
+
+const handleQuizDelete = async () => {
+    if (!course.value || !course.value.quizzes) return;
+
+    await $fetch<void>(getBaseUrl() + `/api/v1/courses/${course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
+        method: 'DELETE'
+    }).then(() => {
+        course.value!.quizzes = course.value!.quizzes!.filter(q => q.uuid !== selectedQuiz.value?.uuid);
+        enabledModal.value = null;
+        deleteError.value = null;
+    }).catch((err) => {
+        console.error("Error deleting quiz:", err);
+        deleteError.value = "Nepodařilo se smazat kvíz. Zkuste to prosím znovu.";
+    });
+};
+
+const handleQuizCreate = async (e: Event) => {
+    if (!course.value) return;
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const quizName = formData.get('createQuizName')?.toString().trim();
+
+    if (!quizName) {
+        updateError.value = "Název kvízu je povinný.";
+        return;
+    }
+
+    try {
+        const newQuiz = await $fetch<Quiz>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/quizzes`,
+            {
+                method: 'POST',
+                body: { title: quizName }
+            }
+        );
+
+        course.value.quizzes = course.value.quizzes ?? [];
+        course.value.quizzes.unshift(newQuiz);
+
+        enabledModal.value = null;
+        updateError.value = null;
+        form.reset();
+    } catch (err) {
+        console.error("Creation failed:", err);
+        updateError.value = "Nepodařilo se vytvořit kvíz. Zkuste to prosím znovu.";
+    }
+};
+
 </script>
 
 <template>
@@ -389,15 +457,15 @@ async function addRating(rating: "like" | "dislike" | null) {
                     </div>
                     <div :class="$style.el">
                         <p :class="$style.title">Recenze</p>
-                        <NumberExponential :value="optimisticLikeCount" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <NumberExponential :value="0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
                     </div>
                 </div>
 
                 <div :class="$style.otherinfo">
                     <div :class="$style.authorAndRating">
-                        <NuxtLink v-if="courseSmall?.lecturer" :class="$style.author" :to="`/lecturer/${courseSmall?.lecturer?.uuid}`">
-                            <Avatar :class="$style.avatar" :name="courseSmall?.lecturer?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
-                            <p>{{ courseSmall?.lecturer?.fullName }}</p>
+                        <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
+                            <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                            <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
                         </NuxtLink>
 
                         <div :class="$style.rating">
@@ -416,7 +484,7 @@ async function addRating(rating: "like" | "dislike" | null) {
                 </div>
             </div>
         </div>
-        
+
         <div :class="$style.details">
             <nav>
                 <ul>
@@ -432,7 +500,7 @@ async function addRating(rating: "like" | "dislike" | null) {
             <div :class="['liquid-glass']">
                 <ClientOnly>
                     <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                        <Button v-if="loggedUser?.uuid == course?.lecturer?.uuid" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                        <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
                             Přidat nový materiál
                         </Button>
 
@@ -443,20 +511,38 @@ async function addRating(rating: "like" | "dislike" | null) {
                                 <MaterialItem
                                     :material="material"
                                     :course="course"
-                                    :edit-mode="loggedUser?.uuid == courseSmall?.lecturer?.uuid"
+                                    :edit-mode="ownsCourse"
                                     @edit="openUpdateMaterialModal"
                                     @delete="openDeleteMaterialModal"
                                 />
                             </li>
                         </ul>
                     </div>
+                    <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
+                        <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="enabledModal = 'createQuiz'" :class="$style.addMaterialButton">
+                            Přidat nový kvíz
+                        </Button>
+
+                        <p v-if="coursePending">Načítání kvízů...</p>
+                        <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
+                        <ul v-else>
+                            <li v-for="quiz in course.quizzes" :key="quiz.uuid">
+                                <QuizItem
+                                    :quiz="quiz"
+                                    :course="course"
+                                    :edit-mode="ownsCourse"
+                                    @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                />
+                            </li>
+                        </ul>
+                    </div>
                     <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-    <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-    <!--                    <ul v-else>-->
-    <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-    <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-    <!--                        </li>-->
-    <!--                    </ul>-->
+                        <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+                        <!--                    <ul v-else>-->
+                        <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+                        <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+                        <!--                        </li>-->
+                        <!--                    </ul>-->
                     </div>
                 </ClientOnly>
             </div>
@@ -547,6 +633,63 @@ async function addRating(rating: "like" | "dislike" | null) {
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         </Modal>
+
+        <!-- DELETE QUIZ -->
+        <Modal
+            :enabled="enabledModal === 'deleteQuiz'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
+            <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
+            <p>Tuto akci nelze vrátit zpět.</p>
+            <div :class="$style.modalButtons">
+                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="handleQuizDelete"
+                >
+                    Smazat kvíz
+                </Button>
+            </div>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+        </Modal>
+        
+        <!-- CREATE QUIZ -->
+        <Modal
+            :enabled="enabledModal === 'createQuiz'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+            :class-name="$style.createQuizModal"
+        >
+            <h3>Vytvoření nového kvízu</h3>
+            <form 
+                @submit.prevent="handleQuizCreate"
+            >
+                <label for="createQuizName">Název kvízu</label>
+                <Input 
+                    id="createQuizName"
+                    name="createQuizName"
+                    max="128"
+                    required
+                />
+
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        type="submit"
+                    >
+                        Vytvořit kvíz
+                    </Button>
+                </div>
+            </form>
+            <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
     </Teleport>
 </template>
 
@@ -562,6 +705,7 @@ async function addRating(rating: "like" | "dislike" | null) {
     margin: 0;
     overflow: visible;
     width: fit-content;
+    padding-bottom: 4px;
 }
 
 ul {
@@ -570,11 +714,28 @@ ul {
     margin: 0;
 }
 
+.createQuizModal {
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        label {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+        }
+    }
+}
+
 .course {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    
+
     >.info {
         display: flex;
         justify-content: space-between;
@@ -585,7 +746,7 @@ ul {
             font-size: 18px;
             margin-bottom: 6px;
         }
-        
+
         .brief {
             display: flex;
             flex-direction: column;
@@ -618,7 +779,6 @@ ul {
                         }
                     }
 
-
                     &:last-child {
                         border-right: none;
                         padding-right: 0;
@@ -649,10 +809,13 @@ ul {
                         text-decoration: none;
                         transition-duration: 0.3s;
 
-                        &:hover {
-                            opacity: 0.5;
-                            transition-duration: 0.3s;
+                        &:is(.clickable) {
+                            &:hover {
+                                opacity: 0.5;
+                                transition-duration: 0.3s;
+                            }
                         }
+
 
                         .avatar {
                             --size: 24px !important;
@@ -713,16 +876,16 @@ ul {
             }
         }
     }
-    
-    
+
+
     .details {
         margin-top: 32px;
-        
+
         nav {
             ul {
                 display: flex;
                 gap: 24px;
-                
+
                 li {
                     font-size: 18px;
                     padding-bottom: 8px;
@@ -731,7 +894,7 @@ ul {
                     user-select: none;
                     opacity: .6;
                     font-weight: 600;
-                    
+
                     &:hover {
                         color: var(--accent-color-secondary-theme);
                         opacity: 1;
@@ -749,7 +912,7 @@ ul {
                         border-radius: 4px;
                         transition: all 0.3s;
                     }
-                    
+
                     &.active {
                         border-bottom: none;
                         position: relative;
@@ -763,7 +926,7 @@ ul {
                 }
             }
         }
-        
+
         >div {
             padding: 24px;
             border-radius: 16px;
@@ -774,9 +937,9 @@ ul {
         .materials {
             .addMaterialButton {
                 margin-bottom: 16px;
-                
+
             }
-            
+
             ul {
                 display: flex;
                 flex-direction: column;
