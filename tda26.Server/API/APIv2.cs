@@ -290,6 +290,7 @@ public class APIv2(
                 .Include(c => c.Quizzes)
                 .Include(c => c.Feed)
                 .Include(c => c.Account)
+                .Include(c => c.Ratings)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
@@ -301,6 +302,7 @@ public class APIv2(
         } else {
             course = await db.Courses
                 .Include(c => c.Account)
+                .Include(c => c.Ratings)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) {
