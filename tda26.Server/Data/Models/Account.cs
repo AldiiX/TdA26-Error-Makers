@@ -29,10 +29,10 @@ public class Account : Auditable {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum AccountType { Account, Lecturer, Admin }
 
-    [NotMapped, JsonIgnore]
+    [NotMapped]
     public IEnumerable<Like> Likes => Ratings.OfType<Like>();
 
-    [NotMapped, JsonIgnore]
+    [NotMapped]
     public IEnumerable<Dislike> Dislikes => Ratings.OfType<Dislike>();
 
     [NotMapped]
