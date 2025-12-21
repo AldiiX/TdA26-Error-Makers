@@ -112,10 +112,12 @@ const emitSelectionUpdate = () => {
 
     if (count === 1) {
         const nextType = "singleChoice";
+        console.log("Emitting update for singleChoice");
 
         emit("update:question", {
             uuid: prevType !== nextType ? undefined : props.question.uuid,
             type: nextType,
+            correctIndex: selectedIndices.value[0],
             correctIndices: [...selectedIndices.value],
         });
         return;
@@ -131,7 +133,7 @@ const emitSelectionUpdate = () => {
         });
         return;
     }
-
+    
     // 0 selected
     emit("update:question", {
         ...props.question,

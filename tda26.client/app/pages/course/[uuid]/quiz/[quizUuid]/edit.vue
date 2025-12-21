@@ -106,6 +106,14 @@ const saveQuiz = async () => {
             order: index,
         })),
     };
+    
+    dto.questions.every((q) => {
+        if (q.uuid && q.uuid.startsWith("new-")) {
+            delete q.uuid;
+        }
+        
+        return true;
+    });
 
     await $fetch(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
         method: 'PUT',
@@ -218,15 +226,16 @@ const onDrop = () => {
     dragTo.value = null;
 };
 
-// TODO: re-enable unsaved changes warning
-// onMounted(() => {
-//     window.addEventListener("beforeunload", (e) => {
-//         if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
-//
-//         e.preventDefault();
-//         e.returnValue = "";
-//     });
-// });
+onMounted(() => {
+    if (!import.meta.dev) {
+        window.addEventListener("beforeunload", (e) => {
+            if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;
+
+            e.preventDefault();
+            e.returnValue = "";
+        });
+    }
+});
 
 const addQuestionOption = (i: number) => {
     if (!quiz.value) return;
