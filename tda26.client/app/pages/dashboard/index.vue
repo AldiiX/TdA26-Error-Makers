@@ -21,12 +21,26 @@ const user = useState<Account | null>('loggedAccount');
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
 
-const { data: _courses, pending: coursesPending } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?max=4', {
-    server: false
+// Cache for courses using useState
+const coursesCache = useState<Course[] | null>('dashboardCoursesCache', () => null);
+
+// Non-blocking lazy fetch
+const { data: _courses, pending: coursesPending } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?max=4', {
+    server: false,
+    lazy: true,
+    immediate: true
 });
 
+// Update cache when data is fetched
+watch(_courses, (newCourses) => {
+    if (newCourses) {
+        coursesCache.value = newCourses;
+    }
+}, { immediate: true });
+
 const courses = computed<Course[]>(() => {
-    return [...(_courses.value ?? [])];
+    // Use cached courses if available, otherwise use fetched data
+    return [...(coursesCache.value ?? _courses.value ?? [])];
 });
 
 const courseList = ref<HTMLElement | null>(null);
@@ -62,6 +76,7 @@ const refreshCourses = async () => {
     try {
         const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
         _courses.value = refreshed;
+        coursesCache.value = refreshed;
     } catch {}
 };
 
