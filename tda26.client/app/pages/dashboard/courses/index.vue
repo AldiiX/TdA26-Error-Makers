@@ -4,6 +4,10 @@ import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import {computed} from "vue";
+import Modal from "~/components/Modal.vue";
+import Button from "~/components/Button.vue";
+import CourseForm from "~/components/pagespecific/CourseForm.vue";
+import Pagination from "~/components/Pagination.vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -41,7 +45,7 @@ const sortedCourses = computed(() => {
 });
 
 const page = ref(1);
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 const paginatedCourses = computed(() => {
     if (!courses.value) return [];
@@ -62,12 +66,84 @@ const goToPage = (newPage: number) => {
     page.value = newPage;
 };
 
-const goToNextPage = () => {
-    goToPage(page.value + 1);
+const visiblePages = computed<(number | '...')[]>(() => {
+    const total = totalPages.value
+    const current = page.value
+
+    if (total <= 8) {
+        return Array.from({ length: total }, (_, i) => i + 1)
+    }
+
+    const result: (number | '...')[] = []
+    const push = (v: number | '...') => {
+        if (result[result.length - 1] === v) return
+        result.push(v)
+    }
+
+    push(1)
+
+    const start = Math.max(2, current - 2)
+    const end = Math.min(total - 1, current + 2)
+
+    if (start > 2) push('...')
+
+    for (let i = start; i <= end; i++) {
+        push(i)
+    }
+
+    if (end < total - 1) push('...')
+
+    push(total)
+
+    while (result.length > 8) {
+        const firstDots = result.indexOf('...')
+        if (firstDots !== -1) {
+            result.splice(firstDots, 1)
+        } else {
+            result.splice(1, 1)
+        }
+    }
+
+    return result
+})
+
+const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
+const editingCourseId = ref<string | null>(null);
+
+const refreshCourses = async () => {
+    try {
+        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
+        _courses.value = refreshed;
+    } catch {}
 };
 
-const goToLastPage = () => {
-    goToPage(page.value - 1);
+const openEdit = (course: Course) => {
+    editingCourseId.value = course.uuid;
+    enabledModal.value = "updateCourse";
+};
+
+const selectedDeleteCourse = ref<Course | null>(null);
+const deleteError = ref<string | null>(null);
+
+const openDelete = (course: Course) => {
+    selectedDeleteCourse.value = course;
+    enabledModal.value = "deleteCourse";
+};
+
+const deleteCourse = async () => {
+    if (!selectedDeleteCourse.value) return;
+
+    try {
+        await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
+            method: "DELETE"
+        });
+
+        enabledModal.value = null;
+        selectedDeleteCourse.value = null;
+        await refreshCourses();
+    } catch (err) {
+        deleteError.value = "Nepodařilo se smazat kurz.";
+    }
 };
 
 </script>
@@ -89,17 +165,71 @@ const goToLastPage = () => {
         <div :class="$style.coursesList">
             <CourseCard
                 v-for="course in paginatedCourses"
+                edit-mode
                 :course="course"
                 :key="course.uuid"
+                @edit="openEdit(course)"
+                @delete="openDelete(course)"
             />
         </div>
-        <div :class="$style.pagination">
-            <!-- Pagination controls will go here -->
-            <p @click="goToLastPage()">zpet</p>
-            <p>Stránka {{ page }} z {{ totalPages }}</p>
-            <p @click="goToNextPage()">dopredu</p>
-        </div>
+
+        <Pagination
+            v-if="totalPages > 1"
+            :page="page"
+            :total-pages="totalPages"
+            :visible-pages="visiblePages"
+            :class="$style.pagination"
+            @update:page="goToPage"
+        />
     </div>
+
+    <Teleport to="#teleports">
+        <!-- CREATE -->
+        <Modal
+            :enabled="enabledModal === 'createCourse'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
+            <h3>Vytvořit nový kurz</h3>
+            <CourseForm
+                mode="create"
+                @finished="() => { enabledModal = null; refreshCourses(); }"
+            />
+        </Modal>
+
+        <!-- EDIT -->
+        <Modal
+            :enabled="enabledModal === 'updateCourse'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '800px' }"
+        >
+            <h3>Upravit kurz</h3>
+            <CourseForm
+                mode="edit"
+                :course-id="editingCourseId"
+                @finished="() => { enabledModal = null; refreshCourses(); editingCourseId = null; }"
+            />
+        </Modal>
+
+        <!-- DELETE -->
+        <Modal :enabled="enabledModal === 'deleteCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
+            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
+            <p>Tuto akci nelze vrátit zpět.</p>
+            <div style="display: flex; gap: 16px; margin-top: 24px;">
+                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="deleteCourse"
+                >
+                    Smazat kurz
+                </Button>
+            </div>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+        </Modal>
+    </Teleport>
 </template>
 
 <style module lang="scss">
@@ -142,10 +272,10 @@ const goToLastPage = () => {
             display: flex;
         }
     }
-
+    
     .pagination {
-        height: 64px;
-        background-color: var(--accent-color-secondary-darker);
+        margin-top: 32px;
+        display: flex;
     }
 }
 </style>
