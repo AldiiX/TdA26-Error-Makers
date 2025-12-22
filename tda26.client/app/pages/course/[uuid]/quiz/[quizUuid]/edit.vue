@@ -231,6 +231,7 @@ const onDrop = () => {
 };
 
 onMounted(() => {
+    // Warn user about unsaved changes
     if (!import.meta.dev) {
         window.addEventListener("beforeunload", (e) => {
             if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;

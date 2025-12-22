@@ -15,7 +15,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "edit"): void;
     (e: "delete"): void;
 }>();
 
@@ -128,7 +127,7 @@ const revealStyle = computed(() => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="emit('edit')"
+                                @click="navigateTo(`/course/${course.uuid}?edit=true`)"
                                 style="width: 100%"
                         >
                             Upravit

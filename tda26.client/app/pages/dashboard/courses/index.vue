@@ -17,8 +17,6 @@ definePageMeta({
     }
 });
 
-
-
 const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses', {
     server: false
 });
@@ -117,11 +115,6 @@ const refreshCourses = async () => {
     } catch {}
 };
 
-const openEdit = (course: Course) => {
-    editingCourseId.value = course.uuid;
-    enabledModal.value = "updateCourse";
-};
-
 const selectedDeleteCourse = ref<Course | null>(null);
 const deleteError = ref<string | null>(null);
 
@@ -168,7 +161,6 @@ const deleteCourse = async () => {
                 edit-mode
                 :course="course"
                 :key="course.uuid"
-                @edit="openEdit(course)"
                 @delete="openDelete(course)"
             />
         </div>
