@@ -70,7 +70,7 @@ watch(_course, (val) => {
 
 const ratingLoading = ref<boolean>(false);
 const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
-const selectedItem = ref(menuItems[1]); // TODO: change to default
+const selectedItem = ref(menuItems[0]);
 
 const selectItem = (item: string) => {
     selectedItem.value = item;
@@ -165,7 +165,7 @@ const handleMaterialUpdate = async () => {
     try {
         let updatedMaterial;
 
-        if (material.type === 1) {
+        if (material.type === 'url') {
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",

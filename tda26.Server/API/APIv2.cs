@@ -322,7 +322,7 @@ public class APIv2(
         
         if(course.Account != null) course.Account.Ratings = [];
 
-        return Ok(course);
+        return Ok(course.ToReadDto());
     }
 
     [HttpPut("courses/{uuid:guid}")]
