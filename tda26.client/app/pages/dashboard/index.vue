@@ -35,7 +35,7 @@ watch(_courses, (newCourses) => {
     if (newCourses) {
         coursesCache.value = newCourses;
     }
-}, { immediate: true });
+});
 
 const courses = computed<Course[]>(() => {
     // Prefer fresh data from fetch, fallback to cache if fetch hasn't completed yet
@@ -66,9 +66,12 @@ onMounted(() => {
     window.addEventListener('resize', updateScroll);
 });
 
+onUnmounted(() => {
+    window.removeEventListener('resize', updateScroll);
+});
+
 watch(courses, () => {
     nextTick(() => updateScroll());
-    window.removeEventListener('resize', updateScroll);
 });
 
 const refreshCourses = async () => {
