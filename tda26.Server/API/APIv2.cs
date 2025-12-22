@@ -322,7 +322,7 @@ public class APIv2(
         
         if(course.Account != null) course.Account.Ratings = [];
 
-        return Ok(course.ToReadDto());
+        return Ok(course.ToReadDto(true));
     }
 
     [HttpPut("courses/{uuid:guid}")]
@@ -461,7 +461,7 @@ public class APIv2(
 
         await courseRepository.UpdateAsync(existingCourse, ct);
         
-        return Ok(existingCourse.ToReadDto());
+        return Ok(existingCourse.ToReadDto(true));
     }
 
     [HttpDelete("courses/{uuid:guid}")]
@@ -1128,7 +1128,7 @@ public class APIv2(
         if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
             return NotFound(new { error = "Quiz result not found for the specified quiz." });
         
-        var quizDto = quiz.ToReadDto();
+        var quizDto = quiz.ToReadDto(true);
 
         foreach (ReadQuestionResponse question in quizDto.Questions) {
             var answer = quizResult.Answers.FirstOrDefault(a => a.QuestionUuid == question.Uuid);
