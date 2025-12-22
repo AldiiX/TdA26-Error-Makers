@@ -19,12 +19,27 @@ definePageMeta({
 
 
 
-const { data: _courses, pending, error, refresh } = await useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses', {
-    server: false
+// Cache for all courses using useState
+const allCoursesCache = useState<Course[] | null>('allCoursesCache', () => null);
+
+// Non-blocking lazy fetch for all courses
+const { data: _courses, pending, error, refresh } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses', {
+    server: false,
+    lazy: true
+});
+
+// Update cache when data is fetched
+watch(_courses, (newCourses) => {
+    if (newCourses) {
+        allCoursesCache.value = newCourses;
+    }
 });
 
 const loggedAccount = useState<Account>('loggedAccount');
-const courses = computed(() => _courses.value ?? []);
+const courses = computed(() => {
+    // Prefer fresh data from fetch, fallback to cache if fetch hasn't completed yet
+    return _courses.value ?? allCoursesCache.value ?? [];
+});
 
 const sort = ref<'new' | 'old'>('new');
 const sortedCourses = computed(() => {
@@ -112,8 +127,9 @@ const editingCourseId = ref<string | null>(null);
 
 const refreshCourses = async () => {
     try {
-        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
+        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses");
         _courses.value = refreshed;
+        allCoursesCache.value = refreshed;
     } catch {}
 };
 
