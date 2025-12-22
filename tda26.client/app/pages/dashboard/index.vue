@@ -27,8 +27,7 @@ const coursesCache = useState<Course[] | null>('dashboardCoursesCache', () => nu
 // Non-blocking lazy fetch
 const { data: _courses, pending: coursesPending } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?max=4', {
     server: false,
-    lazy: true,
-    immediate: true
+    lazy: true
 });
 
 // Update cache when data is fetched
@@ -39,8 +38,8 @@ watch(_courses, (newCourses) => {
 }, { immediate: true });
 
 const courses = computed<Course[]>(() => {
-    // Use cached courses if available, otherwise use fetched data
-    return [...(coursesCache.value ?? _courses.value ?? [])];
+    // Prefer fresh data from fetch, fallback to cache if fetch hasn't completed yet
+    return [...(_courses.value ?? coursesCache.value ?? [])];
 });
 
 const courseList = ref<HTMLElement | null>(null);
