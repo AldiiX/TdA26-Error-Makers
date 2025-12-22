@@ -78,6 +78,8 @@ public class APIv2(
     [HttpPost("auth/login")]
     public async Task<IActionResult> Login([FromBody] AuthLoginRequest body, CancellationToken ct = default)
     {
+        body.Username = body.Username?.Trim() ?? string.Empty;
+        body.Password = body.Password?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password))
         {
             return new BadRequestObjectResult(new
@@ -87,8 +89,9 @@ public class APIv2(
         }
 
         var acc = await auth.LoginAsync(body.Username, body.Password, ct);
+        
         if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
-
+        
         // odstraneni policek
         foreach (var like in acc?.Ratings ?? [])
         {
@@ -109,6 +112,9 @@ public class APIv2(
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] AuthRegisterRequest body, CancellationToken ct = default)
     {
+        body.Username = body.Username?.Trim() ?? string.Empty;
+        body.Email = body.Email?.Trim() ?? string.Empty;
+        body.Password = body.Password?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password))
         {
             return new BadRequestObjectResult(new
