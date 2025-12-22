@@ -3,7 +3,7 @@ import { Head, Title } from '#components';
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
-import {computed} from "vue";
+import {computed, watch} from "vue";
 import Modal from "~/components/Modal.vue";
 import Button from "~/components/Button.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
