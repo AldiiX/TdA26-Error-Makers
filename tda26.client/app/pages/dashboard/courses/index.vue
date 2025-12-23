@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { Head, Title } from '#components';
+import {Head, Title} from '#components';
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
@@ -17,60 +17,93 @@ definePageMeta({
     }
 });
 
+const loggedAccount = useState<Account>('loggedAccount');
 
+const PAGE_SIZE = 12;
+const FIRST_FETCH_LIMIT = 24;
 
-// Cache for all courses using useState
-const allCoursesCache = useState<Course[] | null>('allCoursesCache', () => null);
+// sdilena cache mezi navigacemi
+const coursesState = useState<Course[] | null>('myCoursesCache', () => null);
 
-// Non-blocking lazy fetch for all courses
-const { data: _courses, pending, error, refresh } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses', {
+// ochrany proti opakovanemu full fetchi
+const fullFetchRunning = ref(false);
+const hasFetchedAllCourses = useState<boolean>('hasFetchedAllMyCourses', () => false);
+
+async function fetchAllCoursesIfNeeded() {
+    if (hasFetchedAllCourses.value) return;
+    if (fullFetchRunning.value) return;
+    if (!coursesState.value) return;
+
+    // kdyz prvni fetch vratil mene nez limit, dalsi data uz pravdepodobne nejsou
+    if (coursesState.value.length < FIRST_FETCH_LIMIT) {
+        hasFetchedAllCourses.value = true;
+        return;
+    }
+
+    fullFetchRunning.value = true;
+    try {
+        coursesState.value = await $fetch<Course[]>('/api/v2/me/courses', {
+            baseURL: getBaseUrl()
+        });
+
+        hasFetchedAllCourses.value = true;
+    } catch (e) {
+        // kdyz se full fetch nepovede, nechceme to zamknout navzdy
+        console.error('error fetching all my courses:', e);
+    } finally {
+        fullFetchRunning.value = false;
+    }
+}
+
+// prvni rychly fetch xx kurzů
+const { pending, error } = useLazyFetch<Course[]>(`/api/v2/me/courses?limit=${FIRST_FETCH_LIMIT}`, {
+    baseURL: getBaseUrl(),
+    key: `myCourses:limit:${FIRST_FETCH_LIMIT}`,
     server: false,
-    lazy: true
-});
-
-// Update cache when data is fetched
-watch(_courses, (newCourses) => {
-    if (newCourses) {
-        allCoursesCache.value = newCourses;
+    immediate: true,
+    getCachedData: () => coursesState.value ?? undefined,
+    onResponse({ response }) {
+        coursesState.value = (response as any)._data as Course[];
+        void fetchAllCoursesIfNeeded();
     }
 });
 
-const loggedAccount = useState<Account>('loggedAccount');
-const courses = computed(() => {
-    // Prefer fresh data from fetch, fallback to cache if fetch hasn't completed yet
-    return _courses.value ?? allCoursesCache.value ?? [];
-});
+// kdyz data prisla z cache, onresponse se nespusti, tak tohle zajisti upgrade fetch i v tom pripade
+watch(() => coursesState.value?.length, () => {
+    void fetchAllCoursesIfNeeded();
+}, { immediate: true });
+
+watch(error, (e) => {
+    if (e) {
+        console.error('error fetching my courses:', e);
+    }
+}, { immediate: true });
+
+const courses = computed(() => coursesState.value);
 
 const sort = ref<'new' | 'old'>('new');
 const sortedCourses = computed(() => {
-    let list = [...courses.value];
+    const list = courses.value ? [...courses.value] : [];
 
     switch (sort.value) {
         case 'new':
-            return list.sort(
-                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+            return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         case 'old':
-            return list.sort(
-                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
+            return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         default:
             return list;
     }
 });
 
 const page = ref(1);
-const PAGE_SIZE = 10;
 
 const paginatedCourses = computed(() => {
-    if (!courses.value) return [];
     const list = sortedCourses.value;
     const start = (page.value - 1) * PAGE_SIZE;
     return list.slice(start, start + PAGE_SIZE);
 });
 
 const totalPages = computed(() => {
-    if (!courses.value) return 0;
     return Math.ceil(sortedCourses.value.length / PAGE_SIZE);
 });
 
@@ -82,54 +115,56 @@ const goToPage = (newPage: number) => {
 };
 
 const visiblePages = computed<(number | '...')[]>(() => {
-    const total = totalPages.value
-    const current = page.value
+    const total = totalPages.value;
+    const current = page.value;
 
     if (total <= 8) {
-        return Array.from({ length: total }, (_, i) => i + 1)
+        return Array.from({ length: total }, (_, i) => i + 1);
     }
 
-    const result: (number | '...')[] = []
+    const result: (number | '...')[] = [];
     const push = (v: number | '...') => {
-        if (result[result.length - 1] === v) return
-        result.push(v)
-    }
+        if (result[result.length - 1] === v)  return;
+        result.push(v);
+    };
 
-    push(1)
+    push(1);
 
-    const start = Math.max(2, current - 2)
-    const end = Math.min(total - 1, current + 2)
+    const start = Math.max(2, current - 2);
+    const end = Math.min(total - 1, current + 2);
 
-    if (start > 2) push('...')
+    if (start > 2) push('...');
 
     for (let i = start; i <= end; i++) {
-        push(i)
+        push(i);
     }
 
-    if (end < total - 1) push('...')
+    if (end < total - 1) push('...');
 
-    push(total)
+    push(total);
 
     while (result.length > 8) {
-        const firstDots = result.indexOf('...')
+        const firstDots = result.indexOf('...');
         if (firstDots !== -1) {
-            result.splice(firstDots, 1)
+            result.splice(firstDots, 1);
         } else {
-            result.splice(1, 1)
+            result.splice(1, 1);
         }
     }
 
-    return result
-})
+    return result;
+});
 
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
 
 const refreshCourses = async () => {
     try {
-        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses");
-        _courses.value = refreshed;
-        allCoursesCache.value = refreshed;
+        coursesState.value = await $fetch<Course[]>('/api/v2/me/courses', {
+            baseURL: getBaseUrl()
+        });
+
+        hasFetchedAllCourses.value = true;
     } catch {}
 };
 
@@ -161,7 +196,6 @@ const deleteCourse = async () => {
         deleteError.value = "Nepodařilo se smazat kurz.";
     }
 };
-
 </script>
 
 <template>
@@ -178,25 +212,35 @@ const deleteCourse = async () => {
 <!--  TODO: Místo kopírování kódu, tak udělat komponentu pro kurzy na courses a dashboard/courses  -->
 
     <div :class="$style.courses">
-        <div :class="$style.coursesList">
-            <CourseCard
-                v-for="course in paginatedCourses"
-                edit-mode
-                :course="course"
-                :key="course.uuid"
-                @edit="openEdit(course)"
-                @delete="openDelete(course)"
-            />
-        </div>
+        <template v-if="courses === null">
+            <p>Načítání kurzů...</p>
+        </template>
 
-        <Pagination
-            v-if="totalPages > 1"
-            :page="page"
-            :total-pages="totalPages"
-            :visible-pages="visiblePages"
-            :class="$style.pagination"
-            @update:page="goToPage"
-        />
+        <template v-else-if="courses.length === 0">
+            <p>Ještě nemáte žádné kurzy. Začněte vytvořením nového kurzu kliknutím na tlačítko výše.</p>
+        </template>
+
+        <template v-else-if="courses.length > 0">
+            <div :class="$style.coursesList">
+                <CourseCard
+                    v-for="course in paginatedCourses"
+                    edit-mode
+                    :course="course"
+                    :key="course.uuid"
+                    @edit="openEdit(course)"
+                    @delete="openDelete(course)"
+                />
+            </div>
+
+            <Pagination
+                v-if="totalPages > 1"
+                :page="page"
+                :total-pages="totalPages"
+                :visible-pages="visiblePages"
+                :class="$style.pagination"
+                @update:page="goToPage"
+            />
+        </template>
     </div>
 
     <Teleport to="#teleports">

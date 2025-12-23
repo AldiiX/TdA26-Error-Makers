@@ -16,7 +16,7 @@ definePageMeta({
     }
 });
 
-const user = useState<Account | null>('loggedAccount');
+const loggedAccount = useState<Account | null>('loggedAccount');
 
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
@@ -25,7 +25,7 @@ const editingCourseId = ref<string | null>(null);
 const coursesCache = useState<Course[] | null>('dashboardCoursesCache', () => null);
 
 // Non-blocking lazy fetch
-const { data: _courses, pending: coursesPending } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?max=4', {
+const { data: _courses, pending: coursesPending } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?limit=6', {
     server: false,
     lazy: true
 });
@@ -76,7 +76,7 @@ watch(courses, () => {
 
 const refreshCourses = async () => {
     try {
-        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?max=4");
+        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?limit=4");
         _courses.value = refreshed;
         coursesCache.value = refreshed;
     } catch {}
@@ -118,7 +118,7 @@ const deleteCourse = async () => {
     </Head>
 
     <h1 :class="$style.nadpis">Přehled</h1>
-    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
+    <p :class="$style.podnapis">Vítejte zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdete přehled svých kurzů a můžete spravovat svůj obsah.</p>
 
     <div :class="$style.actionButtons">
         <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">
@@ -210,7 +210,7 @@ const deleteCourse = async () => {
 .podnapis {
     font-size: 20px;
     margin-top: 16px;
-    max-width: 700px;
+    //max-width: 700px;
     color: var(--text-color-secondary);
 }
 
