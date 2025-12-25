@@ -4,8 +4,18 @@ import {useRoute} from "#imports";
 import {useState} from "#app";
 import {NuxtLink, ClientOnly} from "#components";
 import Menu from "~/components/Menu.vue";
+import Avatar from "~/components/Avatar.vue";
+import type {Account, Lecturer, WebTheme} from "#shared/types";
 
 const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
+const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
+const theme = useState<WebTheme>('theme', () => 'light');
+const themeCookie = useCookie<WebTheme>('theme', {
+    default: () => 'light',
+    sameSite: 'lax',
+    path: '/'
+});
+
 const currentPage = ref<string>("/");
 
 watch(() => useRoute().path, (newPath) => {
@@ -20,6 +30,28 @@ watch(mobileMenuOpened, (newVal) => {
         document.documentElement.style.overflow = '';
     }
 });
+
+function toggleTheme() {
+    const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
+    theme.value = newTheme;
+    themeCookie.value = newTheme;
+}
+
+async function logout() {
+    mobileMenuOpened.value = false;
+    navigateTo('/');
+    
+    try {
+        await $fetch('/api/v2/auth/logout', {
+            method: 'POST'
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+    } finally {
+        navigateTo('/');
+        loggedAccount.value = null;
+    }
+}
 </script>
 
 <template>
@@ -31,10 +63,35 @@ watch(mobileMenuOpened, (newVal) => {
                 <div :class="$style.content">
                     <div :class="$style.logo"></div>
 
+                    <!-- Profile section for logged-in users -->
+                    <div v-if="loggedAccount" :class="$style.profileSection">
+                        <Avatar :name="loggedAccount.fullNameWithoutTitles" :src="(loggedAccount as Lecturer).pictureUrl ?? null" :size="80" />
+                        <div :class="$style.userInfo">
+                            <p :class="$style.userName">{{ loggedAccount.fullNameWithoutTitles }}</p>
+                            <p v-if='(loggedAccount as Lecturer)?.emails?.length ?? 0 > 0' :class="$style.userEmail">{{ (loggedAccount as Lecturer)?.emails?.[0] }}</p>
+                        </div>
+                    </div>
+
                     <!-- Menu -->
                     <nav>
+                        <!-- Dashboard link for logged-in users -->
+                        <NuxtLink v-if="loggedAccount" to="/dashboard" :class="$style.link" @click="mobileMenuOpened = false">Dashboard</NuxtLink>
+                        
                         <Menu @itemClick="mobileMenuOpened = false" :link-class="$style.link" />
                     </nav>
+
+                    <!-- Action buttons for logged-in users -->
+                    <div v-if="loggedAccount" :class="$style.actionButtons">
+                        <button :class="$style.actionButton" @click="toggleTheme">
+                            <div :class="[$style.icon, $style.themeIcon]"></div>
+                            <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
+                        </button>
+                        
+                        <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
+                            <div :class="[$style.icon, $style.logoutIcon]"></div>
+                            <p>Odhlásit se</p>
+                        </button>
+                    </div>
 
 <!--                    <LanguageSwitch />-->
                 </div>
@@ -118,6 +175,99 @@ watch(mobileMenuOpened, (newVal) => {
                 &:is(:global(.router-link-active)) {
                     color: var(--accent-color-primary-text);
                     background-color: var(--accent-color-primary);
+                }
+            }
+        }
+
+        .profileSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+            background-color: var(--background-color-2);
+            border-radius: 16px;
+            width: 70%;
+            max-width: 400px;
+
+            .userInfo {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+
+                .userName {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: var(--text-color-primary);
+                    text-align: center;
+                }
+
+                .userEmail {
+                    margin: 0;
+                    font-size: 14px;
+                    color: var(--text-color-secondary);
+                    text-align: center;
+                }
+            }
+        }
+
+        .actionButtons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 70%;
+            max-width: 400px;
+
+            .actionButton {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                padding: 16px;
+                background-color: var(--background-color-2);
+                border: 1px solid transparent;
+                border-radius: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-color-primary);
+
+                &:hover {
+                    background-color: rgb(from var(--accent-color-primary) r g b / 0.1);
+                    border-color: var(--accent-color-primary);
+                    transform: translateY(-2px);
+                }
+
+                &.logoutButton {
+                    &:hover {
+                        background-color: rgba(220, 38, 38, 0.1);
+                        border-color: rgb(220, 38, 38);
+                    }
+                }
+
+                .icon {
+                    width: 24px;
+                    height: 24px;
+                    mask-size: contain;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    background-color: var(--text-color-primary);
+                    flex-shrink: 0;
+
+                    &.themeIcon {
+                        mask-image: var(--theme-icon);
+                    }
+
+                    &.logoutIcon {
+                        mask-image: url('/icons/logout.svg');
+                    }
+                }
+
+                p {
+                    margin: 0;
                 }
             }
         }
