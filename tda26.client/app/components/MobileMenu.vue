@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from "vue";
+import {computed, ref, watch} from "vue";
 import {useRoute} from "#imports";
 import {useState} from "#app";
 import {NuxtLink, ClientOnly} from "#components";
@@ -17,6 +17,13 @@ const themeCookie = useCookie<WebTheme>('theme', {
 });
 
 const currentPage = ref<string>("/");
+
+// Computed property for typed access to logged account as Lecturer
+const loggedLecturer = computed<Lecturer | null>(() => {
+    return loggedAccount.value && 'pictureUrl' in loggedAccount.value 
+        ? loggedAccount.value as Lecturer 
+        : null;
+});
 
 watch(() => useRoute().path, (newPath) => {
     currentPage.value = newPath;
@@ -39,7 +46,6 @@ function toggleTheme() {
 
 async function logout() {
     mobileMenuOpened.value = false;
-    navigateTo('/');
     
     try {
         await $fetch('/api/v2/auth/logout', {
@@ -65,10 +71,10 @@ async function logout() {
 
                     <!-- Profile section for logged-in users -->
                     <div v-if="loggedAccount" :class="$style.profileSection">
-                        <Avatar :name="loggedAccount.fullNameWithoutTitles" :src="(loggedAccount as Lecturer).pictureUrl ?? null" :size="80" />
+                        <Avatar :name="loggedAccount.fullNameWithoutTitles" :src="loggedLecturer?.pictureUrl ?? null" :size="80" />
                         <div :class="$style.userInfo">
                             <p :class="$style.userName">{{ loggedAccount.fullNameWithoutTitles }}</p>
-                            <p v-if='(loggedAccount as Lecturer)?.emails?.length ?? 0 > 0' :class="$style.userEmail">{{ (loggedAccount as Lecturer)?.emails?.[0] }}</p>
+                            <p v-if='loggedLecturer?.emails?.length ?? 0 > 0' :class="$style.userEmail">{{ loggedLecturer?.emails?.[0] }}</p>
                         </div>
                     </div>
 
