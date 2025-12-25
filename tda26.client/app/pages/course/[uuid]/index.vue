@@ -11,6 +11,7 @@ import {ClientOnly, Head, NuxtLink, Title} from "#components";
 import NumberExponential from "~/components/NumberExponential.vue";
 import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
+import { push } from "notivue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -393,6 +394,11 @@ const handleQuizDelete = async () => {
         method: 'DELETE'
     }).then(() => {
         course.value!.quizzes = course.value!.quizzes!.filter(q => q.uuid !== selectedQuiz.value?.uuid);
+        push.success({
+            title: "Kvíz smazán",
+            message: "Kvíz byl úspěšně smazán.",
+            duration: 4000
+        });
         enabledModal.value = null;
         deleteError.value = null;
     }).catch((err) => {
@@ -424,6 +430,12 @@ const handleQuizCreate = async (e: Event) => {
 
         course.value.quizzes = course.value.quizzes ?? [];
         course.value.quizzes.unshift(newQuiz);
+
+        push.success({
+            title: "Kvíz vytvořen",
+            message: "Kvíz byl úspěšně vytvořen.",
+            duration: 4000
+        });
 
         enabledModal.value = null;
         updateError.value = null;
