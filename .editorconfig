@@ -29,3 +29,8 @@ resharper_place_simple_embedded_statement_on_same_line = true
 resharper_place_simple_initializer_on_single_line = false
 resharper_wrap_before_primary_constructor_declaration_rpar = true
 resharper_wrap_object_and_collection_initializer_style = chop_always
+
+[*.vue]
+indent_style = space
+indent_size = 4
+tab_width = 4
