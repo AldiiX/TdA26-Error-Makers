@@ -3,7 +3,7 @@
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
-    import type {Account, WebTheme} from "#shared/types";
+    import type {Account, Lecturer, WebTheme} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
     import Popover from "~/components/Popover.vue";
     
@@ -17,7 +17,7 @@
     });
 
     const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
-    const loggedAccount = useState<Account | null>('loggedAccount', () => null);
+    const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -37,6 +37,8 @@
     }
 
     async function logout() {
+        navigateTo('/');
+        
         try {
             await $fetch('/api/v2/auth/logout', {
                 method: 'POST'
@@ -44,8 +46,8 @@
         } catch (err) {
             console.error('Logout error:', err);
         } finally {
-            loggedAccount.value = null;
             navigateTo('/');
+            loggedAccount.value = null;
         }
     }
 
@@ -56,15 +58,6 @@
 
     onUnmounted(() => {
         document.removeEventListener("scroll", ouasihfdusifhi);
-    });
-
-    const displayName = computed(() => {
-        const acc = loggedAccount.value;
-        if (!acc) return "";
-
-        return acc.firstName && acc.lastName
-            ? `${acc.firstName} ${acc.lastName}`
-            : acc.username;
     });
 </script>
 
@@ -109,21 +102,21 @@
                             <div :class="$style.loggedAs">
                                 <div>
                                     <p>Přihlášen jako</p>
-                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ displayName }}</p>
-                                    <p :class="[$style.name, $style.shadow]">{{ displayName }}A</p>
+                                    <p :id="$style.accountName" :class="[$style.name, 'text-gradient']">{{ loggedAccount.fullNameWithoutTitles }}</p>
+                                    <p :class="[$style.name, $style.shadow]">{{ loggedAccount.fullNameWithoutTitles }}A</p>
                                 </div>
 
-                                <Avatar :name="displayName" :src="loggedAccount.pictureUrl" :size="48" />
+                                <Avatar :name="loggedAccount.fullNameWithoutTitles" :src="(loggedAccount as Lecturer).pictureUrl ?? null" :size="48" />
                             </div>
                         </template>
                         
                         <template #content>
                             <div :class="$style.popoverContent">
                                 <div :class="$style.accountInfo">
-                                    <Avatar :name="displayName" :src="loggedAccount.pictureUrl" :size="64" />
+                                    <Avatar :name="loggedAccount.fullNameWithoutTitles" :src="(loggedAccount as Lecturer).pictureUrl ?? null" :size="64" />
                                     <div :class="$style.accountText">
-                                        <p :class="$style.name">{{ displayName }}</p>
-                                        <p v-if='loggedAccount?.emails?.length ?? 0 > 0' :class="$style.email">{{ loggedAccount?.emails?.[0] }}</p>
+                                        <p :class="$style.name">{{ loggedAccount.fullNameWithoutTitles }}</p>
+                                        <p v-if='(loggedAccount as Lecturer)?.emails?.length ?? 0 > 0' :class="$style.email">{{ (loggedAccount as Lecturer)?.emails?.[0] }}</p>
                                     </div>
                                 </div>
                                 

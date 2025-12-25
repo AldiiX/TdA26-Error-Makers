@@ -253,14 +253,14 @@ public class APIv2(
     [HttpGet("me/courses")]
     public async Task<IActionResult> GetMyCourses(
         [FromQuery] bool full = false,
-        [FromQuery] int max = -1,
+        [FromQuery] uint limit = 0u,
         CancellationToken ct = default
     ) {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
     
         if (full) {
-            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(0, ct) : await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, max, ct);
+            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(limit, ct) : await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, limit == 0 ? -1 : (int) limit, ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
@@ -271,7 +271,7 @@ public class APIv2(
 
             return Ok(courses);
         } else {
-            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(0, ct) : await courseRepository.GetByLecturerUuidAsync(acc.Uuid, max, ct);
+            var courses = acc is Admin ? await courseRepository.GetAllAsync(limit, ct) : await courseRepository.GetByLecturerUuidAsync(acc.Uuid, limit == 0 ? -1 : (int) limit, ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
