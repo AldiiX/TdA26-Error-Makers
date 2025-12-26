@@ -45,13 +45,13 @@ watch(() => useRoute().path, (newPath) => {
 }, { immediate: true });
 
 // pokud je mobileMenuOpened, tak se zablokuje scroll
-watch(mobileMenuOpened, (newVal) => {
-    if (newVal) {
-        document.documentElement.style.overflow = 'hidden';
-    } else {
-        document.documentElement.style.overflow = '';
-    }
-});
+// watch(mobileMenuOpened, (newVal) => {
+//     if (newVal) {
+//         document.documentElement.style.overflow = 'hidden';
+//     } else {
+//         document.documentElement.style.overflow = '';
+//     }
+// });
 </script>
 
 <template>
@@ -63,8 +63,23 @@ watch(mobileMenuOpened, (newVal) => {
                 <div :class="$style.content">
                     <div :class="$style.logo"></div>
 
+                    
+                    
+                    <!-- Menu -->
+                    <nav>
+                        <Menu @itemClick="mobileMenuOpened = false" :link-class="$style.link" />
+                        <NuxtLink
+                            v-if="loggedAccount"
+                            to="/dashboard"
+                            :class="$style.link"
+                            @click="mobileMenuOpened = false"
+                        >
+                            Dashboard
+                        </NuxtLink>
+                    </nav>
+
                     <div :class="$style.loggedAs">
-                        
+
                         <template v-if="loggedAccount">
                             <div :class="$style.accountHeader">
                                 <Avatar
@@ -92,40 +107,27 @@ watch(mobileMenuOpened, (newVal) => {
                                     <span>Odhlásit se</span>
                                 </button>
                             </div>
-                            
+
                         </template>
 
                         <template v-else>
                             <div :class="$style.notLogged">
-                                <p class="title">Přihlášení</p>
+                                <p :class="[$style.title, 'text-gradient']">Přihlášení</p>
                                 <p class="hint">Nemáš účet? Vytvoř si ho</p>
 
                                 <div :class="$style.authButtons">
                                     <NuxtLink to="/login" @click="mobileMenuOpened = false">
-                                        <Button button-style="primary">Přihlásit se</Button>
+                                        <Button :class="$style.btn" button-style="primary">Přihlásit se</Button>
                                     </NuxtLink>
 
                                     <NuxtLink to="/register" @click="mobileMenuOpened = false">
-                                        <Button button-style="secondary">Registrovat se</Button>
+                                        <Button :class="$style.btn" button-style="secondary">Registrovat se</Button>
                                     </NuxtLink>
                                 </div>
                             </div>
                         </template>
                     </div>
                     
-                    <!-- Menu -->
-                    <nav>
-                        <NuxtLink
-                            v-if="loggedAccount"
-                            to="/dashboard"
-                            :class="$style.link"
-                            @click="mobileMenuOpened = false"
-                        >
-                            Dashboard
-                        </NuxtLink>
-                        <Menu @itemClick="mobileMenuOpened = false" :link-class="$style.link" />
-                    </nav>
-
 <!--                    <LanguageSwitch />-->
                 </div>
             </div>
@@ -143,6 +145,8 @@ watch(mobileMenuOpened, (newVal) => {
     z-index: 20;
     transition-duration: 0.3s;
     overflow: hidden;
+    overflow-y: auto;
+    
 
     >.close {
         position: absolute;
@@ -167,7 +171,6 @@ watch(mobileMenuOpened, (newVal) => {
         gap: 64px;
         height: 100%;
         padding-bottom: 64px;
-        overflow-y: auto;
 
         >.logo {
             width: 24vw;
@@ -186,6 +189,7 @@ watch(mobileMenuOpened, (newVal) => {
             align-items: center;
             gap: 32px;
             width: 100%;
+            padding-bottom: 64px;
 
             .accountHeader {
                 display: flex;
@@ -195,6 +199,7 @@ watch(mobileMenuOpened, (newVal) => {
 
             .accountText {
                 text-align: left;
+                
                 
                 .label {
                     margin: 0;
@@ -222,6 +227,7 @@ watch(mobileMenuOpened, (newVal) => {
                     font-size: 18px;
                     color: var(--text-color);
                     transition-duration: 0.3s;
+                    font-family: "Dosis", sans-serif;
                     
 
                     .icon {
@@ -250,9 +256,53 @@ watch(mobileMenuOpened, (newVal) => {
                     margin-left: auto;
                 }
             }
-
             
+            .notLogged {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+
+                .title {
+                    font-size: 28px;
+                    font-weight: 600;
+                    margin: 0;
+                }
+
+                .hint {
+                    font-size: 16px;
+                    opacity: 0.75;
+                    margin: 0;
+                }
+
+                .authButtons {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-top: 8px;
+                    align-items: center;
+
+                    a {
+                        width: 100%;     
+                        min-width: 268px;
+                        display: flex;
+                        justify-content: center;
+                        text-decoration: none;
+                    }
+                    
+                    .btn {
+                        display: flex;
+                        width: 100%;
+                        height: 48px;          
+                        align-items: center;
+                        justify-content: center;
+                        box-sizing: border-box;
+                    }
+                }
+            }
         }
+        
+            
         
         nav {
             display: flex;
