@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251225233618_AddFeedPosts1")]
+    partial class AddFeedPosts1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,10 +68,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(128)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -109,10 +109,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(64)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -152,10 +149,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(128)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.Property<int>("ViewCount")
                         .HasColumnType("int");
@@ -175,7 +169,7 @@ namespace tda26.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("AccountUuid")
+                    b.Property<Guid>("AccountUuid")
                         .HasColumnType("char(36)");
 
                     b.Property<Guid>("CourseUuid")
@@ -199,10 +193,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -246,10 +237,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -345,10 +333,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(128)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -445,10 +430,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(8)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -485,10 +467,7 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(64)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Uuid");
 
@@ -667,7 +646,9 @@ namespace tda26.Server.Migrations
                 {
                     b.HasOne("tda26.Server.Data.Models.Account", "Account")
                         .WithMany()
-                        .HasForeignKey("AccountUuid");
+                        .HasForeignKey("AccountUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("tda26.Server.Data.Models.Course", "Course")
                         .WithMany("Feed")

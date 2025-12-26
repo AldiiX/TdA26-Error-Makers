@@ -2,7 +2,7 @@
 
 namespace tda26.Server.Data.Models;
 
-public class Admin : Account {
+public sealed class Admin : Account {
 	[NotMapped]
 	public new AccountType Type => AccountType.Admin;
 }
