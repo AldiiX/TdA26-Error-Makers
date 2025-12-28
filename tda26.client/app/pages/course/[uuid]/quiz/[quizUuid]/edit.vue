@@ -4,6 +4,7 @@ import type {Course, Question, Quiz} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
+import { push } from "notivue";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -121,7 +122,11 @@ const saveQuiz = async () => {
     });
     
     oldQuiz.value = JSON.parse(JSON.stringify(quiz.value));
-    alert("Kvíz byl úspěšně uložen.");
+    push.success({
+        title: "Kvíz uložen",
+        message: "Kvíz byl úspěšně uložen.",
+        duration: 4000
+    });
 };
 
 const updateQuestion = (i: number, patch: Partial<Question>) => {    
@@ -231,6 +236,7 @@ const onDrop = () => {
 };
 
 onMounted(() => {
+    // Warn user about unsaved changes
     if (!import.meta.dev) {
         window.addEventListener("beforeunload", (e) => {
             if (oldQuiz.value && JSON.stringify(oldQuiz.value) === JSON.stringify(quiz.value)) return;

@@ -23,8 +23,9 @@ const goNext = () => goToPage(props.page + 1);
 <template>
     <div :class="$style.paginationContainer">
 
-        <div :class="[$style.arrow, $style.leftArrow]"
-             @click="goPrev"></div>
+        <div :class="$style.arrowWrapper">
+            <div :class="[$style.arrow, $style.leftArrow]" @click="goPrev"></div>
+        </div>
 
         <template v-for="(p, idx) in props.visiblePages" :key="idx">
 
@@ -40,9 +41,10 @@ const goNext = () => goToPage(props.page + 1);
 
         </template>
 
-        <div :class="[$style.arrow, $style.rightArrow]"
-             @click="goNext"></div>
-
+        <div :class="$style.arrowWrapper">
+            <div :class="[$style.arrow, $style.rightArrow]" @click="goNext"></div>
+        </div>
+        
     </div>
 </template>
 
@@ -58,25 +60,46 @@ const goNext = () => goToPage(props.page + 1);
     border-radius: 32px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-    .arrow {
+    
+
+    .arrowWrapper{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
         width: 36px;
         height: 36px;
         border-radius: 100%;
         cursor: pointer;
+        transition-duration: 0.3s;
 
-        background-image: url("../../public/icons/arrow.svg");
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: 18px;
-
-        transition: 0.2s ease;
 
         &:hover {
-            background-color: var(--accent-color-primary);
             opacity: 0.9;
+            transition-duration: 0.3s;
+            background-color: var(--accent-color-primary);
+
+            .arrow{
+                transition-duration: 0.3s;
+                background-color: var(--accent-color-primary-text);
+            }
+        }
+
+        .arrow {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+
+            mask-image: url("../../public/icons/arrow.svg");
+            mask-size: contain;
+            mask-repeat: no-repeat;
+            mask-position: center;
+
+            background-color: var(--text-color);
+            transition-duration: 0.3s;
         }
     }
-
+    
     .leftArrow {
         transform: rotate(180deg);
     }

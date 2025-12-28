@@ -8,6 +8,7 @@ import Modal from "~/components/Modal.vue";
 import Button from "~/components/Button.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
 import Pagination from "~/components/Pagination.vue";
+import { push } from "notivue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -168,11 +169,6 @@ const refreshCourses = async () => {
     } catch {}
 };
 
-const openEdit = (course: Course) => {
-    editingCourseId.value = course.uuid;
-    enabledModal.value = "updateCourse";
-};
-
 const selectedDeleteCourse = ref<Course | null>(null);
 const deleteError = ref<string | null>(null);
 
@@ -187,6 +183,12 @@ const deleteCourse = async () => {
     try {
         await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
             method: "DELETE"
+        });
+
+        push.success({
+            title: "Kurz smazán",
+            message: "Kurz byl úspěšně smazán.",
+            duration: 4000
         });
 
         enabledModal.value = null;
@@ -227,7 +229,6 @@ const deleteCourse = async () => {
                     edit-mode
                     :course="course"
                     :key="course.uuid"
-                    @edit="openEdit(course)"
                     @delete="openDelete(course)"
                 />
             </div>

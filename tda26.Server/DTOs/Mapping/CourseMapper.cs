@@ -5,7 +5,7 @@ namespace tda26.Server.DTOs.Mapping;
 
 public static class CourseMapper
 {
-    public static ReadCourseResponse ToReadDto(this Course course)
+    public static ReadCourseResponse ToReadDto(this Course course, bool extended = false)
     {
         // Clear circular references to prevent infinite loop during serialization
         // Following the same pattern as APIv2
@@ -20,14 +20,16 @@ public static class CourseMapper
             Description = course.Description,
             CreatedAt = course.CreatedAt,
             UpdatedAt = course.UpdatedAt,
-            ImageUrl = course.ImageUrl,
+            ImageUrl = course.ImageUrl != null && course.ImageUrl.StartsWith("course-images/")
+                ? $"api/v2/courses/{course.Uuid}/image"
+                : null,
             Lecturer = course.Lecturer,
             Account = course.Account,
             ViewCount = course.ViewCount,
             LikeCount = course.LikeCount,
             ImageUrlOrDefault = course.ImageUrlOrDefault,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
-            Quizzes = course.Quizzes.Select(q => q.ToReadDto()).ToList(),
+            Quizzes = course.Quizzes.Select(q => q.ToReadDto(extended)).ToList(),
             Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList(),
             RatingScore = course.RatingScore,
         };
