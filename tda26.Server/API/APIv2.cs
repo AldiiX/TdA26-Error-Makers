@@ -2,6 +2,9 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -275,6 +278,7 @@ public class APIv2(
                 c.Quizzes = [];
                 c.Feed = [];
                 if(c.Account != null) c.Account.Ratings = [];
+                if (c.ImageUrl != null) c.ImageUrl = "api/v2/courses/" + c.Uuid + "/image";
             }
 
             return Ok(courses);
@@ -322,7 +326,7 @@ public class APIv2(
         
         if(course.Account != null) course.Account.Ratings = [];
 
-        return Ok(course);
+        return Ok(course.ToReadDto(true));
     }
 
     [HttpPut("courses/{uuid:guid}")]
@@ -461,7 +465,113 @@ public class APIv2(
 
         await courseRepository.UpdateAsync(existingCourse, ct);
         
-        return Ok(existingCourse.ToReadDto());
+        return Ok(existingCourse.ToReadDto(true));
+    }
+    
+    [HttpPost("courses/{uuid:guid}/image")]
+    public async Task<IActionResult> UpdateCourseImage([FromRoute] Guid uuid, [FromForm] UpdateCourseImageRequest body, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        if (existingCourse == null) return NotFound();
+
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        if (body.Image == null || body.Image.Length == 0) {
+            return BadRequest(new { error = "Image file is required." });
+        }
+
+        if (!body.Image.IsAllowedFileSize()) return BadRequest(new { error = "Image file size exceeds the maximum allowed limit of 5 MB." });
+
+        var resizedImage = await ResizeImageAsync(body.Image, 500, ct);
+        var imageUrl = await materialAccessService.UploadCourseImageAsync(existingCourse.Uuid, resizedImage, ct);
+        existingCourse.ImageUrl = imageUrl;
+
+        await courseRepository.UpdateAsync(existingCourse, ct);
+
+        return Ok(new { imageUrl = existingCourse.ImageUrl });
+    }
+    
+    public async Task<IFormFile> ResizeImageAsync(IFormFile file, int size, CancellationToken ct)
+    {
+        await using var input = file.OpenReadStream();
+        using var image = await Image.LoadAsync(input, ct);
+
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new Size(size, size),
+            Mode = ResizeMode.Max // keeps aspect ratio
+        }));
+
+        var ms = new MemoryStream();
+        await image.SaveAsWebpAsync(ms, new WebpEncoder { Quality = 80 }, ct);
+        ms.Position = 0;
+
+        return new FormFile(ms, 0, ms.Length, file.Name, "image.webp")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "image/webp"
+        };
+    }
+    
+    [HttpDelete("courses/{uuid:guid}/image")]
+    public async Task<IActionResult> DeleteCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        if (existingCourse == null) return NotFound();
+
+        if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+        if (string.IsNullOrEmpty(existingCourse.ImageUrl)) {
+            return NotFound(new { error = "Course image not found." });
+        }
+
+        await materialAccessService.DeleteFileMaterialAsync(existingCourse.ImageUrl, ct);
+        existingCourse.ImageUrl = null;
+
+        await courseRepository.UpdateAsync(existingCourse, ct);
+
+        return NoContent();
+    }
+    
+    [HttpGet("courses/{uuid:guid}/image")]
+    public async Task<IActionResult> GetCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
+        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        if (existingCourse == null) return NotFound();
+
+        if (string.IsNullOrEmpty(existingCourse.ImageUrl)) {
+            return NotFound(new { error = "Course image not found." });
+        }
+
+        var imageStream = await materialAccessService.DownloadFileMaterialAsync(existingCourse.ImageUrl, ct);
+        imageStream.Position = 0;
+
+        // Determine content type based on file extension
+        string contentType = "application/octet-stream"; // Default content type
+        var extension = Path.GetExtension(existingCourse.ImageUrl).ToLowerInvariant();
+        switch (extension) {
+            case ".jpg":
+            case ".jpeg":
+                contentType = "image/jpeg";
+                break;
+            case ".png":
+                contentType = "image/png";
+                break;
+            case ".gif":
+                contentType = "image/gif";
+                break;
+            case ".bmp":
+                contentType = "image/bmp";
+                break;
+            case ".webp":
+                contentType = "image/webp";
+                break;
+        }
+
+        return File(imageStream, contentType);
     }
 
     [HttpDelete("courses/{uuid:guid}")]
@@ -1128,7 +1238,7 @@ public class APIv2(
         if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
             return NotFound(new { error = "Quiz result not found for the specified quiz." });
         
-        var quizDto = quiz.ToReadDto();
+        var quizDto = quiz.ToReadDto(true);
 
         foreach (ReadQuestionResponse question in quizDto.Questions) {
             var answer = quizResult.Answers.FirstOrDefault(a => a.QuestionUuid == question.Uuid);

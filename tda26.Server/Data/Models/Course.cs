@@ -59,7 +59,7 @@ public class Course : Auditable {
     public int LikeCount => Likes.ToList().Count;
 
     [NotMapped]
-    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : ImageUrl;
+    public string ImageUrlOrDefault => string.IsNullOrEmpty(ImageUrl) ? (Category?.Icon ?? "/icons/courseicons/question.svg") : "api/v2/courses" + Uuid + "/image";
 
     [NotMapped]
     public byte RatingScore {

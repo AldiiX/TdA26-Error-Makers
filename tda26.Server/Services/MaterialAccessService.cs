@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 using tda26.Server.Options;
 
 namespace tda26.Server.Services;
@@ -35,6 +38,26 @@ public class MaterialAccessService(
         return objectName;
     }
     
+    public async Task<string> UploadCourseImageAsync(Guid courseUuid, IFormFile image, CancellationToken ct = default) {
+        var fileExtension = Path.GetExtension(image.FileName);
+        var objectName = $"course-images/{courseUuid}{fileExtension}";
+
+        try {
+            var args = new PutObjectArgs()
+                .WithBucket(minioOptions.Value.BucketName)
+                .WithObject(objectName)
+                .WithStreamData(image.OpenReadStream())
+                .WithObjectSize(image.Length)
+                .WithContentType(image.ContentType);
+
+            await minioClient.PutObjectAsync(args, ct).ConfigureAwait(false);
+        } catch (Exception ex) {
+            throw new Exception($"Course image upload to MinIO failed: {ex.Message}", ex);
+        }
+
+        return objectName;
+    }
+    
     public async Task DeleteFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
         await minioClient.RemoveObjectAsync(
             new RemoveObjectArgs()
@@ -66,6 +89,10 @@ public class MaterialAccessService(
             } catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
                 await Task.Delay(delay, ct);
                 delay += delay;
+            }
+            catch (Minio.Exceptions.ObjectNotFoundException)
+            {
+                Console.WriteLine("Object not found in MinIO: " + fileUrl);
             }
         }
     }

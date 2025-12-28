@@ -9,6 +9,8 @@ public interface IMaterialAccessService {
     /// <returns>The URL of the uploaded file material.</returns>
     Task<string> UploadFileMaterialAsync(Guid courseUuid, IFormFile file, CancellationToken ct = default);
     
+    Task<string> UploadCourseImageAsync(Guid courseUuid, IFormFile image, CancellationToken ct = default);
+    
     Task DeleteFileMaterialAsync(string fileUrl, CancellationToken ct = default);
     
     Task<MemoryStream> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default);
