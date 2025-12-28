@@ -169,11 +169,6 @@ const refreshCourses = async () => {
     } catch {}
 };
 
-const openEdit = (course: Course) => {
-    editingCourseId.value = course.uuid;
-    enabledModal.value = "updateCourse";
-};
-
 const selectedDeleteCourse = ref<Course | null>(null);
 const deleteError = ref<string | null>(null);
 
@@ -234,7 +229,6 @@ const deleteCourse = async () => {
                     edit-mode
                     :course="course"
                     :key="course.uuid"
-                    @edit="openEdit(course)"
                     @delete="openDelete(course)"
                 />
             </div>

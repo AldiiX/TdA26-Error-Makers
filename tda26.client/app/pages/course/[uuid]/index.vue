@@ -38,18 +38,21 @@ definePageMeta({
 const loggedAccount = useState<Account | null>('loggedAccount');
 const route = useRoute();
 const uuid = route.params.uuid as string;
+const isEditMode = route.query.edit === 'true';
 
 // server small fetch
-const { data: courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
     query: { full: false },
     server: true,
     key: `course-${uuid}-small`,
 });
 
-if (courseSmallError.value || !courseSmall.value) {
+if (courseSmallError.value || !_courseSmall.value) {
     console.error("Error loading small course:", courseSmallError.value);
     await navigateTo('/courses');
 }
+
+const courseSmall = ref<Course>(_courseSmall.value!);
 
 // client full fetch
 const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
@@ -63,15 +66,27 @@ if (courseError.value) {
 }
 
 const course = ref<Course | null>(_course.value ?? null);
+const originalCourse = ref<Course | null>(null);
 
 watch(_course, (val) => {
     if (!val) return;
+
     course.value = structuredClone(val);
+    originalCourse.value = structuredClone(val);
 }, { immediate: true });
+
+const isDirty = computed(() => {
+    if (!course.value || !originalCourse.value) return false;
+
+    return (
+        course.value.name !== originalCourse.value.name ||
+        course.value.description !== originalCourse.value.description
+    );
+});
 
 const ratingLoading = ref<boolean>(false);
 const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
-const selectedItem = ref(menuItems[1]); // TODO: change to default
+const selectedItem = ref(menuItems[0]);
 
 const selectItem = (item: string) => {
     selectedItem.value = item;
@@ -166,7 +181,7 @@ const handleMaterialUpdate = async () => {
     try {
         let updatedMaterial;
 
-        if (material.type === 1) {
+        if (material.type === 'url') {
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -187,12 +202,6 @@ const handleMaterialUpdate = async () => {
             if (edited.file instanceof File) {
                 form.append("File", edited.file);
             }
-
-            console.log("Submitting form data:", {
-                Name: edited.name,
-                Description: edited.description,
-                File: edited.file instanceof File ? edited.file.name : "No new file"
-            });
 
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -284,10 +293,6 @@ const handleMaterialCreate = async () => {
 const ownsCourse = computed(() => {
     if (!loggedAccount.value || !courseSmall.value) return false;
     return loggedAccount.value?.uuid === courseSmall.value?.account?.uuid;
-});
-
-onMounted(() => {
-    console.log(loggedAccount.value, courseSmall.value, ownsCourse.value);
 });
 
 async function addRating(rating: "like" | "dislike" | null) {
@@ -446,6 +451,61 @@ const handleQuizCreate = async (e: Event) => {
     }
 };
 
+const updateCourseTitle = (newTitle: string) => {
+    if (!isEditMode) return;
+    
+    if (course.value) {
+        course.value.name = newTitle;
+    }
+};
+
+const updateCourseDescription = (newDescription: string) => {
+    if (!isEditMode) return;
+    
+    if (course.value) {
+        course.value.description = newDescription;
+    }
+};
+
+const saveCourseChanges = async () => {
+    if (!course.value) return;
+
+    try {
+        const updatedCourse = await $fetch<Course>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: {
+                name: course.value.name,
+                description: course.value.description,
+            }
+        });
+
+        originalCourse.value = structuredClone(updatedCourse);
+    } catch (err) {
+        console.error("Error saving course changes:", err);
+    }
+};
+
+const editBackClick = () => {
+    window.location.href = `/course/${courseSmall.value?.uuid}`;
+};
+
+const editClick = () => {
+    window.location.href = `/course/${courseSmall.value?.uuid}?edit=true`;
+};
+
+onMounted(() => {
+    // Warn user about unsaved changes
+    if (!import.meta.dev) {
+        window.addEventListener("beforeunload", (e) => {
+            if (!isDirty) return;
+
+            e.preventDefault();
+            e.returnValue = "";
+        });
+    }
+});
+
 </script>
 
 <template>
@@ -453,10 +513,18 @@ const handleQuizCreate = async (e: Event) => {
         <Title>{{ courseSmall?.name ?? "Kurz" }} • Think different Academy</Title>
     </Head>
 
-    <div :class="$style.course">
-        <h1 :class="['text-gradient', $style.title]">{{ courseSmall?.name }}</h1>
+    <div :class="[$style.course, isEditMode && $style.editMode]">
+        <h1 
+            :class="['text-gradient', $style.title, $style.editable]"
+            :contenteditable="isEditMode"
+            @input="(e) => updateCourseTitle((e.target as HTMLElement).innerText.trim())"
+        >{{ courseSmall?.name }}</h1>
         <div :class="$style.info">
-            <p>{{ courseSmall?.description }}</p>
+            <p
+                :class="[$style.editable]"
+                :contenteditable="isEditMode"
+                @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
+            >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -493,6 +561,12 @@ const handleQuizCreate = async (e: Event) => {
                             </div>
                         </div>
                     </div>
+                    <Button 
+                        v-if="ownsCourse && !isEditMode"
+                        button-style="primary"
+                        accent-color="secondary"
+                        @click="editClick"
+                    >Upravit kurz</Button>
                 </div>
             </div>
         </div>
@@ -563,6 +637,29 @@ const handleQuizCreate = async (e: Event) => {
 
 
     <Teleport to="#teleports">
+        <!-- Edit controls -->
+        <div
+            v-if="isEditMode"
+            :class="$style.editControls"
+        >
+            <Button
+                button-style="primary"
+                :disabled="!isDirty"
+                @click="saveCourseChanges"
+            >
+                Uložit
+            </Button>
+            <Button
+                buttonStyle="tertiary"
+                @click="editBackClick"
+                >
+                Ukončit úpravy
+            </Button>
+        </div>
+        
+        
+        
+        
         <!-- CREATE -->
         <Modal
             :enabled="enabledModal === 'createMaterial'"
@@ -706,6 +803,35 @@ const handleQuizCreate = async (e: Event) => {
 </template>
 
 <style module lang="scss">
+@use "../../../app" as *;
+
+.editMode {
+    .editable {
+        @include editable;
+        background: none;
+        -webkit-text-fill-color: currentColor;
+    }
+}
+
+.editControls {
+    position: fixed;
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    z-index: 1000;
+    background-color: var(--background-color-secondary);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    
+    a button {
+        height: 100%;
+        padding: 14px 24px;
+    }
+}
+
 .modalButtons {
     display: flex;
     gap: 16px;
