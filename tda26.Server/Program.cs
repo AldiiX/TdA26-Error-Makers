@@ -8,6 +8,7 @@ using Minio;
 using Minio.AspNetCore;
 using MySqlConnector;
 using StackExchange.Redis;
+using tda26.Server.Controllers;
 using tda26.Server.Data;
 using tda26.Server.DTOs.Converters;
 using tda26.Server.Infrastructure;
@@ -154,6 +155,7 @@ public static class Program {
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumLowerCaseConverter());
         });
         builder.Services.AddHttpContextAccessor();
 
@@ -181,6 +183,7 @@ public static class Program {
         builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
         builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
+        builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
         
         // Nastaveni
         builder.Services.Configure<CustomMinioOptions>(options =>

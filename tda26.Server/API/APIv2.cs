@@ -152,7 +152,8 @@ public class APIv2(
 
 
 
-// lecturers
+    #region lecturers
+    // lecturers
     [HttpGet("lecturers")]
     public async Task<IActionResult> GetLecturers([FromQuery] uint limit = 0, CancellationToken ct = default) {
         var all = await lecturers.GetAllAsync(limit, ct);
@@ -207,8 +208,14 @@ public class APIv2(
 
         return new OkObjectResult(lecturer);
     }
-    
-    // accounts
+
+    #endregion
+
+
+
+
+
+    #region accounts
     
     [HttpGet("accounts/{uuid:guid}")]
     public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct = default) {
@@ -226,8 +233,14 @@ public class APIv2(
             _ => Ok(account)
         };
     }
-    
-    //courses
+
+    #endregion
+
+
+
+
+
+    #region courses
     
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
@@ -799,7 +812,7 @@ public class APIv2(
         return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, null);
     }
 
-    // materials
+    #region course materials
 
     [HttpPost("courses/{uuid:guid}/materials")]
     [Consumes("application/json")]
@@ -1087,8 +1100,10 @@ public class APIv2(
 
         return Ok(fileMaterial.ToReadDto());
     }
+
+    #endregion
     
-    // Kvizy
+    #region course Kvizy
     
     [HttpPost("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/submit")]
     public async Task<IActionResult> SubmitQuiz(
@@ -1126,14 +1141,14 @@ public class APIv2(
             question.Options = question.Options.OrderBy(o => o.Order).ToList();
 
             switch (question) {
-                case SingleChoiceQuestion scq:
+                case SingleChoiceQuestion scq: {
                     var correctOptionIndex = scq.Options.ToList().FindIndex(o => o.IsCorrect);
                     if (submission.SelectedIndex == correctOptionIndex) {
                         isCorrect = true;
                     }
-                    break;
+                } break;
 
-                case MultipleChoiceQuestion mcq:
+                case MultipleChoiceQuestion mcq: {
                     var correctIndices = mcq.Options
                         .Select((o, index) => new { o.IsCorrect, index })
                         .Where(x => x.IsCorrect)
@@ -1145,7 +1160,7 @@ public class APIv2(
                         submission.SelectedIndices.All(i => correctIndices.Contains(i))) {
                         isCorrect = true;
                     }
-                    break;
+                } break;
             }
             
             if (isCorrect) correctAnswers++;
@@ -1163,32 +1178,29 @@ public class APIv2(
                 };
 
                 var question = quiz.Questions.FirstOrDefault(q => q.Uuid == a.Uuid);
-                if (question != null) {
-                    question.Options = question.Options.OrderBy(o => o.Order).ToList();
+                if (question == null) return answer;
 
-                    switch (question) {
-                        case SingleChoiceQuestion scq:
-                            if (a.SelectedIndex.HasValue && a.SelectedIndex.Value >= 0 && a.SelectedIndex.Value < scq.Options.Count) {
-                                var selectedOption = scq.Options.ElementAt(a.SelectedIndex.Value);
+                question.Options = question.Options.OrderBy(o => o.Order).ToList();
+
+                switch (question) {
+                    case SingleChoiceQuestion scq: {
+                        if (a.SelectedIndex is >= 0 && a.SelectedIndex.Value < scq.Options.Count) {
+                            var selectedOption = scq.Options.ElementAt(a.SelectedIndex.Value);
+                            answer.SelectedOptions.Add(new QuizAnswerOption {
+                                OptionUuid = selectedOption.Uuid
+                            });
+                        }
+                    } break;
+
+                    case MultipleChoiceQuestion mcq: {
+                        if (a.SelectedIndices != null) {
+                            foreach (var selectedOption in from index in a.SelectedIndices where index >= 0 && index < mcq.Options.Count select mcq.Options.ElementAt(index)) {
                                 answer.SelectedOptions.Add(new QuizAnswerOption {
                                     OptionUuid = selectedOption.Uuid
                                 });
                             }
-                            break;
-
-                        case MultipleChoiceQuestion mcq:
-                            if (a.SelectedIndices != null) {
-                                foreach (var index in a.SelectedIndices) {
-                                    if (index >= 0 && index < mcq.Options.Count) {
-                                        var selectedOption = mcq.Options.ElementAt(index);
-                                        answer.SelectedOptions.Add(new QuizAnswerOption {
-                                            OptionUuid = selectedOption.Uuid
-                                        });
-                                    }
-                                }
-                            }
-                            break;
-                    }
+                        }
+                    } break;
                 }
 
                 return answer;
@@ -1254,10 +1266,8 @@ public class APIv2(
             
             question.SelectedIndices = selectedIndices;
             
-            switch (question)
-            {
-                case ReadSingleChoiceQuestionResponse scq:
-                {
+            switch (question) {
+                case ReadSingleChoiceQuestionResponse scq: {
                     var correctIndex = quiz.Questions
                         .OfType<SingleChoiceQuestion>()
                         .First(q => q.Uuid == question.Uuid)
@@ -1269,8 +1279,8 @@ public class APIv2(
                     question.IsCorrect = selectedIndices.Count == 1 && selectedIndices[0] == correctIndex;
                     break;
                 }
-                case ReadMultipleChoiceQuestionResponse mcq:
-                {
+
+                case ReadMultipleChoiceQuestionResponse mcq: {
                     var correctIndices = quiz.Questions
                         .OfType<MultipleChoiceQuestion>()
                         .First(q => q.Uuid == question.Uuid)
@@ -1295,4 +1305,116 @@ public class APIv2(
             completedAt = quizResult.CompletedAt
         });
     }
+
+    #endregion
+
+    #endregion
+
+
+
+
+
+    #region FeedPosts
+
+    [HttpGet("courses/{courseUuid:guid}/feed")]
+    public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var feedPosts = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Include(fp => fp.Course)
+            .Include(fp => fp.Account)
+            .OrderByDescending(fp => fp.CreatedAt)
+            .ToListAsync();
+
+        return Ok(feedPosts);
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/feed")]
+    public async Task<IActionResult> CreateFeedPostInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromBody] CreateCourseFeedPostRequest body,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+
+        var loggedAccount = await auth.ReAuthAsync(ct);
+
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            Type = FeedPost.FeedPostType.Manual,
+            Message = body.Message,
+            CourseUuid = course.Uuid,
+            AccountUuid = loggedAccount?.Uuid,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync(ct);
+
+        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
+    }
+
+
+    [HttpDelete("courses/{courseUuid:guid}/feed/{feedPostUuid:guid}")]
+    public async Task<IActionResult> DeleteFeedPostFromCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid feedPostUuid,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+        var feedPost = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.Uuid == feedPostUuid)
+            .FirstOrDefaultAsync(ct);
+
+        if (feedPost is null)
+            return NotFound(new { error = "Feed post not found in the specified course." });
+
+        db.FeedPosts.Remove(feedPost);
+        await db.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
+
+    [HttpPut("courses/{courseUuid:guid}/feed/{feedPostUuid:guid}")]
+    public async Task<IActionResult> UpdateFeedPostInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid feedPostUuid,
+        [FromBody] EditCourseFeedPostRequest body,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+        var feedPost = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.Uuid == feedPostUuid)
+            .Include(fp => fp.Course)
+            .Include(fp => fp.Account)
+            .FirstOrDefaultAsync(ct);
+
+        if (feedPost is null)
+            return NotFound(new { error = "Feed post not found in the specified course." });
+
+        feedPost.Message = body.Message;
+        feedPost.Edited = body.Edited;
+
+        await db.SaveChangesAsync(ct);
+
+        return Ok(feedPost);
+    }
+
+    #endregion
 }

@@ -15,8 +15,8 @@
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
         <PackageReference Include="dotenv.net" Version="4.0.0" />
         <PackageReference Include="MailKit" Version="4.14.1" />
-        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="9.0.10" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="9.0.11" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,7 +25,7 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.11" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
         <PackageReference Include="MimeKit" Version="4.14.0" />
         <PackageReference Include="Minio.AspNetCore" Version="6.0.1" />
@@ -83,6 +83,27 @@
       </Compile>
       <Compile Update="Data\Models\Lecturer.cs">
         <DependentUpon>Account.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\Question.cs">
+        <DependentUpon>Quiz.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\QuestionOption.cs">
+        <DependentUpon>Question.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\QuizAnswer.cs">
+        <DependentUpon>Quiz.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\QuizAnswerOption.cs">
+        <DependentUpon>QuizAnswer.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\QuizResult.cs">
+        <DependentUpon>Quiz.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\MultipleChoiceQuestion.cs">
+        <DependentUpon>Question.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Data\Models\SingleChoiceQuestion.cs">
+        <DependentUpon>Question.cs</DependentUpon>
       </Compile>
     </ItemGroup>
 

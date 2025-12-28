@@ -6,6 +6,7 @@ namespace tda26.Server.Data.Models;
 
 [Table("Quizzes")]
 public class Quiz : Auditable {
+
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
 

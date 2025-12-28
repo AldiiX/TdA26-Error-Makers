@@ -19,6 +19,7 @@ public class APIv1(
     IMaterialRepository materialRepository,
     IMaterialAccessService materialAccessService,
     IAccountRepository accountRepository,
+    IAuthService auth,
     AppDbContext db
 ) : Controller {
 
@@ -771,4 +772,111 @@ public class APIv1(
 
         return Ok(response);
     }
+
+
+
+
+    #region FeedPosts
+
+    [HttpGet("courses/{courseUuid:guid}/feed")]
+    public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        var feedPosts = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Include(fp => fp.Course)
+            .Include(fp => fp.Account)
+            .OrderByDescending(fp => fp.CreatedAt)
+            .ToListAsync();
+
+        return Ok(feedPosts);
+    }
+
+    [HttpPost("courses/{courseUuid:guid}/feed")]
+    public async Task<IActionResult> CreateFeedPostInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromBody] CreateCourseFeedPostRequest body,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+
+        var loggedAccount = await auth.ReAuthAsync(ct);
+
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            Type = FeedPost.FeedPostType.Manual,
+            Message = body.Message,
+            CourseUuid = course.Uuid,
+            AccountUuid = loggedAccount?.Uuid,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync(ct);
+
+        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
+    }
+
+
+    [HttpDelete("courses/{courseUuid:guid}/feed/{feedPostUuid:guid}")]
+    public async Task<IActionResult> DeleteFeedPostFromCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid feedPostUuid,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+        var feedPost = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.Uuid == feedPostUuid)
+            .FirstOrDefaultAsync(ct);
+
+        if (feedPost is null)
+            return NotFound(new { error = "Feed post not found in the specified course." });
+
+        db.FeedPosts.Remove(feedPost);
+        await db.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
+
+    [HttpPut("courses/{courseUuid:guid}/feed/{feedPostUuid:guid}")]
+    public async Task<IActionResult> UpdateFeedPostInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid feedPostUuid,
+        [FromBody] EditCourseFeedPostRequest body,
+        CancellationToken ct
+    ) {
+        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        if (course is null)
+            return NotFound(new { error = "Course not found." });
+
+        var feedPost = await db.FeedPosts
+            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.Uuid == feedPostUuid)
+            .Include(fp => fp.Course)
+            .Include(fp => fp.Account)
+            .FirstOrDefaultAsync(ct);
+
+        if (feedPost is null)
+            return NotFound(new { error = "Feed post not found in the specified course." });
+
+        feedPost.Message = body.Message;
+        feedPost.Edited = body.Edited;
+
+        await db.SaveChangesAsync(ct);
+
+        return Ok(feedPost);
+    }
+
+    #endregion
 }
