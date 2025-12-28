@@ -82,11 +82,6 @@ const refreshCourses = async () => {
     } catch {}
 };
 
-const openEdit = (course: Course) => {
-    editingCourseId.value = course.uuid;
-    enabledModal.value = "updateCourse";
-};
-
 const selectedDeleteCourse = ref<Course | null>(null);
 const deleteError = ref<string | null>(null);
 
@@ -144,7 +139,6 @@ const deleteCourse = async () => {
                     <CourseCard 
                         :course="course" 
                         edit-mode 
-                        @edit="openEdit(course)"
                         @delete="openDelete(course)"
                     />
                 </li>
@@ -164,21 +158,6 @@ const deleteCourse = async () => {
             <CourseForm
                 mode="create"
                 @finished="() => { enabledModal = null; refreshCourses(); }"
-            />
-        </Modal>
-
-        <!-- EDIT -->
-        <Modal 
-            :enabled="enabledModal === 'updateCourse'" 
-            @close="enabledModal = null" 
-            can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
-        >
-            <h3>Upravit kurz</h3>
-            <CourseForm
-                mode="edit"
-                :course-id="editingCourseId"
-                @finished="() => { enabledModal = null; refreshCourses(); editingCourseId = null; }"
             />
         </Modal>
 

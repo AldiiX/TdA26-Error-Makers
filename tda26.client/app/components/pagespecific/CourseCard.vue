@@ -15,7 +15,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "edit"): void;
     (e: "delete"): void;
 }>();
 
@@ -41,11 +40,57 @@ const revealStyle = computed(() => {
         "--reveal-delay-ms": `${props.revealDelayMs ?? 0}ms`
     } as Record<string, string>;
 });
+
+const editBgImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+        if (input.files && input.files[0]) {
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+            console.log(formData.get('image'));
+            await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+                method: 'POST',
+                body: formData
+            });
+            location.reload();
+        }
+    }
+    
+    input.click();
+}
+
+const resetBgImage = async () => {
+    await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+        method: 'DELETE'
+    });
+    location.reload();
+}
 </script>
 
 <template>
     <div :class="$style.container" :style="revealStyle">
         <div :class="$style.top">
+            <div 
+                :class="$style.editOverlay"
+                v-if="editMode"
+            >
+                <div
+                    :class="$style.bgButton"
+                >
+                    <span
+                        @click="editBgImage"
+                        :class="$style.edit"
+                        title="Změnit obrázek kurzu"
+                    ></span>
+                    <span
+                        @click="resetBgImage"
+                        :class="$style.reset"
+                        title="Obnovit výchozí obrázek kurzu"
+                    ></span>
+                </div>
+            </div>
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
                 <div :class="$style.image" v-if="course.imageUrl" :style="{ '--bg': `url(${course.imageUrl})` }"></div>
 
@@ -128,7 +173,7 @@ const revealStyle = computed(() => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="emit('edit')"
+                                @click="navigateTo(`/course/${course.uuid}?edit=true`)"
                                 style="width: 100%"
                         >
                             Upravit
@@ -154,6 +199,85 @@ const revealStyle = computed(() => {
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     backdrop-filter: blur(8px) saturate(1.6);
+}
+
+.editOverlay {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2;
+
+    .bgButton {
+        .edit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition-duration: 0.3s;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.3s;
+            @extend .liquid-glass;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.7);
+                transition-duration: 0.3s;
+            }
+
+            &::before {
+                content: '';
+                display: block;
+                width: 20px;
+                height: 20px;
+                background-color: black;
+                mask-size: contain;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                mask-image: url("/icons/imageEdit.svg");
+            }
+        }
+        
+        &:hover .reset {
+            opacity: 1;
+        }
+        
+        .reset {
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition-duration: 0.3s;
+            cursor: pointer;
+            user-select: none;
+            margin-top: 8px;
+            transition: all 0.3s;
+            @extend .liquid-glass;
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.7);
+                transition-duration: 0.3s;
+            }
+
+            &::before {
+                content: '';
+                display: block;
+                width: 20px;
+                height: 20px;
+                background-color: black;
+                mask-size: contain;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                mask-image: url("/icons/trash.svg");
+            }
+        }
+    }
 }
 
 .container {
