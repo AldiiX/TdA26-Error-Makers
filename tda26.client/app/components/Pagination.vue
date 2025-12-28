@@ -71,13 +71,16 @@ const goNext = () => goToPage(props.page + 1);
         height: 36px;
         border-radius: 100%;
         cursor: pointer;
-        
+        transition-duration: 0.3s;
+
 
         &:hover {
             opacity: 0.9;
+            transition-duration: 0.3s;
             background-color: var(--accent-color-primary);
-            
+
             .arrow{
+                transition-duration: 0.3s;
                 background-color: var(--accent-color-primary-text);
             }
         }
@@ -91,10 +94,9 @@ const goNext = () => goToPage(props.page + 1);
             mask-size: contain;
             mask-repeat: no-repeat;
             mask-position: center;
-            
-            background-color: var(--text-color);
 
-            transition: 0.2s ease;
+            background-color: var(--text-color);
+            transition-duration: 0.3s;
         }
     }
     
