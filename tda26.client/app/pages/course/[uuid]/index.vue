@@ -555,6 +555,7 @@ onMounted(() => {
 });
 
 
+
 const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v2/courses/${uuid}/feed`, {
     server: false,
     key: `course-${uuid}-feed`,
@@ -686,12 +687,27 @@ watch(feedData, (val) => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                            <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-                            <!--                    <ul v-else>-->
-                            <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-                            <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-                            <!--                        </li>-->
-                            <!--                    </ul>-->
+                            <p v-if="feedPending">Načítání aktivity...</p>
+                            <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
+                            <ul v-else :class="$style.feedsContainer">
+                                <li v-for=" feedPost in feedData" :key="feedPost.uuid">
+                                    <div :class="$style.feedDate">
+                                        
+                                    </div>
+                                    <div :class="$style.feedContent">
+                                        <p :class="$style.feedText" v-html="feedPost.message"></p>
+                                        <div v-if="feedPost.author" :class="$style.feedAuthor">
+                                            <Avatar 
+                                                :class="$style.feedAvatar" 
+                                                :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" 
+                                                :name="feedPost.author.fullName" 
+                                                :src="courseSmall?.lecturer?.pictureUrl ?? null"
+                                            />
+                                            <p>{{ feedPost.author.fullName }}</p>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
                     </ClientOnly>
                 </SmoothSizeWrapper>
@@ -1157,28 +1173,34 @@ ul {
         }
         
         .activity {
-            
+            p{
+                
+            }
             
             ul {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
                 
                 li{
-                    width: 100%;
-                    height: 100%;
-                    padding: 16px;
-                    
-                    
-                    .message {
-                        width: 100%;
-                        margin: 0;
-                        font-size: 16px;
+                    .feedDate {
+
+                    }
+
+                    .feedContent {
+
+                        .feedText {
+
+                        }
+
+                        .feedAuthor {
+
+                            .feedAvatar {
+
+                            }
+                        }
                     }
                 }
             }
-            
-            
         }
     }
 }
