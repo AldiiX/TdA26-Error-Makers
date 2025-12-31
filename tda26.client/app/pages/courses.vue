@@ -8,6 +8,7 @@
     import Tag from '~/components/Tag.vue'
     import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue'
     import Pagination from '~/components/Pagination.vue'
+    import Select from '~/components/Select.vue'
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -124,6 +125,7 @@
     // filtry
     const activeTags = ref<string[]>([])
     const activeCategory = ref<string | null>(null)
+    const activeAuthor = ref<string | null>(null)
 
     const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
 
@@ -253,6 +255,34 @@
         return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
     })
 
+    // seznam unikatnich autoru
+    const authorOptions = computed(() => {
+        const list = courses.value ?? []
+        const authorsMap = new Map<string, string>()
+
+        for (const course of list) {
+            // pokus se ziskat autora z lecturer nebo account
+            let authorId: string | null = null
+            let authorName: string | null = null
+
+            if (course.lecturer) {
+                authorId = course.lecturer.uuid
+                authorName = course.lecturer.fullName
+            } else if (course.account) {
+                authorId = course.account.uuid
+                authorName = course.account.fullName
+            }
+
+            if (authorId && authorName) {
+                authorsMap.set(authorId, authorName)
+            }
+        }
+
+        return Array.from(authorsMap.entries())
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+    })
+
     function toggleTag(uuid: string) {
         activeTags.value = activeTags.value.includes(uuid)
             ? activeTags.value.filter((t) => t !== uuid)
@@ -330,6 +360,13 @@
             list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)))
         }
 
+        if (activeAuthor.value) {
+            list = list.filter((c) => {
+                const authorId = c.course.lecturer?.uuid ?? c.course.account?.uuid ?? null
+                return authorId === activeAuthor.value
+            })
+        }
+
         const query = normalizeText(debouncedQuery.value)
         if (query) {
             list = list.filter((c) => c.searchText.includes(query))
@@ -338,7 +375,7 @@
         return list.map((x) => x.course)
     })
 
-    watch([sort, debouncedQuery], () => {
+    watch([sort, debouncedQuery, activeAuthor], () => {
         page.value = 1
     })
 
@@ -402,7 +439,7 @@
 
     // resetovani filteru
     const isAnyFilterActive = computed<boolean>(() => {
-        return (activeCategory.value !== null || activeTags.value.length > 0 || debouncedQuery.value.trim() !== '') || false
+        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || false
     })
 
     const filterButtonClicked = ref(false);
@@ -410,6 +447,7 @@
     function resetAllFilters() {
         activeCategory.value = null
         activeTags.value = []
+        activeAuthor.value = null
         searchQuery.value = ''
         page.value = 1
         filterButtonClicked.value = true;
@@ -491,6 +529,16 @@
                                 type="text"
                                 placeholder="Hledat kurz..."
                                 v-model="searchQuery"
+                        />
+                    </div>
+
+                    <div :class="[$style.authorFilter, $style.cont]" v-if="authorOptions.length > 0">
+                        <p>Autor</p>
+                        <Select
+                                :options="authorOptions"
+                                v-model="activeAuthor"
+                                placeholder="Všichni autoři"
+                                search-placeholder="Hledat autora..."
                         />
                     </div>
 
