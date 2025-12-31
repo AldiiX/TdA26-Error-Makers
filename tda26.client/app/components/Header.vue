@@ -123,7 +123,7 @@
                                 <div :class="$style.divider"></div>
                                 
                                 <div :class="$style.popoverActions">
-                                    <button :class="$style.actionButton" @click="toggleTheme">
+                                    <button :class="$style.actionButton" @click="toggleTheme" v-if="false"> <!-- TODO: dodělat -->
                                         <div :class="$style.iconWrapper">
                                             <div :class="[$style.icon, $style.themeIcon]"></div>
                                         </div>
@@ -391,7 +391,7 @@
                 &:hover {
                     background-color: rgb(from var(--accent-color-primary) r g b / 0.1);
                     border-color: var(--accent-color-primary);
-                    transform: translateY(-2px);
+                    //transform: translateY(-2px);
                 }
 
                 &.logoutButton {

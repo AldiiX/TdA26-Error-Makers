@@ -105,7 +105,7 @@ export interface Account {
     fullNameWithoutTitles: string,
     likes: Rating[];
     dislikes: Rating[];
-    type: "Account" | "Lecturer" | "Admin"
+    type: "account" | "lecturer" | "admin"
 }
 
 interface Rating {
