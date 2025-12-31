@@ -112,17 +112,25 @@ const getHostname = (url?: string) => {
 
 // frontendove poslani view eventu
 onMounted(async () => {
-    const captchaToken = await grecaptcha.execute(
-        "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
-        { action: "submit" }
-    );
+    // Wait for reCAPTCHA to be ready before executing
+    if (typeof grecaptcha === 'undefined') {
+        console.warn('reCAPTCHA not loaded, skipping view event');
+        return;
+    }
 
-    await fetch(`/api/v2/courses/${uuid}/view`, {
-        method: 'POST',
-        body: JSON.stringify({ token: captchaToken }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
+    grecaptcha.ready(async () => {
+        const captchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
+
+        await fetch(`/api/v2/courses/${uuid}/view`, {
+            method: 'POST',
+            body: JSON.stringify({ token: captchaToken }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     });
 })
 
