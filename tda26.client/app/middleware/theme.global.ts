@@ -2,6 +2,7 @@ import type { WebTheme } from '#shared/types'
 
 export default defineNuxtRouteMiddleware(() => {
     const theme = useState<WebTheme | null>('theme', () => "light")
+
     const cookie = useCookie<WebTheme | null>('theme', {
         default: () => null,
         sameSite: 'lax',
@@ -9,7 +10,7 @@ export default defineNuxtRouteMiddleware(() => {
     })
 
     // if user explicitly set a cookie, prefer it
-    if (cookie.value === 'dark' || cookie.value === 'light') {
+    /*if (cookie.value === 'dark' || cookie.value === 'light') {
         theme.value = cookie.value;
         return;
     }
@@ -40,5 +41,5 @@ export default defineNuxtRouteMiddleware(() => {
             mql.addEventListener?.('change', handler)
             mqlBound.value = true
         }
-    }
+    }*/
 })

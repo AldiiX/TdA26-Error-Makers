@@ -207,7 +207,7 @@ const deleteCourse = async () => {
 
     <h1 :class="$style.nadpis">
         Moje kurzy
-        <span v-if="loggedAccount.type === 'Admin'" :class="$style.admininfo">(jste Admin, můžete spravovat všechny kurzy)</span>
+        <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat všechny kurzy)</span>
     </h1>
 <!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
 

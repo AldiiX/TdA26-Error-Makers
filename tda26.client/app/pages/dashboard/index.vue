@@ -194,7 +194,6 @@ const deleteCourse = async () => {
 }
 
 .actionButtons {
-    margin-top: 32px;
     display: flex;
     gap: 16px;
 
@@ -228,7 +227,7 @@ const deleteCourse = async () => {
 
 .courses {
     position: relative;
-    margin-top: 48px;
+    margin-top: calc(64px + 12px);
     margin-bottom: 16px;
     border-radius: 12px;
     overflow-x: hidden;

@@ -4,22 +4,54 @@ import {useRoute} from "#imports";
 import {useState} from "#app";
 import {NuxtLink, ClientOnly} from "#components";
 import Menu from "~/components/Menu.vue";
+import type {Account, Lecturer, WebTheme} from "#shared/types";
+import Avatar from "~/components/Avatar.vue";
 
+
+const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
 const currentPage = ref<string>("/");
+const theme = useState<WebTheme>('theme', () => 'light');
+
+const themeCookie = useCookie<WebTheme>('theme', {
+    default: () => 'light',
+    sameSite: 'lax',
+    path: '/'
+});
+
+function toggleTheme() {
+    const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
+    theme.value = newTheme;
+    themeCookie.value = newTheme;
+}
+
+async function logout() {
+    navigateTo('/');
+
+    try {
+        await $fetch('/api/v2/auth/logout', {
+            method: 'POST'
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+    } finally {
+        navigateTo('/');
+        loggedAccount.value = null;
+    }
+}
 
 watch(() => useRoute().path, (newPath) => {
     currentPage.value = newPath;
 }, { immediate: true });
 
 // pokud je mobileMenuOpened, tak se zablokuje scroll
-watch(mobileMenuOpened, (newVal) => {
-    if (newVal) {
-        document.documentElement.style.overflow = 'hidden';
-    } else {
-        document.documentElement.style.overflow = '';
-    }
-});
+// watch(mobileMenuOpened, (newVal) => {
+//     if (newVal) {
+//         document.documentElement.style.overflow = 'hidden';
+//     } else {
+//         document.documentElement.style.overflow = '';
+//     }
+// });
 </script>
 
 <template>
@@ -31,11 +63,71 @@ watch(mobileMenuOpened, (newVal) => {
                 <div :class="$style.content">
                     <div :class="$style.logo"></div>
 
+                    
+                    
                     <!-- Menu -->
                     <nav>
                         <Menu @itemClick="mobileMenuOpened = false" :link-class="$style.link" />
+                        <NuxtLink
+                            v-if="loggedAccount"
+                            to="/dashboard"
+                            :class="$style.link"
+                            @click="mobileMenuOpened = false"
+                        >
+                            Dashboard
+                        </NuxtLink>
                     </nav>
 
+                    <div :class="$style.loggedAs">
+
+                        <template v-if="loggedAccount">
+                            <div :class="$style.accountHeader">
+                                <Avatar
+                                    :name="loggedAccount.fullNameWithoutTitles"
+                                    :src="(loggedAccount as Lecturer).pictureUrl ?? null"
+                                    :size="72"
+                                />
+
+                                <div :class="$style.accountText">
+                                    <p :class="$style.label">Přihlášen jako</p>
+                                    <p :class="[$style.name, 'text-gradient']">
+                                        {{ loggedAccount.fullNameWithoutTitles }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div :class="$style.accountActions">
+                                <button :class="$style.actionButton" @click="toggleTheme">
+                                    <div :class="[$style.icon, $style.themeIcon]"></div>
+                                    <span>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</span>
+                                </button>
+
+                                <button :class="[$style.actionButton, $style.logout]" @click="logout">
+                                    <div :class="[$style.icon, $style.logoutIcon]"></div>
+                                    <span>Odhlásit se</span>
+                                </button>
+                            </div>
+
+                        </template>
+
+                        <template v-else>
+                            <div :class="$style.notLogged">
+                                <p :class="[$style.title, 'text-gradient']">Přihlášení</p>
+                                <p class="hint">Nemáš účet? Vytvoř si ho</p>
+
+                                <div :class="$style.authButtons">
+                                    <NuxtLink to="/login" @click="mobileMenuOpened = false">
+                                        <Button :class="$style.btn" button-style="primary">Přihlásit se</Button>
+                                    </NuxtLink>
+
+                                    <NuxtLink to="/register" @click="mobileMenuOpened = false">
+                                        <Button :class="$style.btn" button-style="secondary">Registrovat se</Button>
+                                    </NuxtLink>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    
 <!--                    <LanguageSwitch />-->
                 </div>
             </div>
@@ -53,6 +145,8 @@ watch(mobileMenuOpened, (newVal) => {
     z-index: 20;
     transition-duration: 0.3s;
     overflow: hidden;
+    overflow-y: auto;
+    
 
     >.close {
         position: absolute;
@@ -76,6 +170,7 @@ watch(mobileMenuOpened, (newVal) => {
         align-items: center;
         gap: 64px;
         height: 100%;
+        padding-bottom: 64px;
 
         >.logo {
             width: 24vw;
@@ -87,7 +182,128 @@ watch(mobileMenuOpened, (newVal) => {
             mask-position: center;
             background-color: var(--accent-color-primary);
         }
+        
+        .loggedAs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            width: 100%;
+            padding-bottom: 64px;
 
+            .accountHeader {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .accountText {
+                text-align: left;
+                
+                
+                .label {
+                    margin: 0;
+                    font-size: 16px;
+                    opacity: 0.75;
+                }
+
+                .name {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+            }
+
+            .accountActions {
+                display: flex;
+                gap: 32px;
+
+                .actionButton {
+                    all: unset;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 18px;
+                    color: var(--text-color);
+                    transition-duration: 0.3s;
+                    font-family: "Dosis", sans-serif;
+                    
+
+                    .icon {
+                        width: 20px;
+                        height: 20px;
+                        background-color: var(--text-color);
+                    }
+
+                    .themeIcon {
+                        mask-image: var(--theme-icon);
+                        mask-size: contain;
+                        mask-repeat: no-repeat;
+                        mask-position: center;
+                    }
+
+                    .logoutIcon {
+                        mask: url('../../public/icons/logout.svg');
+                        mask-size: contain;
+                        mask-repeat: no-repeat;
+                        mask-position: center;
+                    }
+                    
+                }
+
+                .logout {
+                    margin-left: auto;
+                }
+            }
+            
+            .notLogged {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+
+                .title {
+                    font-size: 28px;
+                    font-weight: 600;
+                    margin: 0;
+                }
+
+                .hint {
+                    font-size: 16px;
+                    opacity: 0.75;
+                    margin: 0;
+                }
+
+                .authButtons {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-top: 8px;
+                    align-items: center;
+
+                    a {
+                        width: 100%;     
+                        min-width: 268px;
+                        display: flex;
+                        justify-content: center;
+                        text-decoration: none;
+                    }
+                    
+                    .btn {
+                        display: flex;
+                        width: 100%;
+                        height: 48px;          
+                        align-items: center;
+                        justify-content: center;
+                        box-sizing: border-box;
+                    }
+                }
+            }
+        }
+        
+            
+        
         nav {
             display: flex;
             flex-direction: column;
@@ -121,88 +337,7 @@ watch(mobileMenuOpened, (newVal) => {
                 }
             }
         }
-
-        /*.switches {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-
-            .langswitch {
-                position: relative;
-                cursor: pointer;
-                background-color: var(--element-color-accent);
-                transition-duration: 0.3s;
-                padding: 8px;
-                border-radius: 8px;
-
-                &:hover {
-                    .lang p {
-                        color: var(--accent-color-darker);
-                        transition-duration: 0.3s;
-                    }
-
-                    .lang >.icon {
-                        filter: brightness(0.8);
-                        transition-duration: 0.3s;
-                    }
-                }
-
-                .lang {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    user-select: none;
-
-                    >.icon {
-                        width: 24px;
-                        height: 16px;
-                        background-size: cover;
-                        background-position: center;
-                        background-repeat: no-repeat;
-                        border-radius: 4px;
-                        transition-duration: 0.3s;
-                    }
-
-                    >p {
-                        margin: 0;
-                        font-weight: bold;
-                        user-select: none;
-                        color: var(--accent-color);
-                        transition-duration: 0.3s;
-                    }
-                }
-            }
-
-            .themeswitch {
-                width: 40px;
-                position: relative;
-                aspect-ratio: 1/1;
-                cursor: pointer;
-                background-color: var(--element-color-accent);
-                border-radius: 100%;
-                transition-duration: 0.3s;
-
-                &:hover .themeswitch-icon {
-                    background-color: var(--accent-color-darker);
-                    transition-duration: 0.3s;
-                }
-
-                .themeswitch-icon {
-                    width: 24px;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    aspect-ratio: 1/1;
-                    cursor: pointer;
-                    background-color: var(--accent-color);
-                    mask-size: contain;
-                    mask-position: center;
-                    mask-repeat: no-repeat;
-                    transition-duration: 0.3s;
-                }
-            }
-        }*/
+        
 
         :deep(.lang-switch) .lang-menu {
             bottom: calc(100% + var(--ls-gap)) !important;

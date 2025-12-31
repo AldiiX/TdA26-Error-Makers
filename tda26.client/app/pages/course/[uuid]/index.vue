@@ -12,6 +12,7 @@ import NumberExponential from "~/components/NumberExponential.vue";
 import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
 import { push } from "notivue";
+import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -53,6 +54,15 @@ if (courseSmallError.value || !_courseSmall.value) {
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
+
+
+// pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
+if (isEditMode) {
+    if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value.account?.uuid)) {
+        await navigateTo(`/course/${uuid}`);
+    }
+}
+
 
 // client full fetch
 const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
@@ -102,17 +112,25 @@ const getHostname = (url?: string) => {
 
 // frontendove poslani view eventu
 onMounted(async () => {
-    const captchaToken = await grecaptcha.execute(
-        "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
-        { action: "submit" }
-    );
+    // Wait for reCAPTCHA to be ready before executing
+    if (typeof grecaptcha === 'undefined') {
+        console.warn('reCAPTCHA not loaded, skipping view event');
+        return;
+    }
 
-    await fetch(`/api/v2/courses/${uuid}/view`, {
-        method: 'POST',
-        body: JSON.stringify({ token: captchaToken }),
-        headers: {
-            'Content-Type': 'application/json'
-        }
+    grecaptcha.ready(async () => {
+        const captchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
+
+        await fetch(`/api/v2/courses/${uuid}/view`, {
+            method: 'POST',
+            body: JSON.stringify({ token: captchaToken }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     });
 })
 
@@ -292,6 +310,7 @@ const handleMaterialCreate = async () => {
 
 const ownsCourse = computed(() => {
     if (!loggedAccount.value || !courseSmall.value) return false;
+    if(loggedAccount.value.type === 'admin') return true;
     return loggedAccount.value?.uuid === courseSmall.value?.account?.uuid;
 });
 
@@ -470,6 +489,25 @@ const updateCourseDescription = (newDescription: string) => {
 const saveCourseChanges = async () => {
     if (!course.value) return;
 
+    // validace
+    if (course.value.name.trim().length === 0) {
+        push.error({
+            title: "Chyba při ukládání",
+            message: "Název kurzu nesmí být prázdný.",
+            duration: 4000
+        });
+        return;
+    }
+
+    if(course.value.name.length > 128) {
+        push.error({
+            title: "Chyba při ukládání",
+            message: "Název kurzu nesmí být delší než 128 znaků.",
+            duration: 4000
+        });
+        return;
+    }
+
     try {
         const updatedCourse = await $fetch<Course>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}`, {
             method: "PUT",
@@ -481,8 +519,18 @@ const saveCourseChanges = async () => {
         });
 
         originalCourse.value = structuredClone(updatedCourse);
+        push.success({
+            title: "Změny uloženy",
+            message: "Změny kurzu byly úspěšně uloženy.",
+            duration: 4000
+        })
     } catch (err) {
         console.error("Error saving course changes:", err);
+        push.error({
+            title: "Chyba při ukládání",
+            message: "Nepodařilo se uložit změny kurzu. Zkuste to prosím znovu.",
+            duration: 4000
+        });
     }
 };
 
@@ -550,8 +598,8 @@ watch(feedData, (val) => {
                         <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Recenze</p>
-                        <NumberExponential :value="0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
+                        <p :class="$style.title">Kvízy</p>
+                        <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
                     </div>
                 </div>
 
@@ -597,56 +645,56 @@ watch(feedData, (val) => {
                     </li>
                 </ul>
             </nav>
-            <div :class="['liquid-glass']">
-                <ClientOnly>
-                    <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                        <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
-                            Přidat nový materiál
-                        </Button>
+            <div :class="['liquid-glass']" style="overflow: hidden">
+                <SmoothSizeWrapper>
+                    <ClientOnly>
+                        <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
+                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                                Přidat nový materiál
+                            </Button>
 
-                        <p v-if="coursePending">Načítání materiálů...</p>
-                        <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
-                        <ul v-else>
-                            <li v-for="material in course.materials" :key="material.uuid">
-                                <MaterialItem
-                                    :material="material"
-                                    :course="course"
-                                    :edit-mode="ownsCourse"
-                                    @edit="openUpdateMaterialModal"
-                                    @delete="openDeleteMaterialModal"
-                                />
-                            </li>
-                        </ul>
-                    </div>
-                    <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                        <Button v-if="ownsCourse" button-style="primary" accent-color="secondary" @click="enabledModal = 'createQuiz'" :class="$style.addMaterialButton">
-                            Přidat nový kvíz
-                        </Button>
+                            <p v-if="coursePending">Načítání materiálů...</p>
+                            <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
+                            <ul v-else>
+                                <li v-for="material in course.materials" :key="material.uuid">
+                                    <MaterialItem
+                                        :material="material"
+                                        :course="course"
+                                        :edit-mode="ownsCourse"
+                                        @edit="openUpdateMaterialModal"
+                                        @delete="openDeleteMaterialModal"
+                                    />
+                                </li>
+                            </ul>
+                        </div>
+                        <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
+                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createQuiz'" :class="$style.addMaterialButton">
+                                Přidat nový kvíz
+                            </Button>
 
-                        <p v-if="coursePending">Načítání kvízů...</p>
-                        <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
-                        <ul v-else>
-                            <li v-for="quiz in course.quizzes" :key="quiz.uuid">
-                                <QuizItem
-                                    :quiz="quiz"
-                                    :course="course"
-                                    :edit-mode="ownsCourse"
-                                    @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                />
-                            </li>
-                        </ul>
-                    </div>
-                    
-                    <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                        <p v-if="coursePending">Načítání aktivity...</p>
-                        <p v-else-if="course?.feed === undefined || course.feed.length == 0">Tento kurz nemá žádnou aktivitu.</p>
-                        <ul v-else>
-                            <li v-for="feedPost in feedData" :key="feedPost.uuid">
-                                <p :class="$style.message">{{ feedPost.message }}</p>
-                            </li>
-                        </ul>
-                    </div>
-                </ClientOnly>
+                            <p v-if="coursePending">Načítání kvízů...</p>
+                            <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
+                            <ul v-else>
+                                <li v-for="quiz in course.quizzes" :key="quiz.uuid">
+                                    <QuizItem
+                                        :quiz="quiz"
+                                        :course="course"
+                                        :edit-mode="ownsCourse"
+                                        @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                    />
+                                </li>
+                            </ul>
+                        </div>
+                        <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
+                            <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
+                            <!--                    <ul v-else>-->
+                            <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
+                            <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
+                            <!--                        </li>-->
+                            <!--                    </ul>-->
+                        </div>
+                    </ClientOnly>
+                </SmoothSizeWrapper>
             </div>
         </div>
     </div>
@@ -663,7 +711,14 @@ watch(feedData, (val) => {
                 :disabled="!isDirty"
                 @click="saveCourseChanges"
             >
-                Uložit
+                Uložit změny
+            </Button>
+            <Button
+                button-style="secondary"
+                :disabled="!isDirty"
+                @click="saveCourseChanges(); editBackClick()"
+            >
+                Uložit a ukončit úpravy
             </Button>
             <Button
                 buttonStyle="tertiary"
