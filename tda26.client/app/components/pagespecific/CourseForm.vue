@@ -4,6 +4,7 @@ import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
+import { push } from "notivue";
 
 type Material = MaterialFormModel;
 
@@ -102,8 +103,18 @@ const submitForm = async () => {
 
         if (props.mode === "create") {
             await $fetch(getBaseUrl() + "/api/v2/courses", { method: "POST", body: fd });
+            push.success({
+                title: "Kurz vytvořen",
+                message: "Kurz byl úspěšně vytvořen.",
+                duration: 4000
+            });
         } else {
             await $fetch(getBaseUrl() + `/api/v2/courses/${props.courseId}`, { method: "PUT", body: fd });
+            push.success({
+                title: "Kurz upraven",
+                message: "Kurz byl úspěšně upraven.",
+                duration: 4000
+            });
         }
 
         emit("finished");

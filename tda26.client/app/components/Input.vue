@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+    import { push } from "notivue";
+
     const props = withDefaults(defineProps<{
         modelValue?: string | number | null,
         type?: string,
@@ -38,7 +40,11 @@
             target.value = '';
             fileName.value = props.defaultFileName;
             emit('update:modelValue', null);
-            alert(`Soubor je příliš velký! Limit: ${Math.round(props.maxFileSize / 1024 / 1024)} MB`);
+            push.error({
+                title: "Chyba nahrávání souboru",
+                message: `Soubor je příliš velký! Limit: ${Math.round(props.maxFileSize / 1024 / 1024)} MB`,
+                duration: 5000
+            });
             return;
         }
         
@@ -47,7 +53,11 @@
             target.value = '';
             fileName.value = props.defaultFileName;
             emit('update:modelValue', null);
-            alert("Nepodporovaný formát souboru!");
+            push.error({
+                title: "Chyba nahrávání souboru",
+                message: "Nepodporovaný formát souboru!",
+                duration: 5000
+            });
             return;
         }
 

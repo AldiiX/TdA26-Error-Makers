@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace tda26.Server.Data.Models;
 
-public class Lecturer : Account {
+public sealed class Lecturer : Account {
 
     // db props
     [MaxLength(10)] public string? TitleBefore { get; set; }

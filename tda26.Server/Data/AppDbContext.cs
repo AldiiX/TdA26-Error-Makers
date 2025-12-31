@@ -34,7 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
     public DbSet<QuizAnswerOption> QuizAnswerOptions => Set<QuizAnswerOption>();
     
-    public DbSet<FeedPost> FeedItems => Set<FeedPost>();
+    public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
 
     // auto update audit properties
     private void SetAuditProperties() {
