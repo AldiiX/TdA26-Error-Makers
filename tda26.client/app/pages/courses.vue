@@ -8,6 +8,8 @@
     import Tag from '~/components/Tag.vue'
     import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue'
     import Pagination from '~/components/Pagination.vue'
+    import Select from '~/components/Select.vue'
+    import SelectLecturer from "~/components/pagespecific/SelectLecturer.vue";
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -124,6 +126,7 @@
     // filtry
     const activeTags = ref<string[]>([])
     const activeCategory = ref<string | null>(null)
+    const activeAuthor = ref<string | null>(null)
 
     const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
 
@@ -253,6 +256,31 @@
         return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
     })
 
+    // seznam unikatnich autoru
+    const authorOptions = computed(() => {
+        const list = courses.value ?? []
+        const arr: any[] = []
+
+        for (const course of list) {
+            const obj = {
+                label: course.lecturer?.fullNameWithoutTitles
+                    ?? course.account?.fullNameWithoutTitles
+                    ?? 'Neznámý autor',
+                value: course.lecturer?.uuid
+                    ?? course.account?.uuid
+                    ?? null,
+                pictureUrl: course.lecturer?.pictureUrl
+                    ?? null
+            }
+
+            if (!arr.find((a) => a.value === obj.value)) {
+                arr.push(obj)
+            }
+        }
+
+        return arr.sort((a, b) => a.label.localeCompare(b.label))
+    })
+
     function toggleTag(uuid: string) {
         activeTags.value = activeTags.value.includes(uuid)
             ? activeTags.value.filter((t) => t !== uuid)
@@ -330,6 +358,13 @@
             list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)))
         }
 
+        if (activeAuthor.value) {
+            list = list.filter((c) => {
+                const authorId = c.course.lecturer?.uuid ?? c.course.account?.uuid ?? null
+                return authorId === activeAuthor.value
+            })
+        }
+
         const query = normalizeText(debouncedQuery.value)
         if (query) {
             list = list.filter((c) => c.searchText.includes(query))
@@ -338,7 +373,7 @@
         return list.map((x) => x.course)
     })
 
-    watch([sort, debouncedQuery], () => {
+    watch([sort, debouncedQuery, activeAuthor], () => {
         page.value = 1
     })
 
@@ -402,7 +437,7 @@
 
     // resetovani filteru
     const isAnyFilterActive = computed<boolean>(() => {
-        return (activeCategory.value !== null || activeTags.value.length > 0 || debouncedQuery.value.trim() !== '') || false
+        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || false
     })
 
     const filterButtonClicked = ref(false);
@@ -410,6 +445,7 @@
     function resetAllFilters() {
         activeCategory.value = null
         activeTags.value = []
+        activeAuthor.value = null
         searchQuery.value = ''
         page.value = 1
         filterButtonClicked.value = true;
@@ -453,7 +489,7 @@
                 </p>
             </div>
 
-            <div :class="$style.right">
+            <div :class="$style.right" v-if="false">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
                         <NumberExponential
@@ -491,6 +527,19 @@
                                 type="text"
                                 placeholder="Hledat kurz..."
                                 v-model="searchQuery"
+                        />
+                    </div>
+
+                    <div :class="[$style.cont, $style.author]">
+                        <p>Autor</p>
+                        <SelectLecturer
+                                :options="authorOptions"
+                                v-model="activeAuthor"
+                                placeholder="Všichni autoři"
+                                search-placeholder="Hledat autora..."
+                                :dropdownClass="$style.sdd"
+                                special-render="withAvatar"
+                                :class="$style.selection"
                         />
                     </div>
 
@@ -840,6 +889,17 @@
                                 background: var(--accent-color-primary);
                                 color: var(--accent-color-primary-text);
                             }
+                        }
+                    }
+
+                    &:is(.author) {
+                        .sdd {
+                            max-height: 200px;
+                        }
+
+
+                        .selection {
+                            height: 48px;
                         }
                     }
 
