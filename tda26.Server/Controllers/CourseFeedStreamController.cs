@@ -7,12 +7,8 @@ using tda26.Server.Data;
 
 namespace tda26.Server.Controllers;
 
-
-
-
-
 [ApiController]
-[Route("api/courses"), Route("api/v1/courses")]
+[Route("api/courses"), Route("api/v1/courses"), Route("api/v2/courses")]
 public class CourseFeedStreamController(
     IFeedStreamBroker fsb,
     AppDbContext db

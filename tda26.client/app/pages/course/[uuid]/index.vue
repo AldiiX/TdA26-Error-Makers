@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material, type Quiz} from "#shared/types";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -506,6 +506,20 @@ onMounted(() => {
     }
 });
 
+
+const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v2/courses/${uuid}/feed`, {
+    server: false,
+    key: `course-${uuid}-feed`,
+    lazy: true,
+    method: "GET",
+});
+
+watch(feedData, (val) => {
+    console.log("FEED:", feedData.value);
+});
+
+
+
 </script>
 
 <template>
@@ -622,13 +636,15 @@ onMounted(() => {
                             </li>
                         </ul>
                     </div>
+                    
                     <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                        <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-                        <!--                    <ul v-else>-->
-                        <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-                        <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-                        <!--                        </li>-->
-                        <!--                    </ul>-->
+                        <p v-if="coursePending">Načítání aktivity...</p>
+                        <p v-else-if="course?.feed === undefined || course.feed.length == 0">Tento kurz nemá žádnou aktivitu.</p>
+                        <ul v-else>
+                            <li v-for="feedPost in feedData" :key="feedPost.uuid">
+                                <p :class="$style.message">{{ feedPost.message }}</p>
+                            </li>
+                        </ul>
                     </div>
                 </ClientOnly>
             </div>
@@ -1083,6 +1099,31 @@ ul {
                 flex-direction: column;
                 gap: 12px;
             }
+        }
+        
+        .activity {
+            
+            
+            ul {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                
+                li{
+                    width: 100%;
+                    height: 100%;
+                    padding: 16px;
+                    
+                    
+                    .message {
+                        width: 100%;
+                        margin: 0;
+                        font-size: 16px;
+                    }
+                }
+            }
+            
+            
         }
     }
 }

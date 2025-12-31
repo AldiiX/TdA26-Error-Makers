@@ -11,7 +11,7 @@ export interface Course {
     account: Account | null;
     materials?: Material[];
     quizzes?: Quiz[];
-    // feed: FeedPost[];
+    feed?: FeedPost[];
     tags: Tag[] | null;
     likeCount: number,
     viewCount: number,
@@ -130,4 +130,14 @@ export interface AnswerSubmission {
     uuid: string;
     selectedIndex?: number;
     selectedIndices?: number[];
+}
+
+export interface FeedPost {
+    uuid: string;
+    type: "manual" | "system";
+    message: string;
+    edited: boolean;
+    author: Account;
+    createdAt: string;
+    updatedAt: string;
 }
