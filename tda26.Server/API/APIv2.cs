@@ -251,6 +251,7 @@ public class APIv2(
             c.Quizzes = [];
             c.Feed = [];
             if(c.Account != null) c.Account.Ratings = [];
+            if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
         }
 
         return Ok(courses);
@@ -280,6 +281,7 @@ public class APIv2(
                 c.Quizzes = [];
                 c.Feed = [];
                 if(c.Account != null) c.Account.Ratings = [];
+                if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
             }
 
             return Ok(courses);
@@ -291,7 +293,7 @@ public class APIv2(
                 c.Quizzes = [];
                 c.Feed = [];
                 if(c.Account != null) c.Account.Ratings = [];
-                if (c.ImageUrl != null) c.ImageUrl = "api/v2/courses/" + c.Uuid + "/image";
+                if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
             }
 
             return Ok(courses);
