@@ -532,7 +532,7 @@
                         />
                     </div>
 
-                    <div :class="[$style.authorFilter, $style.cont]" v-if="authorOptions.length > 0">
+                    <div :class="$style.cont" v-if="authorOptions.length > 0">
                         <p>Autor</p>
                         <Select
                                 :options="authorOptions"
