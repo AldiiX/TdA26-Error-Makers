@@ -9,6 +9,7 @@
     import SmoothSizeWrapper from '~/components/SmoothSizeWrapper.vue'
     import Pagination from '~/components/Pagination.vue'
     import Select from '~/components/Select.vue'
+    import SelectLecturer from "~/components/pagespecific/SelectLecturer.vue";
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -258,29 +259,26 @@
     // seznam unikatnich autoru
     const authorOptions = computed(() => {
         const list = courses.value ?? []
-        const authorsMap = new Map<string, string>()
+        const arr: any[] = []
 
         for (const course of list) {
-            // pokus se ziskat autora z lecturer nebo account
-            let authorId: string | null = null
-            let authorName: string | null = null
-
-            if (course.lecturer) {
-                authorId = course.lecturer.uuid
-                authorName = course.lecturer.fullName
-            } else if (course.account) {
-                authorId = course.account.uuid
-                authorName = course.account.fullName
+            const obj = {
+                label: course.lecturer?.fullNameWithoutTitles
+                    ?? course.account?.fullNameWithoutTitles
+                    ?? 'Neznámý autor',
+                value: course.lecturer?.uuid
+                    ?? course.account?.uuid
+                    ?? null,
+                pictureUrl: course.lecturer?.pictureUrl
+                    ?? null
             }
 
-            if (authorId && authorName) {
-                authorsMap.set(authorId, authorName)
+            if (!arr.find((a) => a.value === obj.value)) {
+                arr.push(obj)
             }
         }
 
-        return Array.from(authorsMap.entries())
-            .map(([value, label]) => ({ value, label }))
-            .sort((a, b) => a.label.localeCompare(b.label))
+        return arr.sort((a, b) => a.label.localeCompare(b.label))
     })
 
     function toggleTag(uuid: string) {
@@ -491,7 +489,7 @@
                 </p>
             </div>
 
-            <div :class="$style.right">
+            <div :class="$style.right" v-if="false">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
                         <NumberExponential
@@ -532,13 +530,16 @@
                         />
                     </div>
 
-                    <div :class="$style.cont" v-if="authorOptions.length > 0">
+                    <div :class="[$style.cont, $style.author]">
                         <p>Autor</p>
-                        <Select
+                        <SelectLecturer
                                 :options="authorOptions"
                                 v-model="activeAuthor"
                                 placeholder="Všichni autoři"
                                 search-placeholder="Hledat autora..."
+                                :dropdownClass="$style.sdd"
+                                special-render="withAvatar"
+                                :class="$style.selection"
                         />
                     </div>
 
@@ -888,6 +889,17 @@
                                 background: var(--accent-color-primary);
                                 color: var(--accent-color-primary-text);
                             }
+                        }
+                    }
+
+                    &:is(.author) {
+                        .sdd {
+                            max-height: 200px;
+                        }
+
+
+                        .selection {
+                            height: 48px;
                         }
                     }
 

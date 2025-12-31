@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import Avatar from "~/components/Avatar.vue";
 
 interface SelectOption {
     value: string
     label: string
+    pictureUrl?: string
 }
 
 const props = defineProps<{
@@ -12,6 +14,7 @@ const props = defineProps<{
     placeholder?: string
     searchPlaceholder?: string
     dropdownClass?: string
+    class?: string
 }>()
 
 const emit = defineEmits<{
@@ -78,11 +81,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div ref="selectRef" :class="$style.select">
+    <div ref="selectRef" :class="[$style.select, props.class]">
         <div :class="$style.selectTrigger" @click="toggleDropdown" :data-open="isOpen">
-            <p :class="[$style.selectText, { [$style.placeholder]: !selectedOption }]">
+
+            <div v-if="selectedOption" :class="[$style.first, $style.flex]">
+                <Avatar :name="selectedOption.label" :src="selectedOption.pictureUrl" :size="24" v-if="selectedOption.pictureUrl"/>
+                <p :class="$style.selectText">{{ selectedOption.label }}</p>
+            </div>
+
+            <p v-else :class="[$style.first, $style.selectText, { [$style.placeholder]: !selectedOption }]">
                 {{ displayText }}
             </p>
+
             <div :class="[$style.arrow, { [$style.open]: isOpen }]"></div>
             <div
                 v-if="selectedOption"
@@ -105,15 +115,16 @@ onUnmounted(() => {
                 </div>
 
                 <div :class="$style.optionsList">
-                    <p
+                    <div
                         v-for="option in filteredOptions"
                         :key="option.value"
                         :class="$style.option"
                         :data-selected="option.value === modelValue"
                         @click="selectOption(option)"
                     >
-                            {{ option.label }}
-                    </p>
+                        <Avatar :name="option.label" :src="option.pictureUrl ?? null" :size="24" />
+                        <p>{{ option.label }}</p>
+                    </div>
 
                     <p v-if="filteredOptions.length === 0" :class="$style.noResults">
                         Nenalezeny žádné výsledky
@@ -131,9 +142,10 @@ onUnmounted(() => {
 }
 
 .selectTrigger {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
     background-color: var(--background-color-3);
     padding: 12px 16px;
@@ -143,12 +155,22 @@ onUnmounted(() => {
     transition: all 0.2s ease-in-out;
     position: relative;
 
+    .first {
+        margin-right: auto;
+
+        &:is(.flex) {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    }
+
     &:hover {
-        background-color: var(--background-color-secondary);
+        background-color: var(--background-color-primary);
     }
 
     &[data-open="true"] {
-        background-color: var(--background-color-secondary);
+        background-color: var(--background-color-primary);
     }
 }
 
@@ -171,7 +193,7 @@ onUnmounted(() => {
     width: 16px;
     height: 16px;
     background-color: var(--text-color-secondary);
-    mask-image: url('../../public/icons/arrow_down.svg');
+    mask-image: url('../../../public/icons/arrow_down.svg');
     mask-size: contain;
     mask-repeat: no-repeat;
     mask-position: center;
@@ -187,7 +209,7 @@ onUnmounted(() => {
     width: 16px;
     height: 16px;
     background-color: var(--text-color-secondary);
-    mask-image: url('../../public/icons/close.svg');
+    mask-image: url('../../../public/icons/close.svg');
     mask-size: contain;
     mask-repeat: no-repeat;
     mask-position: center;
@@ -243,7 +265,7 @@ onUnmounted(() => {
 }
 
 .searchIcon {
-    mask-image: url('../../public/icons/search.svg');
+    mask-image: url('../../../public/icons/search.svg');
     mask-size: cover;
     mask-position: center;
     mask-repeat: no-repeat;
@@ -279,6 +301,14 @@ onUnmounted(() => {
     font-size: 16px;
     color: var(--text-color-primary);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+
+    p {
+        margin: 0;
+    }
 
     &:hover {
         background-color: var(--background-color-primary);
