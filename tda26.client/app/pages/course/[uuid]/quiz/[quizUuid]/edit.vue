@@ -23,7 +23,7 @@ const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v2/cou
     key: `course-${uuid}-small`,
 });
 
-if (courseSmall.value?.account?.uuid !== loggedAccount.value?.uuid) {
+if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value?.account?.uuid)) {
     // pokud neni vlastnik kurzu, nema pravo editovat
     await navigateTo(`/course/${uuid}/quiz/${quizUuid}`);
 }

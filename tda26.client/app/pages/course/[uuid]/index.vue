@@ -55,10 +55,6 @@ if (courseSmallError.value || !_courseSmall.value) {
 
 const courseSmall = ref<Course>(_courseSmall.value!);
 
-if (isEditMode && courseSmall.value.account?.uuid !== loggedAccount.value?.uuid) {
-    // pokud neni vlastnik kurzu, nema pravo editovat
-    await navigateTo(`/course/${uuid}`);
-}
 
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
