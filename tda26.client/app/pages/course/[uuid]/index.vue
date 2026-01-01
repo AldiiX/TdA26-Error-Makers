@@ -56,6 +56,7 @@ if (courseSmallError.value || !_courseSmall.value) {
 const courseSmall = ref<Course>(_courseSmall.value!);
 
 
+
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
     if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value.account?.uuid)) {

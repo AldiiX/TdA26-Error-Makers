@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {Course, Question, Quiz} from "#shared/types";
+import type {Account, Course, Question, Quiz} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
@@ -10,11 +10,23 @@ definePageMeta({
     layout: "normal-page-layout"
 });
 
+const loggedAccount = useState<Account | null>('loggedAccount');
 const { uuid, quizUuid } = useRoute().params;
 
 const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
     key: `course-${uuid}-quiz-${quizUuid}`,
 });
+
+const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+    query: { full: false },
+    server: true,
+    key: `course-${uuid}-small`,
+});
+
+if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value?.account?.uuid)) {
+    // pokud neni vlastnik kurzu, nema pravo editovat
+    await navigateTo(`/course/${uuid}/quiz/${quizUuid}`);
+}
 
 if (quizError.value) {
     console.error("Error fetching quiz:", quizError.value);
