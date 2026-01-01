@@ -137,7 +137,21 @@ export interface FeedPost {
     type: "manual" | "system";
     message: string;
     edited: boolean;
-    author: Account;
+    author: Author | null;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface Author {
+    uuid: string;
+    username: string;
+    pictureUrl: string | null;
+    titleBefore: string | null;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    titleAfter: string | null;
+    bio: string | null,
+    fullName: string,
+    fullNameWithoutTitles: string,
 }

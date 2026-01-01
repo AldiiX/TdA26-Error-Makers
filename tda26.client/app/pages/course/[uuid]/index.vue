@@ -102,6 +102,7 @@ const selectItem = (item: string) => {
     selectedItem.value = item;
 };
 
+// datetime to small 
 const getHostname = (url?: string) => {
     try {
         return url ? new URL(url).hostname : ''
@@ -134,7 +135,7 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" |null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 
@@ -555,7 +556,6 @@ onMounted(() => {
 });
 
 
-
 const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v2/courses/${uuid}/feed`, {
     server: false,
     key: `course-${uuid}-feed`,
@@ -687,23 +687,50 @@ watch(feedData, (val) => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
+                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createFeedPost'" :class="$style.addFeedPost">
+                                Přidat příspěvek
+                            </Button>
+                            
                             <p v-if="feedPending">Načítání aktivity...</p>
                             <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
-                            <ul v-else :class="$style.feedsContainer">
+                            <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
+                            
+                            <ul v-else>
                                 <li v-for=" feedPost in feedData" :key="feedPost.uuid">
                                     <div :class="$style.feedDate">
-                                        
+                                        <p>{{  new Date (feedPost.createdAt).toLocaleString() }}</p>
+<!--                                        <div :class="$style.feedDateLine"></div>-->
                                     </div>
-                                    <div :class="$style.feedContent">
-                                        <p :class="$style.feedText" v-html="feedPost.message"></p>
+                                    <div :class="$style.feedPostWrapper">
                                         <div v-if="feedPost.author" :class="$style.feedAuthor">
-                                            <Avatar 
-                                                :class="$style.feedAvatar" 
-                                                :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" 
-                                                :name="feedPost.author.fullName" 
-                                                :src="courseSmall?.lecturer?.pictureUrl ?? null"
+                                            <Avatar
+                                                :class="$style.feedAvatar"
+                                                :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
+                                                :name="feedPost.author.fullName"
+                                                :src="feedPost.author?.pictureUrl ?? null"
+                                                :size="32"
                                             />
-                                            <p>{{ feedPost.author.fullName }}</p>
+                                            <p :class="[$style.authorName, `text-gradient`]">{{ feedPost.author.fullName }}</p>
+                                        </div>
+                                        <div :class="$style.feedPostContent">
+                                            <p :class="$style.feedText" v-html="feedPost.message"></p>
+                                        </div>
+                                        <div :class="$style.feedPostActions">
+<!--                                            <Button-->
+<!--                                                v-if="ownsCourse"-->
+<!--                                                button-style="tertiary"-->
+<!--                                                @click="() => { selectedFeedPost = feedPost; enabledModal = 'updateFeedPost'; }"-->
+<!--                                            >-->
+<!--                                                Upravit-->
+<!--                                            </Button>-->
+<!--                                            <Button-->
+<!--                                                v-if="ownsCourse"-->
+<!--                                                button-style="tertiary"-->
+<!--                                                @click="() => { selectedFeedPost = feedPost; enabledModal = 'deleteFeedPost'; }"-->
+<!--                                            >-->
+<!--                                                Smazat-->
+<!--                                            </Button> :TODO-->
+                                            
                                         </div>
                                     </div>
                                 </li>
@@ -1173,30 +1200,66 @@ ul {
         }
         
         .activity {
-            p{
-                
-            }
             
+            .addFeedPost{
+                margin-bottom: 32px;
+            }
             ul {
                 display: flex;
                 flex-direction: column;
                 
                 li{
                     .feedDate {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+                        margin-bottom: 12px;
 
+                        p {
+                            margin: 0;
+                            font-size: 16px;
+                            font-weight: 500;
+                            color: var(--accent-color-secondary-theme);
+                        }
                     }
 
-                    .feedContent {
+                    //.feedDateLine {
+                    //    width: 90%;
+                    //    height: 1px;
+                    //    border-radius: 2px;
+                    //    background: linear-gradient(90deg, var(--accent-color-primary) 0%, var(--accent-color-secondary) 100%);
+                    //}
 
-                        .feedText {
-
-                        }
+                    .feedPostWrapper {
+                        display: flex;
+                        flex-direction: column;
+                        border: 1px solid var(--accent-color-primary);
+                        border-radius: 12px;
+                        
 
                         .feedAuthor {
-
+                            display: flex;
+                            align-items: center;
+                            padding: 16px;
+                            gap: 12px;
+                            
                             .feedAvatar {
-
+                                
                             }
+
+                            .authorName {
+                                margin: 0;
+                                font-size: 18px;
+                                font-weight: 700;
+                            }
+                        }
+
+                        .feedPostContent{
+                            
+                        }
+                        
+                        .feedPostActions {
+                            
                         }
                     }
                 }
