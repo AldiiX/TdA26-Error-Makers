@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Minio;
+using tda26.Server.Controllers;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -20,7 +21,8 @@ public class APIv1(
     IMaterialAccessService materialAccessService,
     IAccountRepository accountRepository,
     IAuthService auth,
-    AppDbContext db
+    AppDbContext db,
+    IFeedStreamBroker fsb
 ) : Controller {
 
     [HttpGet]
@@ -141,6 +143,20 @@ public class APIv1(
             updatedAt = newMaterial.UpdatedAt
         };
 
+        // odeslani info do sse
+        var post = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl přidán nový odkazový materiál: {newMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        db.FeedPosts.Add(post);
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post));
+
         return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, obj);
     }
 
@@ -203,6 +219,20 @@ public class APIv1(
             createdAt = newMaterial.CreatedAt,
             updatedAt = newMaterial.UpdatedAt
         };
+
+        // odeslani info do sse
+        var post = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl přidán nový souborový materiál: {newMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        db.FeedPosts.Add(post);
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post));
 
         return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, responseObj);
     }
@@ -364,8 +394,8 @@ public class APIv1(
     }
 
     [HttpPost("courses/{courseUuid:guid}/quizzes")]
-    public async Task<IActionResult> CreateQuizInCourse([FromRoute] Guid courseUuid, [FromBody] CreateUpdateQuizRequest body) {
-        var course = await courseRepository.GetByUuidAsyncFull(courseUuid);
+    public async Task<IActionResult> CreateQuizInCourse([FromRoute] Guid courseUuid, [FromBody] CreateUpdateQuizRequest body, CancellationToken ct = default) {
+        var course = await courseRepository.GetByUuidAsyncFull(courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -433,8 +463,23 @@ public class APIv1(
             }
         }
 
+        // ulozeni kvizu do db
         db.Quizzes.Add(newQuiz);
-        await db.SaveChangesAsync();
+
+        // oznameni do sse feedu o novem kvizu
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl přidán nový kvíz: " + newQuiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        db.FeedPosts.Add(newFeedPost);
+
+        await db.SaveChangesAsync(ct);
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
         return Ok(newQuiz.ToReadDto());
     }

@@ -1,5 +1,9 @@
 ﻿namespace tda26.Server.DTOs;
 
+
+/**
+ *  Objekt reprezentující public informace o autorovi (např. kurzu/kvízu..., lektorovi nebo uživateli).
+ */
 public class AuthorDto {
 	public required Guid Uuid { get; set; }
 	public required string Username { get; set; }

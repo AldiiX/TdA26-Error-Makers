@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using tda26.Server.Controllers;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -26,7 +27,8 @@ public class APIv2(
     IAccountRepository accounts,
     IMaterialAccessService materialAccessService,
     IMaterialRepository materialRepository,
-    AppDbContext db
+    AppDbContext db,
+    IFeedStreamBroker fsb
 ) : Controller
 {
 
@@ -857,6 +859,20 @@ public class APIv2(
             updatedAt = newMaterial.UpdatedAt
         };
 
+        // odeslani info do sse
+        var post = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl přidán nový odkazový materiál: {newMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        db.FeedPosts.Add(post);
+        await db.SaveChangesAsync(ct);
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post), ct);
+
         return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, obj);
     }
 
@@ -923,6 +939,20 @@ public class APIv2(
             createdAt = newMaterial.CreatedAt,
             updatedAt = newMaterial.UpdatedAt
         };
+
+        // odeslani info do sse
+        var post = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl přidán nový souborový materiál: {newMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        db.FeedPosts.Add(post);
+        await db.SaveChangesAsync(ct);
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post), ct);
 
         return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, responseObj);
     }
