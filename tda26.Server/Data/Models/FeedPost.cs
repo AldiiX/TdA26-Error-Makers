@@ -17,6 +17,8 @@ public class FeedPost : Auditable {
     public const ushort MESSAGE_MAX_LENGTH = 2048;
 
 
+
+    // mapovani props na sloupce v db
     [Key]
     public required Guid Uuid { get; set; } = Guid.NewGuid();
 
@@ -30,7 +32,7 @@ public class FeedPost : Auditable {
     public Course Course { get; set; } = null!;
 
     [JsonIgnore]
-    public Guid? AccountUuid { get; set; }
+    public Guid? AccountUuid { get; set; } = null;
 
     [ForeignKey(nameof(AccountUuid)), JsonIgnore]
     public Account? Account { get; set; } = null!;
@@ -39,6 +41,7 @@ public class FeedPost : Auditable {
     public required string Message { get; set; }
 
     public bool Edited { get; set; } = false;
+
 
 
     // nemapovany props (pouze pro serializaci)

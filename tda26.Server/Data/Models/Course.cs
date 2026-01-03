@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using tda26.Server.DTOs;
+using tda26.Server.DTOs.Mapping;
 
 namespace tda26.Server.Data.Models;
 
@@ -77,4 +79,7 @@ public class Course : Auditable {
 
     [NotMapped]
     public Lecturer? Lecturer => Account as Lecturer;
+
+    [NotMapped]
+    public AuthorDto? Author => Account?.ToAuthorDto();
 }

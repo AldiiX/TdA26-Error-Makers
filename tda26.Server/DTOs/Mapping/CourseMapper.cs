@@ -13,7 +13,7 @@ public static class CourseMapper
             course.Account.Ratings = [];
         }
         
-        return new()
+        return new ReadCourseResponse
         {
             Uuid = course.Uuid,
             Name = course.Name,
@@ -21,7 +21,7 @@ public static class CourseMapper
             CreatedAt = course.CreatedAt,
             UpdatedAt = course.UpdatedAt,
             ImageUrl = course.ImageUrl != null && course.ImageUrl.StartsWith("course-images/")
-                ? $"api/v2/courses/{course.Uuid}/image"
+                ? $"/api/v2/courses/{course.Uuid}/image"
                 : null,
             Lecturer = course.Lecturer,
             Account = course.Account,
@@ -30,8 +30,9 @@ public static class CourseMapper
             ImageUrlOrDefault = course.ImageUrlOrDefault,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => q.ToReadDto(extended)).ToList(),
-            Feed = course.Feed.Select(f => new ReadFeedResponse { /* map */ }).ToList(),
+            Feed = course.Feed,
             RatingScore = course.RatingScore,
+            Author = course.Author,
         };
     }
 }
