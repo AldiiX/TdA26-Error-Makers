@@ -55,6 +55,86 @@ if (courseSmallError.value || !_courseSmall.value) {
 
 const courseSmall = ref<Course>(_courseSmall.value!);
 
+function formatRelativeTime(
+    dateInput: string | Date,
+    options?: {
+        locale?: string;          // default: 'cs-CZ'
+        weekLimitDays?: number;   // default: 7
+    }
+): string {
+    const locale = options?.locale ?? 'cs-CZ';
+    const weekLimitDays = options?.weekLimitDays ?? 7;
+
+    const date = typeof dateInput === 'string'
+        ? new Date(dateInput)
+        : dateInput;
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diffMs < 0) {
+        return date.toLocaleDateString(locale);
+    }
+
+    const diffMinutes = Math.floor(diffMs / minute);
+    const diffHours = Math.floor(diffMs / hour);
+    const diffDays = Math.floor(diffMs / day);
+
+// více než týden → datum
+    if (diffDays >= weekLimitDays) {
+        return date.toLocaleDateString(locale, {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+// MINUTY
+    if (diffMinutes < 1) {
+        return 'právě teď';
+    }
+
+    if (diffMinutes === 1) {
+        return 'před minutou';
+    }
+
+    if (diffMinutes < 5) {
+        return `před ${diffMinutes} minutami`;
+    }
+
+    if (diffMinutes < 60) {
+        return `před ${diffMinutes} minutami`;
+    }
+
+// HODINY
+    if (diffHours === 1) {
+        return 'před hodinou';
+    }
+
+    if (diffHours < 5) {
+        return `před ${diffHours} hodinami`;
+    }
+
+    if (diffHours < 24) {
+        return `před ${diffHours} hodinami`;
+    }
+
+// DNY
+    if (diffDays === 1) {
+        return 'před dnem';
+    }
+
+    if (diffDays < 5) {
+        return `před ${diffDays} dny`;
+    }
+
+    return `před ${diffDays} dny`;
+}
+
 
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
@@ -692,47 +772,65 @@ watch(feedData, (val) => {
                                 Přidat příspěvek
                             </Button>
                             
+                            <div :class="$style.feedPostFilter">
+                                <p :class="$style.feedFilterLabel">Filtr:</p>
+<!--                                <Input-->
+<!--                                    placeholder="Hledat v aktivitě..."-->
+<!--                                    :disabled="true"-->
+<!--                                />-->
+                                <div :class="$style.feedFilterOptions">
+                                    <div :class="[$style.feedFilterOption, $style.active]">
+                                        <p>Vše</p>
+                                    </div>
+                                    <div :class="$style.feedFilterOption">
+                                        <p>Materialy</p>
+                                    </div>
+                                    <div :class="$style.feedFilterOption">
+                                        <p>Kvízy</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <p v-if="feedPending">Načítání aktivity...</p>
                             <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
                             <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
                             
                             <ul v-else>
                                 <li v-for=" feedPost in feedData" :key="feedPost.uuid">
-                                    <div :class="$style.feedDate">
-                                        <p>{{  new Date (feedPost.createdAt).toLocaleString() }}</p>
-<!--                                        <div :class="$style.feedDateLine"></div>-->
-                                    </div>
                                     <div :class="$style.feedPostWrapper">
-                                        <div v-if="feedPost.author" :class="$style.feedAuthor">
-                                            <Avatar
-                                                :class="$style.feedAvatar"
-                                                :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
-                                                :name="feedPost.author.fullName"
-                                                :src="feedPost.author?.pictureUrl ?? null"
-                                                :size="32"
-                                            />
-                                            <p :class="[$style.authorName, `text-gradient`]">{{ feedPost.author.fullName }}</p>
+                                        <div :class="$style.feedPostLeft">
+                                            <div :class="$style.feedPostIcon"></div>
                                         </div>
-                                        <div :class="$style.feedPostContent">
-                                            <p :class="$style.feedText" v-html="feedPost.message"></p>
-                                        </div>
-                                        <div :class="$style.feedPostActions">
-<!--                                            <Button-->
-<!--                                                v-if="ownsCourse"-->
-<!--                                                button-style="tertiary"-->
-<!--                                                @click="() => { selectedFeedPost = feedPost; enabledModal = 'updateFeedPost'; }"-->
-<!--                                            >-->
-<!--                                                Upravit-->
-<!--                                            </Button>-->
-<!--                                            <Button-->
-<!--                                                v-if="ownsCourse"-->
-<!--                                                button-style="tertiary"-->
-<!--                                                @click="() => { selectedFeedPost = feedPost; enabledModal = 'deleteFeedPost'; }"-->
-<!--                                            >-->
-<!--                                                Smazat-->
-<!--                                            </Button> :TODO-->
+                                        <div :class="$style.feedPostRight">
+                                            <div :class="$style.feedPostHeader">
+                                                <div :class="$style.feedPurpose"></div>
+                                                <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
+                                            </div>
+                                            <div :class="$style.feedPostAuthor">
+                                                <Avatar
+                                                    :class="$style.feedAvatar"
+                                                    :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
+                                                    :name="feedPost.author?.fullName ?? '?'"
+                                                    :src="feedPost.author?.pictureUrl ?? null"
+                                                    :size="32"
+                                                />
+                                                <p :class="[$style.authorName, `text-gradient`]">{{ feedPost.author?.fullName }}</p>
+                                            </div>
+                                            <div :class="$style.feedPostContent">   
+                                                <p> {{ feedPost.message }} </p>
+                                            </div>
                                             
                                         </div>
+<!--                                        <div v-if="feedPost.author" :class="$style.feedAuthor">-->
+                                            
+<!--                                        </div>-->
+<!--                                        <div :class="$style.feedPostContent">-->
+<!--                                            <p :class="$style.feedText" v-html="feedPost.message"></p>-->
+<!--                                        </div>-->
+<!--                                        <div :class="$style.feedPostActions">-->
+<!--                                            -->
+<!--                                            -->
+<!--                                        </div>-->
                                     </div>
                                 </li>
                             </ul>
