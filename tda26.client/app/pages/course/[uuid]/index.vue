@@ -557,7 +557,7 @@ onMounted(() => {
 });
 
 
-const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v2/courses/${uuid}/feed`, {
+const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v1/courses/${uuid}/feed`, {
     server: false,
     key: `course-${uuid}-feed`,
     lazy: true,

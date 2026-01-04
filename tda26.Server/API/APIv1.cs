@@ -32,6 +32,10 @@ public class APIv1(
         });
     }
 
+    #region  courses
+
+    #region  course
+    
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await courseRepository.GetAllAsyncFull();
@@ -104,6 +108,12 @@ public class APIv1(
 
         return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, newCourse.ToReadDto());
     }
+    
+    #endregion
+
+    #region materials
+
+    
 
     [HttpPost("courses/{uuid:guid}/materials")]
     [Consumes("application/json")]
@@ -151,6 +161,7 @@ public class APIv1(
             Message = $"Byl přidán nový odkazový materiál: {newMaterial.Name}",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateMaterial
         };
 
         db.FeedPosts.Add(post);
@@ -228,6 +239,7 @@ public class APIv1(
             Message = $"Byl přidán nový souborový materiál: {newMaterial.Name}",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateMaterial
         };
 
         db.FeedPosts.Add(post);
@@ -286,7 +298,24 @@ public class APIv1(
 
                 await materialRepository.UpdateMaterialAsync(urlMaterial);
 
+                // odesilani info do sse 
+                var newFeedPost = new FeedPost {
+                    Uuid = Guid.NewGuid(),
+                    CourseUuid = course.Uuid,
+                    Type = FeedPost.FeedPostType.System,
+                    Message = $"Byl upraven odkazový materiál: {urlMaterial.Name}",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Purpose = FeedPost.FeedPurpose.UpdateMaterial
+                };
+        
+                db.FeedPosts.Add(newFeedPost);
+        
+                await db.SaveChangesAsync();
+                await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+                
                 return Ok(urlMaterial.ToReadDto());
+            
             case FileMaterial fileMaterial:
                 if (!string.IsNullOrEmpty(body.Name))
                     fileMaterial.Name = body.Name;
@@ -301,6 +330,7 @@ public class APIv1(
             default:
                 return BadRequest(new { error = "Material is not of type 'url'." });
         }
+        
     }
 
     [HttpPut("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
@@ -345,6 +375,22 @@ public class APIv1(
 
         await materialRepository.UpdateMaterialAsync(fileMaterial);
 
+        // odesilani info do sse 
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl upraven souborový materiál: {fileMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.UpdateMaterial
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
         return Ok(fileMaterial.ToReadDto());
     }
 
@@ -369,9 +415,27 @@ public class APIv1(
 
         await materialRepository.DeleteMaterialAsync(material);
 
+        // odeslani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl smazán materiál: {material.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.DeleteMaterial
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
         return NoContent();
     }
+    #endregion
 
+    #region quizzes
+    
     // Quizzes
 
     [HttpGet("courses/{courseUuid:guid}/quizzes")]
@@ -474,6 +538,7 @@ public class APIv1(
             Message = "Byl přidán nový kvíz: " + newQuiz.Title,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateQuiz
         };
 
         db.FeedPosts.Add(newFeedPost);
@@ -694,8 +759,22 @@ public class APIv1(
             }
         }
 
+        //odesilani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl upraven kvíz: " + quiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.UpdateQuiz
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        
         await db.SaveChangesAsync();
-
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
         return Ok(quiz.ToReadDto());
     }
 
@@ -729,6 +808,22 @@ public class APIv1(
         
         db.Quizzes.Remove(quiz);
         await db.SaveChangesAsync();
+        
+        //odesilani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl smazán kvíz: " + quiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.UpdateQuiz
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
         
         return NoContent();
     }
@@ -817,7 +912,10 @@ public class APIv1(
 
         return Ok(response);
     }
-
+    #endregion
+    
+    #endregion
+    
 
 
 

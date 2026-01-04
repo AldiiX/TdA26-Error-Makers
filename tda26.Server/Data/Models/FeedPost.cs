@@ -41,12 +41,16 @@ public class FeedPost : Auditable {
     public required string Message { get; set; }
 
     public bool Edited { get; set; } = false;
-
-
-
+    
+    public FeedPurpose Purpose { get; set; } = FeedPurpose.Default;
+    
+    
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
     public enum FeedPostType { Manual, System }
+    
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum FeedPurpose { CreateMaterial, UpdateMaterial, DeleteMaterial, CreateQuiz , UpdateQuiz, DeleteQuiz , Default }
 
     [NotMapped]
     public AuthorDto? Author => Account?.ToAuthorDto(); // pokud je author null, tak se pravdepodobne jedna o systemovy prispevek
