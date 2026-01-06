@@ -793,8 +793,6 @@ onMounted(() => {
             :no-text="`Zrušit`"
         />
 
-        <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-
         <!-- DELETE QUIZ -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteQuiz'"
@@ -807,8 +805,6 @@ onMounted(() => {
             :yes-text="`Smazat kvíz`"
             :no-text="`Zrušit`"
         />
-        
-        <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         
         <!-- CREATE QUIZ -->
         <Modal

@@ -287,8 +287,6 @@ const deleteCourse = async () => {
             :yes-text="`Smazat kurz`"
             :no-text="`Zrušit`"
         />
-        
-        <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
     </Teleport>
 </template>
 
