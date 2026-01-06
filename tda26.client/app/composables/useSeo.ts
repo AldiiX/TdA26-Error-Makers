@@ -11,11 +11,10 @@ export interface SeoOptions {
 
 export const useSeo = (options: SeoOptions = {}) => {
     const route = useRoute()
-    const baseUrl = 'https://ghrp-679926fd-aldiix-tda26-error-makers-app.emsio.cz'
     const siteName = 'Think Different Academy'
     
     const defaultDescription = 'Interaktivní vzdělávací platforma pro studenty a lektory. Objevte kurzy, kvízy a mnoho dalšího na Think Different Academy.'
-    const defaultImage = `${baseUrl}/icons/logo_gradient.png`
+    const defaultImage = '/icons/logo_gradient.png'
     
     const pageTitle = options.title 
         ? `${options.title} • ${siteName}` 
@@ -23,7 +22,6 @@ export const useSeo = (options: SeoOptions = {}) => {
     
     const description = options.description || defaultDescription
     const image = options.image || defaultImage
-    const canonical = `${baseUrl}${route.path}`
     const type = options.type || 'website'
     
     useHead({
@@ -38,7 +36,6 @@ export const useSeo = (options: SeoOptions = {}) => {
             { property: 'og:site_name', content: siteName },
             { property: 'og:title', content: pageTitle },
             { property: 'og:description', content: description },
-            { property: 'og:url', content: canonical },
             { property: 'og:image', content: image },
             { property: 'og:image:width', content: '344' },
             { property: 'og:image:height', content: '376' },
@@ -49,9 +46,6 @@ export const useSeo = (options: SeoOptions = {}) => {
             { name: 'twitter:title', content: pageTitle },
             { name: 'twitter:description', content: description },
             { name: 'twitter:image', content: image },
-        ],
-        link: [
-            { rel: 'canonical', href: canonical }
         ]
     })
 }
