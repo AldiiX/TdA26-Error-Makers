@@ -314,7 +314,8 @@ public class APIv2(
             course = await db.Courses
                 .Include(c => c.Materials
                     .OrderByDescending(m => m.CreatedAt))
-                .Include(c => c.Quizzes)
+                .Include(c => c.Quizzes
+                    .OrderByDescending(q => q.CreatedAt))
                 .Include(c => c.Feed)
                 .Include(c => c.Account)
                 .Include(c => c.Ratings)

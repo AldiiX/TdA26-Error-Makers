@@ -61,13 +61,14 @@ public class CourseRepository(AppDbContext db) : ICourseRepository {
             .ThenInclude(l => l.Account)
             .Include(c => c.Account)
             .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
+            .Include(c => c.Quizzes
+                .OrderByDescending(q => q.CreatedAt))
             .Include(c => c.Feed)
             .Include(c => c.Category)
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int) limit : int.MaxValue)
             .ToListAsync(ct);
-
+        
         return courses;
     }
 
