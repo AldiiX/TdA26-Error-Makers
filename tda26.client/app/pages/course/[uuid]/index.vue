@@ -13,6 +13,8 @@ import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
 import { push } from "notivue";
 import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
+import LoginForm from "~/components/LoginForm.vue";
+import RegisterForm from "~/components/RegisterForm.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -40,6 +42,8 @@ const loggedAccount = useState<Account | null>('loggedAccount');
 const route = useRoute();
 const uuid = route.params.uuid as string;
 const isEditMode = route.query.edit === 'true';
+
+const isActionInProgress = ref(false);
 
 // server small fetch
 const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
@@ -143,9 +147,10 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "loginRequired" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
+const authTab = ref<"login" | "register">("login");
 
 const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
@@ -202,13 +207,27 @@ const handleMaterialUpdate = async () => {
 
     const material = selectedMaterial.value;
     const edited = editingMaterial.value;
+    
+    isActionInProgress.value = true;
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
+
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
 
     try {
         let updatedMaterial;
 
-        if (material.type === 'url') {
+        if (material.type === 'url') {            
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -245,11 +264,15 @@ const handleMaterialUpdate = async () => {
 
     } catch (err) {
         console.error("Update failed:", err);
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
 const handleMaterialDelete = async () => {
     if (!course.value || !course.value.materials) return;
+    
+    isActionInProgress.value = true;
 
     await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
         method: 'DELETE'
@@ -261,6 +284,8 @@ const handleMaterialDelete = async () => {
     }).catch((err) => {
         console.error("Error deleting material:", err);
         deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
+    }).finally(() => {
+        isActionInProgress.value = false;
     });
 };
 
@@ -268,8 +293,22 @@ const handleMaterialCreate = async () => {
     if (!course.value || !editingMaterial.value) return;
 
     const edited = editingMaterial.value;
+    
+    isActionInProgress.value = true;
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
+
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
 
     try {
         let createdMaterial;
@@ -314,8 +353,26 @@ const handleMaterialCreate = async () => {
 
     } catch (err) {
         console.error("Creation failed:", err);
+    } finally {
+        isActionInProgress.value = false;
     }
 };
+
+function formatUrl(url: string): string {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    
+    const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi);
+    
+    if (!urlRegex.test(url)) {
+        throw new Error("Invalid URL format");
+    }
+    
+    const parsedUrl = new URL(url);
+    
+    return parsedUrl.href;
+}
 
 const ownsCourse = computed(() => {
     if (!loggedAccount.value || !courseSmall.value) return false;
@@ -324,7 +381,13 @@ const ownsCourse = computed(() => {
 });
 
 async function addRating(rating: "like" | "dislike" | null) {
-    if (!loggedAccount.value || !courseSmall.value || ratingLoading.value) return;
+    // Check if user is logged in, if not show login modal
+    if (!loggedAccount.value) {
+        enabledModal.value = "loginRequired";
+        return;
+    }
+    
+    if (!courseSmall.value || ratingLoading.value) return;
 
     const baseUrl = getBaseUrl();
     const uuid = courseSmall.value.uuid;
@@ -422,6 +485,8 @@ async function addRating(rating: "like" | "dislike" | null) {
 
 const handleQuizDelete = async () => {
     if (!course.value || !course.value.quizzes) return;
+    
+    isActionInProgress.value = true;
 
     await $fetch<void>(getBaseUrl() + `/api/v1/courses/${course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
         method: 'DELETE'
@@ -437,11 +502,15 @@ const handleQuizDelete = async () => {
     }).catch((err) => {
         console.error("Error deleting quiz:", err);
         deleteError.value = "Nepodařilo se smazat kvíz. Zkuste to prosím znovu.";
+    }).finally(() => {
+        isActionInProgress.value = false;
     });
 };
 
 const handleQuizCreate = async (e: Event) => {
     if (!course.value) return;
+    
+    isActionInProgress.value = true;
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -462,6 +531,7 @@ const handleQuizCreate = async (e: Event) => {
         );
 
         course.value.quizzes = course.value.quizzes ?? [];
+        newQuiz.createdAt = new Date().toISOString();
         course.value.quizzes.unshift(newQuiz);
 
         push.success({
@@ -476,6 +546,8 @@ const handleQuizCreate = async (e: Event) => {
     } catch (err) {
         console.error("Creation failed:", err);
         updateError.value = "Nepodařilo se vytvořit kvíz. Zkuste to prosím znovu.";
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
@@ -497,6 +569,8 @@ const updateCourseDescription = (newDescription: string) => {
 
 const saveCourseChanges = async () => {
     if (!course.value) return;
+    
+    isActionInProgress.value = true;
 
     // validace
     if (course.value.name.trim().length === 0) {
@@ -505,6 +579,9 @@ const saveCourseChanges = async () => {
             message: "Název kurzu nesmí být prázdný.",
             duration: 4000
         });
+        
+        isActionInProgress.value = false;
+        
         return;
     }
 
@@ -514,6 +591,8 @@ const saveCourseChanges = async () => {
             message: "Název kurzu nesmí být delší než 128 znaků.",
             duration: 4000
         });
+        
+        isActionInProgress.value = false;
         return;
     }
 
@@ -540,6 +619,8 @@ const saveCourseChanges = async () => {
             message: "Nepodařilo se uložit změny kurzu. Zkuste to prosím znovu.",
             duration: 4000
         });
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
@@ -549,6 +630,21 @@ const editBackClick = () => {
 
 const editClick = () => {
     window.location.href = `/course/${courseSmall.value?.uuid}?edit=true`;
+};
+
+const handleAuthSuccess = (account: Account) => {
+    // Close the modal
+    enabledModal.value = null;
+    
+    // Show success message
+    push.success({
+        title: "Přihlášení úspěšné",
+        message: "Nyní můžeš kurzy hodnotit.",
+        duration: 3000
+    });
+    
+    // Reload the page to refresh course data with new user context
+    window.location.reload();
 };
 
 onMounted(() => {
@@ -703,14 +799,14 @@ onMounted(() => {
         >
             <Button
                 button-style="primary"
-                :disabled="!isDirty"
+                :disabled="!isDirty || isActionInProgress"
                 @click="saveCourseChanges"
             >
                 Uložit změny
             </Button>
             <Button
                 button-style="secondary"
-                :disabled="!isDirty"
+                :disabled="!isDirty || isActionInProgress"
                 @click="saveCourseChanges(); editBackClick()"
             >
                 Uložit a ukončit úpravy
@@ -718,6 +814,7 @@ onMounted(() => {
             <Button
                 buttonStyle="tertiary"
                 @click="editBackClick"
+                :disabled="isActionInProgress"
                 >
                 Ukončit úpravy
             </Button>
@@ -741,12 +838,13 @@ onMounted(() => {
                 @file-selected="(_, file) => editingMaterial.file = file"
             />
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialCreate"
+                    :disabled="isActionInProgress"
                 >
                     Vytvořit materiál
                 </Button>
@@ -773,12 +871,13 @@ onMounted(() => {
 
 
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialUpdate"
+                    :disabled="isActionInProgress"
                 >
                     Uložit změny
                 </Button>
@@ -797,11 +896,12 @@ onMounted(() => {
             <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialDelete"
+                    :disabled="isActionInProgress"
                 >
                     Smazat materiál
                 </Button>
@@ -819,11 +919,12 @@ onMounted(() => {
             <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleQuizDelete"
+                    :disabled="isActionInProgress"
                 >
                     Smazat kvíz
                 </Button>
@@ -849,21 +950,78 @@ onMounted(() => {
                     name="createQuizName"
                     max="128"
                     required
+                    :disabled="isActionInProgress"
                 />
 
                 <div :class="$style.modalButtons">
-                    <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                    <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                     <Button
                         button-style="primary"
                         accent-color="secondary"
                         type="submit"
+                        :disabled="isActionInProgress"
                     >
                         Vytvořit kvíz
                     </Button>
                 </div>
             </form>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
+        
+        <!-- LOGIN REQUIRED MODAL -->
+        <Modal
+            :enabled="enabledModal === 'loginRequired'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '500px' }"
+        >
+            <SmoothSizeWrapper>
+                <div :class="$style.authModalHeader">
+                    <h3>Pro hodnocení kurzu se musíš přihlásit.</h3>
+
+                    <div :class="$style.authTabs">
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'login' }]"
+                            @click="authTab = 'login'"
+                            type="button"
+                        >
+                            Přihlášení
+                        </button>
+
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'register' }]"
+                            @click="authTab = 'register'"
+                            type="button"
+                        >
+                            Registrace
+                        </button>
+                    </div>
+                </div>
+
+                <div :class="$style.authFormContainer">
+                    <Transition
+                        mode="out-in"
+                        :enter-active-class="$style.fadeEnterActive"
+                        :enter-from-class="$style.fadeEnterFrom"
+                        :enter-to-class="$style.fadeEnterTo"
+                        :leave-active-class="$style.fadeLeaveActive"
+                        :leave-from-class="$style.fadeLeaveFrom"
+                        :leave-to-class="$style.fadeLeaveTo"
+                    >
+                        <div :key="authTab">
+                            <LoginForm
+                                v-if="authTab === 'login'"
+                                @login-success="handleAuthSuccess"
+                            />
+                            <RegisterForm
+                                v-else
+                                @register-success="handleAuthSuccess"
+                            />
+                        </div>
+                    </Transition>
+                </div>
+            </SmoothSizeWrapper>
         </Modal>
     </Teleport>
 </template>
@@ -1151,5 +1309,69 @@ ul {
             }
         }
     }
+}
+
+.authModalHeader {
+    margin-bottom: 24px;
+    
+    h3 {
+        margin: 0;
+        margin-bottom: 16px;
+    }
+}
+
+.authTabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--background-color-3);
+}
+
+.authTab {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-color-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 24px 24px 0 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+    
+    &:hover {
+        color: var(--text-color-primary);
+        background: var(--background-color-3);
+    }
+    
+    &.active {
+        color: var(--accent-color-primary);
+        border-bottom-color: var(--accent-color-primary);
+    }
+}
+
+.authFormContainer {
+    margin-top: 24px;
+}
+
+
+// animace
+.fadeEnterActive {
+    transition: 300ms ease;
+}
+
+.fadeLeaveActive {
+    transition: 200ms ease;
+}
+
+.fadeEnterFrom,
+.fadeLeaveTo {
+    opacity: 0;
+}
+
+.fadeEnterTo,
+.fadeLeaveFrom {
+    opacity: 1;
 }
 </style>
