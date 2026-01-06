@@ -197,10 +197,22 @@ const handleMaterialUpdate = async () => {
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
 
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
+
     try {
         let updatedMaterial;
 
-        if (material.type === 'url') {
+        if (material.type === 'url') {            
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -263,6 +275,18 @@ const handleMaterialCreate = async () => {
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
 
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
+
     try {
         let createdMaterial;
 
@@ -308,6 +332,22 @@ const handleMaterialCreate = async () => {
         console.error("Creation failed:", err);
     }
 };
+
+function formatUrl(url: string): string {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    
+    const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi);
+    
+    if (!urlRegex.test(url)) {
+        throw new Error("Invalid URL format");
+    }
+    
+    const parsedUrl = new URL(url);
+    
+    return parsedUrl.href;
+}
 
 const ownsCourse = computed(() => {
     if (!loggedAccount.value || !courseSmall.value) return false;
