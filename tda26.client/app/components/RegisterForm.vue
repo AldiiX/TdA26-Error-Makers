@@ -179,7 +179,7 @@ async function submitRegisterForm(event: Event) {
             Zaregistrovat se
         </ButtonComponent>
 
-        <div :class="$style.errorGrid">
+        <div :class="$style.errorGrid" v-if="errorMsg.length > 0 || password.length > 0">
             <!-- Vetsi chyby (Mail, existujici uzivatel) -->
             <template v-if="errorMsg.length > 0">
                 <p

@@ -637,13 +637,6 @@ const handleAuthSuccess = (account: Account) => {
     // Close the modal
     enabledModal.value = null;
     
-    // Show success message
-    push.success({
-        title: "Přihlášení úspěšné",
-        message: "Nyní můžeš kurzy hodnotit.",
-        duration: 3000
-    });
-    
     // Reload the page to refresh course data with new user context
     window.location.reload();
 };
@@ -1321,7 +1314,7 @@ ul {
     
     h3 {
         margin: 0;
-        margin-bottom: 16px;
+        margin-bottom: 32px;
     }
 }
 
