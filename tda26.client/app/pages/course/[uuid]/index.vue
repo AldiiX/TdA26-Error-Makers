@@ -892,7 +892,9 @@ onMounted(() => {
             :enabled="enabledModal === 'deleteMaterial'"
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            title="Potvrzení akce"
+            description="Opravdu chceš smazat tento materiál? Tuto akci nelze vrátit zpět."
+            :yes-action="handleMaterialDelete"
         >
             <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
@@ -915,7 +917,9 @@ onMounted(() => {
             :enabled="enabledModal === 'deleteQuiz'"
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            title="Potvrzení akce"
+            description="Opravdu chceš smazat tento kvíz? Tuto akci nelze vrátit zpět."
+            :yesAction="handleQuizDelete"
         >
             <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
