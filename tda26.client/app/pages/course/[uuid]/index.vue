@@ -13,6 +13,8 @@ import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
 import { push } from "notivue";
 import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
+import LoginForm from "~/components/LoginForm.vue";
+import RegisterForm from "~/components/RegisterForm.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -137,9 +139,10 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "loginRequired" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
+const authTab = ref<"login" | "register">("login");
 
 const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
@@ -370,7 +373,13 @@ const ownsCourse = computed(() => {
 });
 
 async function addRating(rating: "like" | "dislike" | null) {
-    if (!loggedAccount.value || !courseSmall.value || ratingLoading.value) return;
+    // Check if user is logged in, if not show login modal
+    if (!loggedAccount.value) {
+        enabledModal.value = "loginRequired";
+        return;
+    }
+    
+    if (!courseSmall.value || ratingLoading.value) return;
 
     const baseUrl = getBaseUrl();
     const uuid = courseSmall.value.uuid;
@@ -613,6 +622,21 @@ const editBackClick = () => {
 
 const editClick = () => {
     window.location.href = `/course/${courseSmall.value?.uuid}?edit=true`;
+};
+
+const handleAuthSuccess = (account: Account) => {
+    // Close the modal
+    enabledModal.value = null;
+    
+    // Show success message
+    push.success({
+        title: "Přihlášení úspěšné",
+        message: "Nyní můžeš kurzy hodnotit.",
+        duration: 3000
+    });
+    
+    // Reload the page to refresh course data with new user context
+    window.location.reload();
 };
 
 onMounted(() => {
@@ -936,6 +960,61 @@ onMounted(() => {
             </form>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
+        
+        <!-- LOGIN REQUIRED MODAL -->
+        <Modal
+            :enabled="enabledModal === 'loginRequired'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '500px' }"
+        >
+            <SmoothSizeWrapper>
+                <div :class="$style.authModalHeader">
+                    <h3>Pro hodnocení kurzu se musíš přihlásit.</h3>
+
+                    <div :class="$style.authTabs">
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'login' }]"
+                            @click="authTab = 'login'"
+                            type="button"
+                        >
+                            Přihlášení
+                        </button>
+
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'register' }]"
+                            @click="authTab = 'register'"
+                            type="button"
+                        >
+                            Registrace
+                        </button>
+                    </div>
+                </div>
+
+                <div :class="$style.authFormContainer">
+                    <Transition
+                        mode="out-in"
+                        :enter-active-class="$style.fadeEnterActive"
+                        :enter-from-class="$style.fadeEnterFrom"
+                        :enter-to-class="$style.fadeEnterTo"
+                        :leave-active-class="$style.fadeLeaveActive"
+                        :leave-from-class="$style.fadeLeaveFrom"
+                        :leave-to-class="$style.fadeLeaveTo"
+                    >
+                        <div :key="authTab">
+                            <LoginForm
+                                v-if="authTab === 'login'"
+                                @login-success="handleAuthSuccess"
+                            />
+                            <RegisterForm
+                                v-else
+                                @register-success="handleAuthSuccess"
+                            />
+                        </div>
+                    </Transition>
+                </div>
+            </SmoothSizeWrapper>
+        </Modal>
     </Teleport>
 </template>
 
@@ -1222,5 +1301,69 @@ ul {
             }
         }
     }
+}
+
+.authModalHeader {
+    margin-bottom: 24px;
+    
+    h3 {
+        margin: 0;
+        margin-bottom: 16px;
+    }
+}
+
+.authTabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--background-color-3);
+}
+
+.authTab {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-color-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 24px 24px 0 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+    
+    &:hover {
+        color: var(--text-color-primary);
+        background: var(--background-color-3);
+    }
+    
+    &.active {
+        color: var(--accent-color-primary);
+        border-bottom-color: var(--accent-color-primary);
+    }
+}
+
+.authFormContainer {
+    margin-top: 24px;
+}
+
+
+// animace
+.fadeEnterActive {
+    transition: 300ms ease;
+}
+
+.fadeLeaveActive {
+    transition: 200ms ease;
+}
+
+.fadeEnterFrom,
+.fadeLeaveTo {
+    opacity: 0;
+}
+
+.fadeEnterTo,
+.fadeLeaveFrom {
+    opacity: 1;
 }
 </style>
