@@ -5,6 +5,7 @@ import Button from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 import { push } from "notivue";
+import {ref} from "vue";
 
 type Material = MaterialFormModel;
 
@@ -19,6 +20,8 @@ const emit = defineEmits<{
 
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const isInProgress = ref<boolean>(false);
 
 const form = ref<CourseFormModel>({
     name: "",
@@ -77,6 +80,7 @@ const handleFileChange = (index: number, file: File | null) => {
 const submitForm = async () => {
     loading.value = true;
     error.value = null;
+    isInProgress.value = true;
 
     try {
         const fd = new FormData();
@@ -123,6 +127,7 @@ const submitForm = async () => {
         error.value = err?.data?.error ?? err?.data?.message ?? err?.message ?? "Server error";
     } finally {
         loading.value = false;
+        isInProgress.value = false;
     }
 };
 </script>
@@ -131,18 +136,18 @@ const submitForm = async () => {
     <form @submit.prevent="submitForm" :class="$style.courseForm">
         <div :class="$style.formGroup">
             <label>Název *</label>
-            <Input type="text" v-model="form.name" maxlength="128" required />
+            <Input type="text" v-model="form.name" maxlength="128" :disabled="isInProgress" required />
         </div>
 
         <div :class="$style.formGroup">
             <label>Popis *</label>
-            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048" required />
+            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048" :disabled="isInProgress" required />
         </div>
 
         <div :class="$style.materials">
             <div :class="$style.header">
                 <label>Materiály</label>
-                <button type="button" @click="addMaterial" :class="$style.add">Přidat</button>
+                <button type="button" @click="addMaterial" :class="$style.add" :disabled="isInProgress">Přidat</button>
             </div>
 
             <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
@@ -157,10 +162,10 @@ const submitForm = async () => {
         <p v-if="loading">Probíhá ukládání...</p>
 
         <div :class="$style.formButtons">
-            <Button button-style="tertiary" type="button" @click="emit('finished')" :disabled="loading">
+            <Button button-style="tertiary" type="button" @click="emit('finished')" :disabled="loading || isInProgress">
                 Zrušit
             </Button>
-            <Button button-style="primary" type="submit" :disabled="loading">
+            <Button button-style="primary" type="submit" :disabled="loading || isInProgress">
                 {{ props.mode === 'create' ? 'Vytvořit' : 'Uložit' }}
             </Button>
         </div>
@@ -182,6 +187,10 @@ const submitForm = async () => {
     label {
         font-weight: 600;
     }
+}
+
+*:disabled {
+    cursor: not-allowed;
 }
 
 .materials {
@@ -228,6 +237,11 @@ const submitForm = async () => {
         &::before {
             content: '';
             mask-image: url("../../../public/icons/plus.svg");
+        }
+        
+        &:disabled {
+            opacity: .5;
+            cursor: not-allowed;
         }
     }
 }
