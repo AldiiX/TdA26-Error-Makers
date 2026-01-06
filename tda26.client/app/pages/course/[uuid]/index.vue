@@ -474,6 +474,7 @@ const handleQuizCreate = async (e: Event) => {
         );
 
         course.value.quizzes = course.value.quizzes ?? [];
+        newQuiz.createdAt = new Date().toISOString();
         course.value.quizzes.unshift(newQuiz);
 
         push.success({
