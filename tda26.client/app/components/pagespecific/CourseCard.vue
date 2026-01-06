@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed } from "vue";
+import {computed, ref} from "vue";
 import type { Course } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";

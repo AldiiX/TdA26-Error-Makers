@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-import { Head, Title } from '#components';
 import type { Account, Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
@@ -7,6 +6,7 @@ import { NuxtLink } from "#components";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
+import {computed, ref} from "vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -16,7 +16,16 @@ definePageMeta({
     }
 });
 
+// SEO
+useSeo({
+    title: "Dashboard",
+    description: "Spravujte své kurzy, sledujte statistiky a přístup ke všem funkcím vaší vzdělávací platformy.",
+    noindex: true // Dashboard should not be indexed
+});
+
 const loggedAccount = useState<Account | null>('loggedAccount');
+
+const isActionInProgress = ref(false);
 
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
@@ -92,6 +101,8 @@ const openDelete = (course: Course) => {
 
 const deleteCourse = async () => {
     if (!selectedDeleteCourse.value) return;
+    
+    isActionInProgress.value = true;
 
     try {
         await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
@@ -103,6 +114,8 @@ const deleteCourse = async () => {
         await refreshCourses();
     } catch (err) {
         deleteError.value = "Nepodařilo se smazat kurz.";
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 </script>
@@ -166,11 +179,12 @@ const deleteCourse = async () => {
             <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div style="display: flex; gap: 16px; margin-top: 24px;">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="deleteCourse"
+                    :disabled="isActionInProgress"
                 >
                     Smazat kurz
                 </Button>

@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
-
     definePageMeta({
         layout: "normal-page-layout"
+    });
+
+    // SEO
+    useSeo({
+        title: "Zásady používání cookies",
+        description: "Přečtěte si informace o tom, jak Think Different Academy používá cookies k zlepšení vašeho zážitku z používání platformy.",
+        noindex: true // Legal pages often noindex
     });
 </script>
 
 <template>
-    <Head>
-        <Title>Zásady používání cookies • Think different Academy</Title>
-    </Head>
-
     <div :class="$style.container">
         <div :class="$style.headerSection">
             <h1 :class="[$style.nadpis, 'text-gradient']">Zásady používání cookies</h1>
