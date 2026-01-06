@@ -75,10 +75,14 @@ async function submitRegisterForm(event: Event) {
             body: formDataObj
         });
 
+        if (!res) {
+            throw new Error("Registration failed");
+        }
+
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
         loggedAccount.value = res;
 
-        emit("registerSuccess", res!);
+        emit("registerSuccess", res);
     } catch (err: any) {
         errorMsg.value = ["Uživatelské jméno nebo e-mail už existuje."];
     } finally {
@@ -155,7 +159,7 @@ async function submitRegisterForm(event: Event) {
                     placeholder="••••••••"
                     aria-describedby="password-help"
                     required
-                    name="password"
+                    name="passwordApprove"
                     :type="showPasswordApprove ? 'text' : 'password'"
                 />
                 <button
