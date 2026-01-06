@@ -817,7 +817,7 @@ public class APIv1(
             Message = "Byl smazán kvíz: " + quiz.Title,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            Purpose = FeedPost.FeedPurpose.UpdateQuiz
+            Purpose = FeedPost.FeedPurpose.DeleteQuiz
         };
         
         db.FeedPosts.Add(newFeedPost);
@@ -909,6 +909,7 @@ public class APIv1(
             correctPerQuestion,
             submittedAt = DateTime.UtcNow
         };
+        
 
         return Ok(response);
     }

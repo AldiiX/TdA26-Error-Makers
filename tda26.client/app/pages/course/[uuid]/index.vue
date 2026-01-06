@@ -135,78 +135,43 @@ function formatRelativeTime(
     return `před ${diffDays} dny`;
 }
 
-function mapFeedPurpose(
-    purpose: FeedPost["purpose"]
-): { label: string; type: "announcement" | "material" | "quiz"; icon: string } {
+function mapFeedPurpose(purpose?: string, type?: string) {
+    if (type === "manual") {
+        return {
+            label: "Oznámení",
+            type: "announcement", 
+            icon: "/icons/megaphone.svg",
+        };
+    }
 
-    switch (purpose) {
-        case "default":
-            return {
-                label: "Oznámení",
-                type: "announcement",
-                icon: "/icons/megaphone.svg",
-            };
-
-        case "createMaterial":
-            return {
-                label: "Přidán materiál",
-                type: "material",
-                icon: "/icons/file_plus.svg",
-            };
-
-        case "updateMaterial":
-            return {
-                label: "Upraven materiál",
-                type: "material",
-                icon: "/icons/file_edit.svg",
-            };
-
-        case "deleteMaterial":
-            return {
-                label: "Smazán materiál",
-                type: "material",
-                icon: "/icons/file_remove.svg",
-            };
-
-        case "createQuiz":
-            return {
-                label: "Přidán kvíz",
-                type: "quiz",
-                icon: "/icons/quiz_plus.svg",
-            };
-
-        case "updateQuiz":
-            return {
-                label: "Upraven kvíz",
-                type: "quiz",
-                icon: "/icons/quiz_edit.svg",
-            };
-
-        case "deleteQuiz":
-            return {
-                label: "Smazán kvíz",
-                type: "quiz",
-                icon: "/icons/quiz_remove.svg",
-            };
-
+    switch (purpose?.toLowerCase()) {
+        case "creatematerial":
+            return { label: "Přidán materiál", type: "material", icon: "/icons/file_plus.svg" };
+        case "updatematerial":
+            return { label: "Upraven materiál", type: "material", icon: "/icons/file_edit.svg" };
+        case "deletematerial":
+            return { label: "Smazán materiál", type: "material", icon: "/icons/file_remove.svg" };
+        case "createquiz":
+            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg" };
+        case "updatequiz":
+            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg" };
+        case "deletequiz":
+            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg" };
         default:
-            return {
-                label: "Aktivita",
-                type: "announcement",
-                icon: "/icons/activity.svg",
-            };
+            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg" };
     }
 }
+
 const feedPosts = computed<FeedPostView[]>(() => {
     if (!feedData.value) return [];
 
     return feedData.value.map(post => {
-        const mapped = mapFeedPurpose(post.purpose);
+        const mapped = mapFeedPurpose(post.purpose, post.type);
 
         return {
             ...post,
             purposeLabel: mapped.label,
-            purposeType: mapped.type,
+            purposeType: mapped.type, 
             icon: mapped.icon,
         };
     });
@@ -1464,6 +1429,7 @@ ul {
                     .feedPostWrapper {
                         display: flex;
                         border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                        border-left: none;
                         border-radius: 12px;
                         overflow: hidden;
                         
