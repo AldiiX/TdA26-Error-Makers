@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Modal from "./Modal.vue";
+import Button from "./Button.vue";
 
 interface ModalDestructiveProps {
     description: string;
@@ -62,21 +63,20 @@ const handleNoClick = () => {
         <p>{{ description }}</p>
 
         <div :class="$style.buttons">
-<!--            TODO: dodělat buttony
+            <Button
+                    button-style="secondary"
+                    @click="handleNoClick"
+            >
+                {{ noText }}
+            </Button>
 
-                <Button-->
-<!--                    :type="ButtonType.TERTIARY_RICH"-->
-<!--                    :style="ButtonStyle.ROUNDER"-->
-<!--                    :text="noText"-->
-<!--                    @click="handleNoClick"-->
-<!--            />-->
-
-<!--            <Button-->
-<!--                    :type="ButtonType.PRIMARY"-->
-<!--                    :style="ButtonStyle.ROUNDER"-->
-<!--                    :text="yesText"-->
-<!--                    @click="handleYesClick"-->
-<!--            />-->
+            <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="handleYesClick"
+            >
+                {{ yesText }}
+            </Button>
         </div>
     </Modal>
 </template>
@@ -111,7 +111,7 @@ const handleNoClick = () => {
             position: absolute;
             width: 100%;
             height: 100%;
-            background-color: var(--accent-color-primary-1);
+            background-color: var(--accent-color-secondary-theme);
             z-index: 1;
         }
     }

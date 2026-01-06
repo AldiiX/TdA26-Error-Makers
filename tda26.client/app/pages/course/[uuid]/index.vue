@@ -4,6 +4,7 @@ import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
+import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 import { ref, computed } from "vue";
 import QuizItem from "~/components/pagespecific/QuizItem.vue";
@@ -780,48 +781,34 @@ onMounted(() => {
         </Modal>
 
         <!-- DELETE -->
-        <Modal
+        <ModalDestructive
             :enabled="enabledModal === 'deleteMaterial'"
             @close="enabledModal = null"
-            can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
-        >
-            <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
-            <p>Tuto akci nelze vrátit zpět.</p>
-            <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    @click="handleMaterialDelete"
-                >
-                    Smazat materiál
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+            :can-be-closed-by-clicking-outside="true"
+            :title="`Potvrzení akce`"
+            :description="`Opravdu si přeješ smazat materiál ${selectedMaterial?.name ?? ''}? Tuto akci nelze vrátit zpět.`"
+            :yes-action="handleMaterialDelete"
+            :no-action="() => enabledModal = null"
+            :yes-text="`Smazat materiál`"
+            :no-text="`Zrušit`"
+        />
+
+        <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
 
         <!-- DELETE QUIZ -->
-        <Modal
+        <ModalDestructive
             :enabled="enabledModal === 'deleteQuiz'"
             @close="enabledModal = null"
-            can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
-        >
-            <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
-            <p>Tuto akci nelze vrátit zpět.</p>
-            <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    @click="handleQuizDelete"
-                >
-                    Smazat kvíz
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+            :can-be-closed-by-clicking-outside="true"
+            :title="`Potvrzení akce`"
+            :description="`Opravdu si přeješ smazat kvíz ${selectedQuiz?.title ?? ''}? Tuto akci nelze vrátit zpět.`"
+            :yes-action="handleQuizDelete"
+            :no-action="() => enabledModal = null"
+            :yes-text="`Smazat kvíz`"
+            :no-text="`Zrušit`"
+        />
+        
+        <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         
         <!-- CREATE QUIZ -->
         <Modal
