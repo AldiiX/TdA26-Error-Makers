@@ -2,24 +2,23 @@
 import Modal from "./Modal.vue";
 import Button from "./Button.vue";
 
-interface ModalDestructiveProps {
+interface ModalInformativeProps {
     description: string;
     enabled: boolean;
     className?: string;
-    yesAction: () => void;
-    yesText?: string;
-    noAction?: () => void;
-    noText?: string;
-    title?: string;
+    okAction: () => void;
+    okText?: string;
+    title?: string | null;
     canBeClosedByClickingOutside?: boolean;
+    descriptionTextAlign?: "left" | "center" | "right" | "justify";
 }
 
-const props = withDefaults(defineProps<ModalDestructiveProps>(), {
-    title: "Potvrzení akce",
+const props = withDefaults(defineProps<ModalInformativeProps>(), {
+    title: null,
     className: "",
-    yesText: "Ano",
-    noText: "Ne",
-    canBeClosedByClickingOutside: false
+    okText: "Rozumím",
+    canBeClosedByClickingOutside: true,
+    descriptionTextAlign: "center"
 });
 
 const emit = defineEmits<{
@@ -27,22 +26,11 @@ const emit = defineEmits<{
 }>();
 
 const handleClose = () => {
-    // zavreni destruktivniho modalu
     emit("close");
 };
 
-const handleYesClick = () => {
-    // potvrzeni destruktivni akce
-    props.yesAction();
-};
-
-const handleNoClick = () => {
-    // zruseni akce
-    if (props.noAction) {
-        props.noAction();
-    } else {
-        handleClose();
-    }
+const handleOkClick = () => {
+    props.okAction();
 };
 </script>
 
@@ -50,7 +38,7 @@ const handleNoClick = () => {
     <Modal
             :enabled="enabled"
             :can-be-closed-by-clicking-outside="canBeClosedByClickingOutside"
-            :container-class-name="`${$style.modaldestructive} ${className}`.trim()"
+            :container-class-name="`${$style.modalinformative} ${className}`.trim()"
             :modal-class-name="$style['modal-content']"
             @close="handleClose"
     >
@@ -58,31 +46,23 @@ const handleNoClick = () => {
 
         <div :class="$style.icon"></div>
 
-        <h1>{{ title }}</h1>
+        <h1 v-if="title">{{ title }}</h1>
 
-        <p>{{ description }}</p>
+        <p :style="{ textAlign: descriptionTextAlign }">{{ description }}</p>
 
         <div :class="$style.buttons">
             <Button
-                    button-style="secondary"
-                    @click="handleNoClick"
-            >
-                {{ noText }}
-            </Button>
-
-            <Button
                     button-style="primary"
-                    accent-color="primary"
-                    @click="handleYesClick"
+                    @click="handleOkClick"
             >
-                {{ yesText }}
+                {{ okText }}
             </Button>
         </div>
     </Modal>
 </template>
 
 <style module lang="scss">
-.modaldestructive {
+.modalinformative {
 
 }
 .modal-content {
@@ -125,7 +105,6 @@ const handleNoClick = () => {
     }
 
     >p {
-        text-align: center;
         //font-size: 20px;
         color: var(--text-color-secondary);
 
@@ -145,8 +124,7 @@ const handleNoClick = () => {
 
         >button {
             flex-grow: 1;
-            width: calc(100% / 2 - 8px);
-            padding: 12px;
+            width: 100%;
         }
     }
 }

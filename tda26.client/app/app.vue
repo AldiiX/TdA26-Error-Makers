@@ -11,16 +11,9 @@ import { Notivue, NotivueSwipe, Notification } from 'notivue';
 const route = useRoute();
 const theme = useState<WebTheme>('theme', () => 'light');
 
-// seo base
-const description = "ASP.NET Core + Nuxt template";
-
-// robots podle prostredi, aby se neindexoval dev/staging
-const isProd = import.meta.env.PROD;
-const robotsValue = computed(() => isProd ? "index, follow" : "noindex, nofollow");
-
-// kanonicka url bez query, aby se nekanonizovaly utm apod.
-// const canonicalUrl = computed(() => new URL(route.path || "/", siteUrl).toString());
-
+// Default SEO fallback - pages should use useSeo() composable for specific SEO
+const siteTitle = "Think Different Academy";
+const description = "Interaktivní vzdělávací platforma pro studenty a lektory. Objevte kurzy, kvízy a mnoho dalšího na Think Different Academy.";
 
 // head: data-theme na <html> a zakladni link/script
 useHead({
@@ -43,46 +36,15 @@ useHead({
 
     ]
 });
+
+// Default SEO meta tags (will be overridden by page-specific useSeo())
+useSeo({
+    title: undefined, // Will use site name only
+    description: description
+});
 </script>
 
 <template>
-    <!-- spravne jazykove nastaveni na html -->
-<!--    <Html :lang="mappedLang" />-->
-
-    <Head>
-        <!-- zaklad -->
-        <Meta charset="utf-8" />
-        <Meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Title>Think different Academy</Title>
-        <Meta name="description" :content="description" />
-        <Meta name="robots" :content="robotsValue" />
-        <Link rel="stylesheet" href="/lib/pure.css" type="text/css" />
-<!--        <Link rel="canonical" :href="canonicalUrl" />-->
-
-        <!-- hreflang alternace -->
-<!--        <Link rel="alternate" hreflang="x-default" :href="siteUrl" />-->
-<!--        <Link rel="alternate" hreflang="cs" :href="siteUrl" />-->
-
-        <!-- open graph -->
-        <Meta property="og:type" content="website" />
-<!--        <Meta property="og:title" :content="pageTitle" />-->
-        <Meta property="og:description" :content="description" />
-<!--        <Meta property="og:url" :content="canonicalUrl" />-->
-<!--        <Meta property="og:image" :content="ogImage" />-->
-<!--        <Meta property="og:locale" :content="ogLocale" />-->
-
-        <!-- twitter / x cards -->
-        <Meta name="twitter:card" content="summary_large_image" />
-<!--        <Meta name="twitter:title" :content="pageTitle" />-->
-        <Meta name="twitter:description" :content="description" />
-<!--        <Meta name="twitter:image" :content="ogImage" />-->
-
-        <!-- pwa/chrome ui barva -->
-        <Meta name="theme-color" content="#0095ff" media="(prefers-color-scheme: dark)" />
-        <Meta name="theme-color" content="#0095ff" media="(prefers-color-scheme: light)" />
-<!--        <Link rel="manifest" href="/site.webmanifest" />-->
-    </Head>
-
     <!-- Mobile menu -->
     <MobileMenu />
 

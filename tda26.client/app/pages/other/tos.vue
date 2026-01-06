@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
-
     definePageMeta({
         layout: "normal-page-layout"
+    });
+
+    // SEO
+    useSeo({
+        title: "Podmínky používání",
+        description: "Přečtěte si podmínky používání platformy Think Different Academy. Důležité informace o pravidlech a podmínkách pro uživatele.",
+        noindex: true
     });
 </script>
 
 <template>
-    <Head>
-        <Title>Podmínky používání • Think different Academy</Title>
-    </Head>
-
     <div :class="$style.container">
         <h1 :class="[$style.nadpis, 'text-gradient']">Podmínky používání</h1>
         <p :class="$style.podnapis">Vítejte na platformě Think different Academy. Prosím, přečtěte si pečlivě následující podmínky používání.</p>

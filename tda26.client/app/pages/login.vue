@@ -1,6 +1,5 @@
 ﻿<script setup lang="ts">
 import { ref } from "vue";
-import { Head, Title } from "#components";
 import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
@@ -10,6 +9,14 @@ import { push } from "notivue";
 
 definePageMeta({
     layout: "normal-page-layout"
+});
+
+// SEO
+useSeo({
+    title: "Přihlášení",
+    description: "Přihlaste se do svého účtu na Think Different Academy a pokračujte ve vzdělávání. Získejte přístup ke svým kurzům a sledujte svůj pokrok.",
+    keywords: "přihlášení, login, účet, vstup do systému",
+    noindex: true // Login pages shouldn't be indexed
 });
 
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
@@ -68,7 +75,7 @@ async function submitLoginForm(event: Event) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
 
         // prepnuti toastu na error (a nechat chvili zobrazeny)
-        loginToast.resolve({
+        loginToast.reject({
             title: "Chyba přihlášení",
             message: "Zkontroluj uživatelské jméno a heslo a zkus to znovu.",
             duration: 6000

@@ -1,8 +1,13 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
-
     definePageMeta({
         layout: "normal-page-layout"
+    });
+
+    // SEO
+    useSeo({
+        title: "O nás",
+        description: "Seznamte se s týmem Error Makers za Think Different Academy. Jsme tým studentů ze Střední školy EDUCHEM, kteří vytvořili tuto platformu pro Tour de App 2026.",
+        keywords: "o nás, tým, vývojáři, Error Makers, Tour de App, EDUCHEM"
     });
 
     interface TeamMember {

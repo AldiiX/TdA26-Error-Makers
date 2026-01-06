@@ -1,9 +1,15 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
     import { ref } from 'vue';
 
     definePageMeta({
         layout: "normal-page-layout"
+    });
+
+    // SEO
+    useSeo({
+        title: "Často kladené otázky (FAQ)",
+        description: "Máte otázky ohledně Think Different Academy? Najděte odpovědi na nejčastěji kladené otázky o registraci, kurzech, ceníku a dalších funkcích platformy.",
+        keywords: "FAQ, často kladené otázky, help, nápověda, podpora"
     });
 
     interface FaqItem {
