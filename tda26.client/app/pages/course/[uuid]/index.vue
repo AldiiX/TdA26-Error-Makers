@@ -4,6 +4,7 @@ import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
+import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 import { ref, computed } from "vue";
 import QuizItem from "~/components/pagespecific/QuizItem.vue";
@@ -886,12 +887,14 @@ onMounted(() => {
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
 
-        <!-- DELETE -->
-        <Modal
+        <!-- DELETE MATERIAL -->
+        <ModalDestructive
             :enabled="enabledModal === 'deleteMaterial'"
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            title="Potvrzení akce"
+            description="Opravdu chceš smazat tento materiál? Tuto akci nelze vrátit zpět."
+            :yes-action="handleMaterialDelete"
         >
             <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
@@ -907,14 +910,16 @@ onMounted(() => {
                 </Button>
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+        </ModalDestructive>
 
         <!-- DELETE QUIZ -->
-        <Modal
+        <ModalDestructive
             :enabled="enabledModal === 'deleteQuiz'"
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            title="Potvrzení akce"
+            description="Opravdu chceš smazat tento kvíz? Tuto akci nelze vrátit zpět."
+            :yesAction="handleQuizDelete"
         >
             <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
@@ -930,7 +935,7 @@ onMounted(() => {
                 </Button>
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+        </ModalDestructive>
         
         <!-- CREATE QUIZ -->
         <Modal

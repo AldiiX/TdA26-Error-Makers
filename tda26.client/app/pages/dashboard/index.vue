@@ -7,6 +7,10 @@ import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
 import {computed, ref} from "vue";
+import ModalDestructive from "~/components/ModalDestructive.vue";
+import { onMounted, onUnmounted, nextTick, watch } from "vue";
+import { useSeo } from "~/composables/useSeo";
+import { push } from "notivue"
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -92,7 +96,6 @@ const refreshCourses = async () => {
 };
 
 const selectedDeleteCourse = ref<Course | null>(null);
-const deleteError = ref<string | null>(null);
 
 const openDelete = (course: Course) => {
     selectedDeleteCourse.value = course;
@@ -111,9 +114,20 @@ const deleteCourse = async () => {
 
         enabledModal.value = null;
         selectedDeleteCourse.value = null;
+
+        push.success({
+            title: "Kurz smazán",
+            message: "Kurz byl úspěšně smazán.",
+            duration: 5000
+        });
+
         await refreshCourses();
     } catch (err) {
-        deleteError.value = "Nepodařilo se smazat kurz.";
+        push.error({
+            title: "Chyba při mazání kurzu",
+            message: "Nepodařilo se smazat kurz. Zkuste to prosím znovu.",
+            duration: 5000
+        })
     } finally {
         isActionInProgress.value = false;
     }
@@ -175,22 +189,12 @@ const deleteCourse = async () => {
         </Modal>
 
         <!-- DELETE -->
-        <Modal :enabled="enabledModal === 'deleteCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
-            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
-            <p>Tuto akci nelze vrátit zpět.</p>
-            <div style="display: flex; gap: 16px; margin-top: 24px;">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    @click="deleteCourse"
-                    :disabled="isActionInProgress"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteCourse'"
+            @close="enabledModal = null"
+            :yes-action="deleteCourse"
+            :description="`Opravdu si přeješ smazat kurz „${ selectedDeleteCourse?.name }”?`"
+        />
     </Teleport>
 </template>
 

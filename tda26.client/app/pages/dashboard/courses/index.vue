@@ -5,6 +5,7 @@ import type {Account, Course} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import {computed, watch} from "vue";
 import Modal from "~/components/Modal.vue";
+import ModalDestructive from "~/components/ModalDestructive.vue";
 import Button from "~/components/Button.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
 import Pagination from "~/components/Pagination.vue";
@@ -275,21 +276,17 @@ const deleteCourse = async () => {
         </Modal>
 
         <!-- DELETE -->
-        <Modal :enabled="enabledModal === 'deleteCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
-            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
-            <p>Tuto akci nelze vrátit zpět.</p>
-            <div style="display: flex; gap: 16px; margin-top: 24px;">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    @click="deleteCourse"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteCourse'"
+            @close="enabledModal = null"
+            :can-be-closed-by-clicking-outside="true"
+            :title="`Potvrzení akce`"
+            :description="`Opravdu si přeješ smazat kurz ${selectedDeleteCourse?.name ?? ''}? Tuto akci nelze vrátit zpět.`"
+            :yes-action="deleteCourse"
+            :no-action="() => enabledModal = null"
+            :yes-text="`Smazat kurz`"
+            :no-text="`Zrušit`"
+        />
     </Teleport>
 </template>
 
