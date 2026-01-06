@@ -13,6 +13,8 @@ definePageMeta({
 const loggedAccount = useState<Account | null>('loggedAccount');
 const { uuid, quizUuid } = useRoute().params;
 
+const isActionInProgress = ref(false);
+
 const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
     key: `course-${uuid}-quiz-${quizUuid}`,
 });
@@ -110,6 +112,8 @@ const isQuestionValid = (q: Question): boolean => {
 const saveQuiz = async () => {
     if (!quiz.value || !canSave.value) return;
     
+    isActionInProgress.value = true;
+    
     const dto = {
         uuid: quiz.value!.uuid.startsWith("new-") ? undefined : quiz.value!.uuid,
         title: quiz.value!.title,
@@ -131,6 +135,8 @@ const saveQuiz = async () => {
     await $fetch(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
         method: 'PUT',
         body: dto,
+    }).finally(() => {
+        isActionInProgress.value = false;
     });
     
     oldQuiz.value = JSON.parse(JSON.stringify(quiz.value));
@@ -144,8 +150,6 @@ const saveQuiz = async () => {
 const updateQuestion = (i: number, patch: Partial<Question>) => {    
     if (!quiz.value) return;
 
-    console.log("Updating question", i, patch);
-
     quiz.value.questions.splice(i, 1, {
         ...quiz.value.questions[i],
         ...patch,
@@ -153,8 +157,6 @@ const updateQuestion = (i: number, patch: Partial<Question>) => {
 
     const q = quiz.value.questions[i];
     if (!q) return;
-
-    console.log("Updated question", q);
     
     recheckQuiz();
 };
@@ -352,7 +354,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 <!--            <p @click="incrementQuestion(1)">&gt;</p>-->
 <!--        </div>-->
         
-        <Button @click="saveQuiz" :disabled="!canSave">Uložit</Button>
+        <Button @click="saveQuiz" :disabled="!canSave || isActionInProgress">Uložit</Button>
     </div>
 </template>
 
