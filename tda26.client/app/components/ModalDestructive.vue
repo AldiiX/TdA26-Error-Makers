@@ -15,7 +15,7 @@ interface ModalDestructiveProps {
 }
 
 const props = withDefaults(defineProps<ModalDestructiveProps>(), {
-    title: "Confirm action",
+    title: "Potvrzení akce",
     className: "",
     yesText: "Ano",
     noText: "Ne",
@@ -72,7 +72,7 @@ const handleNoClick = () => {
 
             <Button
                     button-style="primary"
-                    accent-color="secondary"
+                    accent-color="primary"
                     @click="handleYesClick"
             >
                 {{ yesText }}
@@ -111,7 +111,7 @@ const handleNoClick = () => {
             position: absolute;
             width: 100%;
             height: 100%;
-            background-color: var(--accent-color-secondary-theme);
+            background-color: var(--accent-color-primary);
             z-index: 1;
         }
     }
