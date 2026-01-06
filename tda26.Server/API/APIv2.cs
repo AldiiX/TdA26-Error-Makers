@@ -825,13 +825,15 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        if (body.Type != "url") {
-            return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
-        }
-
         var course = await courseRepository.GetByUuidAsync(uuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
+        }
+        
+        if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+        if (body.Type != "url") {
+            return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
         }
 
         if (string.IsNullOrEmpty(body.Name) || string.IsNullOrEmpty(body.Url)) {
@@ -887,6 +889,13 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
+        var course = await courseRepository.GetByUuidAsync(courseId, ct);
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
         if (body.Type != "file")
             return BadRequest(new { error = "Only 'file' material type is supported in this endpoint." });
 
@@ -901,11 +910,6 @@ public class APIv2(
         const long maxFileSizeBytes = 30 * 1024 * 1024;
         if (body.File.Length > maxFileSizeBytes) {
             return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
-        }
-
-        var course = await courseRepository.GetByUuidAsync(courseId, ct);
-        if (course == null) {
-            return NotFound(new { error = "Course not found." });
         }
 
         var file = body.File;
