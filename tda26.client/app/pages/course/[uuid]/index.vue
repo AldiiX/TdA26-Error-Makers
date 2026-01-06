@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost} from "#shared/types";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost, type FeedPostView} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -135,7 +135,82 @@ function formatRelativeTime(
     return `před ${diffDays} dny`;
 }
 
+function mapFeedPurpose(
+    purpose: FeedPost["purpose"]
+): { label: string; type: "announcement" | "material" | "quiz"; icon: string } {
 
+    switch (purpose) {
+        case "default":
+            return {
+                label: "Oznámení",
+                type: "announcement",
+                icon: "/icons/megaphone.svg",
+            };
+
+        case "createMaterial":
+            return {
+                label: "Přidán materiál",
+                type: "material",
+                icon: "/icons/file_plus.svg",
+            };
+
+        case "updateMaterial":
+            return {
+                label: "Upraven materiál",
+                type: "material",
+                icon: "/icons/file_edit.svg",
+            };
+
+        case "deleteMaterial":
+            return {
+                label: "Smazán materiál",
+                type: "material",
+                icon: "/icons/file_remove.svg",
+            };
+
+        case "createQuiz":
+            return {
+                label: "Přidán kvíz",
+                type: "quiz",
+                icon: "/icons/quiz_plus.svg",
+            };
+
+        case "updateQuiz":
+            return {
+                label: "Upraven kvíz",
+                type: "quiz",
+                icon: "/icons/quiz_edit.svg",
+            };
+
+        case "deleteQuiz":
+            return {
+                label: "Smazán kvíz",
+                type: "quiz",
+                icon: "/icons/quiz_remove.svg",
+            };
+
+        default:
+            return {
+                label: "Aktivita",
+                type: "announcement",
+                icon: "/icons/activity.svg",
+            };
+    }
+}
+const feedPosts = computed<FeedPostView[]>(() => {
+    if (!feedData.value) return [];
+
+    return feedData.value.map(post => {
+        const mapped = mapFeedPurpose(post.purpose);
+
+        return {
+            ...post,
+            purposeLabel: mapped.label,
+            purposeType: mapped.type,
+            icon: mapped.icon,
+        };
+    });
+});
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
@@ -796,14 +871,16 @@ watch(feedData, (val) => {
                             <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
                             
                             <ul v-else>
-                                <li v-for=" feedPost in feedData" :key="feedPost.uuid">
+                                <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
                                         <div :class="$style.feedPostLeft">
-                                            <div :class="$style.feedPostIcon"></div>
+                                            <div :class="$style.iconWrapper">
+                                                <div :class="$style.feedPostIcon"></div>
+                                            </div>
                                         </div>
                                         <div :class="$style.feedPostRight">
                                             <div :class="$style.feedPostHeader">
-                                                <div :class="$style.feedPurpose"></div>
+                                                <div :class="$style.feedPurpose">{{ feedPost.purposeLabel }}</div>
                                                 <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
                                             </div>
                                             <div :class="$style.feedPostAuthor">
@@ -819,7 +896,6 @@ watch(feedData, (val) => {
                                             <div :class="$style.feedPostContent">   
                                                 <p> {{ feedPost.message }} </p>
                                             </div>
-                                            
                                         </div>
 <!--                                        <div v-if="feedPost.author" :class="$style.feedAuthor">-->
                                             
@@ -1303,9 +1379,65 @@ ul {
             .addFeedPost{
                 margin-bottom: 32px;
             }
+            
+            .feedPostFilter {
+                display: flex;
+                align-items: center;
+                margin-bottom: 16px;
+                height: 64px;
+                border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                
+                .feedFilterLabel {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: var(--text-color-secondary);
+                }
+                
+                .feedFilterOptions {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-left: 16px;
+                    border-radius: 64px;
+                    background-color: var(--element-bg) ;
+                    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                    
+                    
+                    .feedFilterOption {
+                        cursor: pointer;
+                        user-select: none;
+                        padding: 8px 16px;
+                        border-radius: 64px;
+                        transition: background-color 0.2s ease, color 0.2s ease;
+                        
+                        &:is(.active) {
+                            background-color: var(--accent-color-primary);
+                            color: var(--background-color-primary);
+                            
+                            &:hover{
+                                opacity: 0.8;
+                            }
+                        }
+
+                        &:not(.active):hover {
+                            background-color: var(--background-color-3);
+                            filter: brightness(0.75);
+                            transition-duration: 0.3s;
+                        }
+                        
+                        p {
+                            margin: 0;
+                            font-size: 16px;
+                        }
+                    }
+                }
+            }
+            
             ul {
                 display: flex;
                 flex-direction: column;
+                gap: 16px;
                 
                 li{
                     .feedDate {
@@ -1331,33 +1463,81 @@ ul {
 
                     .feedPostWrapper {
                         display: flex;
-                        flex-direction: column;
-                        border: 1px solid var(--accent-color-primary);
+                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
                         border-radius: 12px;
+                        overflow: hidden;
                         
-
-                        .feedAuthor {
+                        .feedPostLeft{
                             display: flex;
-                            align-items: center;
+                            justify-content: center;
+                            
+                            border-left: 8px solid var(--accent-color-secondary-theme);
                             padding: 16px;
-                            gap: 12px;
                             
-                            .feedAvatar {
+                            .iconWrapper{
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
                                 
-                            }
+                                border-radius: 48px;
+                                height: 48px;
+                                width: 48px;
+                                background-color: var(--accent-color-secondary-theme);
+                                
 
-                            .authorName {
-                                margin: 0;
-                                font-size: 18px;
-                                font-weight: 700;
-                            }
-                        }
+                                .feedPostIcon{
+                                    height: 32px;
+                                    aspect-ratio: 1/1;
 
-                        .feedPostContent{
-                            
+                                    mask-image: url("/icons/megaphone.svg");
+                                    mask-size: cover;
+                                    mask-position: center;
+                                    mask-repeat: no-repeat;
+                                    
+                                    color: var(--background-color);
+                                    background-color: var(--background-color);
+                                }
+                            }
                         }
                         
-                        .feedPostActions {
+                        .feedPostRight{ 
+                            
+                            .feedPostHeader {
+                                
+                                
+                                .feedPurpose {
+                                    
+                                }
+                                
+                                .feedTimestamp {
+                                    font-size: 14px;
+                                    color: var(--text-color-secondary);
+                                }
+                            }
+                            
+                            .feedPostAuthor {
+                                display: flex;
+                                align-items: center;
+                                padding: 16px;
+                                gap: 12px;
+
+                                .feedAvatar {
+
+                                }
+
+                                .authorName {
+                                    margin: 0;
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+                            }
+                            
+                            .feedPostContent{
+                                
+                                p{
+                                    
+                                }
+                            }
                             
                         }
                     }
