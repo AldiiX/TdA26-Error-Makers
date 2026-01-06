@@ -61,9 +61,9 @@ const courseSmall = ref<Course>(_courseSmall.value!);
 
 // Dynamic SEO based on course data
 useSeo({
-    title: courseSmall.value.displayName,
-    description: courseSmall.value.description || `Zjistěte více o kurzu ${courseSmall.value.displayName} na Think Different Academy. Interaktivní vzdělávání s praxí.`,
-    keywords: `kurz, ${courseSmall.value.displayName}, online vzdělávání, e-learning`,
+    title: courseSmall.value.name,
+    description: courseSmall.value.description || `Zjistěte více o kurzu ${courseSmall.value.name} na Think Different Academy. Interaktivní vzdělávání s praxí.`,
+    keywords: `kurz, ${courseSmall.value.name}, online vzdělávání, e-learning`,
     type: 'article'
 });
 

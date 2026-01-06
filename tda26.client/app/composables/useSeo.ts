@@ -14,7 +14,7 @@ export const useSeo = (options: SeoOptions = {}) => {
     const siteName = 'Think Different Academy'
     
     const defaultDescription = 'Interaktivní vzdělávací platforma pro studenty a lektory. Objevte kurzy, kvízy a mnoho dalšího na Think Different Academy.'
-    const defaultImage = '/icons/logo_gradient.png'
+    const defaultImage = '/icons/logo.png'
     
     const pageTitle = options.title 
         ? `${options.title} • ${siteName}` 
