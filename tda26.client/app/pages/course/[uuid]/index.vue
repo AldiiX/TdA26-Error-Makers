@@ -135,7 +135,7 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "loginRequired" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 
@@ -316,7 +316,13 @@ const ownsCourse = computed(() => {
 });
 
 async function addRating(rating: "like" | "dislike" | null) {
-    if (!loggedAccount.value || !courseSmall.value || ratingLoading.value) return;
+    // Check if user is logged in, if not show login modal
+    if (!loggedAccount.value) {
+        enabledModal.value = "loginRequired";
+        return;
+    }
+    
+    if (!courseSmall.value || ratingLoading.value) return;
 
     const baseUrl = getBaseUrl();
     const uuid = courseSmall.value.uuid;
@@ -856,6 +862,33 @@ onMounted(() => {
                 </div>
             </form>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
+        
+        <!-- LOGIN REQUIRED MODAL -->
+        <Modal
+            :enabled="enabledModal === 'loginRequired'"
+            @close="enabledModal = null"
+            can-be-closed-by-clicking-outside
+            :modalStyle="{ maxWidth: '500px' }"
+        >
+            <h3>Pro hodnocení kurzu se musíš přihlásit</h3>
+            <p>Přihlaš se nebo se zaregistruj, abys mohl/a kurzy hodnotit.</p>
+            <div :class="$style.modalButtons">
+                <Button 
+                    button-style="primary" 
+                    accent-color="primary"
+                    @click="navigateTo('/login')"
+                >
+                    Přihlásit se
+                </Button>
+                <Button 
+                    button-style="primary" 
+                    accent-color="secondary"
+                    @click="navigateTo('/register')"
+                >
+                    Registrovat se
+                </Button>
+            </div>
         </Modal>
     </Teleport>
 </template>
