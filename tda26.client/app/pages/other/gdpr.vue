@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components';
-
     definePageMeta({
         layout: "normal-page-layout"
+    });
+
+    // SEO
+    useSeo({
+        title: "GDPR - Ochrana osobních údajů",
+        description: "Informace o ochraně osobních údajů na Think Different Academy v souladu s GDPR. Zjistěte, jak zpracováváme a chráníme vaše osobní údaje.",
+        noindex: true
     });
 </script>
 
 <template>
-    <Head>
-        <Title>GDPR • Think different Academy</Title>
-    </Head>
-
     <div :class="$style.container">
         <h1 :class="[$style.nadpis, 'text-gradient']">Ochrana osobních údajů (GDPR)</h1>
         <p :class="$style.podnapis">Think different Academy respektuje vaše soukromí a zavazuje se chránit vaše osobní údaje v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 o ochraně osobních údajů (GDPR).</p>
