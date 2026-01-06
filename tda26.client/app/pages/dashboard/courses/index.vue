@@ -16,6 +16,9 @@ definePageMeta({
     middleware: () => {
         const user = useState<Account | null>('loggedAccount');
         if (!user.value) return navigateTo('/login');
+
+        if(!(user.value.type === 'lecturer' || user.value.type === 'admin'))
+            return navigateTo("/")
     }
 });
 

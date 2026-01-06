@@ -740,6 +740,10 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
+        if(acc is not Lecturer && acc is not Admin) {
+            return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
+        }
+
         var newCourse = new Course {
             Name = body.Name,
             Description = body.Description,
