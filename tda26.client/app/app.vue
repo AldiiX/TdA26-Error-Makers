@@ -12,7 +12,10 @@ const route = useRoute();
 const theme = useState<WebTheme>('theme', () => 'light');
 
 // seo base
-const description = "ASP.NET Core + Nuxt template";
+const siteTitle = "Think Different Academy";
+const description = "Interaktivní vzdělávací platforma pro studenty a lektory. Objevte kurzy, kvízy a mnoho dalšího na Think Different Academy.";
+const siteUrl = "https://ghrp-679926fd-aldiix-tda26-error-makers-app.emsio.cz";
+const ogImage = `${siteUrl}/icons/logo_gradient.png`;
 
 // robots podle prostredi, aby se neindexoval dev/staging
 const isProd = import.meta.env.PROD;
@@ -53,7 +56,7 @@ useHead({
         <!-- zaklad -->
         <Meta charset="utf-8" />
         <Meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Title>Think different Academy</Title>
+        <Title>{{ siteTitle }}</Title>
         <Meta name="description" :content="description" />
         <Meta name="robots" :content="robotsValue" />
         <Link rel="stylesheet" href="/lib/pure.css" type="text/css" />
@@ -65,17 +68,18 @@ useHead({
 
         <!-- open graph -->
         <Meta property="og:type" content="website" />
-<!--        <Meta property="og:title" :content="pageTitle" />-->
+        <Meta property="og:site_name" :content="siteTitle" />
+        <Meta property="og:title" :content="siteTitle" />
         <Meta property="og:description" :content="description" />
-<!--        <Meta property="og:url" :content="canonicalUrl" />-->
-<!--        <Meta property="og:image" :content="ogImage" />-->
-<!--        <Meta property="og:locale" :content="ogLocale" />-->
+        <Meta property="og:url" :content="siteUrl" />
+        <Meta property="og:image" :content="ogImage" />
+        <Meta property="og:locale" content="cs_CZ" />
 
         <!-- twitter / x cards -->
         <Meta name="twitter:card" content="summary_large_image" />
-<!--        <Meta name="twitter:title" :content="pageTitle" />-->
+        <Meta name="twitter:title" :content="siteTitle" />
         <Meta name="twitter:description" :content="description" />
-<!--        <Meta name="twitter:image" :content="ogImage" />-->
+        <Meta name="twitter:image" :content="ogImage" />
 
         <!-- pwa/chrome ui barva -->
         <Meta name="theme-color" content="#0095ff" media="(prefers-color-scheme: dark)" />
