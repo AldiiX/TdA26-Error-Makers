@@ -113,7 +113,7 @@ async function submitRegisterForm(event: Event) {
     <main :class="$style.page">
         <section :class="[$style.card]" aria-labelledby="login-title">
             <header :class="$style.header">
-                <h1 id="login-title" :class="[$style.title, 'text-gradient']">Zaregistrovat se.</h1>
+                <h1 id="login-title" :class="[$style.title, 'text-gradient']">Zaregistrovat se</h1>
                 <p :class="$style.subtitle">Think different Academy</p>
             </header>
 

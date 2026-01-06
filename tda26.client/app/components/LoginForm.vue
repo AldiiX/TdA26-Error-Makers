@@ -56,7 +56,7 @@ async function submitLoginForm(event: Event) {
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
 
-        loginToast.resolve({
+        loginToast.reject({
             title: "Chyba přihlášení",
             message: "Zkontroluj uživatelské jméno a heslo a zkus to znovu.",
             duration: 6000

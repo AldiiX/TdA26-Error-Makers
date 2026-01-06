@@ -889,36 +889,52 @@ onMounted(() => {
             can-be-closed-by-clicking-outside
             :modalStyle="{ maxWidth: '500px' }"
         >
-            <div :class="$style.authModalHeader">
-                <h3>Pro hodnocení kurzu se musíš přihlásit</h3>
-                <div :class="$style.authTabs">
-                    <button 
-                        :class="[$style.authTab, { [$style.active]: authTab === 'login' }]"
-                        @click="authTab = 'login'"
-                        type="button"
-                    >
-                        Přihlášení
-                    </button>
-                    <button 
-                        :class="[$style.authTab, { [$style.active]: authTab === 'register' }]"
-                        @click="authTab = 'register'"
-                        type="button"
-                    >
-                        Registrace
-                    </button>
+            <SmoothSizeWrapper>
+                <div :class="$style.authModalHeader">
+                    <h3>Pro hodnocení kurzu se musíš přihlásit.</h3>
+
+                    <div :class="$style.authTabs">
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'login' }]"
+                            @click="authTab = 'login'"
+                            type="button"
+                        >
+                            Přihlášení
+                        </button>
+
+                        <button
+                            :class="[$style.authTab, { [$style.active]: authTab === 'register' }]"
+                            @click="authTab = 'register'"
+                            type="button"
+                        >
+                            Registrace
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div :class="$style.authFormContainer">
-                <LoginForm 
-                    v-if="authTab === 'login'" 
-                    @login-success="handleAuthSuccess"
-                />
-                <RegisterForm 
-                    v-else 
-                    @register-success="handleAuthSuccess"
-                />
-            </div>
+
+                <div :class="$style.authFormContainer">
+                    <Transition
+                        mode="out-in"
+                        :enter-active-class="$style.fadeEnterActive"
+                        :enter-from-class="$style.fadeEnterFrom"
+                        :enter-to-class="$style.fadeEnterTo"
+                        :leave-active-class="$style.fadeLeaveActive"
+                        :leave-from-class="$style.fadeLeaveFrom"
+                        :leave-to-class="$style.fadeLeaveTo"
+                    >
+                        <div :key="authTab">
+                            <LoginForm
+                                v-if="authTab === 'login'"
+                                @login-success="handleAuthSuccess"
+                            />
+                            <RegisterForm
+                                v-else
+                                @register-success="handleAuthSuccess"
+                            />
+                        </div>
+                    </Transition>
+                </div>
+            </SmoothSizeWrapper>
         </Modal>
     </Teleport>
 </template>
@@ -1212,6 +1228,7 @@ ul {
     margin-bottom: 24px;
     
     h3 {
+        margin: 0;
         margin-bottom: 16px;
     }
 }
@@ -1231,6 +1248,7 @@ ul {
     color: var(--text-color-secondary);
     font-size: 16px;
     font-weight: 600;
+    border-radius: 24px 24px 0 0;
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: -2px;
@@ -1248,5 +1266,25 @@ ul {
 
 .authFormContainer {
     margin-top: 24px;
+}
+
+
+// animace
+.fadeEnterActive {
+    transition: 300ms ease;
+}
+
+.fadeLeaveActive {
+    transition: 200ms ease;
+}
+
+.fadeEnterFrom,
+.fadeLeaveTo {
+    opacity: 0;
+}
+
+.fadeEnterTo,
+.fadeLeaveFrom {
+    opacity: 1;
 }
 </style>

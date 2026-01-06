@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
         left: 50%; top: 50%;
         transform: translate(-50%, -50%);
         background-color: var(--background-color-primary);
-        padding: 20px;
+        padding: 32px;
         border: 1px solid var(--background-color-secondary);
         border-radius: 24px;
         width: 90vw;
@@ -207,14 +207,18 @@ onBeforeUnmount(() => {
         }
 
         > .closebutton {
-            width: 24px;
-            height: 24px;
+            $size: 16px;
+
+            width: 32px;
+            aspect-ratio: 1/1;
             position: absolute;
             background-color: var(--modal-input-background-color);
             z-index: 1;
             border-radius: 100%;
-            top: 12px; right: 12px;
+            top: 12px;
+            right: 12px;
             transition-duration: 0.3s;
+            cursor: pointer;
 
             &:hover {
                 transition-duration: 0.3s;
@@ -224,9 +228,12 @@ onBeforeUnmount(() => {
             &::after {
                 position: absolute;
                 content: "";
-                width: 100%; height: 100%;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
                 mask-image: url("../../public/icons/x.svg");
-                mask-size: 70%;
+                mask-size: $size;
                 mask-repeat: no-repeat;
                 mask-position: center;
                 background-color: var(--text-color-secondary);
