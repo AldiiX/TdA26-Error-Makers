@@ -21,7 +21,7 @@ declare const grecaptcha: gRecaptcha;
 
 definePageMeta({
     layout: "normal-page-layout",
-    alias: ["/courses/:uuid"],
+    alias: ["/course/:uuid"],
     middleware: [
         defineNuxtRouteMiddleware(async (to) => {
             const uuid = to.params.uuid as string;
@@ -31,9 +31,9 @@ definePageMeta({
                 return navigateTo("/courses");
             }
 
-            // pokud je stranka /courses/:uuid, perm presmeruje na /course/:uuid
-            if (to.path.startsWith("/courses/")) {
-                return navigateTo(`/course/${uuid}`);
+            // pokud je stranka /course/:uuid, perm presmeruje na /courses/:uuid
+            if (to.path.startsWith("/course/")) {
+                return navigateTo(`/courses/${uuid}`);
             }
         })
     ]
@@ -73,7 +73,7 @@ useSeo({
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
     if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value.account?.uuid)) {
-        await navigateTo(`/course/${uuid}`);
+        await navigateTo(`/courses/${uuid}`);
     }
 }
 
@@ -626,11 +626,11 @@ const saveCourseChanges = async () => {
 };
 
 const editBackClick = () => {
-    window.location.href = `/course/${courseSmall.value?.uuid}`;
+    window.location.href = `/courses/${courseSmall.value?.uuid}`;
 };
 
 const editClick = () => {
-    window.location.href = `/course/${courseSmall.value?.uuid}?edit=true`;
+    window.location.href = `/courses/${courseSmall.value?.uuid}?edit=true`;
 };
 
 const handleAuthSuccess = (account: Account) => {

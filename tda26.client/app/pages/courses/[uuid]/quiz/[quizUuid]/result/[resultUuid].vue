@@ -17,7 +17,7 @@ const { data: result, pending: resultPending, error: resultError } = await useFe
 
 if (resultError.value) {
     console.error("Error fetching quiz result:", resultError.value);
-    await navigateTo(`/course/${uuid}`);
+    await navigateTo(`/courses/${uuid}`);
 }
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);

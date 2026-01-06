@@ -27,12 +27,12 @@ const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v2/cou
 
 if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value?.account?.uuid)) {
     // pokud neni vlastnik kurzu, nema pravo editovat
-    await navigateTo(`/course/${uuid}/quiz/${quizUuid}`);
+    await navigateTo(`/courses/${uuid}/quiz/${quizUuid}`);
 }
 
 if (quizError.value) {
     console.error("Error fetching quiz:", quizError.value);
-    await navigateTo(`/course/${uuid}`);
+    await navigateTo(`/courses/${uuid}`);
 }
 
 const oldQuiz = ref<Quiz | null>(null);
