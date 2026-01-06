@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components'
     import CourseCard from '~/components/pagespecific/CourseCard.vue'
     import type { Course } from '#shared/types'
     import NumberExponential from '~/components/NumberExponential.vue'
@@ -14,6 +13,13 @@
     definePageMeta({
         layout: 'normal-page-layout'
     })
+
+    // SEO
+    useSeo({
+        title: "Kurzy",
+        description: "Procházejte širokou nabídku interaktivních online kurzů. Najděte kurzy z různých oborů a začněte se vzdělávat zábavnou formou.",
+        keywords: "online kurzy, katalog kurzů, vzdělávací programy, e-learning kurzy, výuka online"
+    });
 
     type TagItem = { uuid: string; displayName: string }
 

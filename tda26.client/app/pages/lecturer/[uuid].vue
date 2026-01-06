@@ -49,7 +49,7 @@
     const route = useRoute();
     const uuid = route.params.uuid as string;
 
-    const key = `lecturer-${uuid}`;
+        const key = `lecturer-${uuid}`;
     const lecturer = useState<Lecturer>(key);
 
     const lecturerName = computed(() => getLecturerDisplayName(lecturer.value!));
@@ -58,13 +58,21 @@
         return (lecturer.value?.emails && lecturer.value.emails.length > 0) ||
                (lecturer.value?.mobileNumbers && lecturer.value.mobileNumbers.length > 0);
     });
+
+    // Dynamic SEO for lecturer page
+    const fullName = computed(() => 
+        `${lecturer.value?.titleBefore ? lecturer.value.titleBefore + ' ' : ''}${lecturer.value?.firstName || ''} ${lecturer.value?.middleName || ''} ${lecturer.value?.lastName || ''}${lecturer.value?.titleAfter ? ', ' + lecturer.value.titleAfter : ''}`.trim()
+    );
+    
+    useSeo({
+        title: fullName.value,
+        description: lecturer.value?.bio || `Profil lektora ${fullName.value} na Think Different Academy. Zjistěte více o kurzech a zkušenostech.`,
+        keywords: `lektor, ${fullName.value}, učitel, instruktor`,
+        type: 'article'
+    });
 </script>
 
 <template>
-    <Head>
-        <Title>{{ lecturer.firstName }} {{ lecturer.middleName }} {{ lecturer.lastName }} • Think different Academy</Title>
-    </Head>
-
     <div :class="$style.profile">
         <div :class="$style.left">
             <div :class="$style.name">

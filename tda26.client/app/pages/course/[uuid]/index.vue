@@ -7,7 +7,7 @@ import Modal from "~/components/Modal.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 import { ref, computed } from "vue";
 import QuizItem from "~/components/pagespecific/QuizItem.vue";
-import {ClientOnly, Head, NuxtLink, Title} from "#components";
+import {ClientOnly, NuxtLink} from "#components";
 import NumberExponential from "~/components/NumberExponential.vue";
 import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
@@ -58,6 +58,14 @@ if (courseSmallError.value || !_courseSmall.value) {
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
+
+// Dynamic SEO based on course data
+useSeo({
+    title: courseSmall.value.name,
+    description: courseSmall.value.description || `Zjistěte více o kurzu ${courseSmall.value.name} na Think Different Academy. Interaktivní vzdělávání s praxí.`,
+    keywords: `kurz, ${courseSmall.value.name}, online vzdělávání, e-learning`,
+    type: 'article'
+});
 
 
 

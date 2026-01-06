@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-import { Head, Title } from '#components';
 import type { Account, Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
@@ -15,6 +14,13 @@ definePageMeta({
         const user = useState<Account | null>('loggedAccount');
         if (!user.value) return navigateTo('/login');
     }
+});
+
+// SEO
+useSeo({
+    title: "Dashboard",
+    description: "Spravujte své kurzy, sledujte statistiky a přístup ke všem funkcím vaší vzdělávací platformy.",
+    noindex: true // Dashboard should not be indexed
 });
 
 const loggedAccount = useState<Account | null>('loggedAccount');

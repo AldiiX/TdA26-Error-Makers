@@ -1,6 +1,5 @@
 ﻿<script setup lang="ts">
 import { ref } from "vue";
-import { Head, Title } from "#components";
 import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
@@ -9,6 +8,14 @@ import type {Account} from "#shared/types";
 
 definePageMeta({
     layout: "normal-page-layout"
+});
+
+// SEO
+useSeo({
+    title: "Registrace",
+    description: "Zaregistrujte se na Think Different Academy a začněte svou cestu ke vzdělání. Vytvořte si účet a získejte přístup ke kvalitním online kurzům.",
+    keywords: "registrace, vytvoření účtu, nový účet, zdarma",
+    noindex: true // Registration pages shouldn't be indexed
 });
 
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
