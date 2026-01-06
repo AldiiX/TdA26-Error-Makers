@@ -73,6 +73,8 @@ useHead({
         <Meta property="og:description" :content="description" />
         <Meta property="og:url" :content="siteUrl" />
         <Meta property="og:image" :content="ogImage" />
+        <Meta property="og:image:width" content="344" />
+        <Meta property="og:image:height" content="376" />
         <Meta property="og:locale" content="cs_CZ" />
 
         <!-- twitter / x cards -->
