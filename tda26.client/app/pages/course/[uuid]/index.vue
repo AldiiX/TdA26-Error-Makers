@@ -41,6 +41,8 @@ const route = useRoute();
 const uuid = route.params.uuid as string;
 const isEditMode = route.query.edit === 'true';
 
+const isActionInProgress = ref(false);
+
 // server small fetch
 const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
     query: { full: false },
@@ -194,13 +196,27 @@ const handleMaterialUpdate = async () => {
 
     const material = selectedMaterial.value;
     const edited = editingMaterial.value;
+    
+    isActionInProgress.value = true;
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
+
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
 
     try {
         let updatedMaterial;
 
-        if (material.type === 'url') {
+        if (material.type === 'url') {            
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -237,11 +253,15 @@ const handleMaterialUpdate = async () => {
 
     } catch (err) {
         console.error("Update failed:", err);
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
 const handleMaterialDelete = async () => {
     if (!course.value || !course.value.materials) return;
+    
+    isActionInProgress.value = true;
 
     await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
         method: 'DELETE'
@@ -253,6 +273,8 @@ const handleMaterialDelete = async () => {
     }).catch((err) => {
         console.error("Error deleting material:", err);
         deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
+    }).finally(() => {
+        isActionInProgress.value = false;
     });
 };
 
@@ -260,8 +282,22 @@ const handleMaterialCreate = async () => {
     if (!course.value || !editingMaterial.value) return;
 
     const edited = editingMaterial.value;
+    
+    isActionInProgress.value = true;
 
     const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
+
+    if (edited.name.trim().length === 0) {
+        updateError.value = "Název materiálu je povinný.";
+        return;
+    }
+
+    try {
+        edited.url = formatUrl(edited.url);
+    } catch (error) {
+        updateError.value = "Zadaná URL adresa není platná.";
+        return;
+    }
 
     try {
         let createdMaterial;
@@ -306,8 +342,26 @@ const handleMaterialCreate = async () => {
 
     } catch (err) {
         console.error("Creation failed:", err);
+    } finally {
+        isActionInProgress.value = false;
     }
 };
+
+function formatUrl(url: string): string {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    
+    const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi);
+    
+    if (!urlRegex.test(url)) {
+        throw new Error("Invalid URL format");
+    }
+    
+    const parsedUrl = new URL(url);
+    
+    return parsedUrl.href;
+}
 
 const ownsCourse = computed(() => {
     if (!loggedAccount.value || !courseSmall.value) return false;
@@ -414,6 +468,8 @@ async function addRating(rating: "like" | "dislike" | null) {
 
 const handleQuizDelete = async () => {
     if (!course.value || !course.value.quizzes) return;
+    
+    isActionInProgress.value = true;
 
     await $fetch<void>(getBaseUrl() + `/api/v1/courses/${course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
         method: 'DELETE'
@@ -429,11 +485,15 @@ const handleQuizDelete = async () => {
     }).catch((err) => {
         console.error("Error deleting quiz:", err);
         deleteError.value = "Nepodařilo se smazat kvíz. Zkuste to prosím znovu.";
+    }).finally(() => {
+        isActionInProgress.value = false;
     });
 };
 
 const handleQuizCreate = async (e: Event) => {
     if (!course.value) return;
+    
+    isActionInProgress.value = true;
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -454,6 +514,7 @@ const handleQuizCreate = async (e: Event) => {
         );
 
         course.value.quizzes = course.value.quizzes ?? [];
+        newQuiz.createdAt = new Date().toISOString();
         course.value.quizzes.unshift(newQuiz);
 
         push.success({
@@ -468,6 +529,8 @@ const handleQuizCreate = async (e: Event) => {
     } catch (err) {
         console.error("Creation failed:", err);
         updateError.value = "Nepodařilo se vytvořit kvíz. Zkuste to prosím znovu.";
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
@@ -489,6 +552,8 @@ const updateCourseDescription = (newDescription: string) => {
 
 const saveCourseChanges = async () => {
     if (!course.value) return;
+    
+    isActionInProgress.value = true;
 
     // validace
     if (course.value.name.trim().length === 0) {
@@ -497,6 +562,9 @@ const saveCourseChanges = async () => {
             message: "Název kurzu nesmí být prázdný.",
             duration: 4000
         });
+        
+        isActionInProgress.value = false;
+        
         return;
     }
 
@@ -506,6 +574,8 @@ const saveCourseChanges = async () => {
             message: "Název kurzu nesmí být delší než 128 znaků.",
             duration: 4000
         });
+        
+        isActionInProgress.value = false;
         return;
     }
 
@@ -532,6 +602,8 @@ const saveCourseChanges = async () => {
             message: "Nepodařilo se uložit změny kurzu. Zkuste to prosím znovu.",
             duration: 4000
         });
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 
@@ -695,14 +767,14 @@ onMounted(() => {
         >
             <Button
                 button-style="primary"
-                :disabled="!isDirty"
+                :disabled="!isDirty || isActionInProgress"
                 @click="saveCourseChanges"
             >
                 Uložit změny
             </Button>
             <Button
                 button-style="secondary"
-                :disabled="!isDirty"
+                :disabled="!isDirty || isActionInProgress"
                 @click="saveCourseChanges(); editBackClick()"
             >
                 Uložit a ukončit úpravy
@@ -710,6 +782,7 @@ onMounted(() => {
             <Button
                 buttonStyle="tertiary"
                 @click="editBackClick"
+                :disabled="isActionInProgress"
                 >
                 Ukončit úpravy
             </Button>
@@ -733,12 +806,13 @@ onMounted(() => {
                 @file-selected="(_, file) => editingMaterial.file = file"
             />
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialCreate"
+                    :disabled="isActionInProgress"
                 >
                     Vytvořit materiál
                 </Button>
@@ -765,12 +839,13 @@ onMounted(() => {
 
 
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialUpdate"
+                    :disabled="isActionInProgress"
                 >
                     Uložit změny
                 </Button>
@@ -789,11 +864,12 @@ onMounted(() => {
             <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleMaterialDelete"
+                    :disabled="isActionInProgress"
                 >
                     Smazat materiál
                 </Button>
@@ -811,11 +887,12 @@ onMounted(() => {
             <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
                     @click="handleQuizDelete"
+                    :disabled="isActionInProgress"
                 >
                     Smazat kvíz
                 </Button>
@@ -841,15 +918,17 @@ onMounted(() => {
                     name="createQuizName"
                     max="128"
                     required
+                    :disabled="isActionInProgress"
                 />
 
                 <div :class="$style.modalButtons">
-                    <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
+                    <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                     <Button
                         button-style="primary"
                         accent-color="secondary"
                         type="submit"
+                        :disabled="isActionInProgress"
                     >
                         Vytvořit kvíz
                     </Button>
