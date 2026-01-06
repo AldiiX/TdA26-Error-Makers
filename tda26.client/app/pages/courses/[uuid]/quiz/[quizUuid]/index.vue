@@ -17,7 +17,7 @@ const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Qu
 
 if (quizError.value) {
     console.error("Error fetching quiz:", quizError.value);
-    await navigateTo(`/course/${uuid}`);
+    await navigateTo(`/courses/${uuid}`);
 }
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
@@ -64,7 +64,7 @@ const endQuiz = async () => {
 
     console.log("Quiz submitted, response:", response);
     
-    window.location.href = `/course/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`;
+    window.location.href = `/courses/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`;
 };
 
 const incrementQuestion = (i: number) => {

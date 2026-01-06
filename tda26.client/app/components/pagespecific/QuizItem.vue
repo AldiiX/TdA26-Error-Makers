@@ -25,7 +25,7 @@ const getHostname = (url?: string) => {
 
 <template>
     <div :class="$style.element">
-        <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info">
+        <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info">
 <!--                <div :class="$style.favicon">-->
 <!--                    <img v-if="quiz.faviconUrl" :src="quiz.faviconUrl" alt="Favicon" />-->
 <!--                </div>-->
@@ -44,7 +44,7 @@ const getHostname = (url?: string) => {
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
-            <NuxtLink :href="`/course/${course.uuid}/quiz/${quiz.uuid}/edit`">
+            <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
                 <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>
             <Button button-style="secondary" accent-color="secondary" @click="emit('delete', quiz)" style="width: 100%">Smazat</Button>

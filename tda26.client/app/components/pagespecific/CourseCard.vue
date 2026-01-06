@@ -173,7 +173,7 @@ const resetBgImage = async () => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="navigateTo(`/course/${course.uuid}?edit=true`)"
+                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                                 style="width: 100%"
                         >
                             Upravit
