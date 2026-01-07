@@ -35,7 +35,7 @@
         },
         {
             name: "Jakub Sokol",
-            github: "Jakooob",
+            github: "Jakooob14",
             role: "Fullstack · Architecture",
             avatar: "https://cloud0.emsio.cz/public/avatars/11c27d7cf633d7058554aba6b6941caa.webp",
             website: "https://jakubsokol.cz"
