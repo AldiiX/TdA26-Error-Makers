@@ -645,8 +645,8 @@ onMounted(() => {
     // Warn user about unsaved changes
     if (!import.meta.dev) {
         window.addEventListener("beforeunload", (e) => {
-            if (!isDirty) return;
-
+            if (!isDirty.value) return;
+            
             e.preventDefault();
             e.returnValue = "";
         });
