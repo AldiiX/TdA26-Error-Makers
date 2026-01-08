@@ -161,6 +161,7 @@ const feedPosts = computed<FeedPostView[]>(() => {
             purposeLabel: mapped.label,
             purposeType: mapped.type, 
             icon: mapped.icon,
+            color: mapped.color
         };
     });
 });
@@ -283,30 +284,32 @@ function mapFeedPurpose(
     label: string;
     type: FeedPurposeType;
     icon: string;
+    color: string;
 } {
     if (type === "manual") {
         return {
             label: "Oznámení",
             type: "announcement",
             icon: "/icons/megaphone.svg",
+            color: "--accent-color-secondary-theme"
         };
     }
 
     switch (purpose) {
         case "createMaterial":
-            return { label: "Přidán materiál", type: "material", icon: "/icons/file_plus.svg" };
+            return { label: "Přidán materiál", type: "material", icon: "/icons/addFile.svg", color: "--accent-color-primary" };
         case "updateMaterial":
-            return { label: "Upraven materiál", type: "material", icon: "/icons/file_edit.svg" };
+            return { label: "Upraven materiál", type: "material", icon: "/icons/editFile.svg", color: "--accent-color-primary" };
         case "deleteMaterial":
-            return { label: "Smazán materiál", type: "material", icon: "/icons/file_remove.svg" };
+            return { label: "Smazán materiál", type: "material", icon: "/icons/removeFile.svg", color: "--color-error" };
         case "createQuiz":
-            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg" };
+            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg", color: "--accent-color-primary" };
         case "updateQuiz":
-            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg" };
+            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg", color: "--accent-color-primary" };
         case "deleteQuiz":
-            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg" };
+            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg", color: "--color-error" };
         default:
-            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg" };
+            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg", color: "--accent-color-secondary-theme" };
     }
 }
 
@@ -944,9 +947,15 @@ watch(feedData, (val) => {
                             <ul v-else>
                                 <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
-                                        <div :class="$style.feedPostLeft">
-                                            <div :class="$style.iconWrapper">
-                                                <div :class="$style.feedPostIcon"></div>
+                                        <div :class="$style.feedPostLeft" :style="{
+                                            borderLeft: `8px solid var(${feedPost.color})`
+                                        }">
+                                            <div :class="$style.iconWrapper" :style="{
+                                                backgroundColor: `var(${feedPost.color})`
+                                            }">
+                                                <div :class="$style.feedPostIcon" :style="{
+                                                    maskImage: `url(${feedPost.icon})`,
+                                                }"></div>
                                             </div>
                                         </div>
                                         <div :class="$style.feedPostRight">
@@ -1608,8 +1617,6 @@ ul {
                         .feedPostLeft{
                             display: flex;
                             justify-content: center;
-                            
-                            border-left: 8px solid var(--accent-color-secondary-theme);
                             padding: 16px;
                             
                             .iconWrapper{
@@ -1620,14 +1627,13 @@ ul {
                                 border-radius: 48px;
                                 height: 48px;
                                 width: 48px;
-                                background-color: var(--accent-color-secondary-theme);
                                 
 
                                 .feedPostIcon{
-                                    height: 32px;
+                                    height: 24px;
+                                    margin-left: 4px;
                                     aspect-ratio: 1/1;
 
-                                    mask-image: url("/icons/megaphone.svg");
                                     mask-size: cover;
                                     mask-position: center;
                                     mask-repeat: no-repeat;
