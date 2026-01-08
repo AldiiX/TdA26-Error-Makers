@@ -146,16 +146,16 @@
 
         >.left {
             h1 {
-                width: clamp(0px, 50vw, 700px);
-                font-size: clamp(0px, 6vw, 96px);
-                line-height: clamp(0px, 5.5vw, 104px);
+                width: clamp(12px, 50vw, 700px);
+                font-size: clamp(12px, 6vw, 96px);
+                line-height: clamp(12px, 5.5vw, 104px);
                 position: relative;
                 color: var(--text-color-primary);
             }
 
             p {
                 width: 30vw;
-                font-size: clamp(0px, 1.5vw, 24px);
+                font-size: clamp(12px, 1.5vw, 24px);
 
                 margin-top: 2vw;
                 margin-bottom: 2vw;
@@ -166,7 +166,7 @@
                 position: relative;
 
                 .input {
-                    font-size: clamp(0px, 1.5vw, 20px);
+                    font-size: clamp(12px, 1.5vw, 20px);
                     width: 100%;
                     padding: 20px;
                     padding-right: 64px;
@@ -198,13 +198,13 @@
 
             >.btns {
                 display: flex;
-                gap: 1vw;
-                margin-bottom: 1vw;
+                gap: 8px;
+                margin-bottom: 8px;
                 color: unset;
                 
                 .btn{
-                    font-size: clamp(0px, 1.5vw, 20px);
-                    padding: 0.8vw 2vw;
+                    font-size: clamp(14px, 1.5vw, 20px);
+                    padding: 12px 24px;
                 }
             }
 
@@ -218,6 +218,12 @@
         font-size: clamp(0px, 2.5vw, 24px);
         margin-top: 2vw;
         opacity: 0.7;
+    }
+    
+    .btns {
+        .btn {
+            padding: 8px 16px;
+        }
     }
 }
 
