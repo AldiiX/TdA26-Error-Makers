@@ -140,6 +140,8 @@
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
+
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -280,5 +282,26 @@
     font-style: italic;
     font-size: 16px;
     color: var(--color-gray);
+}
+
+@media screen and (min-width: app.$mobileBreakpoint) and (max-width: app.$tabletBreakpoint) {
+    .nadpis {
+        font-size: 52px;
+    }
+}
+
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .nadpis {
+        font-size: 40px;
+    }
+
+    .container {
+        margin-top: -50px;
+    }
+    
+    .cookieIcon {
+        width: 60px;
+        height: 60px;
+    }
 }
 </style>

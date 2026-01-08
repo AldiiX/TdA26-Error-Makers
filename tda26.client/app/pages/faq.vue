@@ -105,6 +105,8 @@
 </template>
 
 <style module lang="scss">
+@use "../app" as app;
+
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -239,6 +241,38 @@
         font-size: 18px;
         color: var(--text-color-secondary);
         opacity: 0.7;
+    }
+}
+
+@media screen and (min-width: app.$mobileBreakpoint) and (max-width: app.$tabletBreakpoint) {
+    .nadpis {
+        font-size: 52px;
+    }
+}
+
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .nadpis {
+        font-size: 40px;
+    }
+    
+    .podnapis {
+        font-size: 16px;
+    }
+    
+    .faqItem {
+        padding: 16px;
+    }
+    
+    .question h3 {
+        font-size: 18px;
+    }
+    
+    .answer p {
+        font-size: 14px;
+    }
+    
+    .container {
+        margin-top: -50px;
     }
 }
 </style>
