@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-import { Head, Title } from '#components';
 import type { Account, Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
@@ -7,6 +6,11 @@ import { NuxtLink } from "#components";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
+import {computed, ref} from "vue";
+import ModalDestructive from "~/components/ModalDestructive.vue";
+import { onMounted, onUnmounted, nextTick, watch } from "vue";
+import { useSeo } from "~/composables/useSeo";
+import { push } from "notivue"
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -16,7 +20,16 @@ definePageMeta({
     }
 });
 
+// SEO
+useSeo({
+    title: "Dashboard",
+    description: "Spravujte své kurzy, sledujte statistiky a přístup ke všem funkcím vaší vzdělávací platformy.",
+    noindex: true // Dashboard should not be indexed
+});
+
 const loggedAccount = useState<Account | null>('loggedAccount');
+
+const isActionInProgress = ref(false);
 
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
@@ -83,7 +96,6 @@ const refreshCourses = async () => {
 };
 
 const selectedDeleteCourse = ref<Course | null>(null);
-const deleteError = ref<string | null>(null);
 
 const openDelete = (course: Course) => {
     selectedDeleteCourse.value = course;
@@ -92,6 +104,8 @@ const openDelete = (course: Course) => {
 
 const deleteCourse = async () => {
     if (!selectedDeleteCourse.value) return;
+    
+    isActionInProgress.value = true;
 
     try {
         await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
@@ -100,9 +114,22 @@ const deleteCourse = async () => {
 
         enabledModal.value = null;
         selectedDeleteCourse.value = null;
+
+        push.success({
+            title: "Kurz smazán",
+            message: "Kurz byl úspěšně smazán.",
+            duration: 5000
+        });
+
         await refreshCourses();
     } catch (err) {
-        deleteError.value = "Nepodařilo se smazat kurz.";
+        push.error({
+            title: "Chyba při mazání kurzu",
+            message: "Nepodařilo se smazat kurz. Zkuste to prosím znovu.",
+            duration: 5000
+        })
+    } finally {
+        isActionInProgress.value = false;
     }
 };
 </script>
@@ -162,21 +189,12 @@ const deleteCourse = async () => {
         </Modal>
 
         <!-- DELETE -->
-        <Modal :enabled="enabledModal === 'deleteCourse'" @close="enabledModal = null" can-be-closed-by-clicking-outside>
-            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ selectedDeleteCourse?.name }}</i>?</h3>
-            <p>Tuto akci nelze vrátit zpět.</p>
-            <div style="display: flex; gap: 16px; margin-top: 24px;">
-                <Button button-style="tertiary" @click="enabledModal = null">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    @click="deleteCourse"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
-        </Modal>
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteCourse'"
+            @close="enabledModal = null"
+            :yes-action="deleteCourse"
+            :description="`Opravdu si přeješ smazat kurz „${ selectedDeleteCourse?.name }”?`"
+        />
     </Teleport>
 </template>
 

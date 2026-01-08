@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-    import { Head, Title } from '#components'
     import CourseCard from '~/components/pagespecific/CourseCard.vue'
     import type { Course } from '#shared/types'
     import NumberExponential from '~/components/NumberExponential.vue'
@@ -14,6 +13,13 @@
     definePageMeta({
         layout: 'normal-page-layout'
     })
+
+    // SEO
+    useSeo({
+        title: "Kurzy",
+        description: "Procházejte širokou nabídku interaktivních online kurzů. Najděte kurzy z různých oborů a začněte se vzdělávat zábavnou formou.",
+        keywords: "online kurzy, katalog kurzů, vzdělávací programy, e-learning kurzy, výuka online"
+    });
 
     type TagItem = { uuid: string; displayName: string }
 
@@ -652,7 +658,7 @@
         position: absolute;
         content: '';
         inset: 0;
-        mask-image: url("../../public/icons/blob_curses1.svg");
+        mask-image: url(../../../public/icons/blob_curses1.svg);
         mask-size: cover;
         mask-position: top;
         mask-repeat: no-repeat;
@@ -793,7 +799,7 @@
                         width: 16px;
                         aspect-ratio: 1/1;
                         background-color: var(--text-color-primary);
-                        mask-image: url('../../public/icons/reset.svg');
+                        mask-image: url(../../../public/icons/reset.svg);
                         mask-size: cover;
                         mask-position: center;
                         mask-repeat: no-repeat;
@@ -834,7 +840,7 @@
                     font-family: Dosis, sans-serif;
 
                     .searchIcon {
-                        mask-image: url('../../public/icons/search.svg');
+                        mask-image: url('../../../public/icons/search.svg');
                         mask-size: cover;
                         mask-position: center;
                         mask-repeat: no-repeat;
@@ -984,7 +990,7 @@
                     .loading {
                         width: 64px;
                         height: 64px;
-                        mask: url('../../public/icons/loading1.svg');
+                        mask: url('../../../public/icons/loading1.svg');
                         mask-size: contain;
                         mask-repeat: no-repeat;
                         mask-position: center;

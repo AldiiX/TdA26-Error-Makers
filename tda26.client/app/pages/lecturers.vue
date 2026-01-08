@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-    import { Head, Title, ClientOnly } from '#components';
+    import { ClientOnly } from '#components';
     import LecturerCard from "~/components/pagespecific/LecturerCard.vue";
     import type {Lecturer} from "#shared/types";
     import TypeWriter from "~/components/TypeWriter.vue";
@@ -11,6 +11,13 @@
         layout: "normal-page-layout"
     });
 
+    // SEO
+    useSeo({
+        title: "Lektoři",
+        description: "Prohlédněte si profily našich lektorů a expertů. Každý lektor přináší své znalosti a zkušenosti do kurzů na Think Different Academy.",
+        keywords: "lektoři, učitelé, instruktoři, vyučující, experti"
+    });
+
     const { data: lecturers, pending: lecturersFetchPending, error: lecturersFetchError } = useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
         server: false,
         key: 'lecturers-list',
@@ -18,11 +25,6 @@
 </script>
 
 <template>
-    <Head>
-        <Title>Lektoři • Think different Academy</Title>
-    </Head>
-
-
     <!-- blobíci -->
     <Teleport to="#teleports">
         <div :class="$style.blobeffect"></div>

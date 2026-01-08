@@ -2,7 +2,7 @@
     import Header from "~/components/Header.vue";
     import Footer from "~/components/Footer.vue";
     import Button from "~/components/Button.vue";
-    import { Head, Title, NuxtLink } from '#components';
+    import { NuxtLink } from '#components';
     import TypeWriter from "~/components/TypeWriter.vue";
     import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
     import BlurText from "~/components/BlurText.vue";
@@ -15,6 +15,12 @@
         alias: "/"
     })
 
+    // SEO
+    useSeo({
+        title: "Domů",
+        description: "Objevuj kurzy, které tě posunou. Studium nemusí být jen o biflování. S našimi interaktivními kurzy se učení stává zábavou.",
+        keywords: "online kurzy, vzdělávání, e-learning, interaktivní kurzy, výuka, studium"
+    });
 
     // hledani kurzu
     const searchQuery = ref<string>("");
@@ -31,10 +37,6 @@
 
 
 <template>
-    <Head>
-        <Title>Domů • Think different Academy</Title>
-    </Head>
-
     <Header/>
 
     <CircleBlurBlob bottom="0vw" left="-5vw" blur="12vw" size="15vw" color="var(--accent-color-primary)" />

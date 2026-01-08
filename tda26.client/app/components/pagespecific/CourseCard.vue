@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed } from "vue";
+import {computed, ref} from "vue";
 import type { Course } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
@@ -173,7 +173,7 @@ const resetBgImage = async () => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="navigateTo(`/course/${course.uuid}?edit=true`)"
+                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                                 style="width: 100%"
                         >
                             Upravit

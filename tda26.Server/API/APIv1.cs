@@ -447,6 +447,7 @@ public class APIv1(
 
         var quizzes = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
+            .OrderByDescending(q => q.CreatedAt)
             .Include(q => q.Questions
                 .OrderBy(qs => qs.Order))
             .ThenInclude(qn => qn.Options)
