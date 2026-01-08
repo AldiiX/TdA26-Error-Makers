@@ -145,9 +145,10 @@ export interface FeedPost {
 
 export interface FeedPostView extends FeedPost {
     purposeLabel: string;
-    purposeType: "announcement" | "material" | "quiz";
     icon: string;
 }
+
+export type FeedPurposeType = "announcement" | "material" | "quiz";
 
 export interface Author {
     uuid: string;

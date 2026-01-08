@@ -5,10 +5,8 @@ using tda26.Server.DTOs;
 using tda26.Server.DTOs.Converters;
 using tda26.Server.DTOs.Mapping;
 
+
 namespace tda26.Server.Data.Models;
-
-
-
 
 
 [Table(name: "FeedPosts")]
@@ -49,7 +47,7 @@ public class FeedPost : Auditable {
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
     public enum FeedPostType { Manual, System }
     
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumCamelCaseConverter))]
     public enum FeedPurpose { CreateMaterial, UpdateMaterial, DeleteMaterial, CreateQuiz , UpdateQuiz, DeleteQuiz , Default }
 
     [NotMapped]

@@ -986,7 +986,7 @@ public class APIv1(
             .FirstOrDefaultAsync(ct);
 
         if (feedPost is null)
-            return NotFound(new { error = "Feed post not found in the specified course." });
+            return NotFound(new { error = "Feed post not found in the specified course."  });
 
         db.FeedPosts.Remove(feedPost);
         await db.SaveChangesAsync(ct);

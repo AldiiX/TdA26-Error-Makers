@@ -155,8 +155,8 @@ public static class Program {
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
-            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumLowerCaseConverter());
         });
+        
         builder.Services.AddHttpContextAccessor();
 
         // openapi generator (vestaveny v asp.net core)

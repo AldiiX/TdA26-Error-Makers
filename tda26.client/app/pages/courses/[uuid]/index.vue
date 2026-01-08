@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost, type FeedPostView} from "#shared/types";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost, type FeedPostView, type FeedPurposeType} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -148,32 +148,7 @@ useSeo({
     return `před ${diffDays} dny`;
 }
 
-function mapFeedPurpose(purpose?: string, type?: string) {
-    if (type === "manual") {
-        return {
-            label: "Oznámení",
-            type: "announcement", 
-            icon: "/icons/megaphone.svg",
-        };
-    }
 
-    switch (purpose?.toLowerCase()) {
-        case "creatematerial":
-            return { label: "Přidán materiál", type: "material", icon: "/icons/file_plus.svg" };
-        case "updatematerial":
-            return { label: "Upraven materiál", type: "material", icon: "/icons/file_edit.svg" };
-        case "deletematerial":
-            return { label: "Smazán materiál", type: "material", icon: "/icons/file_remove.svg" };
-        case "createquiz":
-            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg" };
-        case "updatequiz":
-            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg" };
-        case "deletequiz":
-            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg" };
-        default:
-            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg" };
-    }
-}
 
 const feedPosts = computed<FeedPostView[]>(() => {
     if (!feedData.value) return [];
@@ -269,7 +244,8 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | | "loginRequired" null>(null);
+
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 const authTab = ref<"login" | "register">("login");
@@ -300,7 +276,39 @@ watch(() => courseSmall.value?.likeCount, (newCount) => {
     }
 }, { immediate: true });
 
+function mapFeedPurpose(
+    purpose?: FeedPost["purpose"],
+    type?: FeedPost["type"]
+): {
+    label: string;
+    type: FeedPurposeType;
+    icon: string;
+} {
+    if (type === "manual") {
+        return {
+            label: "Oznámení",
+            type: "announcement",
+            icon: "/icons/megaphone.svg",
+        };
+    }
 
+    switch (purpose) {
+        case "createMaterial":
+            return { label: "Přidán materiál", type: "material", icon: "/icons/file_plus.svg" };
+        case "updateMaterial":
+            return { label: "Upraven materiál", type: "material", icon: "/icons/file_edit.svg" };
+        case "deleteMaterial":
+            return { label: "Smazán materiál", type: "material", icon: "/icons/file_remove.svg" };
+        case "createQuiz":
+            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg" };
+        case "updateQuiz":
+            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg" };
+        case "deleteQuiz":
+            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg" };
+        default:
+            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg" };
+    }
+}
 
 const openCreateMaterialModal = () => {
     editingMaterial.value = {
