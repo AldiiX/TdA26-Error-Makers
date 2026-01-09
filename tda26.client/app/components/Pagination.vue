@@ -49,6 +49,8 @@ const goNext = () => goToPage(props.page + 1);
 </template>
 
 <style module lang="scss">
+@use "../app" as app;
+
 .paginationContainer {
     display: flex;
     align-items: center;
@@ -111,6 +113,8 @@ const goNext = () => goToPage(props.page + 1);
     .pageNumber {
         font-size: 16px;
         cursor: pointer;
+        min-width: 36px;
+        min-height: 36px;
         width: 36px;
         height: 36px;
         display: flex;
@@ -145,6 +149,38 @@ const goNext = () => goToPage(props.page + 1);
         font-size: 16px;
         opacity: 0.5;
         user-select: none;
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .paginationContainer {
+        padding: 8px 16px;
+        gap: 8px;
+
+        .arrowWrapper{
+            width: 32px;
+            height: 32px;
+
+            .arrow {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        .pageNumber {
+            font-size: 14px;
+            min-width: 28px;
+            min-height: 28px;
+            width: 28px;
+            height: 28px;
+        }
+
+        .dots {
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+        }
     }
 }
 </style>

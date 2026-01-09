@@ -194,6 +194,7 @@ const resetBgImage = async () => {
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
 
 .liquid-glass {
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
@@ -574,6 +575,16 @@ const resetBgImage = async () => {
         opacity: 1;
         transform: translateY(0);
         filter: blur(0);
+    }
+}
+
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .bottom {
+        gap: 8px;
+        
+        .buttonsContainer .anotherInfo {
+            gap: 8px !important;
+        }
     }
 }
 </style>
