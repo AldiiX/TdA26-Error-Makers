@@ -183,6 +183,7 @@ const deleteCourse = async () => {
             @close="enabledModal = null" 
             can-be-closed-by-clicking-outside
             :modalStyle="{ maxWidth: '800px' }"
+            :class="$style.createCourseModal"
         >
             <h3>Vytvořit nový kurz</h3>
             <CourseForm
@@ -202,6 +203,13 @@ const deleteCourse = async () => {
 </template>
 
 <style module lang="scss">
+.createCourseModal {
+    h3 {
+        margin-top: 0;
+        margin-bottom: 32px;
+    }
+}
+
 .nadpis {
     font-size: 64px;
     margin: 0;

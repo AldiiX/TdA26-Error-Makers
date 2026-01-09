@@ -31,7 +31,7 @@ public class AuthService(
             UpdatedAt = acc.UpdatedAt,
         };
 
-        Console.WriteLine("Login attempt for json: " + json);
+        //Console.WriteLine("Login attempt for json: " + json);
 
         if (!Utilities.VerifyPassword(plainPassword, acc.Password)) return null;
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));

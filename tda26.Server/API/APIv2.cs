@@ -731,7 +731,7 @@ public class APIv2(
         return NoContent();
     }
 
-    [HttpPost("courses")]
+    [HttpPost("courses")] // tohle se na frontnendu nepouziva, jen pro API konzoli apod.
     public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body, CancellationToken ct = default) {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
@@ -740,7 +740,7 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        if(acc is not Lecturer && acc is not Admin) {
+        if(acc is not Lecturer and not Admin) {
             return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
         }
 
@@ -768,6 +768,10 @@ public class APIv2(
 
         if(string.IsNullOrEmpty(body.Course.Name) || string.IsNullOrEmpty(body.Course.Description)) {
             return BadRequest(new { error = "Course name and description are required." });
+        }
+
+        if(acc is not Lecturer and not Admin) {
+            return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
         }
 
         var newCourse = new Course {

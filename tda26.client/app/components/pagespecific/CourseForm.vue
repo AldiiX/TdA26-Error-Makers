@@ -176,7 +176,7 @@ const submitForm = async () => {
 .courseForm {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 24px;
 }
 
 .formGroup {
@@ -250,6 +250,10 @@ const submitForm = async () => {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+
+    button {
+        width: 124px;
+    }
 }
 
 .materialGroup {
