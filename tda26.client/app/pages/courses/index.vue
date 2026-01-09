@@ -643,6 +643,8 @@
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
+
 /* zbytek stylu nechavam stejny */
 .blob {
     width: 100vw;
@@ -935,19 +937,20 @@
             .filtersTop {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                padding: 0 16px;
-                height: 64px;
+                gap: 16px 48px;
+                padding: 20px;
+                min-height: 64px;
                 width: 100%;
                 border-radius: 24px;
+                flex-wrap: wrap;
 
                 @extend .liquid-glass;
 
                 >p {
                     font-size: 18px;
                     color: var(--text-color-secondary);
-                    margin-right: 48px;
-                    margin-left: 12px;
+                    margin: 0;
+                    margin-left: 4px;
                     font-weight: 600;
                 }
 
@@ -955,6 +958,8 @@
                     display: flex;
                     gap: 12px;
                     align-items: center;
+                    flex-wrap: wrap;
+                    margin: 0;
 
                     .sortOption {
                         appearance: none;
@@ -967,6 +972,7 @@
                         cursor: pointer;
                         transition-duration: 0.3s;
                         user-select: none;
+                        margin: 0;
 
                         &:hover {
                             transition-duration: 0.3s;
@@ -1017,6 +1023,63 @@
                 .pagination {
                     margin-top: 32px;
                     display: flex;
+                }
+            }
+        }
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .bottomContainer {
+        .right {
+            .courses {
+                .coursesWrapper {
+                    .coursesList {
+                        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)) !important;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    .section {
+        margin-top: -50px;
+    }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+    .section {
+        .topContainer {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+
+            .right {
+                width: auto;
+                margin-top: 32px;
+            }
+        }
+
+        .bottomContainer {
+            flex-direction: column;
+
+            .left {
+                width: 100%;
+                min-width: auto;
+                margin-top: 32px;
+                overflow: visible;
+            }
+
+            .right {
+                width: 100%;
+                
+                .course {
+                    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
                 }
             }
         }

@@ -332,13 +332,7 @@ onUnmounted(() => {
 // Mobile responsive
 @media (max-width: 600px) {
     .dropdown {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
         max-height: 60vh;
-        border-radius: 16px 16px 0 0;
     }
 
     .selectTrigger {

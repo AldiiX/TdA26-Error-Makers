@@ -377,5 +377,9 @@
     .techGrid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
+
+    .container {
+        margin-top: -50px;
+    }
 }
 </style>

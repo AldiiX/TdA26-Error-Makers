@@ -328,16 +328,16 @@ const handleMaterialUpdate = async () => {
     }
 
     try {
-        edited.url = formatUrl(edited.url);
-    } catch (error) {
-        updateError.value = "Zadaná URL adresa není platná.";
-        return;
-    }
-
-    try {
         let updatedMaterial;
 
-        if (material.type === 'url') {            
+        if (material.type === 'url') {
+            try {
+                edited.url = formatUrl(edited.url);
+            } catch (error) {
+                updateError.value = "Zadaná URL adresa není platná.";
+                return;
+            }
+            
             // JSON update
             updatedMaterial = await $fetch<Material>(url, {
                 method: "PUT",
@@ -414,16 +414,16 @@ const handleMaterialCreate = async () => {
     }
 
     try {
-        edited.url = formatUrl(edited.url);
-    } catch (error) {
-        updateError.value = "Zadaná URL adresa není platná.";
-        return;
-    }
-
-    try {
         let createdMaterial;
 
         if (edited.type === "url") {
+            try {
+                edited.url = formatUrl(edited.url);
+            } catch (error) {
+                updateError.value = "Zadaná URL adresa není platná.";
+                return;
+            }
+            
             // JSON create
             createdMaterial = await $fetch<Material>(url, {
                 method: "POST",
