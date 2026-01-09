@@ -70,43 +70,54 @@ function formatRelativeTime(
     const locale = options?.locale ?? 'cs-CZ';
     const weekLimitDays = options?.weekLimitDays ?? 7;
 
-    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    let date: Date;
 
-    if (diffMs < 0) {
-        return date.toLocaleDateString(locale);
+    if (typeof dateInput === 'string') {
+        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
+        date = hasTimezone
+            ? new Date(dateInput)
+            : new Date(dateInput.replace(' ', 'T'));
+    } else {
+        date = dateInput;
     }
 
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
+    const diffMs = Date.now() - date.getTime();
+
+    if (diffMs < 0 || diffMs < 60_000) {
+        return 'právě teď';
+    }
+
+    const minute = 60_000;
+    const hour = 3_600_000;
+    const day = 86_400_000;
 
     const diffMinutes = Math.floor(diffMs / minute);
     const diffHours = Math.floor(diffMs / hour);
     const diffDays = Math.floor(diffMs / day);
 
-    const isSingular = (n: number) => n === 1;
-
-    if (diffDays >= weekLimitDays) {
-        return date.toLocaleDateString(locale, {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    }
-
-    if (diffMinutes < 1) {
-        return 'právě teď';
-    } else if (diffMinutes < 60) {
-        return isSingular(diffMinutes) ? `před ${diffMinutes} minutou` : `před ${diffMinutes} minutami`;
+    if (diffMinutes < 60) {
+        return diffMinutes === 1
+            ? 'před 1 minutou'
+            : `před ${diffMinutes} minutami`;
     }
 
     if (diffHours < 24) {
-        return isSingular(diffHours) ? `před ${diffHours} hodinou` : `před ${diffHours} hodinami`;
+        return diffHours === 1
+            ? 'před 1 hodinou'
+            : `před ${diffHours} hodinami`;
     }
 
-    return isSingular(diffDays) ? `před ${diffDays} dnem` : `před ${diffDays} dny`;
+    if (diffDays < weekLimitDays) {
+        return diffDays === 1
+            ? 'před 1 dnem'
+            : `před ${diffDays} dny`;
+    }
+
+    return date.toLocaleDateString(locale, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 }
 
 
@@ -247,33 +258,87 @@ function mapFeedPurpose(
     type: FeedPurposeType;
     icon: string;
     color: string;
-    background?: string;
+    background: string;
 } {
+
+    // manuální oznámení
     if (type === "manual") {
         return {
             label: "Oznámení",
             type: "announcement",
             icon: "/icons/megaphone.svg",
             color: "--accent-color-secondary-theme",
-            background: "--accent-color-additional-1"
+            background: "--accent-color-secondary-theme",
         };
     }
 
     switch (purpose) {
+
+        // ===== MATERIAL =====
         case "createMaterial":
-            return { label: "Přidán materiál", type: "material", icon: "/icons/addFile.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
+            return {
+                label: "Přidán materiál",
+                type: "material",
+                icon: "/icons/addFile.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
         case "updateMaterial":
-            return { label: "Upraven materiál", type: "material", icon: "/icons/editFile.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
+            return {
+                label: "Upraven materiál",
+                type: "material",
+                icon: "/icons/editFile.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
         case "deleteMaterial":
-            return { label: "Smazán materiál", type: "material", icon: "/icons/deleteFile.svg", color: "--color-error", background: "--color-error" };
+            return {
+                label: "Smazán materiál",
+                type: "material",
+                icon: "/icons/deleteFile.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
+        // ===== QUIZ =====
         case "createQuiz":
-            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/addQuiz.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
+            return {
+                label: "Přidán kvíz",
+                type: "quiz",
+                icon: "/icons/addQuiz.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
         case "updateQuiz":
-            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/editQuiz.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
+            return {
+                label: "Upraven kvíz",
+                type: "quiz",
+                icon: "/icons/editQuiz.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
         case "deleteQuiz":
-            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/deleteQuiz.svg", color: "--color-error", background: "--color-error" };
+            return {
+                label: "Smazán kvíz",
+                type: "quiz",
+                icon: "/icons/deleteQuiz.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
+        // ===== fallback =====
         default:
-            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg", color: "--accent-color-secondary-theme", background: "--accent-color-additional-1" };
+            return {
+                label: "Aktivita",
+                type: "announcement",
+                icon: "/icons/activity.svg",
+                color: "--accent-color-secondary-theme",
+                background: "--accent-color-secondary-theme",
+            };
     }
 }
 
@@ -911,26 +976,31 @@ watch(feedData, (val) => {
                             <ul v-else>
                                 <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
-                                        <div :class="$style.feedPostLeft" :style="{
-                                            borderLeft: `8px solid var(${feedPost.color})`
-                                        }">
-                                            <div :class="$style.iconWrapper" :style="{
-                                                backgroundColor: `var(${feedPost.color})`
-                                            }">
-                                                <div :class="$style.feedPostIcon" :style="{
-                                                    maskImage: `url(${feedPost.icon})`
-                                                }"></div>
+                                        <div
+                                            :class="$style.feedPostLeft"
+                                            :style="{ borderLeft: `8px solid var(${feedPost.background})` }"
+                                        >
+                                            <div
+                                                :class="$style.iconWrapper"
+                                                :style="{ backgroundColor: `var(${feedPost.background})` }"
+                                            >
+                                                <div
+                                                    :class="$style.feedPostIcon"
+                                                    :style="{ maskImage: `url(${feedPost.icon})` }"
+                                                />
                                             </div>
                                         </div>
                                         <div :class="$style.feedPostRight">
                                             <div :class="$style.feedPostHeader">
-                                                <div :class="$style.feedPurpose" 
-                                                     :style="{
-                                                            backgroundColor: feedPost.background
-                                                              ? `var(${feedPost.background})`
-                                                              : `var(${feedPost.color})`
-                                                          }">
-                                                    <p :style="{ color: `var(${feedPost.color})` }">{{ feedPost.purposeLabel }}</p>
+                                                <div
+                                                    :class="$style.feedPurpose"
+                                                    :style="{
+                                                                backgroundColor: `var(${feedPost.background})`
+                                                            }"
+                                                >
+                                                    <p>
+                                                        {{ feedPost.purposeLabel }}
+                                                    </p>
                                                 </div>
                                                 <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
                                             </div>
@@ -1599,6 +1669,7 @@ ul {
                                 height: 48px;
                                 width: 48px;
                                 
+                                
 
                                 .feedPostIcon{
                                     height: 24px;
@@ -1629,10 +1700,13 @@ ul {
                                 .feedPurpose {
                                     display: flex;
                                     align-items: center;
+                                    padding: 4px 8px;
+                                    border-radius: 24px;
                                     
                                     p{
                                         height: auto;
                                         margin: 0;
+                                        color: var(--background-color-primary);
                                     }
                                 }
                                 
