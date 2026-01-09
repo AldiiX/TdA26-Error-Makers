@@ -63,20 +63,12 @@ const courseSmall = ref<Course>(_courseSmall.value!);
 function formatRelativeTime(
     dateInput: string | Date,
     options?: {
-        locale?: string;          // default: 'cs-CZ'
-        weekLimitDays?: number;   // default: 7
+        locale?: string;
+        weekLimitDays?: number;
     }
 ): string {
     const locale = options?.locale ?? 'cs-CZ';
     const weekLimitDays = options?.weekLimitDays ?? 7;
-// Dynamic SEO based on course data
-useSeo({
-    title: courseSmall.value.name,
-    description: courseSmall.value.description || `Zjistěte více o kurzu ${courseSmall.value.name} na Think Different Academy. Interaktivní vzdělávání s praxí.`,
-    keywords: `kurz, ${courseSmall.value.name}, online vzdělávání, e-learning`,
-    type: 'article'
-});
-
 
     const date = typeof dateInput === 'string'
         ? new Date(dateInput)
@@ -85,19 +77,21 @@ useSeo({
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
 
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-
     if (diffMs < 0) {
         return date.toLocaleDateString(locale);
     }
+
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
 
     const diffMinutes = Math.floor(diffMs / minute);
     const diffHours = Math.floor(diffMs / hour);
     const diffDays = Math.floor(diffMs / day);
 
-// více než týden → datum
+    const isSingular = (n: number) =>
+        n % 10 === 1 && n % 100 !== 11;
+
     if (diffDays >= weekLimitDays) {
         return date.toLocaleDateString(locale, {
             day: '2-digit',
@@ -106,43 +100,26 @@ useSeo({
         });
     }
 
-// MINUTY
     if (diffMinutes < 1) {
         return 'právě teď';
     }
 
-    if (diffMinutes === 1) {
-        return 'před minutou';
-    }
-
-    if (diffMinutes < 5) {
-        return `před ${diffMinutes} minutami`;
-    }
-
     if (diffMinutes < 60) {
+        if (isSingular(diffMinutes)) {
+            return `před ${diffMinutes} minutou`;
+        }
         return `před ${diffMinutes} minutami`;
-    }
-
-// HODINY
-    if (diffHours === 1) {
-        return 'před hodinou';
-    }
-
-    if (diffHours < 5) {
-        return `před ${diffHours} hodinami`;
     }
 
     if (diffHours < 24) {
+        if (isSingular(diffHours)) {
+            return `před ${diffHours} hodinou`;
+        }
         return `před ${diffHours} hodinami`;
     }
 
-// DNY
-    if (diffDays === 1) {
-        return 'před dnem';
-    }
-
-    if (diffDays < 5) {
-        return `před ${diffDays} dny`;
+    if (isSingular(diffDays)) {
+        return `před ${diffDays} dnem`;
     }
 
     return `před ${diffDays} dny`;
@@ -301,13 +278,13 @@ function mapFeedPurpose(
         case "updateMaterial":
             return { label: "Upraven materiál", type: "material", icon: "/icons/editFile.svg", color: "--accent-color-primary" };
         case "deleteMaterial":
-            return { label: "Smazán materiál", type: "material", icon: "/icons/removeFile.svg", color: "--color-error" };
+            return { label: "Smazán materiál", type: "material", icon: "/icons/deleteFile.svg", color: "--color-error" };
         case "createQuiz":
-            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/quiz_plus.svg", color: "--accent-color-primary" };
+            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/addQuiz.svg", color: "--accent-color-primary" };
         case "updateQuiz":
-            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/quiz_edit.svg", color: "--accent-color-primary" };
+            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/editQuiz.svg", color: "--accent-color-primary" };
         case "deleteQuiz":
-            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/quiz_remove.svg", color: "--color-error" };
+            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/deleteQuiz.svg", color: "--color-error" };
         default:
             return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg", color: "--accent-color-secondary-theme" };
     }
@@ -954,7 +931,7 @@ watch(feedData, (val) => {
                                                 backgroundColor: `var(${feedPost.color})`
                                             }">
                                                 <div :class="$style.feedPostIcon" :style="{
-                                                    maskImage: `url(${feedPost.icon})`,
+                                                    maskImage: `url(${feedPost.icon})`
                                                 }"></div>
                                             </div>
                                         </div>
