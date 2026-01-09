@@ -145,8 +145,10 @@ export interface FeedPost {
 
 export interface FeedPostView extends FeedPost {
     purposeLabel: string;
+    purposeType: FeedPurposeType;
     icon: string;
     color: string;
+    background: string;
 }
 
 export type FeedPurposeType = "announcement" | "material" | "quiz";

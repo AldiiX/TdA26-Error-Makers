@@ -70,10 +70,7 @@ function formatRelativeTime(
     const locale = options?.locale ?? 'cs-CZ';
     const weekLimitDays = options?.weekLimitDays ?? 7;
 
-    const date = typeof dateInput === 'string'
-        ? new Date(dateInput)
-        : dateInput;
-
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
 
@@ -89,8 +86,7 @@ function formatRelativeTime(
     const diffHours = Math.floor(diffMs / hour);
     const diffDays = Math.floor(diffMs / day);
 
-    const isSingular = (n: number) =>
-        n % 10 === 1 && n % 100 !== 11;
+    const isSingular = (n: number) => n === 1;
 
     if (diffDays >= weekLimitDays) {
         return date.toLocaleDateString(locale, {
@@ -102,27 +98,15 @@ function formatRelativeTime(
 
     if (diffMinutes < 1) {
         return 'právě teď';
-    }
-
-    if (diffMinutes < 60) {
-        if (isSingular(diffMinutes)) {
-            return `před ${diffMinutes} minutou`;
-        }
-        return `před ${diffMinutes} minutami`;
+    } else if (diffMinutes < 60) {
+        return isSingular(diffMinutes) ? `před ${diffMinutes} minutou` : `před ${diffMinutes} minutami`;
     }
 
     if (diffHours < 24) {
-        if (isSingular(diffHours)) {
-            return `před ${diffHours} hodinou`;
-        }
-        return `před ${diffHours} hodinami`;
+        return isSingular(diffHours) ? `před ${diffHours} hodinou` : `před ${diffHours} hodinami`;
     }
 
-    if (isSingular(diffDays)) {
-        return `před ${diffDays} dnem`;
-    }
-
-    return `před ${diffDays} dny`;
+    return isSingular(diffDays) ? `před ${diffDays} dnem` : `před ${diffDays} dny`;
 }
 
 
@@ -138,7 +122,8 @@ const feedPosts = computed<FeedPostView[]>(() => {
             purposeLabel: mapped.label,
             purposeType: mapped.type, 
             icon: mapped.icon,
-            color: mapped.color
+            color: mapped.color,
+            background: mapped.background ?? mapped.color
         };
     });
 });
@@ -262,31 +247,33 @@ function mapFeedPurpose(
     type: FeedPurposeType;
     icon: string;
     color: string;
+    background?: string;
 } {
     if (type === "manual") {
         return {
             label: "Oznámení",
             type: "announcement",
             icon: "/icons/megaphone.svg",
-            color: "--accent-color-secondary-theme"
+            color: "--accent-color-secondary-theme",
+            background: "--accent-color-additional-1"
         };
     }
 
     switch (purpose) {
         case "createMaterial":
-            return { label: "Přidán materiál", type: "material", icon: "/icons/addFile.svg", color: "--accent-color-primary" };
+            return { label: "Přidán materiál", type: "material", icon: "/icons/addFile.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
         case "updateMaterial":
-            return { label: "Upraven materiál", type: "material", icon: "/icons/editFile.svg", color: "--accent-color-primary" };
+            return { label: "Upraven materiál", type: "material", icon: "/icons/editFile.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
         case "deleteMaterial":
-            return { label: "Smazán materiál", type: "material", icon: "/icons/deleteFile.svg", color: "--color-error" };
+            return { label: "Smazán materiál", type: "material", icon: "/icons/deleteFile.svg", color: "--color-error", background: "--color-error" };
         case "createQuiz":
-            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/addQuiz.svg", color: "--accent-color-primary" };
+            return { label: "Přidán kvíz", type: "quiz", icon: "/icons/addQuiz.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
         case "updateQuiz":
-            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/editQuiz.svg", color: "--accent-color-primary" };
+            return { label: "Upraven kvíz", type: "quiz", icon: "/icons/editQuiz.svg", color: "--accent-color-primary", background: "--accent-color-additional-3" };
         case "deleteQuiz":
-            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/deleteQuiz.svg", color: "--color-error" };
+            return { label: "Smazán kvíz", type: "quiz", icon: "/icons/deleteQuiz.svg", color: "--color-error", background: "--color-error" };
         default:
-            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg", color: "--accent-color-secondary-theme" };
+            return { label: "Aktivita", type: "announcement", icon: "/icons/activity.svg", color: "--accent-color-secondary-theme", background: "--accent-color-additional-1" };
     }
 }
 
@@ -937,7 +924,14 @@ watch(feedData, (val) => {
                                         </div>
                                         <div :class="$style.feedPostRight">
                                             <div :class="$style.feedPostHeader">
-                                                <div :class="$style.feedPurpose">{{ feedPost.purposeLabel }}</div>
+                                                <div :class="$style.feedPurpose" 
+                                                     :style="{
+                                                            backgroundColor: feedPost.background
+                                                              ? `var(${feedPost.background})`
+                                                              : `var(${feedPost.color})`
+                                                          }">
+                                                    <p :style="{ color: `var(${feedPost.color})` }">{{ feedPost.purposeLabel }}</p>
+                                                </div>
                                                 <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
                                             </div>
                                             <div :class="$style.feedPostAuthor">
@@ -1622,24 +1616,37 @@ ul {
                         }
                         
                         .feedPostRight{ 
+                            display: flex;
+                            flex-direction: column;
+                            padding: 8px;
+                            gap: 8px;
                             
                             .feedPostHeader {
-                                
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
                                 
                                 .feedPurpose {
+                                    display: flex;
+                                    align-items: center;
                                     
+                                    p{
+                                        height: auto;
+                                        margin: 0;
+                                    }
                                 }
                                 
                                 .feedTimestamp {
                                     font-size: 14px;
                                     color: var(--text-color-secondary);
+                                    height: auto;
+                                    margin: 0;
                                 }
                             }
                             
                             .feedPostAuthor {
                                 display: flex;
                                 align-items: center;
-                                padding: 16px;
                                 gap: 12px;
 
                                 .feedAvatar {
@@ -1656,7 +1663,8 @@ ul {
                             .feedPostContent{
                                 
                                 p{
-                                    
+                                    height: auto;
+                                    margin: 0;
                                 }
                             }
                             
