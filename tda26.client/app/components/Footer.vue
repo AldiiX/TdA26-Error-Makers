@@ -9,6 +9,7 @@
             <div :class="$style.top">
                 <div :class="$style.left">
                     <div :class="$style.logo"></div>
+                    <h1 :class="[$style.mobileTitle, `text-gradient`]">Think different Academy</h1>
                 </div>
                 <div :class="$style.right">
                         
@@ -88,6 +89,7 @@
                 display: flex;
 
                 .logo {
+                    display: block;
                     mask-image: url(../../public/icons/Think-different-Academy_LOGO_textove-cerne.svg);
                     mask-size: contain;
                     mask-repeat: no-repeat;
@@ -95,6 +97,13 @@
                     height: 128px;
                     aspect-ratio: 2 / 1;
                     background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-theme));
+                }
+
+                .mobileTitle {
+                    display: none;
+                    font-size: 28px;
+                    font-weight: 700;
+                    text-align: center;
                 }
             }
 
@@ -248,4 +257,26 @@
         }
     }
 }
+
+@media screen and (max-width: 400px) {
+    .footer {
+        .divider{
+            
+            .top {
+                .left {
+                    justify-content: center;
+
+                    .logo {
+                        display: none;
+                    }
+
+                    .mobileTitle {
+                        display: block;
+                    }
+                }
+            }
+        }
+    }
+}
+
 </style>
