@@ -170,7 +170,13 @@ const isDeleteModalOpen = ref(false);
             <li v-for="(option, index) in question.options" :key="index">
                 <div
                     v-if="mode === 'edit'"
-                    :class="[$style.editableOptionContainer]"
+                    :class="[
+                        $style.editable,
+                        $style.editableOptionContainer,
+                        selectedIndices.includes(index) && $style.selected
+                    ]"
+                    :contenteditable="mode === 'edit'"
+                    @input="mode === 'edit' && updateOptionText(index, $event)"
                 >
                     <input
                         type="checkbox"
@@ -179,14 +185,7 @@ const isDeleteModalOpen = ref(false);
                         :class="$style.correctCheckbox"
                         title="Označit jako správnou odpověď"
                     />
-                    <div
-                        :class="[
-                            $style.editable,
-                            selectedIndices.includes(index) && $style.selected
-                        ]"
-                        :contenteditable="mode === 'edit'"
-                        @input="mode === 'edit' && updateOptionText(index, $event)"
-                    >{{ option }}</div>
+                    {{ option }}
                     <span
                         :class="$style.removeOption"
                         @click="emit('removeQuestionOption', index)"
@@ -361,11 +360,15 @@ const isDeleteModalOpen = ref(false);
             }
             
             .editableOptionContainer {
-                display: flex;
-                align-items: center;
+                padding: 8px 12px;
+                background-color: var(--background-color-tertiary);
+                border-radius: 8px;
                 gap: 8px;
-                width: 100%;
-                max-width: 210px;
+                
+                &.selected {
+                    background-color: var(--accent-color-primary);
+                    color: var(--accent-color-primary-text);
+                }
                 
                 .correctCheckbox {
                     width: 20px;
@@ -373,21 +376,7 @@ const isDeleteModalOpen = ref(false);
                     cursor: pointer;
                     flex-shrink: 0;
                     accent-color: var(--accent-color-primary);
-                }
-                
-                >div {
-                    flex: 1;
-                    min-height: 40px;
-                    padding: 8px 12px;
-                    display: flex;
-                    align-items: center;
-                    background-color: var(--background-color-tertiary);
-                    border-radius: 8px;
-                    
-                    &.selected {
-                        background-color: var(--accent-color-primary);
-                        color: var(--accent-color-primary-text);
-                    }
+                    margin-right: 4px;
                 }
                 
                 .removeOption {
@@ -402,6 +391,7 @@ const isDeleteModalOpen = ref(false);
                     mask-repeat: no-repeat;
                     cursor: pointer;
                     opacity: 0.6;
+                    margin-left: 4px;
 
                     &:hover {
                         opacity: 1;
