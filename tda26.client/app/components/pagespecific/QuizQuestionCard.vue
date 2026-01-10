@@ -166,8 +166,8 @@ const isDeleteModalOpen = ref(false);
                 @input="mode === 'edit' && updateQuestionText($event)"
             >{{ question.question }}</p>
         </div>
-        <ul :key="question.options.length">
-            <li v-for="(option, index) in question.options" :key="index">
+        <ul>
+            <li v-for="(option, index) in question.options" :key="`${question.uuid}-${index}`">
                 <div
                     v-if="mode === 'edit'"
                     @click="selectOption(index)"

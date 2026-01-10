@@ -147,8 +147,11 @@ const saveQuiz = async () => {
     });
 };
 
-const updateQuestion = (i: number, patch: Partial<Question>) => {    
+const updateQuestion = (questionUuid: string, patch: Partial<Question>) => {    
     if (!quiz.value) return;
+
+    const i = quiz.value.questions.findIndex(q => q.uuid === questionUuid);
+    if (i === -1) return;
 
     quiz.value.questions.splice(i, 1, {
         ...quiz.value.questions[i],
@@ -271,7 +274,7 @@ const addQuestionOption = (i: number) => {
     
     question.options.push(`Možnost ${question.options.length + 1}`);
     
-    updateQuestion(i, { options: question.options });
+    updateQuestion(question.uuid, { options: question.options });
     
     questionRenderRemountKey.value++;
 };
@@ -295,7 +298,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 
     question.options.splice(optionIndex, 1);
 
-    updateQuestion(questionIndex, { options: question.options });
+    updateQuestion(question.uuid, { options: question.options });
 
     questionRenderRemountKey.value++;
 };
@@ -343,7 +346,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
             :question="quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]!"
             :key="questionRenderKey"
             mode="edit"
-            @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+            @update:question="updateQuestion(quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex].uuid, $event)"
             @deleteQuestion="deleteQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
             @addQuestionOption="addQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
             @removeQuestionOption="removeQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
