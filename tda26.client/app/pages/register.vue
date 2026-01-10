@@ -135,7 +135,7 @@ async function submitRegisterForm(event: Event) {
                         inputmode="text"
                         autocomplete="username"
                         required
-                        placeholder="jan.novak"
+                        placeholder="karelhonsig"
                     />
                 </div>
                 
@@ -150,7 +150,7 @@ async function submitRegisterForm(event: Event) {
                         inputmode="text"
                         autocomplete="email"
                         required
-                        placeholder="jannovak@seznam.cz"
+                        placeholder="karel@honsig.eu"
                     />
                 </div>
 

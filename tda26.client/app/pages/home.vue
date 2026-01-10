@@ -198,13 +198,13 @@
 
             >.btns {
                 display: flex;
-                gap: 8px;
-                margin-bottom: 8px;
+                gap: 16px;
+                margin-bottom: 16px;
                 color: unset;
                 
                 .btn{
                     font-size: clamp(14px, 1.5vw, 20px);
-                    padding: 12px 24px;
+                    padding: 16px 32px;
                 }
             }
 
@@ -271,6 +271,15 @@
             >.right {
                 display: none;
             }
+        }
+    }
+
+    .btns {
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+
+        .btn {
+            padding: 12px 24px !important;
         }
     }
 }

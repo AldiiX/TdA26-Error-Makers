@@ -112,7 +112,7 @@ async function submitLoginForm(event: Event) {
                         inputmode="text"
                         autocomplete="username"
                         required
-                        placeholder="jan.novak"
+                        placeholder="karelhonsig"
                     />
                 </div>
 
