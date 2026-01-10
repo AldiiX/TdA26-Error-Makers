@@ -147,6 +147,11 @@ const saveQuiz = async () => {
     });
 };
 
+const saveAndExit = async () => {
+    await saveQuiz();
+    await navigateTo(`/courses/${uuid}/quiz/${quizUuid}`);
+};
+
 const updateQuestion = (i: number, patch: Partial<Question>) => {    
     if (!quiz.value) return;
 
@@ -354,7 +359,10 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 <!--            <p @click="incrementQuestion(1)">&gt;</p>-->
 <!--        </div>-->
         
-        <Button @click="saveQuiz" :disabled="!canSave || isActionInProgress">Uložit</Button>
+        <div :class="$style.buttonGroup">
+            <Button @click="saveQuiz" :disabled="!canSave || isActionInProgress" button-style="secondary">Uložit</Button>
+            <Button @click="saveAndExit" :disabled="!canSave || isActionInProgress" button-style="primary">Uložit a odejít</Button>
+        </div>
     </div>
 </template>
 
@@ -372,7 +380,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    width: 500px;
+    width: 600px;
     margin: auto;
     
     >p {
@@ -380,6 +388,16 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         font-weight: 600;
         margin: 0;
         text-align: center;
+    }
+    
+    .buttonGroup {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+
+        button {
+            width: 100%;
+        }
     }
     
     .controls {

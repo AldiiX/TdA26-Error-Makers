@@ -170,17 +170,27 @@ const isDeleteModalOpen = ref(false);
             <li v-for="(option, index) in question.options" :key="index">
                 <div
                     v-if="mode === 'edit'"
-                    @click="selectOption(index)"
                     :class="[
                         $style.editable,
+                        $style.editableOptionContainer,
                         selectedIndices.includes(index) && $style.selected
-                        ]"
-                    :contenteditable="mode === 'edit'"
-                    @input="mode === 'edit' && updateOptionText(index, $event)"
-                >{{ option }} <span
-                    :class="$style.removeOption"
-                    @click="emit('removeQuestionOption', index)"
-                ></span></div>
+                    ]"
+                >
+                    <p contenteditable @input="mode === 'edit' && updateOptionText(index, $event)">{{ option }}</p>
+
+                    <input
+                        type="checkbox"
+                        :checked="selectedIndices.includes(index)"
+                        @change="selectOption(index)"
+                        :class="$style.correctCheckbox"
+                        title="Označit jako správnou odpověď"
+                    />
+                    <span
+                        :class="$style.removeOption"
+                        @click="emit('removeQuestionOption', index)"
+                        title="Odebrat tuto možnost"
+                    ></span>
+                </div>
                 <Button
                     v-else
                     :button-style="selectedIndices.includes(index) && mode !== 'result' ? 'primary' : 'tertiary'"
@@ -316,6 +326,7 @@ const isDeleteModalOpen = ref(false);
 
         p {
             font-size: 32px;
+            word-break: break-all;
         }
     }
 
@@ -336,31 +347,68 @@ const isDeleteModalOpen = ref(false);
 
             button, >div {
                 width: 100%;
-                max-width: 210px;
                 min-height: 40px;
                 border: none !important;
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                justify-content: start;
+
+                >p {
+                    margin: 0;
+                    width: 100%;
+
+                    &[contenteditable] {
+                        outline: none;
+                    }
+                }
                 
                 &.selected {
                     background-color: var(--accent-color-primary);
                     color: var(--accent-color-primary-text);
                 }
+            }
+            
+            .editableOptionContainer {
+                padding: 8px 12px;
+                background-color: var(--background-color-tertiary);
+                border-radius: 8px;
+                width: 100%;
+
+                &.selected {
+                    background-color: var(--accent-color-primary);
+                    color: var(--accent-color-primary-text);
+
+                    .removeOption {
+                        background-color: var(--accent-color-primary-text);
+                    }
+
+                    .correctCheckbox {
+
+                    }
+                }
+                
+                .correctCheckbox {
+                    width: 20px;
+                    height: 20px;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    margin: 0;
+                    margin-right: 4px;
+                    accent-color: var(--accent-color-primary);
+                }
                 
                 .removeOption {
                     display: inline-block;
-                    width: 16px;
-                    height: 16px;
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
                     background-color: var(--text-color-secondary);
-                    mask-image: url('/icons/x.svg');
-                    mask-size: cover;
+                    mask-image: url('/icons/trash.svg');
+                    mask-size: 20px;
                     mask-position: center;
                     mask-repeat: no-repeat;
                     cursor: pointer;
-                    vertical-align: middle;
                     opacity: 0.6;
-                    margin-left: auto;
 
                     &:hover {
                         opacity: 1;
