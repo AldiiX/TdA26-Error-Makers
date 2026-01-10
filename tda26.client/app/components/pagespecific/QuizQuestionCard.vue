@@ -415,17 +415,23 @@ const isDeleteModalOpen = ref(false);
             }
         }
         
-        .addOptionButton::before {
-            content: '';
-            mask-image: url('/icons/plus.svg');
-            mask-size: cover;
-            mask-position: center;
-            mask-repeat: no-repeat;
-            width: 24px;
-            height: 24px;
-            display: inline-block;
-            background-color: var(--text-color-secondary);
-            position: absolute;
+        .addOptionButton {
+            position: relative;
+            
+            &::before {
+                content: '';
+                mask-image: url('/icons/plus.svg');
+                mask-size: cover;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                width: 24px;
+                height: 24px;
+                display: inline-block;
+                background-color: var(--text-color-secondary);
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+            }
         }
     }
 }
