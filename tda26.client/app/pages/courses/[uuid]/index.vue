@@ -953,7 +953,7 @@ onMounted(() => {
                 />
 
                 <div :class="$style.modalButtons">
-                    <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                    <Button type="reset" button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                     <Button
                         button-style="primary"
