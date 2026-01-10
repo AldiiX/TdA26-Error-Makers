@@ -170,17 +170,28 @@ const isDeleteModalOpen = ref(false);
             <li v-for="(option, index) in question.options" :key="index">
                 <div
                     v-if="mode === 'edit'"
-                    @click="selectOption(index)"
-                    :class="[
-                        $style.editable,
-                        selectedIndices.includes(index) && $style.selected
+                    :class="[$style.editableOptionContainer]"
+                >
+                    <input
+                        type="checkbox"
+                        :checked="selectedIndices.includes(index)"
+                        @change="selectOption(index)"
+                        :class="$style.correctCheckbox"
+                        title="Označit jako správnou odpověď"
+                    />
+                    <div
+                        :class="[
+                            $style.editable,
+                            selectedIndices.includes(index) && $style.selected
                         ]"
-                    :contenteditable="mode === 'edit'"
-                    @input="mode === 'edit' && updateOptionText(index, $event)"
-                >{{ option }} <span
-                    :class="$style.removeOption"
-                    @click="emit('removeQuestionOption', index)"
-                ></span></div>
+                        :contenteditable="mode === 'edit'"
+                        @input="mode === 'edit' && updateOptionText(index, $event)"
+                    >{{ option }}</div>
+                    <span
+                        :class="$style.removeOption"
+                        @click="emit('removeQuestionOption', index)"
+                    ></span>
+                </div>
                 <Button
                     v-else
                     :button-style="selectedIndices.includes(index) && mode !== 'result' ? 'primary' : 'tertiary'"
@@ -347,20 +358,50 @@ const isDeleteModalOpen = ref(false);
                     background-color: var(--accent-color-primary);
                     color: var(--accent-color-primary-text);
                 }
+            }
+            
+            .editableOptionContainer {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+                max-width: 210px;
+                
+                .correctCheckbox {
+                    width: 20px;
+                    height: 20px;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    accent-color: var(--accent-color-primary);
+                }
+                
+                >div {
+                    flex: 1;
+                    min-height: 40px;
+                    padding: 8px 12px;
+                    display: flex;
+                    align-items: center;
+                    background-color: var(--background-color-tertiary);
+                    border-radius: 8px;
+                    
+                    &.selected {
+                        background-color: var(--accent-color-primary);
+                        color: var(--accent-color-primary-text);
+                    }
+                }
                 
                 .removeOption {
                     display: inline-block;
-                    width: 16px;
-                    height: 16px;
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
                     background-color: var(--text-color-secondary);
                     mask-image: url('/icons/x.svg');
                     mask-size: cover;
                     mask-position: center;
                     mask-repeat: no-repeat;
                     cursor: pointer;
-                    vertical-align: middle;
                     opacity: 0.6;
-                    margin-left: auto;
 
                     &:hover {
                         opacity: 1;
