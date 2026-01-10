@@ -676,7 +676,7 @@
 }
 
 .liquid-glass {
-    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 24px rgba(0, 0, 0, 0.1);
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
