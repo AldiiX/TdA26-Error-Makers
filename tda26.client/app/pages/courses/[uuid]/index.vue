@@ -16,6 +16,7 @@ import { push } from "notivue";
 import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 import LoginForm from "~/components/LoginForm.vue";
 import RegisterForm from "~/components/RegisterForm.vue";
+import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -59,69 +60,6 @@ if (courseSmallError.value || !_courseSmall.value) {
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
-
-function formatRelativeTime(
-    dateInput: string | Date,
-    options?: {
-        locale?: string;
-        weekLimitDays?: number;
-    }
-): string {
-    const locale = options?.locale ?? 'cs-CZ';
-    const weekLimitDays = options?.weekLimitDays ?? 7;
-
-    let date: Date;
-
-    if (typeof dateInput === 'string') {
-        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
-        date = hasTimezone
-            ? new Date(dateInput)
-            : new Date(dateInput.replace(' ', 'T'));
-    } else {
-        date = dateInput;
-    }
-
-    const diffMs = Date.now() - date.getTime();
-
-    if (diffMs < 0 || diffMs < 60_000) {
-        return 'právě teď';
-    }
-
-    const minute = 60_000;
-    const hour = 3_600_000;
-    const day = 86_400_000;
-
-    const diffMinutes = Math.floor(diffMs / minute);
-    const diffHours = Math.floor(diffMs / hour);
-    const diffDays = Math.floor(diffMs / day);
-
-    if (diffMinutes < 60) {
-        return diffMinutes === 1
-            ? 'před 1 minutou'
-            : `před ${diffMinutes} minutami`;
-    }
-
-    if (diffHours < 24) {
-        return diffHours === 1
-            ? 'před 1 hodinou'
-            : `před ${diffHours} hodinami`;
-    }
-
-    if (diffDays < weekLimitDays) {
-        return diffDays === 1
-            ? 'před 1 dnem'
-            : `před ${diffDays} dny`;
-    }
-
-    return date.toLocaleDateString(locale, {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
-
-
-
 const feedPosts = computed<FeedPostView[]>(() => {
     if (!feedData.value) return [];
 
@@ -249,6 +187,66 @@ watch(() => courseSmall.value?.likeCount, (newCount) => {
         optimisticLikeCount.value = newCount;
     }
 }, { immediate: true });
+
+function formatRelativeTime(
+    dateInput: string | Date,
+    options?: {
+        locale?: string;
+        weekLimitDays?: number;
+    }
+): string {
+    const locale = options?.locale ?? 'cs-CZ';
+    const weekLimitDays = options?.weekLimitDays ?? 7;
+
+    let date: Date;
+
+    if (typeof dateInput === 'string') {
+        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
+        date = hasTimezone
+            ? new Date(dateInput)
+            : new Date(dateInput.replace(' ', 'T'));
+    } else {
+        date = dateInput;
+    }
+
+    const diffMs = Date.now() - date.getTime();
+
+    if (diffMs < 0 || diffMs < 60_000) {
+        return 'právě teď';
+    }
+
+    const minute = 60_000;
+    const hour = 3_600_000;
+    const day = 86_400_000;
+
+    const diffMinutes = Math.floor(diffMs / minute);
+    const diffHours = Math.floor(diffMs / hour);
+    const diffDays = Math.floor(diffMs / day);
+
+    if (diffMinutes < 60) {
+        return diffMinutes === 1
+            ? 'před 1 minutou'
+            : `před ${diffMinutes} minutami`;
+    }
+
+    if (diffHours < 24) {
+        return diffHours === 1
+            ? 'před 1 hodinou'
+            : `před ${diffHours} hodinami`;
+    }
+
+    if (diffDays < weekLimitDays) {
+        return diffDays === 1
+            ? 'před 1 dnem'
+            : `před ${diffDays} dny`;
+    }
+
+    return date.toLocaleDateString(locale, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
 
 function mapFeedPurpose(
     purpose?: FeedPost["purpose"],
@@ -814,6 +812,14 @@ onMounted(() => {
     }
 });
 
+const openCreateFeedPost = () => {
+    editingFeedPost.value.message = "";
+    editingFeedPost.value.type = "manual";
+    feedPostError.value = null;
+    enabledModal.value = "createFeedPost";
+};
+
+
 const handleFeedPostCreate = async () => {
     if (!course.value) return;
 
@@ -867,6 +873,111 @@ const editingFeedPost = ref<{
     message: "",
     type: "manual"
 });
+
+const openUpdateFeedPost = (post: FeedPost) => {
+    selectedFeedPost.value = post;
+
+    editingFeedPost.value.message = post.message;
+    editingFeedPost.value.type = post.type;
+
+    feedPostError.value = null;
+    enabledModal.value = "updateFeedPost";
+};
+
+const openDeleteFeedPost = (post: FeedPost) => {
+    selectedFeedPost.value = post;
+    feedPostError.value = null;
+    enabledModal.value = "deleteFeedPost";
+};
+
+
+const handleFeedPostUpdate = async () => {
+    if (!course.value || !selectedFeedPost.value) return;
+
+    if (!editingFeedPost.value.message.trim()) {
+        feedPostError.value = "Text příspěvku nesmí být prázdný.";
+        return;
+    }
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        const updated = await $fetch<FeedPost>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
+            {
+                method: "PUT",
+                body: {
+                    message: editingFeedPost.value.message,
+                    type: editingFeedPost.value.type
+                }
+            }
+        );
+
+        // update v local feedu
+        feedData.value = feedData.value?.map(fp =>
+            fp.uuid === updated.uuid ? updated : fp
+        ) ?? [];
+
+        push.success({
+            title: "Příspěvek upraven",
+            message: "Změny byly uloženy.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        selectedFeedPost.value = null;
+
+        editingFeedPost.value.message = "";
+        editingFeedPost.value.type = "manual";
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se upravit příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const handleFeedPostDelete = async () => {
+    if (!course.value || !selectedFeedPost.value) return;
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        await $fetch(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
+            { method: "DELETE" }
+        );
+
+        feedData.value = feedData.value?.filter(
+            fp => fp.uuid !== selectedFeedPost.value?.uuid
+        ) ?? [];
+
+        push.success({
+            title: "Příspěvek smazán",
+            message: "Příspěvek byl odstraněn.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        selectedFeedPost.value = null;
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se smazat příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const editingFeedPostModal = ref({
+    message: "",
+    type: "manual" as FeedPost["type"]
+});
+
+const selectedFeedPost = ref<FeedPost | null>(null);
 
 const feedPostError = ref<string | null>(null);
 
@@ -1002,7 +1113,13 @@ watch(feedData, (val) => {
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
                             <div v-if="feedData" :class="$style.activityHeader">
-                                <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createFeedPost'" :class="$style.addFeedPost">
+                                <Button
+                                    v-if="ownsCourse"
+                                    button-style="primary"
+                                    accent-color="primary"
+                                    @click="openCreateFeedPost"
+                                    :class="$style.addFeedPost"
+                                >
                                     Přidat příspěvek
                                 </Button>
 
@@ -1048,6 +1165,27 @@ watch(feedData, (val) => {
                                             </div>
                                         </div>
                                         <div :class="$style.feedPostRight">
+                                            <div
+                                                v-if="ownsCourse"
+                                                :class="$style.feedPostActions"
+                                            >
+                                                <Button
+                                                    button-style="secondary"
+                                                    accent-color="secondary"
+                                                    @click="openUpdateFeedPost(feedPost)"
+                                                >
+                                                    Upravit
+                                                </Button>
+
+                                                <Button
+                                                    button-style="secondary"
+                                                    accent-color="secondary"
+                                                    :style="{ '--color': 'var(--color-error)' }"
+                                                    @click="openDeleteFeedPost(feedPost)"
+                                                >
+                                                    Smazat
+                                                </Button>
+                                            </div>
                                             <div :class="$style.feedPostHeader">
                                                 <div
                                                     :class="$style.feedPurpose"
@@ -1076,6 +1214,13 @@ watch(feedData, (val) => {
                                             </div>
                                         </div>
                                     </div>
+                                    
+<!--                                    <FeedPostItem-->
+<!--                                        :feed-post="feedPost"-->
+<!--                                        :edit-mode="ownsCourse"-->
+<!--                                        @edit="openEditFeedPost"-->
+<!--                                        @delete="openDeleteFeedPost"-->
+<!--                                    />-->
                                 </li>
                             </ul>
                         </div>
@@ -1345,7 +1490,6 @@ watch(feedData, (val) => {
                     v-model="editingFeedPost.message"
                     :class="$style.feedTextarea"
                     rows="5"
-                    required
                     placeholder="Napiš oznámení pro studenty…"
                     :disabled="isActionInProgress"
                 />
@@ -1375,8 +1519,53 @@ watch(feedData, (val) => {
                 {{ updateError }}
             </p>
         </Modal>
-            
-            
+        
+        <!-- UPDATE FEED POST -->
+        <Modal
+            :enabled="enabledModal === 'updateFeedPost'"
+            @close="enabledModal = null"
+            :modalStyle="{ maxWidth: '600px' }"
+        >
+            <h3>Úprava příspěvku</h3>
+
+            <textarea
+                v-model="editingFeedPost.message"
+                :class="$style.feedTextarea"
+                rows="5"
+                :disabled="isActionInProgress"
+            />
+
+            <div :class="$style.modalButtons">
+                <Button button-style="tertiary" @click="enabledModal = null">
+                    Zrušit
+                </Button>
+
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="handleFeedPostUpdate"
+                    :disabled="isActionInProgress"
+                >
+                    Uložit změny
+                </Button>
+            </div>
+
+            <p v-if="feedPostError" class="error-text">{{ feedPostError }}</p>
+        </Modal>
+        
+        <!-- DELETE FEED POST -->
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteFeedPost'"
+            @close="enabledModal = null"
+            title="Smazání příspěvku"
+            description="Opravdu chceš smazat tento příspěvek? Tuto akci nelze vrátit."
+            :yesAction="handleFeedPostDelete"
+        >
+            <p>
+                Opravdu chceš smazat tento příspěvek?
+            </p>
+        </ModalDestructive>
+        
     </Teleport>
 </template>
 
@@ -1813,26 +2002,36 @@ ul {
 
                     .feedPostWrapper {
                         display: flex;
+                        position: relative;
                         border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
                         border-left: none;
                         border-radius: 12px;
                         overflow: hidden;
-                        
+
+                        &:hover {
+                            .feedPostActions {
+                                opacity: 1;
+                                pointer-events: auto;
+                                transform: translateY(0);
+                            }
+                        }
+
+
                         .feedPostLeft{
                             display: flex;
                             justify-content: center;
                             padding: 16px;
-                            
+
                             .iconWrapper{
                                 display: flex;
                                 justify-content: center;
                                 align-items: center;
-                                
+
                                 border-radius: 48px;
                                 height: 48px;
                                 width: 48px;
-                                
-                                
+
+
 
                                 .feedPostIcon{
                                     height: 24px;
@@ -1842,37 +2041,37 @@ ul {
                                     mask-size: cover;
                                     mask-position: center;
                                     mask-repeat: no-repeat;
-                                    
+
                                     color: var(--background-color);
                                     background-color: var(--background-color);
                                 }
                             }
                         }
-                        
+
                         .feedPostRight{ 
                             display: flex;
                             flex-direction: column;
                             padding: 16px 12px;
                             gap: 8px;
-                            
+
                             .feedPostHeader {
                                 display: flex;
                                 align-items: center;
                                 gap: 8px;
-                                
+
                                 .feedPurpose {
                                     display: flex;
                                     align-items: center;
                                     padding: 4px 8px;
                                     border-radius: 24px;
-                                    
+
                                     p{
                                         height: auto;
                                         margin: 0;
                                         color: var(--background-color-primary);
                                     }
                                 }
-                                
+
                                 .feedTimestamp {
                                     font-size: 14px;
                                     color: var(--text-color-secondary);
@@ -1880,7 +2079,7 @@ ul {
                                     margin: 0;
                                 }
                             }
-                            
+
                             .feedPostAuthor {
                                 display: flex;
                                 align-items: center;
@@ -1896,15 +2095,38 @@ ul {
                                     font-weight: 700;
                                 }
                             }
-                            
+
                             .feedPostContent{
-                                
+
                                 p{
                                     height: auto;
                                     margin: 0;
                                 }
                             }
-                            
+
+                        }
+
+                        .feedPostActions {
+                            position: absolute;
+                            top: 12px;
+                            right: 12px;
+
+                            display: flex;
+                            gap: 8px;
+
+                            opacity: 0;
+                            pointer-events: none;
+                            transform: translateY(-6px);
+
+                            transition:
+                                opacity 0.2s ease,
+                                transform 0.2s ease;
+
+                            // zmenšíme buttony pro feed
+                            :global(button) {
+                                padding: 6px 14px;
+                                font-size: 14px;
+                            }
                         }
                     }
                 }
