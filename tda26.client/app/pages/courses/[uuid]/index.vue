@@ -730,7 +730,7 @@ onMounted(() => {
                     </li>
                 </ul>
             </nav>
-            <div :class="['liquid-glass']" style="overflow: hidden">
+            <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
                 <SmoothSizeWrapper>
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
@@ -953,7 +953,7 @@ onMounted(() => {
                 />
 
                 <div :class="$style.modalButtons">
-                    <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                    <Button type="reset" button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
 
                     <Button
                         button-style="primary"
@@ -1026,11 +1026,11 @@ onMounted(() => {
 </template>
 
 <style module lang="scss">
-@use "../../../app" as *;
+@use "../../../app" as app;
 
 .editMode {
     .editable {
-        @include editable;
+        @include app.editable;
         background: none;
         -webkit-text-fill-color: currentColor;
     }
@@ -1389,5 +1389,71 @@ ul {
 .fadeEnterTo,
 .fadeLeaveFrom {
     opacity: 1;
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {    
+    .course {
+        >.info {
+            >.brief {
+                .fields {
+                    flex-direction: column;
+                    gap: 8px;
+
+                    >.el {
+                        border-right: none !important;
+                        padding: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        
+                        >p {
+                            margin: 0 !important;
+                            padding: 0;
+                        }
+
+                        &:last-child {
+                            border-bottom: none !important;
+                            padding-bottom: 0 !important;
+                        }
+                    }
+                }
+
+                .otherinfo {
+                    .authorAndRating {
+                        .rating {
+                            width: 100%;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    .section {
+        margin-top: -50px;
+    }
+    
+    .title {
+        font-size: clamp(40px, 8vw, 64px);
+    }
+    
+    .course {
+        >.info {
+            flex-direction: column;
+            align-items: stretch;
+
+            >.brief {
+                min-width: unset;
+            }
+        }
+    }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
 }
 </style>
