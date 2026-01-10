@@ -380,7 +380,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    width: 500px;
+    width: 600px;
     margin: auto;
     
     >p {
@@ -394,6 +394,10 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         display: flex;
         gap: 12px;
         justify-content: center;
+
+        button {
+            width: 100%;
+        }
     }
     
     .controls {

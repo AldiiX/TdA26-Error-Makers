@@ -175,9 +175,9 @@ const isDeleteModalOpen = ref(false);
                         $style.editableOptionContainer,
                         selectedIndices.includes(index) && $style.selected
                     ]"
-                    :contenteditable="mode === 'edit'"
-                    @input="mode === 'edit' && updateOptionText(index, $event)"
                 >
+                    <p contenteditable @input="mode === 'edit' && updateOptionText(index, $event)">{{ option }}</p>
+
                     <input
                         type="checkbox"
                         :checked="selectedIndices.includes(index)"
@@ -185,10 +185,10 @@ const isDeleteModalOpen = ref(false);
                         :class="$style.correctCheckbox"
                         title="Označit jako správnou odpověď"
                     />
-                    {{ option }}
                     <span
                         :class="$style.removeOption"
                         @click="emit('removeQuestionOption', index)"
+                        title="Odebrat tuto možnost"
                     ></span>
                 </div>
                 <Button
@@ -326,6 +326,7 @@ const isDeleteModalOpen = ref(false);
 
         p {
             font-size: 32px;
+            word-break: break-all;
         }
     }
 
@@ -346,12 +347,20 @@ const isDeleteModalOpen = ref(false);
 
             button, >div {
                 width: 100%;
-                max-width: 210px;
                 min-height: 40px;
                 border: none !important;
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                justify-content: start;
+
+                >p {
+                    margin: 0;
+                    width: 100%;
+
+                    &[contenteditable] {
+                        outline: none;
+                    }
+                }
                 
                 &.selected {
                     background-color: var(--accent-color-primary);
@@ -363,11 +372,19 @@ const isDeleteModalOpen = ref(false);
                 padding: 8px 12px;
                 background-color: var(--background-color-tertiary);
                 border-radius: 8px;
-                gap: 8px;
-                
+                width: 100%;
+
                 &.selected {
                     background-color: var(--accent-color-primary);
                     color: var(--accent-color-primary-text);
+
+                    .removeOption {
+                        background-color: var(--accent-color-primary-text);
+                    }
+
+                    .correctCheckbox {
+
+                    }
                 }
                 
                 .correctCheckbox {
@@ -375,8 +392,9 @@ const isDeleteModalOpen = ref(false);
                     height: 20px;
                     cursor: pointer;
                     flex-shrink: 0;
-                    accent-color: var(--accent-color-primary);
+                    margin: 0;
                     margin-right: 4px;
+                    accent-color: var(--accent-color-primary);
                 }
                 
                 .removeOption {
@@ -385,13 +403,12 @@ const isDeleteModalOpen = ref(false);
                     height: 20px;
                     flex-shrink: 0;
                     background-color: var(--text-color-secondary);
-                    mask-image: url('/icons/x.svg');
-                    mask-size: cover;
+                    mask-image: url('/icons/trash.svg');
+                    mask-size: 20px;
                     mask-position: center;
                     mask-repeat: no-repeat;
                     cursor: pointer;
                     opacity: 0.6;
-                    margin-left: 4px;
 
                     &:hover {
                         opacity: 1;
