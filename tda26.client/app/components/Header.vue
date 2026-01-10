@@ -91,7 +91,7 @@
 
                 <!-- prihlaseny uzivatel -->
                 <template v-else>
-                    <div :class="$style.btns">
+                    <div :class="$style.btns" v-if="loggedAccount.type === 'lecturer' || loggedAccount.type === 'admin'">
                         <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>

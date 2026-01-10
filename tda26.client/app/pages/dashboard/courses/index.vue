@@ -16,6 +16,9 @@ definePageMeta({
     middleware: () => {
         const user = useState<Account | null>('loggedAccount');
         if (!user.value) return navigateTo('/login');
+
+        if(!(user.value.type === 'lecturer' || user.value.type === 'admin'))
+            return navigateTo("/")
     }
 });
 
@@ -208,7 +211,7 @@ const deleteCourse = async () => {
 
     <h1 :class="$style.nadpis">
         Moje kurzy
-        <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat všechny kurzy)</span>
+        <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat úplně všechny kurzy)</span>
     </h1>
 <!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
 

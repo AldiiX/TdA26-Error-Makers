@@ -269,14 +269,14 @@ button,input,textarea,select {
 }
 
 .liquid-glass {
-    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.5), 0 4px 24px rgba(0, 0, 0, 0.1);
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
 }
 
-@mixin liquid-glass($size: 30px, $alpha-bg: 0.75, $alpha-border: 1) {
-    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.15);
+@mixin liquid-glass($size: 24px, $alpha-bg: 0.5, $alpha-border: 1) {
+    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.1);
     background-color: rgb(from var(--background-color-secondary) r g b / $alpha-bg);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / $alpha-border);
     backdrop-filter: blur(8px) saturate(1.6);
