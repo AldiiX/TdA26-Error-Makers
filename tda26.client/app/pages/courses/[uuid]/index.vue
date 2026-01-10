@@ -814,6 +814,61 @@ onMounted(() => {
     }
 });
 
+const handleFeedPostCreate = async () => {
+    if (!course.value) return;
+
+    if (!editingFeedPost.value.message.trim()) {
+        feedPostError.value = "Text příspěvku nesmí být prázdný.";
+        return;
+    }
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        const created = await $fetch<FeedPost>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed`,
+            {
+                method: "POST",
+                body: {
+                    message: editingFeedPost.value.message,
+                    type: editingFeedPost.value.type
+                }
+            }
+        );
+
+        // okamžitě přidáme do feedu
+        feedData.value = feedData.value
+            ? [created, ...feedData.value]
+            : [created];
+
+        push.success({
+            title: "Příspěvek přidán",
+            message: "Příspěvek byl úspěšně publikován.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        editingFeedPost.value.message = "";
+        editingFeedPost.value.type = "manual";
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se vytvořit příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const editingFeedPost = ref<{
+    message: string;
+    type: FeedPost["type"];
+}>({
+    message: "",
+    type: "manual"
+});
+
+const feedPostError = ref<string | null>(null);
 
 const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v1/courses/${uuid}/feed`, {
     server: false,
@@ -946,34 +1001,36 @@ watch(feedData, (val) => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createFeedPost'" :class="$style.addFeedPost">
-                                Přidat příspěvek
-                            </Button>
-                            
-                            <div :class="$style.feedPostFilter">
-                                <p :class="$style.feedFilterLabel">Filtr:</p>
-<!--                                <Input-->
-<!--                                    placeholder="Hledat v aktivitě..."-->
-<!--                                    :disabled="true"-->
-<!--                                />-->
-                                <div :class="$style.feedFilterOptions">
-                                    <div :class="[$style.feedFilterOption, $style.active]">
-                                        <p>Vše</p>
-                                    </div>
-                                    <div :class="$style.feedFilterOption">
-                                        <p>Materialy</p>
-                                    </div>
-                                    <div :class="$style.feedFilterOption">
-                                        <p>Kvízy</p>
+                            <div v-if="feedData" :class="$style.activityHeader">
+                                <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createFeedPost'" :class="$style.addFeedPost">
+                                    Přidat příspěvek
+                                </Button>
+
+                                <div :class="$style.feedPostFilter">
+                                    <p :class="$style.feedFilterLabel">Filtr:</p>
+                                    <!--                                <Input-->
+                                    <!--                                    placeholder="Hledat v aktivitě..."-->
+                                    <!--                                    :disabled="true"-->
+                                    <!--                                />-->
+                                    <div :class="$style.feedFilterOptions">
+                                        <div :class="[$style.feedFilterOption, $style.active]">
+                                            <p>Vše</p>
+                                        </div>
+                                        <div :class="$style.feedFilterOption">
+                                            <p>Materialy</p>
+                                        </div>
+                                        <div :class="$style.feedFilterOption">
+                                            <p>Kvízy</p>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <p v-if="feedPending">Načítání aktivity...</p>
+                                <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
+                                <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
                             </div>
                             
-                            <p v-if="feedPending">Načítání aktivity...</p>
-                            <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
-                            <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
-                            
-                            <ul v-else>
+                            <ul v-if="feedData">
                                 <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
                                         <div
@@ -1004,7 +1061,7 @@ watch(feedData, (val) => {
                                                 </div>
                                                 <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
                                             </div>
-                                            <div :class="$style.feedPostAuthor">
+                                            <div v-if="feedPost.author !== null " :class="$style.feedPostAuthor">
                                                 <Avatar
                                                     :class="$style.feedAvatar"
                                                     :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
@@ -1012,22 +1069,12 @@ watch(feedData, (val) => {
                                                     :src="feedPost.author?.pictureUrl ?? null"
                                                     :size="32"
                                                 />
-                                                <p :class="[$style.authorName, `text-gradient`]">{{ feedPost.author?.fullName }}</p>
+                                                <p :class="$style.authorName">{{ feedPost.author?.fullName }}</p>
                                             </div>
                                             <div :class="$style.feedPostContent">   
                                                 <p> {{ feedPost.message }} </p>
                                             </div>
                                         </div>
-<!--                                        <div v-if="feedPost.author" :class="$style.feedAuthor">-->
-                                            
-<!--                                        </div>-->
-<!--                                        <div :class="$style.feedPostContent">-->
-<!--                                            <p :class="$style.feedText" v-html="feedPost.message"></p>-->
-<!--                                        </div>-->
-<!--                                        <div :class="$style.feedPostActions">-->
-<!--                                            -->
-<!--                                            -->
-<!--                                        </div>-->
                                     </div>
                                 </li>
                             </ul>
@@ -1275,11 +1322,120 @@ watch(feedData, (val) => {
                 </div>
             </SmoothSizeWrapper>
         </Modal>
+        
+        
+        <!-- CREATE FEED POST -->
+        <Modal
+            :enabled="enabledModal === 'createFeedPost'"
+            @close="enabledModal = null"
+            :modalStyle="{ maxWidth: '600px' }"
+        >
+            <h3>Nový příspěvek do aktivity</h3>
+
+            <form @submit.prevent="handleFeedPostCreate">
+                <label for="feedMessage" :class="$style.feedLabel">Text příspěvku</label>
+
+<!--                <textarea-->
+<!--                    id="feedMessage"-->
+<!--                    maxlength="1000"-->
+<!--                    required-->
+<!--                />-->
+
+                <textarea
+                    v-model="editingFeedPost.message"
+                    :class="$style.feedTextarea"
+                    rows="5"
+                    required
+                    placeholder="Napiš oznámení pro studenty…"
+                    :disabled="isActionInProgress"
+                />
+
+                <div :class="$style.modalButtons">
+                    <Button
+                        button-style="tertiary"
+                        type="button"
+                        @click="enabledModal = null"
+                        :disabled="isActionInProgress"
+                    >
+                        Zrušit
+                    </Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        type="submit"
+                        :disabled="isActionInProgress"
+                    >
+                        Publikovat
+                    </Button>
+                </div>
+            </form>
+
+            <p v-if="updateError" class="error-text">
+                {{ updateError }}
+            </p>
+        </Modal>
+            
+            
     </Teleport>
 </template>
 
 <style module lang="scss">
 @use "../../../app" as *;
+
+.feedLabel {
+    display: block;
+    margin-bottom: 8px;
+
+    font-weight: 600;
+    font-size: 16px;
+
+    color: var(--text-color-primary);
+}
+
+
+.feedTextarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+    border: 1px solid var(--border-color-secondary);
+    box-shadow:  0 4px 30px rgba(0, 0, 0, 0.1);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-color-primary);
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+
+    &::placeholder {
+        color: var(--text-color-tertiary);
+    }
+
+    &:hover {
+        border-color: var(--accent-color-secondary-theme);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-color-secondary-theme);
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
 
 .editMode {
     .editable {
@@ -1563,59 +1719,66 @@ ul {
         
         .activity {
             
-            .addFeedPost{
-                margin-bottom: 32px;
-            }
-            
-            .feedPostFilter {
+            .activityHeader{
                 display: flex;
-                align-items: center;
-                margin-bottom: 16px;
-                height: 64px;
                 border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                margin-bottom: 24px;
+                justify-content: space-between;
                 
-                .feedFilterLabel {
-                    margin: 0;
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: var(--text-color-secondary);
+                .addFeedPost{
+                    margin-bottom: 16px;
                 }
-                
-                .feedFilterOptions {
+
+                .feedPostFilter {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    margin-left: 16px;
-                    border-radius: 64px;
-                    background-color: var(--element-bg) ;
-                    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
                     
+                    height: 64px;
                     
-                    .feedFilterOption {
-                        cursor: pointer;
-                        user-select: none;
-                        padding: 8px 16px;
-                        border-radius: 64px;
-                        transition: background-color 0.2s ease, color 0.2s ease;
-                        
-                        &:is(.active) {
-                            background-color: var(--accent-color-primary);
-                            color: var(--background-color-primary);
-                            
-                            &:hover{
-                                opacity: 0.8;
-                            }
-                        }
 
-                        &:not(.active):hover {
-                            background-color: var(--background-color-3);
-                            filter: brightness(0.75);
-                            transition-duration: 0.3s;
-                        }
-                        
-                        p {
-                            margin: 0;
-                            font-size: 16px;
+                    .feedFilterLabel {
+                        margin: 0;
+                        font-size: 18px;
+                        font-weight: 700;
+                        color: var(--text-color-secondary);
+                    }
+
+                    .feedFilterOptions {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-left: 16px;
+                        border-radius: 64px;
+                        background-color: var(--element-bg) ;
+                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+
+
+                        .feedFilterOption {
+                            cursor: pointer;
+                            user-select: none;
+                            padding: 8px 16px;
+                            border-radius: 64px;
+                            transition: background-color 0.2s ease, color 0.2s ease;
+
+                            &:is(.active) {
+                                background-color: var(--accent-color-primary);
+                                color: var(--background-color-primary);
+
+                                &:hover{
+                                    opacity: 0.8;
+                                }
+                            }
+
+                            &:not(.active):hover {
+                                background-color: var(--background-color-3);
+                                filter: brightness(0.75);
+                                transition-duration: 0.3s;
+                            }
+
+                            p {
+                                margin: 0;
+                                font-size: 16px;
+                            }
                         }
                     }
                 }
@@ -1689,7 +1852,7 @@ ul {
                         .feedPostRight{ 
                             display: flex;
                             flex-direction: column;
-                            padding: 8px;
+                            padding: 16px 12px;
                             gap: 8px;
                             
                             .feedPostHeader {
