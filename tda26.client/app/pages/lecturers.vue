@@ -18,10 +18,72 @@
         keywords: "lektoři, učitelé, instruktoři, vyučující, experti"
     });
 
-    const { data: lecturers, pending: lecturersFetchPending, error: lecturersFetchError } = useFetch<Lecturer[]>(getBaseUrl() + '/api/v2/lecturers', {
+    const FIRST_FETCH_LIMIT = 25
+
+    // -----------------------------
+    // fetchovani
+    // ----------------------------
+
+    // sdilena cache mezi navigacemi
+    const lecturers = useState<Lecturer[] | null>('allLecturers', () => null)
+
+    // ochrany proti opakovanemu full fetchi
+    const fullFetchRunning = ref(false)
+    const hasFetchedAllLecturers = useState<boolean>('hasFetchedAllLecturers', () => false)
+
+    async function fetchAllLecturersIfNeeded() {
+        if (fullFetchRunning.value) { return }
+        if (!lecturers.value) { return }
+
+        // kdyz prvni fetch vratil mene nez limit, dalsi data uz pravdepodobne nejsou
+        if (lecturers.value.length < FIRST_FETCH_LIMIT) {
+            hasFetchedAllLecturers.value = true
+            return
+        }
+
+        fullFetchRunning.value = true
+        try {
+            const allLecturers = await $fetch<Lecturer[]>('/api/v2/lecturers', {
+                baseURL: getBaseUrl()
+            })
+
+            lecturers.value = allLecturers
+            hasFetchedAllLecturers.value = true
+        } catch (e) {
+            // kdyz se full fetch nepovede, nechceme to zamknout navzdy
+            console.error('error fetching all lecturers:', e)
+        } finally {
+            fullFetchRunning.value = false
+        }
+    }
+
+    const { pending: lecturersFetchPending, error: lecturersFetchError } = useLazyFetch<Lecturer[]>(`/api/v2/lecturers?limit=${FIRST_FETCH_LIMIT}`, {
+        baseURL: getBaseUrl(),
+        key: `allLecturers:limit:${FIRST_FETCH_LIMIT}`,
         server: false,
-        key: 'lecturers-list',
-    });
+        immediate: true,
+        getCachedData: () => lecturers.value ?? undefined,
+        onResponse({ response }) {
+            lecturers.value = (response as any)._data as Lecturer[]
+            void fetchAllLecturersIfNeeded()
+        }
+    })
+
+    // kdyz data prisla z cache, onresponse se nespusti, tak tohle zajisti upgrade fetch i v tom pripade
+    watch(() => lecturers.value?.length, () => {
+        void fetchAllLecturersIfNeeded()
+    }, { immediate: true })
+
+    watch(
+        lecturersFetchError,
+        (e) => {
+            if (e) {
+                // logneme jen pro debug
+                console.error('error fetching lecturers:', e)
+            }
+        },
+        { immediate: true }
+    )
 </script>
 
 <template>
