@@ -61,8 +61,6 @@ const endQuiz = async () => {
             answers: savedResponses.value,
         }
     });
-
-    console.log("Quiz submitted, response:", response);
     
     window.location.href = `/courses/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`;
 };
