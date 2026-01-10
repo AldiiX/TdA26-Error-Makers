@@ -252,7 +252,7 @@ const submitForm = async () => {
     gap: 12px;
 
     button {
-        width: 124px;
+        width: 164px;
     }
 }
 

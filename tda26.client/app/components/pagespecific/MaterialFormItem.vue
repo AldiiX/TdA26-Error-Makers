@@ -80,7 +80,7 @@ function onFileChange(event: Event) {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
 
     :first-child {
         width: 100%;
