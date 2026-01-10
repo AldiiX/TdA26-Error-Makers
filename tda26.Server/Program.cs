@@ -98,7 +98,12 @@ public static class Program {
         };
 
         List<(string Name, string ConnectionString)> potentialConnections = [
+            #if RELEASE
+            ("Primary", fallbackConnectionStringBuilder.ConnectionString),
+            #else
             ("Primary", primaryConnectionStringBuilder.ConnectionString),
+            #endif
+
             ("Fallback", fallbackConnectionStringBuilder.ConnectionString)
         ];
 
@@ -108,7 +113,7 @@ public static class Program {
         foreach (var (name, cs) in potentialConnections) {
             // Mask password in logs
             var displayCs = cs.Contains("Password=") 
-                ? cs.Substring(0, cs.IndexOf("Password=", StringComparison.Ordinal) + 9) + "****" 
+                ? string.Concat(cs.AsSpan(0, cs.IndexOf("Password=", StringComparison.Ordinal) + 9), "****")
                 : cs;
 
             try {

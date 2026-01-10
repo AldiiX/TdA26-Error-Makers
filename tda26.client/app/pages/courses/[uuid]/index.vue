@@ -823,6 +823,7 @@ onMounted(() => {
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
             :modalStyle="{ maxWidth: '800px' }"
+            :class="$style.createMaterialModal"
         >
             <h3>Vytvoření nového materiálu</h3>
             <MaterialFormItem
@@ -1057,7 +1058,12 @@ onMounted(() => {
 .modalButtons {
     display: flex;
     gap: 16px;
-    margin-top: 24px;
+    margin-top: 32px;
+    justify-content: flex-end;
+
+    button {
+        width: 164px;
+    }
 }
 
 .title{
@@ -1074,7 +1080,19 @@ ul {
     margin: 0;
 }
 
+.createMaterialModal {
+    h3 {
+        margin: 0;
+        margin-bottom: 32px;
+    }
+}
+
 .createQuizModal {
+    h3 {
+        margin: 0;
+        margin-bottom: 32px;
+    }
+
     form {
         display: flex;
         flex-direction: column;
