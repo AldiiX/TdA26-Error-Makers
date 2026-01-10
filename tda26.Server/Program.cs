@@ -98,11 +98,11 @@ public static class Program {
         };
 
         List<(string Name, string ConnectionString)> potentialConnections = [
-            #if RELEASE
-            ("Primary", fallbackConnectionStringBuilder.ConnectionString),
-            #else
+            //#if RELEASE
+            //("Primary", fallbackConnectionStringBuilder.ConnectionString),
+            //#else
             ("Primary", primaryConnectionStringBuilder.ConnectionString),
-            #endif
+            //#endif
 
             ("Fallback", fallbackConnectionStringBuilder.ConnectionString)
         ];
