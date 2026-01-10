@@ -271,8 +271,6 @@ const addQuestionOption = (i: number) => {
     
     const question = quiz.value.questions[i];
     if (!question) return;
-
-    console.log("Adding option to question", i, question);
     
     question.options.push(`Možnost ${question.options.length + 1}`);
     

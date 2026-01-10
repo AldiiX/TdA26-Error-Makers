@@ -28,8 +28,9 @@ const updateQuestionText = (e: Event) => {
 
 const updateOptionText = (index: number, e: Event) => {
     const text = (e.target as HTMLElement).innerText;
-    const options = [...props.question.options];
-    options[index] = text;
+    props.question.options[index] = text;
+    
+    const options = props.question.options;
 
     emit('update:question', {
         options,
@@ -112,7 +113,6 @@ const emitSelectionUpdate = () => {
 
     if (count === 1) {
         const nextType = "singleChoice";
-        console.log("Emitting update for singleChoice");
 
         emit("update:question", {
             uuid: prevType !== nextType ? undefined : props.question.uuid,
@@ -133,8 +133,6 @@ const emitSelectionUpdate = () => {
         });
         return;
     }
-
-    console.log("Emitting update for 0 selected", selectedIndices.value, props.question);
     
     // 0 selected
     emit("update:question", {

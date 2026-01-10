@@ -49,7 +49,6 @@ const editBgImage = () => {
         if (input.files && input.files[0]) {
             const formData = new FormData();
             formData.append('image', input.files[0]);
-            console.log(formData.get('image'));
             await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
                 method: 'POST',
                 body: formData
