@@ -992,11 +992,6 @@ const handleFeedPostDelete = async () => {
     }
 };
 
-const editingFeedPostModal = ref({
-    message: "",
-    type: "manual" as FeedPost["type"]
-});
-
 const selectedFeedPost = ref<FeedPost | null>(null);
 
 const feedPostError = ref<string | null>(null);
@@ -1006,10 +1001,6 @@ const { data: feedData, pending: feedPending, error: feedError } = useFetch<Feed
     key: `course-${uuid}-feed`,
     lazy: true,
     method: "GET",
-});
-
-watch(feedData, (val) => {
-    console.log("FEED:", feedData.value);
 });
 
 function onNewFeedPost(event: MessageEvent) {
@@ -1028,6 +1019,7 @@ function onNewFeedPost(event: MessageEvent) {
         console.error("Failed to parse feed SSE event", e);
     }
 }
+
 
 let feedEventSource: EventSource | null = null;
 
