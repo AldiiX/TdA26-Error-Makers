@@ -5,7 +5,7 @@
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddPurpose : Migration
+    public partial class AddFeedPurpose : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
