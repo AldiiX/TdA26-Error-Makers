@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using tda26.Server.DTOs.Converters;
 
 namespace tda26.Server.Data.Models;
 
@@ -26,7 +27,7 @@ public class Account : Auditable {
 
 
     // nemapovany props (pouze pro serializaci)
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
     public enum AccountType { Account, Lecturer, Admin }
 
     [NotMapped]
