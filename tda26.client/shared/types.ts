@@ -11,7 +11,7 @@ export interface Course {
     account: Account | null;
     materials?: Material[];
     quizzes?: Quiz[];
-    // feed: FeedPost[];
+    feed?: FeedPost[];
     tags: Tag[] | null;
     likeCount: number,
     viewCount: number,
@@ -130,4 +130,39 @@ export interface AnswerSubmission {
     uuid: string;
     selectedIndex?: number;
     selectedIndices?: number[];
+}
+
+export interface FeedPost {
+    uuid: string;
+    type: "manual" | "system";
+    message: string;
+    edited: boolean;
+    author: Author | null;
+    createdAt: string;
+    updatedAt: string;
+    purpose: "createMaterial" | "updateMaterial" | "deleteMaterial" | "createQuiz" | "updateQuiz" | "deleteQuiz" | "default";
+}
+
+export interface FeedPostView extends FeedPost {
+    purposeLabel: string;
+    purposeType: FeedPurposeType;
+    icon: string;
+    color: string;
+    background: string;
+}
+
+export type FeedPurposeType = "announcement" | "material" | "quiz";
+
+export interface Author {
+    uuid: string;
+    username: string;
+    pictureUrl: string | null;
+    titleBefore: string | null;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    titleAfter: string | null;
+    bio: string | null,
+    fullName: string,
+    fullNameWithoutTitles: string,
 }

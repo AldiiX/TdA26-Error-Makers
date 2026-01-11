@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material, type Quiz} from "#shared/types";
+import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost, type FeedPostView, type FeedPurposeType} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -16,6 +16,7 @@ import { push } from "notivue";
 import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 import LoginForm from "~/components/LoginForm.vue";
 import RegisterForm from "~/components/RegisterForm.vue";
+import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -59,16 +60,22 @@ if (courseSmallError.value || !_courseSmall.value) {
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
+const feedPosts = computed<FeedPostView[]>(() => {
+    if (!feedData.value) return [];
 
-// Dynamic SEO based on course data
-useSeo({
-    title: courseSmall.value.name,
-    description: courseSmall.value.description || `Zjistěte více o kurzu ${courseSmall.value.name} na Think Different Academy. Interaktivní vzdělávání s praxí.`,
-    keywords: `kurz, ${courseSmall.value.name}, online vzdělávání, e-learning`,
-    type: 'article'
+    return feedData.value.map(post => {
+        const mapped = mapFeedPurpose(post.purpose, post.type);
+
+        return {
+            ...post,
+            purposeLabel: mapped.label,
+            purposeType: mapped.type, 
+            icon: mapped.icon,
+            color: mapped.color,
+            background: mapped.background ?? mapped.color
+        };
+    });
 });
-
-
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
@@ -116,6 +123,7 @@ const selectItem = (item: string) => {
     selectedItem.value = item;
 };
 
+// datetime to small 
 const getHostname = (url?: string) => {
     try {
         return url ? new URL(url).hostname : ''
@@ -148,7 +156,8 @@ onMounted(async () => {
     });
 })
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "loginRequired" | null>(null);
+
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 const authTab = ref<"login" | "register">("login");
@@ -179,7 +188,157 @@ watch(() => courseSmall.value?.likeCount, (newCount) => {
     }
 }, { immediate: true });
 
+function formatRelativeTime(
+    dateInput: string | Date,
+    options?: {
+        locale?: string;
+        weekLimitDays?: number;
+    }
+): string {
+    const locale = options?.locale ?? 'cs-CZ';
+    const weekLimitDays = options?.weekLimitDays ?? 7;
 
+    let date: Date;
+
+    if (typeof dateInput === 'string') {
+        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
+        date = hasTimezone
+            ? new Date(dateInput)
+            : new Date(dateInput.replace(' ', 'T'));
+    } else {
+        date = dateInput;
+    }
+
+    const diffMs = Date.now() - date.getTime();
+
+    if (diffMs < 0 || diffMs < 60_000) {
+        return 'právě teď';
+    }
+
+    const minute = 60_000;
+    const hour = 3_600_000;
+    const day = 86_400_000;
+
+    const diffMinutes = Math.floor(diffMs / minute);
+    const diffHours = Math.floor(diffMs / hour);
+    const diffDays = Math.floor(diffMs / day);
+
+    if (diffMinutes < 60) {
+        return diffMinutes === 1
+            ? 'před 1 minutou'
+            : `před ${diffMinutes} minutami`;
+    }
+
+    if (diffHours < 24) {
+        return diffHours === 1
+            ? 'před 1 hodinou'
+            : `před ${diffHours} hodinami`;
+    }
+
+    if (diffDays < weekLimitDays) {
+        return diffDays === 1
+            ? 'před 1 dnem'
+            : `před ${diffDays} dny`;
+    }
+
+    return date.toLocaleDateString(locale, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+function mapFeedPurpose(
+    purpose?: FeedPost["purpose"],
+    type?: FeedPost["type"]
+): {
+    label: string;
+    type: FeedPurposeType;
+    icon: string;
+    color: string;
+    background: string;
+} {
+
+    // manuální oznámení
+    if (type === "manual") {
+        return {
+            label: "Oznámení",
+            type: "announcement",
+            icon: "/icons/megaphone.svg",
+            color: "--accent-color-secondary-theme",
+            background: "--accent-color-secondary-theme",
+        };
+    }
+
+    switch (purpose) {
+
+        // ===== MATERIAL =====
+        case "createMaterial":
+            return {
+                label: "Přidán materiál",
+                type: "material",
+                icon: "/icons/addFile.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "updateMaterial":
+            return {
+                label: "Upraven materiál",
+                type: "material",
+                icon: "/icons/editFile.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "deleteMaterial":
+            return {
+                label: "Smazán materiál",
+                type: "material",
+                icon: "/icons/deleteFile.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
+        // ===== QUIZ =====
+        case "createQuiz":
+            return {
+                label: "Přidán kvíz",
+                type: "quiz",
+                icon: "/icons/addQuiz.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "updateQuiz":
+            return {
+                label: "Upraven kvíz",
+                type: "quiz",
+                icon: "/icons/editQuiz.svg",
+                color: "--text-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "deleteQuiz":
+            return {
+                label: "Smazán kvíz",
+                type: "quiz",
+                icon: "/icons/deleteQuiz.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
+        // ===== fallback =====
+        default:
+            return {
+                label: "Aktivita",
+                type: "announcement",
+                icon: "/icons/activity.svg",
+                color: "--accent-color-secondary-theme",
+                background: "--accent-color-secondary-theme",
+            };
+    }
+}
 
 const openCreateMaterialModal = () => {
     editingMaterial.value = {
@@ -653,6 +812,188 @@ onMounted(() => {
     }
 });
 
+const openCreateFeedPost = () => {
+    editingFeedPost.value.message = "";
+    editingFeedPost.value.type = "manual";
+    feedPostError.value = null;
+    enabledModal.value = "createFeedPost";
+};
+
+
+const handleFeedPostCreate = async () => {
+    if (!course.value) return;
+
+    if (!editingFeedPost.value.message.trim()) {
+        feedPostError.value = "Text příspěvku nesmí být prázdný.";
+        return;
+    }
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        const created = await $fetch<FeedPost>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed`,
+            {
+                method: "POST",
+                body: {
+                    message: editingFeedPost.value.message,
+                    type: editingFeedPost.value.type
+                }
+            }
+        );
+
+        // okamžitě přidáme do feedu
+        feedData.value = feedData.value
+            ? [created, ...feedData.value]
+            : [created];
+
+        push.success({
+            title: "Příspěvek přidán",
+            message: "Příspěvek byl úspěšně publikován.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        editingFeedPost.value.message = "";
+        editingFeedPost.value.type = "manual";
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se vytvořit příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const editingFeedPost = ref<{
+    message: string;
+    type: FeedPost["type"];
+}>({
+    message: "",
+    type: "manual"
+});
+
+const openUpdateFeedPost = (post: FeedPost) => {
+    selectedFeedPost.value = post;
+
+    editingFeedPost.value.message = post.message;
+    editingFeedPost.value.type = post.type;
+
+    feedPostError.value = null;
+    enabledModal.value = "updateFeedPost";
+};
+
+const openDeleteFeedPost = (post: FeedPost) => {
+    selectedFeedPost.value = post;
+    feedPostError.value = null;
+    enabledModal.value = "deleteFeedPost";
+};
+
+
+const handleFeedPostUpdate = async () => {
+    if (!course.value || !selectedFeedPost.value) return;
+
+    if (!editingFeedPost.value.message.trim()) {
+        feedPostError.value = "Text příspěvku nesmí být prázdný.";
+        return;
+    }
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        const updated = await $fetch<FeedPost>(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
+            {
+                method: "PUT",
+                body: {
+                    message: editingFeedPost.value.message,
+                    type: editingFeedPost.value.type
+                }
+            }
+        );
+
+        // update v local feedu
+        feedData.value = feedData.value?.map(fp =>
+            fp.uuid === updated.uuid ? updated : fp
+        ) ?? [];
+
+        push.success({
+            title: "Příspěvek upraven",
+            message: "Změny byly uloženy.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        selectedFeedPost.value = null;
+
+        editingFeedPost.value.message = "";
+        editingFeedPost.value.type = "manual";
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se upravit příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const handleFeedPostDelete = async () => {
+    if (!course.value || !selectedFeedPost.value) return;
+
+    isActionInProgress.value = true;
+    feedPostError.value = null;
+
+    try {
+        await $fetch(
+            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
+            { method: "DELETE" }
+        );
+
+        feedData.value = feedData.value?.filter(
+            fp => fp.uuid !== selectedFeedPost.value?.uuid
+        ) ?? [];
+
+        push.success({
+            title: "Příspěvek smazán",
+            message: "Příspěvek byl odstraněn.",
+            duration: 4000
+        });
+
+        enabledModal.value = null;
+        selectedFeedPost.value = null;
+
+    } catch (err) {
+        console.error(err);
+        feedPostError.value = "Nepodařilo se smazat příspěvek.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
+const editingFeedPostModal = ref({
+    message: "",
+    type: "manual" as FeedPost["type"]
+});
+
+const selectedFeedPost = ref<FeedPost | null>(null);
+
+const feedPostError = ref<string | null>(null);
+
+const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v1/courses/${uuid}/feed`, {
+    server: false,
+    key: `course-${uuid}-feed`,
+    lazy: true,
+    method: "GET",
+});
+
+watch(feedData, (val) => {
+    console.log("FEED:", feedData.value);
+});
+
+
+
 </script>
 
 <template>
@@ -771,12 +1112,117 @@ onMounted(() => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
-                            <!--                    <p v-if="course.feed.length == 0">Žádná nedávná aktivita.</p>-->
-                            <!--                    <ul v-else>-->
-                            <!--                        <li v-for="feedPost in course.feed" :key="feedPost.uuid">-->
-                            <!--                            &lt;!&ndash; // TODO: &ndash;&gt;-->
-                            <!--                        </li>-->
-                            <!--                    </ul>-->
+                            <div v-if="feedData" :class="$style.activityHeader">
+                                <Button
+                                    v-if="ownsCourse"
+                                    button-style="primary"
+                                    accent-color="primary"
+                                    @click="openCreateFeedPost"
+                                    :class="$style.addFeedPost"
+                                >
+                                    Přidat příspěvek
+                                </Button>
+
+                                <div :class="$style.feedPostFilter">
+                                    <p :class="$style.feedFilterLabel">Filtr:</p>
+                                    <!--                                <Input-->
+                                    <!--                                    placeholder="Hledat v aktivitě..."-->
+                                    <!--                                    :disabled="true"-->
+                                    <!--                                />-->
+                                    <div :class="$style.feedFilterOptions">
+                                        <div :class="[$style.feedFilterOption, $style.active]">
+                                            <p>Vše</p>
+                                        </div>
+                                        <div :class="$style.feedFilterOption">
+                                            <p>Materialy</p>
+                                        </div>
+                                        <div :class="$style.feedFilterOption">
+                                            <p>Kvízy</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p v-if="feedPending">Načítání aktivity...</p>
+                                <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
+                                <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
+                            </div>
+                            
+                            <ul v-if="feedData">
+                                <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
+                                    <div :class="$style.feedPostWrapper">
+                                        <div
+                                            :class="$style.feedPostLeft"
+                                            :style="{ borderLeft: `8px solid var(${feedPost.background})` }"
+                                        >
+                                            <div
+                                                :class="$style.iconWrapper"
+                                                :style="{ backgroundColor: `var(${feedPost.background})` }"
+                                            >
+                                                <div
+                                                    :class="$style.feedPostIcon"
+                                                    :style="{ maskImage: `url(${feedPost.icon})` }"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div :class="$style.feedPostRight">
+                                            <div
+                                                v-if="ownsCourse"
+                                                :class="$style.feedPostActions"
+                                            >
+                                                <Button
+                                                    button-style="secondary"
+                                                    accent-color="secondary"
+                                                    @click="openUpdateFeedPost(feedPost)"
+                                                >
+                                                    Upravit
+                                                </Button>
+
+                                                <Button
+                                                    button-style="secondary"
+                                                    accent-color="secondary"
+                                                    :style="{ '--color': 'var(--color-error)' }"
+                                                    @click="openDeleteFeedPost(feedPost)"
+                                                >
+                                                    Smazat
+                                                </Button>
+                                            </div>
+                                            <div :class="$style.feedPostHeader">
+                                                <div
+                                                    :class="$style.feedPurpose"
+                                                    :style="{
+                                                                backgroundColor: `var(${feedPost.background})`
+                                                            }"
+                                                >
+                                                    <p>
+                                                        {{ feedPost.purposeLabel }}
+                                                    </p>
+                                                </div>
+                                                <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
+                                            </div>
+                                            <div v-if="feedPost.author !== null " :class="$style.feedPostAuthor">
+                                                <Avatar
+                                                    :class="$style.feedAvatar"
+                                                    :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
+                                                    :name="feedPost.author?.fullName ?? '?'"
+                                                    :src="feedPost.author?.pictureUrl ?? null"
+                                                    :size="32"
+                                                />
+                                                <p :class="$style.authorName">{{ feedPost.author?.fullName }}</p>
+                                            </div>
+                                            <div :class="$style.feedPostContent">   
+                                                <p> {{ feedPost.message }} </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+<!--                                    <FeedPostItem-->
+<!--                                        :feed-post="feedPost"-->
+<!--                                        :edit-mode="ownsCourse"-->
+<!--                                        @edit="openEditFeedPost"-->
+<!--                                        @delete="openDeleteFeedPost"-->
+<!--                                    />-->
+                                </li>
+                            </ul>
                         </div>
                     </ClientOnly>
                 </SmoothSizeWrapper>
@@ -1022,11 +1468,164 @@ onMounted(() => {
                 </div>
             </SmoothSizeWrapper>
         </Modal>
+        
+        
+        <!-- CREATE FEED POST -->
+        <Modal
+            :enabled="enabledModal === 'createFeedPost'"
+            @close="enabledModal = null"
+            :modalStyle="{ maxWidth: '600px' }"
+        >
+            <h3>Nový příspěvek do aktivity</h3>
+
+            <form @submit.prevent="handleFeedPostCreate">
+                <label for="feedMessage" :class="$style.feedLabel">Text příspěvku</label>
+
+<!--                <textarea-->
+<!--                    id="feedMessage"-->
+<!--                    maxlength="1000"-->
+<!--                    required-->
+<!--                />-->
+
+                <textarea
+                    v-model="editingFeedPost.message"
+                    :class="$style.feedTextarea"
+                    rows="5"
+                    placeholder="Napiš oznámení pro studenty…"
+                    :disabled="isActionInProgress"
+                />
+
+                <div :class="$style.modalButtons">
+                    <Button
+                        button-style="tertiary"
+                        type="button"
+                        @click="enabledModal = null"
+                        :disabled="isActionInProgress"
+                    >
+                        Zrušit
+                    </Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        type="submit"
+                        :disabled="isActionInProgress"
+                    >
+                        Publikovat
+                    </Button>
+                </div>
+            </form>
+
+            <p v-if="updateError" class="error-text">
+                {{ updateError }}
+            </p>
+        </Modal>
+        
+        <!-- UPDATE FEED POST -->
+        <Modal
+            :enabled="enabledModal === 'updateFeedPost'"
+            @close="enabledModal = null"
+            :modalStyle="{ maxWidth: '600px' }"
+        >
+            <h3>Úprava příspěvku</h3>
+
+            <textarea
+                v-model="editingFeedPost.message"
+                :class="$style.feedTextarea"
+                rows="5"
+                :disabled="isActionInProgress"
+            />
+
+            <div :class="$style.modalButtons">
+                <Button button-style="tertiary" @click="enabledModal = null">
+                    Zrušit
+                </Button>
+
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    @click="handleFeedPostUpdate"
+                    :disabled="isActionInProgress"
+                >
+                    Uložit změny
+                </Button>
+            </div>
+
+            <p v-if="feedPostError" class="error-text">{{ feedPostError }}</p>
+        </Modal>
+        
+        <!-- DELETE FEED POST -->
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteFeedPost'"
+            @close="enabledModal = null"
+            title="Smazání příspěvku"
+            description="Opravdu chceš smazat tento příspěvek? Tuto akci nelze vrátit."
+            :yesAction="handleFeedPostDelete"
+        >
+            <p>
+                Opravdu chceš smazat tento příspěvek?
+            </p>
+        </ModalDestructive>
+        
     </Teleport>
 </template>
 
 <style module lang="scss">
 @use "../../../app" as app;
+
+.feedLabel {
+    display: block;
+    margin-bottom: 8px;
+
+    font-weight: 600;
+    font-size: 16px;
+
+    color: var(--text-color-primary);
+}
+
+
+.feedTextarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+    border: 1px solid var(--border-color-secondary);
+    box-shadow:  0 4px 30px rgba(0, 0, 0, 0.1);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-color-primary);
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+
+    &::placeholder {
+        color: var(--text-color-tertiary);
+    }
+
+    &:hover {
+        border-color: var(--accent-color-secondary-theme);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-color-secondary-theme);
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
 
 .editMode {
     .editable {
@@ -1322,6 +1921,233 @@ ul {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
+            }
+        }
+        
+        .activity {
+            
+            .activityHeader{
+                display: flex;
+                border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                margin-bottom: 24px;
+                justify-content: space-between;
+                
+                .addFeedPost{
+                    margin-bottom: 16px;
+                }
+
+                .feedPostFilter {
+                    display: flex;
+                    align-items: center;
+                    
+                    height: 64px;
+                    
+
+                    .feedFilterLabel {
+                        margin: 0;
+                        font-size: 18px;
+                        font-weight: 700;
+                        color: var(--text-color-secondary);
+                    }
+
+                    .feedFilterOptions {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-left: 16px;
+                        border-radius: 64px;
+                        background-color: var(--element-bg) ;
+                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+
+
+                        .feedFilterOption {
+                            cursor: pointer;
+                            user-select: none;
+                            padding: 8px 16px;
+                            border-radius: 64px;
+                            transition: background-color 0.2s ease, color 0.2s ease;
+
+                            &:is(.active) {
+                                background-color: var(--accent-color-primary);
+                                color: var(--background-color-primary);
+
+                                &:hover{
+                                    opacity: 0.8;
+                                }
+                            }
+
+                            &:not(.active):hover {
+                                background-color: var(--background-color-3);
+                                filter: brightness(0.75);
+                                transition-duration: 0.3s;
+                            }
+
+                            p {
+                                margin: 0;
+                                font-size: 16px;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            ul {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                
+                li{
+                    .feedDate {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+                        margin-bottom: 12px;
+
+                        p {
+                            margin: 0;
+                            font-size: 16px;
+                            font-weight: 500;
+                            color: var(--accent-color-secondary-theme);
+                        }
+                    }
+
+                    //.feedDateLine {
+                    //    width: 90%;
+                    //    height: 1px;
+                    //    border-radius: 2px;
+                    //    background: linear-gradient(90deg, var(--accent-color-primary) 0%, var(--accent-color-secondary) 100%);
+                    //}
+
+                    .feedPostWrapper {
+                        display: flex;
+                        position: relative;
+                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                        border-left: none;
+                        border-radius: 12px;
+                        overflow: hidden;
+
+                        &:hover {
+                            .feedPostActions {
+                                opacity: 1;
+                                pointer-events: auto;
+                                transform: translateY(0);
+                            }
+                        }
+
+
+                        .feedPostLeft{
+                            display: flex;
+                            justify-content: center;
+                            padding: 16px;
+
+                            .iconWrapper{
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+
+                                border-radius: 48px;
+                                height: 48px;
+                                width: 48px;
+
+
+
+                                .feedPostIcon{
+                                    height: 24px;
+                                    margin-left: 4px;
+                                    aspect-ratio: 1/1;
+
+                                    mask-size: cover;
+                                    mask-position: center;
+                                    mask-repeat: no-repeat;
+
+                                    color: var(--background-color);
+                                    background-color: var(--background-color);
+                                }
+                            }
+                        }
+
+                        .feedPostRight{ 
+                            display: flex;
+                            flex-direction: column;
+                            padding: 16px 12px;
+                            gap: 8px;
+
+                            .feedPostHeader {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+
+                                .feedPurpose {
+                                    display: flex;
+                                    align-items: center;
+                                    padding: 4px 8px;
+                                    border-radius: 24px;
+
+                                    p{
+                                        height: auto;
+                                        margin: 0;
+                                        color: var(--background-color-primary);
+                                    }
+                                }
+
+                                .feedTimestamp {
+                                    font-size: 14px;
+                                    color: var(--text-color-secondary);
+                                    height: auto;
+                                    margin: 0;
+                                }
+                            }
+
+                            .feedPostAuthor {
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+
+                                .feedAvatar {
+
+                                }
+
+                                .authorName {
+                                    margin: 0;
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+                            }
+
+                            .feedPostContent{
+
+                                p{
+                                    height: auto;
+                                    margin: 0;
+                                }
+                            }
+
+                        }
+
+                        .feedPostActions {
+                            position: absolute;
+                            top: 12px;
+                            right: 12px;
+
+                            display: flex;
+                            gap: 8px;
+
+                            opacity: 0;
+                            pointer-events: none;
+                            transform: translateY(-6px);
+
+                            transition:
+                                opacity 0.2s ease,
+                                transform 0.2s ease;
+
+                            // zmenšíme buttony pro feed
+                            :global(button) {
+                                padding: 6px 14px;
+                                font-size: 14px;
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -878,6 +878,7 @@ public class APIv2(
             Message = $"Byl přidán nový odkazový materiál: {newMaterial.Name}",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateMaterial
         };
 
         db.FeedPosts.Add(post);
@@ -961,6 +962,7 @@ public class APIv2(
             Message = $"Byl přidán nový souborový materiál: {newMaterial.Name}",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateMaterial
         };
 
         db.FeedPosts.Add(post);
