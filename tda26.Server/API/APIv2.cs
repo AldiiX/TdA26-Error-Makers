@@ -1037,6 +1037,25 @@ public class APIv2(
         if (material == null || material.CourseUuid != courseUuid) {
             return NotFound(new { error = "Material not found." });
         }
+        
+        // odeslani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = existingCourse.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl smazán materiál: {material.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.DeleteMaterial
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync();
+        
+        await fsb.PublishAsync(
+            existingCourse.Uuid, 
+            new FeedStreamMessage("new_post", newFeedPost)
+        );
 
         await materialRepository.DeleteMaterialAsync(material, ct);
 

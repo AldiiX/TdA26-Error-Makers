@@ -60,22 +60,6 @@ if (courseSmallError.value || !_courseSmall.value) {
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
-const feedPosts = computed<FeedPostView[]>(() => {
-    if (!feedData.value) return [];
-
-    return feedData.value.map(post => {
-        const mapped = mapFeedPurpose(post.purpose, post.type);
-
-        return {
-            ...post,
-            purposeLabel: mapped.label,
-            purposeType: mapped.type, 
-            icon: mapped.icon,
-            color: mapped.color,
-            background: mapped.background ?? mapped.color
-        };
-    });
-});
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
@@ -812,6 +796,10 @@ onMounted(() => {
     }
 });
 
+type FeedFilter = "all" | "material" | "quiz";
+
+const selectedFeedFilter = ref<FeedFilter>("all");
+
 const openCreateFeedPost = () => {
     editingFeedPost.value.message = "";
     editingFeedPost.value.type = "manual";
@@ -819,6 +807,38 @@ const openCreateFeedPost = () => {
     enabledModal.value = "createFeedPost";
 };
 
+const feedPosts = computed<FeedPostView[]>(() => {
+    if (!feedData.value) return [];
+
+    return feedData.value
+        .filter(post => {
+            switch (selectedFeedFilter.value) {
+                case "all":
+                    return true;
+                
+                case "material":
+                    return post.purpose === "createMaterial" || post.purpose === "updateMaterial" || post.purpose === "deleteMaterial";
+                    
+                case "quiz":
+                    return post.purpose === "createQuiz" || post.purpose === "updateQuiz" || post.purpose === "deleteQuiz";
+
+                default:
+                    return true;
+            }
+        })
+        .map(post => {
+            const mapped = mapFeedPurpose(post.purpose, post.type);
+
+            return {
+                ...post,
+                purposeLabel: mapped.label,
+                purposeType: mapped.type,
+                icon: mapped.icon,
+                color: mapped.color,
+                background: mapped.background ?? mapped.color
+            };
+        });
+});
 
 const handleFeedPostCreate = async () => {
     if (!course.value) return;
@@ -992,7 +1012,47 @@ watch(feedData, (val) => {
     console.log("FEED:", feedData.value);
 });
 
+function onNewFeedPost(event: MessageEvent) {
+    try {
+        const post: FeedPost = JSON.parse(event.data);
 
+        // ochrana proti duplicitám (refresh + SSE)
+        if (feedData.value?.some(p => p.uuid === post.uuid)) {
+            return;
+        }
+
+        feedData.value = feedData.value
+            ? [post, ...feedData.value]
+            : [post];
+    } catch (e) {
+        console.error("Failed to parse feed SSE event", e);
+    }
+}
+
+let feedEventSource: EventSource | null = null;
+
+onMounted(() => {
+    if (!import.meta.client || !uuid) return;
+
+    const url = `${getBaseUrl()}/api/v1/courses/${uuid}/feed/stream`;
+
+    feedEventSource = new EventSource(url, {
+        withCredentials: true
+    });
+
+    feedEventSource.addEventListener("new_post", onNewFeedPost);
+
+    feedEventSource.onerror = (err) => {
+        console.error("SSE feed error", err);
+    };
+});
+
+onBeforeUnmount(() => {
+    if (feedEventSource) {
+        feedEventSource.close();
+        feedEventSource = null;
+    }
+});
 
 </script>
 
@@ -1130,13 +1190,24 @@ watch(feedData, (val) => {
                                     <!--                                    :disabled="true"-->
                                     <!--                                />-->
                                     <div :class="$style.feedFilterOptions">
-                                        <div :class="[$style.feedFilterOption, $style.active]">
+                                        <div
+                                            :class="[$style.feedFilterOption, selectedFeedFilter === 'all' && $style.active]"
+                                            @click="selectedFeedFilter = 'all'"
+                                        >
                                             <p>Vše</p>
                                         </div>
-                                        <div :class="$style.feedFilterOption">
-                                            <p>Materialy</p>
+
+                                        <div
+                                            :class="[$style.feedFilterOption, selectedFeedFilter === 'material' && $style.active]"
+                                            @click="selectedFeedFilter = 'material'"
+                                        >
+                                            <p>Materiály</p>
                                         </div>
-                                        <div :class="$style.feedFilterOption">
+
+                                        <div
+                                            :class="[$style.feedFilterOption, selectedFeedFilter === 'quiz' && $style.active]"
+                                            @click="selectedFeedFilter = 'quiz'"
+                                        >
                                             <p>Kvízy</p>
                                         </div>
                                     </div>
