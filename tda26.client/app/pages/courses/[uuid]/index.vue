@@ -157,7 +157,7 @@ onMounted(async () => {
 })
 
 
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | null>(null);
+const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | "deleteCourse" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 const authTab = ref<"login" | "register">("login");
@@ -792,6 +792,37 @@ const editClick = () => {
     window.location.href = `/courses/${courseSmall.value?.uuid}?edit=true`;
 };
 
+const openDeleteCourseModal = () => {
+    enabledModal.value = 'deleteCourse';
+};
+
+const handleCourseDelete = async () => {
+    if (!courseSmall.value) return;
+    
+    isActionInProgress.value = true;
+    deleteError.value = null;
+
+    try {
+        await $fetch<void>(getBaseUrl() + `/api/v2/courses/${courseSmall.value.uuid}`, {
+            method: 'DELETE'
+        });
+
+        push.success({
+            title: "Kurz smazán",
+            message: "Kurz byl úspěšně smazán.",
+            duration: 4000
+        });
+
+        // Přesměrování na seznam kurzů
+        await navigateTo('/courses');
+    } catch (err) {
+        console.error("Error deleting course:", err);
+        deleteError.value = "Nepodařilo se smazat kurz. Zkuste to prosím znovu.";
+    } finally {
+        isActionInProgress.value = false;
+    }
+};
+
 const handleAuthSuccess = (account: Account) => {
     // Close the modal
     enabledModal.value = null;
@@ -1049,12 +1080,19 @@ watch(feedData, (val) => {
                             </div>
                         </div>
                     </div>
-                    <Button 
-                        v-if="ownsCourse && !isEditMode"
-                        button-style="primary"
-                        accent-color="secondary"
-                        @click="editClick"
-                    >Upravit kurz</Button>
+                    <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
+                        <Button 
+                            button-style="primary"
+                            accent-color="secondary"
+                            @click="editClick"
+                        >Upravit kurz</Button>
+                        <Button 
+                            button-style="secondary"
+                            accent-color="secondary"
+                            :style="{ '--color': 'var(--color-error)' }"
+                            @click="openDeleteCourseModal"
+                        >Smazat kurz</Button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1257,6 +1295,15 @@ watch(feedData, (val) => {
                 :disabled="isActionInProgress"
                 >
                 Ukončit úpravy
+            </Button>
+            <div :class="$style.separator"></div>
+            <Button
+                button-style="secondary"
+                :style="{ '--color': 'var(--color-error)' }"
+                @click="openDeleteCourseModal"
+                :disabled="isActionInProgress"
+            >
+                Smazat kurz
             </Button>
         </div>
         
@@ -1567,6 +1614,33 @@ watch(feedData, (val) => {
             </p>
         </ModalDestructive>
         
+        <!-- DELETE COURSE -->
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteCourse'"
+            @close="enabledModal = null"
+            title="Smazání kurzu"
+            description="Opravdu chceš smazat tento kurz? Tuto akci nelze vrátit zpět."
+            :yesAction="handleCourseDelete"
+        >
+            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ courseSmall?.name }}</i>?</h3>
+            <p>
+                Tato akce je nevratná. Budou smazány všechny materiály, kvízy, hodnocení a další data spojená s tímto kurzem.
+            </p>
+            <div :class="$style.modalButtons">
+                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                <Button
+                    button-style="primary"
+                    accent-color="secondary"
+                    :style="{ '--color': 'var(--color-error)' }"
+                    @click="handleCourseDelete"
+                    :disabled="isActionInProgress"
+                >
+                    Smazat kurz
+                </Button>
+            </div>
+            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+        </ModalDestructive>
+        
     </Teleport>
 </template>
 
@@ -1651,6 +1725,12 @@ watch(feedData, (val) => {
     a button {
         height: 100%;
         padding: 14px 24px;
+    }
+    
+    .separator {
+        width: 1px;
+        background: var(--border-color-secondary);
+        margin: 0 4px;
     }
 }
 
@@ -1848,6 +1928,17 @@ ul {
                                 color: var(--text-color-secondary);
                             }
                         }
+                    }
+                }
+                
+                .courseActions {
+                    display: flex;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                    
+                    button {
+                        flex: 1;
+                        min-width: 140px;
                     }
                 }
             }
