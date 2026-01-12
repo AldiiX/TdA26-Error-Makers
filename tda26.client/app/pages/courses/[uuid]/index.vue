@@ -1618,13 +1618,13 @@ watch(feedData, (val) => {
         <!-- DELETE COURSE -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteCourse'"
-            @close="enabledModal = null"
+            @close="!isActionInProgress ? enabledModal = null : null"
             title="Smazání kurzu"
             :description="`Opravdu chceš smazat kurz ${courseSmall?.name ?? ''}? Tato akce je nevratná.`"
             :yesAction="handleCourseDelete"
             :yesText="'Smazat kurz'"
             :noText="'Zrušit'"
-            :canBeClosedByClickingOutside="false"
+            :canBeClosedByClickingOutside="!isActionInProgress"
         >
             <p style="margin-top: 16px; color: var(--text-color-secondary);">
                 Budou smazány všechny materiály, kvízy, hodnocení a další data spojená s tímto kurzem.
