@@ -1090,7 +1090,7 @@ watch(feedData, (val) => {
                         <Button 
                             button-style="secondary"
                             accent-color="secondary"
-                            :style="{ '--color': 'var(--color-error)' }"
+                            :style="{ /*'--color': 'var(--color-error)'*/ }"
                             @click="openDeleteCourseModal"
                         >Smazat kurz</Button>
                     </div>
