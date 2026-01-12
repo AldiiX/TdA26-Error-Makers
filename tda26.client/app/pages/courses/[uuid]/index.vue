@@ -793,6 +793,7 @@ const editClick = () => {
 };
 
 const openDeleteCourseModal = () => {
+    deleteError.value = null; // Reset any previous error
     enabledModal.value = 'deleteCourse';
 };
 
@@ -1619,26 +1620,16 @@ watch(feedData, (val) => {
             :enabled="enabledModal === 'deleteCourse'"
             @close="enabledModal = null"
             title="Smazání kurzu"
-            description="Opravdu chceš smazat tento kurz? Tuto akci nelze vrátit zpět."
+            :description="`Opravdu chceš smazat kurz ${courseSmall?.name ?? ''}? Tato akce je nevratná.`"
             :yesAction="handleCourseDelete"
+            :yesText="'Smazat kurz'"
+            :noText="'Zrušit'"
+            :canBeClosedByClickingOutside="false"
         >
-            <h3>Opravdu si přeješ smazat kurz <i class="text-gradient">{{ courseSmall?.name }}</i>?</h3>
-            <p>
-                Tato akce je nevratná. Budou smazány všechny materiály, kvízy, hodnocení a další data spojená s tímto kurzem.
+            <p style="margin-top: 16px; color: var(--text-color-secondary);">
+                Budou smazány všechny materiály, kvízy, hodnocení a další data spojená s tímto kurzem.
             </p>
-            <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
-                <Button
-                    button-style="primary"
-                    accent-color="secondary"
-                    :style="{ '--color': 'var(--color-error)' }"
-                    @click="handleCourseDelete"
-                    :disabled="isActionInProgress"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-            <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
+            <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
         </ModalDestructive>
         
     </Teleport>
