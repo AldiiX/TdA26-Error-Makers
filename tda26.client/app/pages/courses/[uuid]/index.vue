@@ -1124,7 +1124,7 @@ onBeforeUnmount(() => {
                 </ul>
             </nav>
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper>
+                <SmoothSizeWrapper :changeWidth="false">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
                             <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
@@ -1362,6 +1362,7 @@ onBeforeUnmount(() => {
             @close="enabledModal = null"
             can-be-closed-by-clicking-outside
             :modalStyle="{ maxWidth: '800px' }"
+            :class="$style.updateMaterialModal"
         >
             <h3>Úprava materiálu</h3>
 
@@ -1589,6 +1590,7 @@ onBeforeUnmount(() => {
             :enabled="enabledModal === 'updateFeedPost'"
             @close="enabledModal = null"
             :modalStyle="{ maxWidth: '600px' }"
+            :className="$style.updateFeedPostModal"
         >
             <h3>Úprava příspěvku</h3>
 
@@ -1636,6 +1638,24 @@ onBeforeUnmount(() => {
 <style module lang="scss">
 @use "../../../app" as app;
 
+.updateFeedPostModal {
+    h3 {
+        margin: 0;
+        margin-bottom: 32px;
+    }
+}
+
+.updateMaterialModal {
+    h3 {
+        margin: 0;
+        margin-bottom: 32px;
+    }
+
+    textarea{
+        resize: none;
+    }
+}
+
 .feedLabel {
     display: block;
     margin-bottom: 8px;
@@ -1651,6 +1671,7 @@ onBeforeUnmount(() => {
     width: 100%;
     min-height: 120px;
     resize: vertical;
+    resize: none;
 
     padding: 14px 16px;
 
@@ -2002,8 +2023,8 @@ ul {
                 .feedPostFilter {
                     display: flex;
                     align-items: center;
-                    
                     height: 64px;
+                    margin-left: auto;
                     
 
                     .feedFilterLabel {
