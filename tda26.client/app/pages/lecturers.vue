@@ -111,37 +111,40 @@
 
 
 
-    <h1 :class="[$style.nadpis/*, 'text-gradient'*/]">Lektoři</h1>
-    <ClientOnly>
-        <SmoothSizeWrapper>
-            <TypeWriter
-                    style="height: 46px"
+    <section>
+        <h1 :class="[$style.nadpis/*, 'text-gradient'*/]">Lektoři</h1>
+        <ClientOnly>
+            <SmoothSizeWrapper>
+                <TypeWriter
                     text="Podívej se na naše úžasné lektory, kteří tě provedou světem kurzů. Každý z nich přináší jedinečný přístup k výuce, který ti pomůže dosáhnout tvých cílů."
                     :class="$style.podnapis"
                     :startDelayMs="300"
-            />
-        </SmoothSizeWrapper>
-    </ClientOnly>
+                />
+            </SmoothSizeWrapper>
+        </ClientOnly>
 
-<!--    <div :class="$style.list">-->
-<!--        <LecturerCard v-for="_ in 6" :lecturer="null" :class="[$style.card, $style.cardloading]" />-->
-<!--    </div>-->
+        <!--    <div :class="$style.list">-->
+        <!--        <LecturerCard v-for="_ in 6" :lecturer="null" :class="[$style.card, $style.cardloading]" />-->
+        <!--    </div>-->
 
-    <div :class="$style.list">
-        <!-- lectureri plně načteni -->
-        <LecturerCard v-if="lecturers && !lecturersFetchPending && !lecturersFetchError" v-for="l in lecturers" :lecturer="l" :class="$style.card" />
+        <div :class="$style.list">
+            <!-- lectureri plně načteni -->
+            <LecturerCard v-if="lecturers && !lecturersFetchPending && !lecturersFetchError" v-for="l in lecturers" :lecturer="l" :class="$style.card" />
 
-        <!-- načítání lektorů -->
-        <LecturerCard v-else-if="lecturersFetchPending" v-for="_ in 6" :lecturer="null" :class="$style.card" />
+            <!-- načítání lektorů -->
+            <LecturerCard v-else-if="lecturersFetchPending" v-for="_ in 6" :lecturer="null" :class="$style.card" />
 
-        <!-- chyba pri nacitani lektoru -->
-        <div v-if="lecturersFetchError">
-            <p>Něco se pokazilo při načítání lektorů. Zkus to prosím znovu později.</p>
+            <!-- chyba pri nacitani lektoru -->
+            <div v-if="lecturersFetchError">
+                <p>Něco se pokazilo při načítání lektorů. Zkus to prosím znovu později.</p>
+            </div>
         </div>
-    </div>
+    </section>
 </template>
 
 <style module lang="scss">
+@use "../app" as app;
+
 .blobeffect {
     position: absolute;
     top: 0;
@@ -212,7 +215,7 @@
 
 .nadpis {
     font-size: 64px;
-    width: fit-content;
+    //width: fit-content;
     margin:0;
 }
 
@@ -221,6 +224,7 @@
     margin-top: 16px;
     max-width: 700px;
     color: var(--text-color-secondary);
+    height: 46px;
 }
 
 .list {
@@ -258,5 +262,46 @@
             color: var(--accent-color-primary);
         }
     }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+    .nadpis, .podnapis {
+        text-align: center;
+    }
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    section {
+        margin-top: -50px;
+    }
+
+    .list {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 750px) {
+    .podnapis {
+        height: 60px;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .podnapis {
+        height: 110px;
+    }
+}
+
+@media screen and (max-width: 350px) {
+    .podnapis {
+        height: 150px;
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
 }
 </style>

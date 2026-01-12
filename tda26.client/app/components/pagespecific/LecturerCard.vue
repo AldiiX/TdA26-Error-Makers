@@ -106,6 +106,8 @@ const generateRandomNbspNumber = ( min: number, max: number ): string => {
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
+
 .vizitka {
     /* base layout */
     display: flex;
@@ -243,5 +245,43 @@ const generateRandomNbspNumber = ( min: number, max: number ): string => {
 
         p { margin: 0; font-size: 13px; }
     }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+}
+
+// 750px
+@media screen and (max-width: 750px) {
+    .vizitka {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+
+        .description {
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .title {
+            justify-content: center;
+        }
+
+        .tags {
+            justify-content: center;
+            
+            &:first-child {
+                margin-bottom: 8px;
+            }
+        }
+    }
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
 }
 </style>
