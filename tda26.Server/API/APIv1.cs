@@ -969,8 +969,17 @@ public class APIv1(
 
         db.FeedPosts.Add(newFeedPost);
         await db.SaveChangesAsync(ct);
+        
+        // Reload feedPost with full relations for SSE
+        var feedPostWithRelations = await db.FeedPosts
+            .Where(fp => fp.Uuid == newFeedPost.Uuid)
+            .Include(fp => fp.Course)
+            .Include(fp => fp.Account)
+            .FirstAsync(ct);
+        
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", feedPostWithRelations), ct);
 
-        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
+        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, feedPostWithRelations);
     }
 
 
@@ -1023,6 +1032,8 @@ public class APIv1(
         feedPost.Edited = body.Edited;
 
         await db.SaveChangesAsync(ct);
+        
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("updated_post", feedPost), ct);
 
         return Ok(feedPost);
     }
