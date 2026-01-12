@@ -1037,6 +1037,25 @@ public class APIv2(
         if (material == null || material.CourseUuid != courseUuid) {
             return NotFound(new { error = "Material not found." });
         }
+        
+        // odeslani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = existingCourse.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl smazán materiál: {material.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.DeleteMaterial
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync();
+        
+        await fsb.PublishAsync(
+            existingCourse.Uuid, 
+            new FeedStreamMessage("new_post", newFeedPost)
+        );
 
         await materialRepository.DeleteMaterialAsync(material, ct);
 
@@ -1078,8 +1097,28 @@ public class APIv2(
                 }
 
                 await materialRepository.UpdateMaterialAsync(urlMaterial, ct);
+                
+                var newFeedPost = new FeedPost {
+                    Uuid = Guid.NewGuid(),
+                    CourseUuid = course.Uuid,
+                    Type = FeedPost.FeedPostType.System,
+                    Message = $"Byl upraven odkazový materiál: {urlMaterial.Name}",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Purpose = FeedPost.FeedPurpose.UpdateMaterial
+                };
 
+                db.FeedPosts.Add(newFeedPost);
+                await db.SaveChangesAsync(ct);
+
+                await fsb.PublishAsync(
+                    course.Uuid,
+                    new FeedStreamMessage("new_post", newFeedPost),
+                    ct
+                );
+                
                 return Ok(urlMaterial.ToReadDto());
+            
             case FileMaterial fileMaterial:
                 if (!string.IsNullOrEmpty(body.Name))
                     fileMaterial.Name = body.Name;
@@ -1088,7 +1127,7 @@ public class APIv2(
                     fileMaterial.Description = body.Description;
 
                 await materialRepository.UpdateMaterialAsync(fileMaterial, ct);
-
+                
                 return Ok(fileMaterial.ToReadDto());
 
             default:
@@ -1145,6 +1184,26 @@ public class APIv2(
 
         await materialRepository.UpdateMaterialAsync(fileMaterial, ct);
 
+        // odeslani info do sse
+        
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = $"Byl upraven souborový materiál: {fileMaterial.Name}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.UpdateMaterial
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        await db.SaveChangesAsync();
+        
+        await fsb.PublishAsync(
+            course.Uuid, 
+            new FeedStreamMessage("new_post", newFeedPost)
+        );
+        
         return Ok(fileMaterial.ToReadDto());
     }
 

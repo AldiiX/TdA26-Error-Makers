@@ -428,7 +428,11 @@ public class APIv1(
         
         db.FeedPosts.Add(newFeedPost);
         await db.SaveChangesAsync();
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
+        await fsb.PublishAsync(
+            course.Uuid, 
+            new FeedStreamMessage("new_post", newFeedPost)
+        );
         
         return NoContent();
     }
