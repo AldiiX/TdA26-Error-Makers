@@ -34,7 +34,7 @@ const animationState = ref<AnimationState>("closed");
 const modalContentRef = ref<HTMLDivElement | null>(null);
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
 
-// Scroll tolerance for floating point comparison
+// Scroll tolerance in pixels for floating point comparison in scroll position calculations
 const SCROLL_TOLERANCE = 1;
 
 const clearAnimationTimeout = () => {
@@ -101,7 +101,7 @@ const handleWheel = (event: WheelEvent) => {
 
     // Check if we're at the scroll boundaries
     const atTop = modalContent.scrollTop === 0;
-    const atBottom = Math.abs(modalContent.scrollTop + modalContent.clientHeight - modalContent.scrollHeight) < SCROLL_TOLERANCE;
+    const atBottom = modalContent.scrollTop + modalContent.clientHeight >= modalContent.scrollHeight - SCROLL_TOLERANCE;
 
     // Prevent scroll if we're at the boundaries and trying to scroll further
     if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
