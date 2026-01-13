@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const isOpen = ref(props.enabled);
 const animationState = ref<AnimationState>("closed");
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
+let originalBodyOverflow: string = "";
 
 const clearAnimationTimeout = () => {
     if (animationTimeout !== null) {
@@ -80,12 +81,13 @@ watch(
 
         if (open) {
             document.addEventListener("keydown", handleKeydown);
-            // Prevent body scroll when modal is open
+            // Store original body overflow and prevent body scroll when modal is open
+            originalBodyOverflow = document.body.style.overflow;
             document.body.style.overflow = "hidden";
         } else {
             document.removeEventListener("keydown", handleKeydown);
-            // Restore body scroll when modal is closed
-            document.body.style.overflow = "";
+            // Restore original body scroll when modal is closed
+            document.body.style.overflow = originalBodyOverflow;
         }
     },
     { immediate: true }
@@ -94,8 +96,8 @@ watch(
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
     document.removeEventListener("keydown", handleKeydown);
-    // Restore body scroll on unmount
-    document.body.style.overflow = "";
+    // Restore original body scroll on unmount
+    document.body.style.overflow = originalBodyOverflow;
     clearAnimationTimeout();
 });
 </script>
