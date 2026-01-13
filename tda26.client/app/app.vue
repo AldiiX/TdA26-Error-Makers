@@ -57,7 +57,42 @@ useSeo({
 
     <NuxtLayout>
         <NuxtPage />
+        
+        <div :class="$style.smallDevice">
+            <p>Šířka zařízení je příliš malá. Použijte prosím zařízení s větším rozlišením nebo šířkou obrazovky.</p>
+        </div>
     </NuxtLayout>
 </template>
 
 <style src="./app.scss" />
+
+<style module lang="scss">
+.smallDevice {
+    display: none;
+}
+
+@media screen and (max-width: 299px) {
+    .main {
+        display: none;
+    }
+
+    .smallDevice {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 100vw;
+        background-color: white;
+        z-index: 1000000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        p {
+            font-size: 18px;
+            text-align: center;
+            padding: 20px;
+        }
+    }
+}
+</style>
