@@ -83,8 +83,8 @@ const handleWheel = (event: WheelEvent) => {
     if (!modalContent) return;
 
     // Check if the event target is within the modal content
-    const target = event.target as Node;
-    if (!modalContent.contains(target)) {
+    const target = event.target;
+    if (!target || !modalContent.contains(target as Node)) {
         // If the event is not within modal content, prevent scrolling
         event.preventDefault();
         return;
