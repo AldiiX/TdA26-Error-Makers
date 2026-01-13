@@ -31,8 +31,11 @@ const emit = defineEmits<{
 
 const isOpen = ref(props.enabled);
 const animationState = ref<AnimationState>("closed");
+const modalContentRef = ref<HTMLDivElement | null>(null);
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
-let modalContentElement: Element | null = null;
+
+// Scroll tolerance for floating point comparison
+const SCROLL_TOLERANCE = 1;
 
 const clearAnimationTimeout = () => {
     if (animationTimeout !== null) {
@@ -75,19 +78,20 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 const handleWheel = (event: WheelEvent) => {
-    // Use cached modal content element
-    if (!modalContentElement) return;
+    // Use the template ref for this modal's content
+    const modalContent = modalContentRef.value;
+    if (!modalContent) return;
 
     // Check if the event target is within the modal content
     const target = event.target as Node;
-    if (!modalContentElement.contains(target)) {
+    if (!modalContent.contains(target)) {
         // If the event is not within modal content, prevent scrolling
         event.preventDefault();
         return;
     }
 
     // Check if modal content is scrollable and handle scroll blocking
-    const isScrollable = modalContentElement.scrollHeight > modalContentElement.clientHeight;
+    const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
     
     if (!isScrollable) {
         // If modal content is not scrollable, prevent the event
@@ -96,8 +100,8 @@ const handleWheel = (event: WheelEvent) => {
     }
 
     // Check if we're at the scroll boundaries
-    const atTop = modalContentElement.scrollTop === 0;
-    const atBottom = Math.abs(modalContentElement.scrollTop + modalContentElement.clientHeight - modalContentElement.scrollHeight) < 1;
+    const atTop = modalContent.scrollTop === 0;
+    const atBottom = Math.abs(modalContent.scrollTop + modalContent.clientHeight - modalContent.scrollHeight) < SCROLL_TOLERANCE;
 
     // Prevent scroll if we're at the boundaries and trying to scroll further
     if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
@@ -111,13 +115,9 @@ watch(
         if (typeof document === "undefined") return; // <-- SSR SAFE
 
         if (open) {
-            // Cache the modal content element reference
-            modalContentElement = document.querySelector('[data-modal-content="true"]');
             document.addEventListener("keydown", handleKeydown);
             document.addEventListener("wheel", handleWheel, { passive: false });
         } else {
-            // Clear the cached reference
-            modalContentElement = null;
             document.removeEventListener("keydown", handleKeydown);
             document.removeEventListener("wheel", handleWheel);
         }
@@ -127,7 +127,6 @@ watch(
 
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
-    modalContentElement = null;
     document.removeEventListener("keydown", handleKeydown);
     document.removeEventListener("wheel", handleWheel);
     clearAnimationTimeout();
@@ -147,9 +146,9 @@ onBeforeUnmount(() => {
         ></div>
 
         <div
+            ref="modalContentRef"
             :class="[$style.modalcontent, props.modalClassName]"
             :style="props.modalStyle"
-            data-modal-content="true"
         >
             <div
                 v-if="props.showCloseButton"
