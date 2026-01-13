@@ -99,6 +99,8 @@ const emit = defineEmits<{ (e: "click"): void }>();
         object-fit: cover;
         border-radius: 100%;
         pointer-events: none;
+        left: 0;
+        top: 0;
         //border: 1px solid var(--text-color-darker);
     }
 }
