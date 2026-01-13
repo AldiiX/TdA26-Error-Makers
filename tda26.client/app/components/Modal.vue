@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const isOpen = ref(props.enabled);
 const animationState = ref<AnimationState>("closed");
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
+let modalContentElement: Element | null = null;
 
 const clearAnimationTimeout = () => {
     if (animationTimeout !== null) {
@@ -74,20 +75,19 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 const handleWheel = (event: WheelEvent) => {
-    // Get the modal content element
-    const modalContent = document.querySelector('[data-modal-content="true"]');
-    if (!modalContent) return;
+    // Use cached modal content element
+    if (!modalContentElement) return;
 
     // Check if the event target is within the modal content
     const target = event.target as Node;
-    if (!modalContent.contains(target)) {
+    if (!modalContentElement.contains(target)) {
         // If the event is not within modal content, prevent scrolling
         event.preventDefault();
         return;
     }
 
     // Check if modal content is scrollable and handle scroll blocking
-    const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
+    const isScrollable = modalContentElement.scrollHeight > modalContentElement.clientHeight;
     
     if (!isScrollable) {
         // If modal content is not scrollable, prevent the event
@@ -96,8 +96,8 @@ const handleWheel = (event: WheelEvent) => {
     }
 
     // Check if we're at the scroll boundaries
-    const atTop = modalContent.scrollTop === 0;
-    const atBottom = modalContent.scrollTop + modalContent.clientHeight >= modalContent.scrollHeight;
+    const atTop = modalContentElement.scrollTop === 0;
+    const atBottom = Math.abs(modalContentElement.scrollTop + modalContentElement.clientHeight - modalContentElement.scrollHeight) < 1;
 
     // Prevent scroll if we're at the boundaries and trying to scroll further
     if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
@@ -111,9 +111,13 @@ watch(
         if (typeof document === "undefined") return; // <-- SSR SAFE
 
         if (open) {
+            // Cache the modal content element reference
+            modalContentElement = document.querySelector('[data-modal-content="true"]');
             document.addEventListener("keydown", handleKeydown);
             document.addEventListener("wheel", handleWheel, { passive: false });
         } else {
+            // Clear the cached reference
+            modalContentElement = null;
             document.removeEventListener("keydown", handleKeydown);
             document.removeEventListener("wheel", handleWheel);
         }
@@ -123,6 +127,7 @@ watch(
 
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
+    modalContentElement = null;
     document.removeEventListener("keydown", handleKeydown);
     document.removeEventListener("wheel", handleWheel);
     clearAnimationTimeout();
