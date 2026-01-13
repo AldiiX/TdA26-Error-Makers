@@ -365,11 +365,11 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 </template>
 
 <style module lang="scss">
-@use "../../../../../app" as *;
+@use "../../../../../app" as app;
 
 .editMode {
     .editable {
-        @include editable;
+        @include app.editable;
     }
 }
 
@@ -386,6 +386,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         font-weight: 600;
         margin: 0;
         text-align: center;
+        word-break: break-all;
     }
     
     .buttonGroup {
@@ -425,6 +426,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         margin: 0;
         justify-content: center;
         transition: all 0.3s;
+        flex-wrap: wrap;
         
         .draggableGroup {
             display: flex;
@@ -489,6 +491,17 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
                 cursor: pointer;
             }
         }
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .quizContainer {
+        width: 100%;
+        padding: 0 16px;
+    }
+
+    .buttonGroup {
+        flex-direction: column;
     }
 }
 </style>

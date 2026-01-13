@@ -114,6 +114,8 @@ const setQuestionIndex = (i: number) => {
 </template>
 
 <style module lang="scss">
+@use "../../../../../../app" as app;
+
 .container {
     display: flex;
     flex-direction: column;
@@ -132,6 +134,8 @@ const setQuestionIndex = (i: number) => {
         h1 {
             font-size: 48px;
             margin: 0;
+            text-align: center;
+            word-break: break-all;
         }
         
         p {
@@ -165,6 +169,7 @@ const setQuestionIndex = (i: number) => {
         margin: 0;
         justify-content: center;
         transition: all 0.3s;
+        flex-wrap: wrap;
 
         li {
             width: 32px;
@@ -193,6 +198,17 @@ const setQuestionIndex = (i: number) => {
             background-color: var(--accent-color-primary) !important;
             color: white;
         }
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .container {
+        width: 100%;
+        padding: 0 16px;
+    }
+
+    .controls {
+        flex-direction: column;
     }
 }
 </style>
