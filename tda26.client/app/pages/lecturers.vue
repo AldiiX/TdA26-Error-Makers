@@ -114,7 +114,7 @@
     <section>
         <h1 :class="[$style.nadpis/*, 'text-gradient'*/]">Lektoři</h1>
         <ClientOnly>
-            <SmoothSizeWrapper>
+            <SmoothSizeWrapper :change-width="false">
                 <TypeWriter
                     text="Podívej se na naše úžasné lektory, kteří tě provedou světem kurzů. Každý z nich přináší jedinečný přístup k výuce, který ti pomůže dosáhnout tvých cílů."
                     :class="$style.podnapis"
@@ -268,6 +268,7 @@
 @media screen and (max-width: app.$laptopBreakpoint) {
     .nadpis, .podnapis {
         text-align: center;
+        margin: 0 auto;
     }
 }
 
