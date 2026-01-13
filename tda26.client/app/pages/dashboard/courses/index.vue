@@ -208,45 +208,47 @@ const deleteCourse = async () => {
     <Head>
         <Title>Moje kurzy • Think different Academy</Title>
     </Head>
+    
+    <section>
+        <h1 :class="$style.nadpis">
+            Moje kurzy
+            <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat úplně všechny kurzy)</span>
+        </h1>
+        <!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
 
-    <h1 :class="$style.nadpis">
-        Moje kurzy
-        <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat úplně všechny kurzy)</span>
-    </h1>
-<!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
+        <!--  TODO: Místo kopírování kódu, tak udělat komponentu pro kurzy na courses a dashboard/courses  -->
 
-<!--  TODO: Místo kopírování kódu, tak udělat komponentu pro kurzy na courses a dashboard/courses  -->
+        <div :class="$style.courses">
+            <template v-if="courses === null">
+                <p>Načítání kurzů...</p>
+            </template>
 
-    <div :class="$style.courses">
-        <template v-if="courses === null">
-            <p>Načítání kurzů...</p>
-        </template>
+            <template v-else-if="courses.length === 0">
+                <p>Ještě nemáte žádné kurzy. Začněte vytvořením nového kurzu kliknutím na tlačítko výše.</p>
+            </template>
 
-        <template v-else-if="courses.length === 0">
-            <p>Ještě nemáte žádné kurzy. Začněte vytvořením nového kurzu kliknutím na tlačítko výše.</p>
-        </template>
+            <template v-else-if="courses.length > 0">
+                <div :class="$style.coursesList">
+                    <CourseCard
+                        v-for="course in paginatedCourses"
+                        edit-mode
+                        :course="course"
+                        :key="course.uuid"
+                        @delete="openDelete(course)"
+                    />
+                </div>
 
-        <template v-else-if="courses.length > 0">
-            <div :class="$style.coursesList">
-                <CourseCard
-                    v-for="course in paginatedCourses"
-                    edit-mode
-                    :course="course"
-                    :key="course.uuid"
-                    @delete="openDelete(course)"
+                <Pagination
+                    v-if="totalPages > 1"
+                    :page="page"
+                    :total-pages="totalPages"
+                    :visible-pages="visiblePages"
+                    :class="$style.pagination"
+                    @update:page="goToPage"
                 />
-            </div>
-
-            <Pagination
-                v-if="totalPages > 1"
-                :page="page"
-                :total-pages="totalPages"
-                :visible-pages="visiblePages"
-                :class="$style.pagination"
-                @update:page="goToPage"
-            />
-        </template>
-    </div>
+            </template>
+        </div>
+    </section>
 
     <Teleport to="#teleports">
         <!-- CREATE -->
@@ -294,15 +296,18 @@ const deleteCourse = async () => {
 </template>
 
 <style module lang="scss">
+@use "../../../app" as app;
+
 .nadpis {
     font-size: 64px;
     margin: 0;
+    display: flex;
+    flex-direction: column;
 
     .admininfo {
         font-size: 16px;
         color: var(--text-color);
         opacity: 0.5;
-        margin-left: 16px;
         font-weight: 500;
     }
 }
@@ -338,5 +343,24 @@ const deleteCourse = async () => {
         margin-top: 32px;
         display: flex;
     }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    section {
+        margin-top: -50px;
+    }
+
+    .coursesList {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)) !important;
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
 }
 </style>

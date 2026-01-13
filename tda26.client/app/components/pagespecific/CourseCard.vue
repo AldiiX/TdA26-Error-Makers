@@ -69,7 +69,7 @@ const resetBgImage = async () => {
 </script>
 
 <template>
-    <div :class="$style.container" :style="revealStyle">
+    <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
         <div :class="$style.top">
             <div 
                 :class="$style.editOverlay"
@@ -583,6 +583,18 @@ const resetBgImage = async () => {
         
         .buttonsContainer .anotherInfo {
             gap: 8px !important;
+        }
+    }
+    
+    .editMode {
+        .buttonsContainer {
+            flex-direction: column;
+            align-items: start !important;
+            gap: 8px !important;
+            
+            .actionContainer {
+                width: 100% !important;
+            }
         }
     }
 }
