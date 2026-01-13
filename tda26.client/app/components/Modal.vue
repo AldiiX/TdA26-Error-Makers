@@ -73,6 +73,38 @@ const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === "Escape") handleClose();
 };
 
+const handleWheel = (event: WheelEvent) => {
+    // Get the modal content element
+    const modalContent = document.querySelector('[data-modal-content="true"]');
+    if (!modalContent) return;
+
+    // Check if the event target is within the modal content
+    const target = event.target as Node;
+    if (!modalContent.contains(target)) {
+        // If the event is not within modal content, prevent scrolling
+        event.preventDefault();
+        return;
+    }
+
+    // Check if modal content is scrollable and handle scroll blocking
+    const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
+    
+    if (!isScrollable) {
+        // If modal content is not scrollable, prevent the event
+        event.preventDefault();
+        return;
+    }
+
+    // Check if we're at the scroll boundaries
+    const atTop = modalContent.scrollTop === 0;
+    const atBottom = modalContent.scrollTop + modalContent.clientHeight >= modalContent.scrollHeight;
+
+    // Prevent scroll if we're at the boundaries and trying to scroll further
+    if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
+        event.preventDefault();
+    }
+};
+
 watch(
     () => isOpen.value,
     (open) => {
@@ -80,8 +112,10 @@ watch(
 
         if (open) {
             document.addEventListener("keydown", handleKeydown);
+            document.addEventListener("wheel", handleWheel, { passive: false });
         } else {
             document.removeEventListener("keydown", handleKeydown);
+            document.removeEventListener("wheel", handleWheel);
         }
     },
     { immediate: true }
@@ -90,6 +124,7 @@ watch(
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
     document.removeEventListener("keydown", handleKeydown);
+    document.removeEventListener("wheel", handleWheel);
     clearAnimationTimeout();
 });
 </script>
@@ -109,6 +144,7 @@ onBeforeUnmount(() => {
         <div
             :class="[$style.modalcontent, props.modalClassName]"
             :style="props.modalStyle"
+            data-modal-content="true"
         >
             <div
                 v-if="props.showCloseButton"
