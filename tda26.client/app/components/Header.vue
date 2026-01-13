@@ -166,7 +166,7 @@
     left: 50%;
     transform: translateX(-50%);
     top: 0;
-    z-index: 5;
+    z-index: 5000;
     transition-duration: 0.3s;
     border: 1px solid transparent;
     border-radius: 32px;

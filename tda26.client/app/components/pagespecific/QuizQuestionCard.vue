@@ -233,11 +233,16 @@ const isDeleteModalOpen = ref(false);
 </template>
 
 <style module lang="scss">
-@use "../../app" as *;
+@use "../../app" as app;
 
 .editMode {
     .editable {
-        @include editable;
+        @include app.editable;
+    }
+    
+    ul li div{
+        justify-content: start !important;
+        text-align: start !important;
     }
 }
 
@@ -349,7 +354,9 @@ const isDeleteModalOpen = ref(false);
                 border: none !important;
                 display: flex;
                 align-items: center;
-                justify-content: start;
+                justify-content: center;
+                word-break: break-all;
+                text-align: center;
 
                 >p {
                     margin: 0;
@@ -431,6 +438,32 @@ const isDeleteModalOpen = ref(false);
                 position: absolute;
                 left: 50%;
                 transform: translateX(-50%);
+            }
+        }
+    }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .questionContainer {
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+
+            li {
+                width: 100%;
+                height: auto;
+                border-radius: 8px;
+                padding: 8px 0;
             }
         }
     }

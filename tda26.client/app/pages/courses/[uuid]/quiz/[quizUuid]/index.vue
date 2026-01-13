@@ -106,7 +106,7 @@ const setQuestionIndex = (i: number) => {
 
     <div :class="[$style.quizContainer]" v-if="quiz">
         <ul :class="$style.questionProgress">
-            <li 
+            <li
                 v-for="(_, i) in quiz.questions"
                 :key="i"
                 :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
@@ -152,11 +152,11 @@ const setQuestionIndex = (i: number) => {
 </template>
 
 <style module lang="scss">
-@use "../../../../../app" as *;
+@use "../../../../../app" as app;
 
 .editMode {
     .editable {
-        @include editable;
+        @include app.editable;
     }
 }
 
@@ -173,6 +173,7 @@ const setQuestionIndex = (i: number) => {
         font-weight: 600;
         margin: 0;
         text-align: center;
+        word-break: break-all;
     }
 
     .controls {
@@ -193,6 +194,7 @@ const setQuestionIndex = (i: number) => {
         margin: 0;
         justify-content: center;
         transition: all 0.3s;
+        flex-wrap: wrap;
 
         li {
             width: 32px;
@@ -213,6 +215,26 @@ const setQuestionIndex = (i: number) => {
             background-color: var(--accent-color-primary);
             color: white;
         }
+    }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .quizContainer {
+        width: 100%;
+        padding: 0 16px;
+    }
+    
+    .controls {
+        flex-direction: column;
     }
 }
 </style>
