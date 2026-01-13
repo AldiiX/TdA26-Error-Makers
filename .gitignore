@@ -8,3 +8,5 @@ bin
 .env.prod
 node_modules
 dist
+.output
+.nuxt

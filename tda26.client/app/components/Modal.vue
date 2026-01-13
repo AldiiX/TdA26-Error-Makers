@@ -80,8 +80,12 @@ watch(
 
         if (open) {
             document.addEventListener("keydown", handleKeydown);
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = "hidden";
         } else {
             document.removeEventListener("keydown", handleKeydown);
+            // Restore body scroll when modal is closed
+            document.body.style.overflow = "";
         }
     },
     { immediate: true }
@@ -90,6 +94,8 @@ watch(
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
     document.removeEventListener("keydown", handleKeydown);
+    // Restore body scroll on unmount
+    document.body.style.overflow = "";
     clearAnimationTimeout();
 });
 </script>
