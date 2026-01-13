@@ -132,11 +132,13 @@
             </div>
         </div>
 
-        <Avatar :name="lecturer.firstName + ' ' + lecturer.lastName" :src="lecturer.pictureUrl" :size="400" />
+        <Avatar :class="$style.avatar" :name="lecturer.firstName + ' ' + lecturer.lastName" :src="lecturer.pictureUrl" :size="400" />
     </div>
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
+
 .profile {
     display: flex;
     flex-direction: column;
@@ -165,11 +167,11 @@
         align-items: flex-start;
     }
 
-    >.left {
+    > .left {
         display: grid;
         width: 60%;
 
-        >.name {
+        > .name {
             display: grid;
 
             p, h1 {
@@ -214,7 +216,7 @@
             }
         }
 
-        >.el {
+        > .el {
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -234,13 +236,13 @@
                 }
             }
 
-            >.duo {
+            > .duo {
                 display: grid;
                 grid-template-columns: auto 1fr;
                 gap: 8px;
                 align-items: start;
 
-                >.icon {
+                > .icon {
                     width: 14px;
                     height: 14px;
                     background-color: var(--text-color-secondary);
@@ -257,6 +259,104 @@
                     width: max-content;
                 }
             }
+        }
+    }
+}
+
+@media screen and (max-width: 1500px) {
+    .profile {
+        >.left >.name {
+            p, h1 {
+                font-size: 64px;
+            }
+
+            p {
+                font-size: 32px;
+            }
+        }
+        
+        >.avatar {
+            max-width: 350px;
+        }
+    }
+}
+
+@media screen and (max-width: 1200px) {
+    .profile {
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+        justify-content: center;
+        width: 100%;
+        margin-top: -50px;
+
+        >.left {
+            width: 70%;
+            order: 1;
+
+            >.name {
+                p, h1 {
+                    font-size: 64px;
+                }
+
+                p {
+                    font-size: 32px;
+                }
+            }
+        }
+
+        >.avatar {
+            order: 0;
+            max-width: 350px;
+        }
+
+        .elements {
+            flex-direction: column;
+            gap: 2rem;
+        }
+    }
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    .profile {
+        >.left {
+            >.name {
+                p, h1 {
+                    font-size: 48px;
+                }
+
+                p {
+                    font-size: 24px;
+                }
+            }
+        }
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .profile {
+        >.left {
+            width: 100%;
+
+            >.name {
+                p, h1 {
+                    font-size: 32px;
+                }
+
+                p {
+                    font-size: 18px;
+                }
+            }
+        }
+
+        >.avatar {
+            max-width: 250px;
         }
     }
 }
