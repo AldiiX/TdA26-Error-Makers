@@ -14,11 +14,11 @@
 <template>
     <div :class="$style.container">
         <h1 :class="[$style.nadpis, 'text-gradient']">Ochrana osobních údajů (GDPR)</h1>
-        <p :class="$style.podnapis">Think different Academy respektuje vaše soukromí a zavazuje se chránit vaše osobní údaje v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 o ochraně osobních údajů (GDPR).</p>
+        <p :class="$style.podnapis">Think different Academy respektuje tvoje soukromí a zavazuje se chránit tvoje osobní údaje v souladu s Nařízením Evropského parlamentu a Rady (EU) 2016/679 o ochraně osobních údajů (GDPR).</p>
 
         <section :class="$style.section">
             <h2>1. Správce osobních údajů</h2>
-            <p>Správcem vašich osobních údajů je Think different Academy. V případě dotazů týkajících se zpracování osobních údajů nás můžete kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+            <p>Správcem tvých osobních údajů je Think different Academy. V případě dotazů týkajících se zpracování osobních údajů nás můžeš kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
         </section>
 
         <section :class="$style.section">
@@ -35,7 +35,7 @@
 
         <section :class="$style.section">
             <h2>3. Účel zpracování osobních údajů</h2>
-            <p>Vaše osobní údaje zpracováváme pro následující účely:</p>
+            <p>Tvoje osobní údaje zpracováváme pro následující účely:</p>
             <ul>
                 <li>Poskytování přístupu k vzdělávací platformě a kurzům</li>
                 <li>Vytvoření a správa uživatelského účtu</li>
@@ -51,7 +51,7 @@
             <h2>4. Právní základ zpracování</h2>
             <p>Osobní údaje zpracováváme na základě:</p>
             <ul>
-                <li>Vašeho souhlasu (zejména při registraci)</li>
+                <li>Tvého souhlasu (zejména při registraci)</li>
                 <li>Plnění smlouvy o poskytování vzdělávacích služeb</li>
                 <li>Plnění právních povinností</li>
                 <li>Oprávněného zájmu správce (zlepšování služeb, bezpečnost platformy)</li>
@@ -70,33 +70,33 @@
 
         <section :class="$style.section">
             <h2>6. Předávání osobních údajů</h2>
-            <p>Vaše osobní údaje můžeme předávat:</p>
+            <p>Tvoje osobní údaje můžeme předávat:</p>
             <ul>
                 <li>Poskytovatelům platebních služeb (pro zpracování plateb)</li>
                 <li>Poskytovatelům hostingových služeb</li>
                 <li>Poskytovatelům analytických nástrojů</li>
                 <li>Orgánům veřejné moci na základě právních předpisů</li>
             </ul>
-            <p>Všichni zpracovatelé jsou pečlivě vybráni a zavázáni k ochraně vašich osobních údajů.</p>
+            <p>Všichni zpracovatelé jsou pečlivě vybráni a zavázáni k ochraně tvých osobních údajů.</p>
         </section>
 
         <section :class="$style.section">
-            <h2>7. Vaše práva</h2>
-            <p>V souvislosti se zpracováním vašich osobních údajů máte následující práva:</p>
+            <h2>7. Tvoje práva</h2>
+            <p>V souvislosti se zpracováním tvých osobních údajů máš následující práva:</p>
             <ul>
-                <li><strong>Právo na přístup:</strong> Máte právo získat informace o tom, jaké osobní údaje o vás zpracováváme</li>
-                <li><strong>Právo na opravu:</strong> Máte právo požadovat opravu nepřesných nebo neúplných údajů</li>
-                <li><strong>Právo na výmaz:</strong> Za určitých podmínek můžete požadovat výmaz vašich osobních údajů</li>
-                <li><strong>Právo na omezení zpracování:</strong> Můžete požádat o omezení zpracování vašich údajů</li>
-                <li><strong>Právo na přenositelnost:</strong> Máte právo získat své údaje ve strukturovaném, běžně používaném formátu</li>
-                <li><strong>Právo vznést námitku:</strong> Můžete vznést námitku proti zpracování vašich údajů</li>
-                <li><strong>Právo odvolat souhlas:</strong> Pokud je zpracování založeno na souhlasu, máte právo jej kdykoli odvolat</li>
+                <li><strong>Právo na přístup:</strong> Máš právo získat informace o tom, jaké osobní údaje o tobě zpracováváme</li>
+                <li><strong>Právo na opravu:</strong> Máš právo požadovat opravu nepřesných nebo neúplných údajů</li>
+                <li><strong>Právo na výmaz:</strong> Za určitých podmínek můžeš požadovat výmaz tvých osobních údajů</li>
+                <li><strong>Právo na omezení zpracování:</strong> Můžeš požádat o omezení zpracování tvých údajů</li>
+                <li><strong>Právo na přenositelnost:</strong> Máš právo získat své údaje ve strukturovaném, běžně používaném formátu</li>
+                <li><strong>Právo vznést námitku:</strong> Můžeš vznést námitku proti zpracování tvých údajů</li>
+                <li><strong>Právo odvolat souhlas:</strong> Pokud je zpracování založeno na souhlasu, máš právo jej kdykoli odvolat</li>
             </ul>
         </section>
 
         <section :class="$style.section">
             <h2>8. Bezpečnost osobních údajů</h2>
-            <p>Zavázali jsme se chránit vaše osobní údaje pomocí vhodných technických a organizačních opatření, včetně šifrování dat, pravidelných bezpečnostních auditů a omezení přístupu k osobním údajům pouze na oprávněné osoby.</p>
+            <p>Zavázali jsme se chránit tvoje osobní údaje pomocí vhodných technických a organizačních opatření, včetně šifrování dat, pravidelných bezpečnostních auditů a omezení přístupu k osobním údajům pouze na oprávněné osoby.</p>
         </section>
 
         <section :class="$style.section">
@@ -106,12 +106,12 @@
 
         <section :class="$style.section">
             <h2>10. Změny těchto zásad</h2>
-            <p>Tyto zásady ochrany osobních údajů můžeme čas od času aktualizovat. O významných změnách vás budeme informovat prostřednictvím našich webových stránek nebo e-mailem.</p>
+            <p>Tyto zásady ochrany osobních údajů můžeme čas od času aktualizovat. O významných změnách tě budeme informovat prostřednictvím našich webových stránek nebo e-mailem.</p>
         </section>
 
         <section :class="$style.section">
             <h2>11. Kontakt a podání stížnosti</h2>
-            <p>Pro uplatnění vašich práv nebo pro jakékoli dotazy týkající se zpracování osobních údajů nás prosím kontaktujte prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+            <p>Pro uplatnění tvých práv nebo pro jakékoli dotazy týkající se zpracování osobních údajů nás prosím kontaktuj prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
             <p :class="$style.lastUpdate">Poslední aktualizace: Listopad 2025</p>
         </section>
     </div>
