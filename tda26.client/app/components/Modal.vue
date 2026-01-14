@@ -31,7 +31,11 @@ const emit = defineEmits<{
 
 const isOpen = ref(props.enabled);
 const animationState = ref<AnimationState>("closed");
+const modalContentRef = ref<HTMLDivElement | null>(null);
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Scroll tolerance in pixels for floating point comparison in scroll position calculations
+const SCROLL_TOLERANCE = 1;
 
 const clearAnimationTimeout = () => {
     if (animationTimeout !== null) {
@@ -73,6 +77,38 @@ const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === "Escape") handleClose();
 };
 
+const handleWheel = (event: WheelEvent) => {
+    // Use the template ref for this modal's content
+    const modalContent = modalContentRef.value;
+    if (!modalContent) return;
+
+    // Check if the event target is within the modal content
+    const target = event.target;
+    if (!target || !modalContent.contains(target as Node)) {
+        // If the event is not within modal content, prevent scrolling
+        event.preventDefault();
+        return;
+    }
+
+    // Check if modal content is scrollable and handle scroll blocking
+    const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
+    
+    if (!isScrollable) {
+        // If modal content is not scrollable, prevent the event
+        event.preventDefault();
+        return;
+    }
+
+    // Check if we're at the scroll boundaries
+    const atTop = modalContent.scrollTop === 0;
+    const atBottom = modalContent.scrollTop + modalContent.clientHeight >= modalContent.scrollHeight - SCROLL_TOLERANCE;
+
+    // Prevent scroll if we're at the boundaries and trying to scroll further
+    if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
+        event.preventDefault();
+    }
+};
+
 watch(
     () => isOpen.value,
     (open) => {
@@ -80,8 +116,10 @@ watch(
 
         if (open) {
             document.addEventListener("keydown", handleKeydown);
+            document.addEventListener("wheel", handleWheel, { passive: false });
         } else {
             document.removeEventListener("keydown", handleKeydown);
+            document.removeEventListener("wheel", handleWheel);
         }
     },
     { immediate: true }
@@ -90,6 +128,7 @@ watch(
 onBeforeUnmount(() => {
     if (typeof document === "undefined") return; // <-- SSR SAFE
     document.removeEventListener("keydown", handleKeydown);
+    document.removeEventListener("wheel", handleWheel);
     clearAnimationTimeout();
 });
 </script>
@@ -107,6 +146,7 @@ onBeforeUnmount(() => {
         ></div>
 
         <div
+            ref="modalContentRef"
             :class="[$style.modalcontent, props.modalClassName]"
             :style="props.modalStyle"
         >

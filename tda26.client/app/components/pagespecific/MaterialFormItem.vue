@@ -65,6 +65,7 @@ function onFileChange(event: Event) {
             v-model="m.description"
             rows="4"
             maxlength="1048"
+            style="resize: none"
         />
 
         <button v-if="showRemoveButton" :class="$style.remove" type="button" @click="emit('remove', props.index)">
