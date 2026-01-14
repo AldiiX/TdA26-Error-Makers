@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
 <style module lang="scss">
 .modal {
     position: fixed;
-    z-index: 15;
+    z-index: 15000;
     left: 0;
     top: 0;
     width: 100%;
