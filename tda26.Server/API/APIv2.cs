@@ -406,7 +406,35 @@ public class APIv2(
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
+        
+        // Category
+        if (body.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid.Value, ct);
 
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            existingCourse.CategoryUuid = body.CategoryUuid;
+        }
+
+        // Tags
+        if (body.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            existingCourse.Tags = tags;
+        }
+        if (body.TagsUuid is { Count: 0 }) {
+            existingCourse.Tags = [];
+        }
+        
         await courseRepository.UpdateAsync(existingCourse, ct);
 
         return Ok(existingCourse);
@@ -518,6 +546,34 @@ public class APIv2(
             }
 
             await materialRepository.UpdateMaterialAsync(existingMaterial, ct);
+        }
+
+        // Category
+        if (body.Course.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.Course.CategoryUuid.Value, ct);
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            existingCourse.CategoryUuid = body.Course.CategoryUuid;
+        }
+
+        // Tags
+        if (body.Course.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.Course.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.Course.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            existingCourse.Tags = tags;
+        }
+        if (body.Course.TagsUuid is { Count: 0 }) {
+            existingCourse.Tags = [];
         }
 
         await courseRepository.UpdateAsync(existingCourse, ct);
@@ -813,6 +869,9 @@ public class APIv2(
             
             newCourse.Tags = tags;
         }
+        if (body.TagsUuid == null || body.TagsUuid.Count == 0) {
+            newCourse.Tags = [];
+        }
 
         await courseRepository.CreateAsync(newCourse, ct);
 
@@ -884,21 +943,14 @@ public class APIv2(
             newCourse.Materials.Add(newMaterial);
         }
 
-        Console.WriteLine("category uuid: " + body.Course.CategoryUuid);
-
         // Category
         if (body.Course.CategoryUuid.HasValue) {
-            Console.WriteLine("c1");
             var category = await db.Categories
                 .FirstOrDefaultAsync(c => c.Uuid == body.Course.CategoryUuid.Value, ct);
-
-            Console.WriteLine("c2");
 
             if (category == null) {
                 return BadRequest(new { error = "Invalid category UUID." });
             }
-
-            Console.WriteLine(category.Label);
             
             newCourse.CategoryUuid = body.Course.CategoryUuid;
         }
@@ -914,6 +966,9 @@ public class APIv2(
             }
             
             newCourse.Tags = tags;
+        }
+        if (body.Course.TagsUuid == null || body.Course.TagsUuid.Count == 0) {
+            newCourse.Tags = [];
         }
 
         await courseRepository.CreateAsync(newCourse, ct);
