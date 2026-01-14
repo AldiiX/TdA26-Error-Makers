@@ -30,7 +30,7 @@
         },
         {
             question: "Jak se mohu zaregistrovat?",
-            answer: "Registrace je velmi jednoduchá! Stačí kliknout na tlačítko 'Registrace' v horní části stránky, vyplnit své údaje a ověřit e-mailovou adresu. Po dokončení registrace získáte okamžitý přístup k bezplatným kurzům a budete moci procházet celou nabídku."
+            answer: "Registrace je velmi jednoduchá! Stačí kliknout na tlačítko 'Registrace' v horní části stránky, vyplnit své údaje a ověřit e-mailovou adresu. Po dokončení registrace získáš okamžitý přístup k bezplatným kurzům a budeš moci procházet celou nabídku."
         },
         {
             question: "Jsou kurzy zdarma?",
@@ -38,31 +38,31 @@
         },
         {
             question: "Kdo jsou lektoři?",
-            answer: "Naši lektoři jsou zkušení odborníci a nadšenci ve svých oborech. Každý lektor je pečlivě vybrán na základě svých znalostí, pedagogických schopností a praktických zkušeností. Jejich profily a specializace můžete prozkoumat na stránce Lektoři."
+            answer: "Naši lektoři jsou zkušení odborníci a nadšenci ve svých oborech. Každý lektor je pečlivě vybrán na základě svých znalostí, pedagogických schopností a praktických zkušeností. Jejich profily a specializace můžeš prozkoumat na stránce Lektoři."
         },
         {
             question: "Jak dlouho trvá dokončení kurzu?",
-            answer: "Doba trvání kurzu závisí na jeho složitosti a rozsahu. U každého kurzu najdete odhadovanou dobu dokončení. Výhodou naší platformy je flexibilita – můžete se učit vlastním tempem a kdykoliv se ke kurzu vrátit."
+            answer: "Doba trvání kurzu závisí na jeho složitosti a rozsahu. U každého kurzu najdeš odhadovanou dobu dokončení. Výhodou naší platformy je flexibilita – můžeš se učit vlastním tempem a kdykoliv se ke kurzu vrátit."
         },
         {
             question: "Získám certifikát po dokončení kurzu?",
-            answer: "Ano! Po úspěšném dokončení kurzu obdržíte digitální certifikát, který můžete sdílet na sociálních sítích nebo přidat do svého životopisu. Certifikát obsahuje informace o kurzu, vaše jméno a datum dokončení."
+            answer: "Ano! Po úspěšném dokončení kurzu obdržíš digitální certifikát, který můžeš sdílet na sociálních sítích nebo přidat do svého životopisu. Certifikát obsahuje informace o kurzu, tvoje jméno a datum dokončení."
         },
         {
             question: "Mohu se učit z mobilního zařízení?",
-            answer: "Samozřejmě! Naše platforma je plně responzivní a optimalizovaná pro všechna zařízení – počítače, tablety i mobilní telefony. Můžete se učit kdekoli a kdykoli vám to vyhovuje."
+            answer: "Samozřejmě! Naše platforma je plně responzivní a optimalizovaná pro všechna zařízení – počítače, tablety i mobilní telefony. Můžeš se učit kdekoli a kdykoli ti to vyhovuje."
         },
         {
             question: "Co když mi kurz nevyhovuje?",
-            answer: "Chceme, abyste byli spokojeni! V případě placených kurzů nabízíme 14denní záruku vrácení peněz. Pokud z jakéhokoli důvodu nejste spokojeni s kurzem, kontaktujte nás a vrátíme vám platbu."
+            answer: "Chceme, abys byl spokojen! V případě placených kurzů nabízíme 14denní záruku vrácení peněz. Pokud z jakéhokoli důvodu nejsi spokojen s kurzem, kontaktuj nás a vrátíme ti platbu."
         },
         {
             question: "Jak mohu kontaktovat podporu?",
-            answer: "Náš tým podpory je vám k dispozici prostřednictvím kontaktního formuláře na webu. Snažíme se odpovědět na všechny dotazy do 24 hodin. Pro rychlejší odpovědi se můžete také podívat do této sekce FAQ, kde řešíme nejčastější dotazy."
+            answer: "Náš tým podpory je ti k dispozici prostřednictvím kontaktního formuláře na webu. Snažíme se odpovědět na všechny dotazy do 24 hodin. Pro rychlejší odpovědi se můžeš také podívat do této sekce FAQ, kde řešíme nejčastější dotazy."
         },
         {
             question: "Mohu se stát lektorem?",
-            answer: "Určitě! Vždy hledáme talentované lektory, kteří by chtěli sdílet své znalosti. Pokud máte zkušenosti v určité oblasti a chcete vytvářet kurzy, kontaktujte nás prostřednictvím sekce 'Staň se lektorem' nebo nám napište na náš e-mail."
+            answer: "Určitě! Vždy hledáme talentované lektory, kteří by chtěli sdílet své znalosti. Pokud máš zkušenosti v určité oblasti a chceš vytvářet kurzy, kontaktuj nás prostřednictvím sekce 'Staň se lektorem' nebo nám napiš na náš e-mail."
         }
     ];
 </script>
@@ -98,8 +98,8 @@
         </div>
 
         <div :class="$style.contactSection">
-            <h2>Nenašli jste odpověď?</h2>
-            <p>Pokud jste nenašli odpověď na svou otázku, neváhejte nás kontaktovat. Rádi vám pomůžeme!</p>
+            <h2>Nenašel jsi odpověď?</h2>
+            <p>Pokud jsi nenašel odpověď na svou otázku, neváhej nás kontaktovat. Rádi ti pomůžeme!</p>
         </div>
     </div>
 </template>
