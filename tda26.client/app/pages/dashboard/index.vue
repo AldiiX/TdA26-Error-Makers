@@ -60,10 +60,10 @@ const courses = computed<Course[]>(() => {
 
 const courseList = ref<HTMLElement | null>(null);
 
-const scroll = (amount: number) => {
+const scroll = (direction: -1 | 1) => {
     const el = courseList.value;
     if (!el) return;
-    el.scrollBy({ left: amount, behavior: "smooth" });
+    el.scrollBy({ left: direction * el.clientWidth, behavior: "smooth" });
 };
 
 const canScrollLeft = ref(false);
@@ -142,39 +142,42 @@ const deleteCourse = async () => {
         <Title>Přehled • Think different Academy</Title>
     </Head>
 
-    <h1 :class="$style.nadpis">Přehled</h1>
-    <p :class="$style.podnapis">Vítejte zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdete přehled svých kurzů a můžete spravovat svůj obsah.</p>
+    <section>
 
-    <div :class="$style.actionButtons">
-        <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">
-            <Button button-style="primary" accent-color="primary"><span :class="$style.icon"></span><p>Vytvořit nový kurz</p></Button>
-        </div>
-    </div>
+        <h1 :class="$style.nadpis">Přehled</h1>
+        <p :class="$style.podnapis">Vítejte zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdete přehled svých kurzů a můžete spravovat svůj obsah.</p>
 
-    <div :class="[$style.courses]">
-        <div :class="$style.header">
-            <h2>Nedávné kurzy</h2>
-            <NuxtLink to="/dashboard/courses" :class="['text-gradient']">Všechny kurzy</NuxtLink>
+        <div :class="$style.actionButtons">
+            <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">
+                <Button button-style="primary" accent-color="primary"><span :class="$style.icon"></span><p>Vytvořit nový kurz</p></Button>
+            </div>
         </div>
 
-        <p v-if="coursesPending">Načítání kurzů...</p>
-        <p v-else-if="courses.length === 0">Žádné kurzy nenalezeny.</p>
+        <div :class="[$style.courses]">
+            <div :class="$style.header">
+                <h2>Nedávné kurzy</h2>
+                <NuxtLink to="/dashboard/courses" :class="['text-gradient']">Všechny kurzy</NuxtLink>
+            </div>
 
-        <div v-else>
-            <button :class="['liquid-glass', $style.leftBtn, canScrollLeft && $style.active]" @click="scroll(-1000)"><span><</span></button>
-            <button :class="['liquid-glass', $style.rightBtn, canScrollRight && $style.active]" @click="scroll(1000)"><span>></span></button>
+            <p v-if="coursesPending">Načítání kurzů...</p>
+            <p v-else-if="courses.length === 0">Žádné kurzy nenalezeny.</p>
 
-            <ul ref="courseList" @scroll="updateScroll">
-                <li v-for="course in courses" :key="course.uuid">
-                    <CourseCard 
-                        :course="course" 
-                        edit-mode 
-                        @delete="openDelete(course)"
-                    />
-                </li>
-            </ul>
+            <div v-else>
+                <button :class="['liquid-glass', $style.leftBtn, canScrollLeft && $style.active]" @click="scroll(-1)"><span><</span></button>
+                <button :class="['liquid-glass', $style.rightBtn, canScrollRight && $style.active]" @click="scroll(1)"><span>></span></button>
+
+                <ul ref="courseList" @scroll="updateScroll">
+                    <li v-for="course in courses" :key="course.uuid">
+                        <CourseCard
+                            :course="course"
+                            edit-mode
+                            @delete="openDelete(course)"
+                        />
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
+    </section>
 
     <Teleport to="#teleports">
         <!-- CREATE -->
@@ -203,6 +206,8 @@ const deleteCourse = async () => {
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
+
 .createCourseModal {
     h3 {
         margin-top: 0;
@@ -356,5 +361,47 @@ const deleteCourse = async () => {
 
 .rightBtn {
     right: 0;
+}
+
+/* Laptop */
+@media screen and (max-width: app.$laptopBreakpoint) {
+}
+
+/* Tablet */
+@media screen and (max-width: app.$tabletBreakpoint) {
+    section {
+        margin-top: -50px;
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .actionButtons {
+        flex-direction: column;
+        align-items: stretch;
+        
+        .createCourse {
+            button {
+                padding: 4px 16px;
+                
+                p {
+                    font-size: 20px;
+                }
+                
+                .icon {
+                    width: 32px;
+                    height: 32px;
+                }
+            }
+        }
+    }
+    
+    .courses {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+    }
 }
 </style>
