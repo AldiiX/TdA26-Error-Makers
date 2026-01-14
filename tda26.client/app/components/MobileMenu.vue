@@ -142,7 +142,7 @@ watch(() => useRoute().path, (newPath) => {
     width: 100vw;
     height: 100dvh;
     background-color: var(--background-color-primary);
-    z-index: 20;
+    z-index: 10000;
     transition-duration: 0.3s;
     overflow: hidden;
     overflow-y: auto;

@@ -1215,12 +1215,12 @@ onBeforeUnmount(() => {
                                 </Button>
 
                                 <div :class="$style.feedPostFilter">
-                                    <p :class="$style.feedFilterLabel">Filtr:</p>
+<!--                                    <p :class="$style.feedFilterLabel">Filtr:</p>-->
                                     <!--                                <Input-->
                                     <!--                                    placeholder="Hledat v aktivitě..."-->
                                     <!--                                    :disabled="true"-->
                                     <!--                                />-->
-                                    <div :class="$style.feedFilterOptions">
+                                    <div :class="[$style.feedFilterOptions, 'liquid-glass']">
                                         <div
                                             :class="[$style.feedFilterOption, selectedFeedFilter === 'all' && $style.active]"
                                             @click="selectedFeedFilter = 'all'"
@@ -1243,14 +1243,14 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
                                 </div>
-
+                            </div>
+                            
+                            <ul>
                                 <p v-if="feedPending">Načítání aktivity...</p>
                                 <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
                                 <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
-                            </div>
-                            
-                            <ul v-if="feedData">
-                                <li v-for=" feedPost in feedPosts" :key="feedPost.uuid">
+                                
+                                <li v-if="feedData" v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
                                         <div
                                             :class="$style.feedPostLeft"
@@ -2094,19 +2094,15 @@ ul {
             
             .activityHeader{
                 display: flex;
-                border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
-                margin-bottom: 24px;
+                //border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
+                //padding-bottom: 24px;
                 justify-content: space-between;
-                
-                .addFeedPost{
-                    margin-bottom: 16px;
-                }
+                align-items: center;
+                margin-bottom: 16px;
+                flex-wrap: wrap;
+                gap: 16px;
 
                 .feedPostFilter {
-                    display: flex;
-                    align-items: center;
-                    height: 64px;
-                    margin-left: auto;
                     
 
                     .feedFilterLabel {
@@ -2120,10 +2116,7 @@ ul {
                         display: flex;
                         align-items: center;
                         gap: 4px;
-                        margin-left: 16px;
                         border-radius: 64px;
-                        background-color: var(--element-bg) ;
-                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
 
 
                         .feedFilterOption {
@@ -2132,10 +2125,15 @@ ul {
                             padding: 8px 16px;
                             border-radius: 64px;
                             transition: background-color 0.2s ease, color 0.2s ease;
+                            border: 1px solid transparent;
 
                             &:is(.active) {
-                                background-color: var(--accent-color-primary);
-                                color: var(--background-color-primary);
+                                background-color: rgb(from var(--accent-color-primary) r g b / 0.25);
+                                color: var(--accent-color-primary);
+                                border-color: rgb(from var(--accent-color-primary) r g b / 0.6) rgb(from var(--accent-color-primary) r g b / 1.6) rgb(from var(--accent-color-primary) r g b / 0.6) rgb(from var(--accent-color-primary) r g b / 1.6);
+
+                                // inset box shadow (liquid glass)
+                                box-shadow: inset 0 0 10px rgb(from var(--accent-color-primary) r g b / 0.8);
 
                                 &:hover{
                                     opacity: 0.8;
@@ -2191,6 +2189,7 @@ ul {
                         border-left: none;
                         border-radius: 12px;
                         overflow: hidden;
+                        min-width: 230px;
 
                         &:hover {
                             .feedPostActions {
@@ -2242,6 +2241,7 @@ ul {
                                 display: flex;
                                 align-items: center;
                                 gap: 8px;
+                                flex-wrap: wrap;
 
                                 .feedPurpose {
                                     display: flex;
@@ -2285,6 +2285,8 @@ ul {
                                 p{
                                     height: auto;
                                     margin: 0;
+                                    margin-left: 3px;
+                                    word-break: break-all;
                                 }
                             }
 
@@ -2310,6 +2312,7 @@ ul {
                             :global(button) {
                                 padding: 6px 14px;
                                 font-size: 14px;
+                                background-color: var(--background-color-secondary);
                             }
                         }
                     }
@@ -2445,7 +2448,16 @@ ul {
     }
 }
 
-/* Laptop */
-@media screen and (max-width: app.$laptopBreakpoint) {
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .feedPostWrapper {
+        .feedPostLeft {
+            padding: 0 !important;
+            
+            .iconWrapper {
+                display: none !important;
+            }
+        }
+    }
 }
 </style>
