@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import type { Account, Course } from "#shared/types";
+import type {Account, Course, CourseCategory} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import CourseCard from "~/components/pagespecific/CourseCard.vue";
 import { NuxtLink } from "#components";
@@ -59,6 +59,11 @@ const courses = computed<Course[]>(() => {
 });
 
 const courseList = ref<HTMLElement | null>(null);
+
+const { data: categories } = await useFetch<CourseCategory[]>(
+    getBaseUrl() + "/api/v2/course-categories",
+    { server: false }
+);
 
 const scroll = (direction: -1 | 1) => {
     const el = courseList.value;
@@ -192,6 +197,7 @@ const deleteCourse = async () => {
             <CourseForm
                 mode="create"
                 @finished="() => { enabledModal = null; refreshCourses(); }"
+                :categories="categories || []"
             />
         </Modal>
 

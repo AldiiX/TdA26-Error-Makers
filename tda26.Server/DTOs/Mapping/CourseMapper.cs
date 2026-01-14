@@ -33,6 +33,8 @@ public static class CourseMapper
             Feed = course.Feed,
             RatingScore = course.RatingScore,
             Author = course.Author,
+            Category = course.Category,
+            Tags = course.Tags.ToList()
         };
     }
 }

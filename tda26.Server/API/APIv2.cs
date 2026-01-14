@@ -266,6 +266,43 @@ public class APIv2(
         return Ok(categories);
     }
     
+    [HttpGet("course-tags")]
+    public async Task<IActionResult> GetCoursesTags([FromQuery] Guid categoryUuid, CancellationToken ct = default) {
+        var tags = await db.Tags
+            .Where(t => t.CategoryUuid == categoryUuid)
+            .ToListAsync(ct);
+        
+        return Ok(tags);
+    }
+    
+    [HttpPost("course-tags")]
+    public async Task<IActionResult> CreateCourseTag([FromBody] CreateCourseTagRequest body, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        if (acc is not Admin) return Forbid();
+
+        var category = await db.Categories.FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid, ct);
+        if (category == null) {
+            return NotFound(new { error = "Category not found." });
+        }
+
+        var newTag = new Tag {
+            DisplayName = body.DisplayName,
+            CategoryUuid = body.CategoryUuid
+        };
+
+        db.Tags.Add(newTag);
+        await db.SaveChangesAsync(ct);
+
+        return new CreatedAtActionResult(
+            actionName: nameof(GetCoursesTags),
+            controllerName: "APIv2",
+            routeValues: new { categoryUuid = body.CategoryUuid },
+            value: newTag
+        );
+    }
+    
     [HttpGet("me/courses")]
     public async Task<IActionResult> GetMyCourses(
         [FromQuery] bool full = false,
@@ -319,6 +356,8 @@ public class APIv2(
                 .Include(c => c.Feed)
                 .Include(c => c.Account)
                 .Include(c => c.Ratings)
+                .Include(c => c.Category)
+                .Include(c => c.Tags)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
@@ -750,6 +789,31 @@ public class APIv2(
             LecturerUuid = acc.Uuid
         };
 
+        // Category
+        if (body.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid.Value, ct);
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            newCourse.CategoryUuid = body.CategoryUuid;
+        }
+
+        // Tags
+        if (body.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            newCourse.Tags = tags;
+        }
+
         await courseRepository.CreateAsync(newCourse, ct);
 
         return new CreatedAtActionResult(
@@ -818,6 +882,38 @@ public class APIv2(
             };
 
             newCourse.Materials.Add(newMaterial);
+        }
+
+        Console.WriteLine("category uuid: " + body.Course.CategoryUuid);
+
+        // Category
+        if (body.Course.CategoryUuid.HasValue) {
+            Console.WriteLine("c1");
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.Course.CategoryUuid.Value, ct);
+
+            Console.WriteLine("c2");
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+
+            Console.WriteLine(category.Label);
+            
+            newCourse.CategoryUuid = body.Course.CategoryUuid;
+        }
+
+        // Tags
+        if (body.Course.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.Course.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.Course.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            newCourse.Tags = tags;
         }
 
         await courseRepository.CreateAsync(newCourse, ct);
