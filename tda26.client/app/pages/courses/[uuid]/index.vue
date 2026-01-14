@@ -1220,7 +1220,7 @@ onBeforeUnmount(() => {
                                     <!--                                    placeholder="Hledat v aktivitě..."-->
                                     <!--                                    :disabled="true"-->
                                     <!--                                />-->
-                                    <div :class="$style.feedFilterOptions">
+                                    <div :class="[$style.feedFilterOptions, 'liquid-glass']">
                                         <div
                                             :class="[$style.feedFilterOption, selectedFeedFilter === 'all' && $style.active]"
                                             @click="selectedFeedFilter = 'all'"
@@ -2117,8 +2117,6 @@ ul {
                         align-items: center;
                         gap: 4px;
                         border-radius: 64px;
-                        background-color: var(--element-bg) ;
-                        border: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
 
 
                         .feedFilterOption {
@@ -2127,10 +2125,15 @@ ul {
                             padding: 8px 16px;
                             border-radius: 64px;
                             transition: background-color 0.2s ease, color 0.2s ease;
+                            border: 1px solid transparent;
 
                             &:is(.active) {
-                                background-color: var(--accent-color-primary);
-                                color: var(--background-color-primary);
+                                background-color: rgb(from var(--accent-color-primary) r g b / 0.25);
+                                color: var(--accent-color-primary);
+                                border-color: rgb(from var(--accent-color-primary) r g b / 0.6) rgb(from var(--accent-color-primary) r g b / 1.6) rgb(from var(--accent-color-primary) r g b / 0.6) rgb(from var(--accent-color-primary) r g b / 1.6);
+
+                                // inset box shadow (liquid glass)
+                                box-shadow: inset 0 0 10px rgb(from var(--accent-color-primary) r g b / 0.8);
 
                                 &:hover{
                                     opacity: 0.8;
