@@ -98,14 +98,18 @@ const handleWheel = (event: WheelEvent) => {
     let currentElement: HTMLElement | null = 
         currentNode instanceof HTMLElement ? currentNode : currentNode.parentElement;
     
-    while (currentElement && modalContent.contains(currentElement)) {
+    // Limit traversal depth to avoid performance issues with deeply nested structures
+    let depth = 0;
+    const MAX_DEPTH = 50;
+    
+    while (currentElement && modalContent.contains(currentElement) && depth < MAX_DEPTH) {
         if (currentElement === modalContent) {
             scrollableElement = modalContent;
             break;
         }
         
         const overflowY = window.getComputedStyle(currentElement).overflowY;
-        const isScrollable = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && 
+        const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && 
                             currentElement.scrollHeight > currentElement.clientHeight;
         
         if (isScrollable) {
@@ -114,6 +118,7 @@ const handleWheel = (event: WheelEvent) => {
         }
         
         currentElement = currentElement.parentElement;
+        depth++;
     }
 
     // If no scrollable element found, prevent scrolling
