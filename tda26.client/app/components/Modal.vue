@@ -92,7 +92,11 @@ const handleWheel = (event: WheelEvent) => {
 
     // Find the closest scrollable parent element within the modal
     let scrollableElement: HTMLElement | null = null;
-    let currentElement = target as HTMLElement;
+    let currentNode: Node | null = target;
+    
+    // If target is not an HTMLElement (e.g., text node), start from its parent
+    let currentElement: HTMLElement | null = 
+        currentNode instanceof HTMLElement ? currentNode : currentNode.parentElement;
     
     while (currentElement && modalContent.contains(currentElement)) {
         if (currentElement === modalContent) {
@@ -109,9 +113,7 @@ const handleWheel = (event: WheelEvent) => {
             break;
         }
         
-        const parent = currentElement.parentElement;
-        if (!parent) break;
-        currentElement = parent;
+        currentElement = currentElement.parentElement;
     }
 
     // If no scrollable element found, prevent scrolling
