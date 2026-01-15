@@ -100,9 +100,8 @@ watch(_course, (val) => {
     course.value = structuredClone(val);
     originalCourse.value = structuredClone(val);
     
-    editedCategoryUuid.value = val.category?.uuid ?? null;
+    if (val.category?.uuid) editedCategoryUuid.value = val.category?.uuid;
     editedTagsUuid.value = val.tags?.map(t => t.uuid) ?? [];
-    console.log("Course data loaded:", val.tags?.map(t => t.uuid));
 }, { immediate: true });
 
 const normalizeTags = (tags?: string[]) =>
@@ -120,7 +119,7 @@ const isDirty = computed(() => {
     return (
         course.value.name !== originalCourse.value.name ||
         course.value.description !== originalCourse.value.description ||
-        editedCategoryUuid.value !== originalCourse.value.category.uuid ||
+        editedCategoryUuid.value !== originalCourse.value.category?.uuid ||
         JSON.stringify(editedTags) !== JSON.stringify(originalTags)
     );
 });
@@ -1097,7 +1096,7 @@ const { data: categories } = await useFetch<CourseCategory[]>(
     { server: true }
 );
 
-const editedCategoryUuid = ref<string | null>(null);
+const editedCategoryUuid = ref<string | null>(courseSmall.value.category?.uuid ?? categories.value?.[0]?.uuid ?? null);
 const editedTagsUuid = ref<string[]>([]);
 
 watch(
@@ -1109,6 +1108,10 @@ watch(
         editedTagsUuid.value = [];
     }
 );
+
+watch(course, (val) => {
+    console.log(val)
+});
 </script>
 
 <template>
@@ -1129,11 +1132,12 @@ watch(
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
-                <div :class="$style.categoryAndTags" v-show="course?.tags?.length > 1 && course?.category !== null">
-                    <SmoothSizeWrapper :change-width="false">
+                <div :class="$style.categoryAndTags">
+                    <SmoothSizeWrapper :change-width="false" v-show="isEditMode || course?.category !== null || (course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
                             <Input
                                 v-if="isEditMode"
+                                :key="course?.tags?.length"
                                 type="select"
                                 v-model="editedCategoryUuid"
                             >
@@ -1146,15 +1150,15 @@ watch(
                                 </option>
                             </Input>
 
-                            <p v-else :class="$style.category">
+                            <p v-else-if="course?.category !== null" :class="$style.category">
                                 {{ course?.category.label }}
                             </p>
 
-                            <ul :class="$style.tags">
-                                <li v-if="!isEditMode" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
+                            <ul :class="$style.tags" v-if="isEditMode || (course?.tags && course?.tags.length >= 1)">
+                                <li v-if="!isEditMode && course?.tags && course?.tags?.length >= 1" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
                                 <CategoryAndTagsSelection
-                                    v-else
-                                    :key="editedCategoryUuid || 'no-category'"
+                                    v-else-if="editedCategoryUuid && isEditMode"
+                                    :key="editedCategoryUuid"
                                     v-model="editedTagsUuid"
                                     :category-uuid="editedCategoryUuid"
                                 />
@@ -1851,6 +1855,8 @@ watch(
     }
     
     .categoryAndTags {
+        padding: 4px;
+        
         .tags {
             width: 100%;
             margin: 12px 0;
@@ -2131,8 +2137,6 @@ ul {
             }
 
             .categoryAndTags {
-                overflow: hidden;
-
                 .wrp {
                     display: flex;
                     flex-direction: column;

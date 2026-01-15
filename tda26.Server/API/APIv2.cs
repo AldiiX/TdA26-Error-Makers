@@ -370,6 +370,7 @@ public class APIv2(
             course = await db.Courses
                 .Include(c => c.Account)
                 .Include(c => c.Ratings)
+                .Include(c => c.Category)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) {

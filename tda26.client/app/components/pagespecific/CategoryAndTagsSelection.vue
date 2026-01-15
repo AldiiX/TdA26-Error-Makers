@@ -22,6 +22,18 @@ const tagQuery = ref("");
 const allTags = ref<Tag[]>([]);
 
 watch(
+    () => props.modelValue,
+    (val) => {
+        if (selectedTags.value.length === 0 && val.length > 0) {
+            selectedTags.value = allTags.value.filter(t =>
+                val.includes(t.uuid)
+            );
+        }
+    },
+    { immediate: true }
+);
+
+watch(
     () => props.categoryUuid,
     async (uuid) => {
         if (!uuid) {
@@ -30,16 +42,17 @@ watch(
             return;
         }
 
-        const { data } = await useFetch<Tag[]>(
-            getBaseUrl() + "/api/v2/course-tags?categoryUuid=" + uuid,
-            { server: false }
+        const tags = await $fetch<Tag[]>(
+            getBaseUrl() + "/api/v2/course-tags",
+            {
+                query: { categoryUuid: uuid }
+            }
         );
 
-        allTags.value = data.value ?? [];
+        allTags.value = tags;
 
-        // hydrate only once (edit / reload)
         if (selectedTags.value.length === 0 && props.modelValue.length > 0) {
-            selectedTags.value = allTags.value.filter(t =>
+            selectedTags.value = tags.filter(t =>
                 props.modelValue.includes(t.uuid)
             );
         }
