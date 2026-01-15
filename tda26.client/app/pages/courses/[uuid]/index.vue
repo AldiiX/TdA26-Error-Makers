@@ -262,7 +262,7 @@ function mapFeedPurpose(
                 label: "Přidán materiál",
                 type: "material",
                 icon: "/icons/addFile.svg",
-                color: "--text-color-primary",
+                color: "--accent-color-primary",
                 background: "--accent-color-primary",
             };
 
@@ -271,7 +271,7 @@ function mapFeedPurpose(
                 label: "Upraven materiál",
                 type: "material",
                 icon: "/icons/editFile.svg",
-                color: "--text-color-primary",
+                color: "--accent-color-primary",
                 background: "--accent-color-primary",
             };
 
@@ -290,7 +290,7 @@ function mapFeedPurpose(
                 label: "Přidán kvíz",
                 type: "quiz",
                 icon: "/icons/addQuiz.svg",
-                color: "--text-color-primary",
+                color: "--accent-color-primary",
                 background: "--accent-color-primary",
             };
 
@@ -299,7 +299,7 @@ function mapFeedPurpose(
                 label: "Upraven kvíz",
                 type: "quiz",
                 icon: "/icons/editQuiz.svg",
-                color: "--text-color-primary",
+                color: "--accent-color-primary",
                 background: "--accent-color-primary",
             };
 
@@ -1292,10 +1292,10 @@ onBeforeUnmount(() => {
                                                 <div
                                                     :class="$style.feedPurpose"
                                                     :style="{
-                                                                backgroundColor: `var(${feedPost.background})`
+                                                              backgroundColor: `rgb(from var(${feedPost.background}) r g b / 0.15)`
                                                             }"
                                                 >
-                                                    <p>
+                                                    <p :style="{ color: `var(${feedPost.color})` }">
                                                         {{ feedPost.purposeLabel }}
                                                     </p>
                                                 </div>
@@ -1333,7 +1333,7 @@ onBeforeUnmount(() => {
     </div>
 
 
-    <Teleport to="#teleports">
+    <Teleport to="#teleports"> 
         <!-- Edit controls -->
         <div
             v-if="isEditMode"
@@ -2253,7 +2253,6 @@ ul {
                                     p{
                                         height: auto;
                                         margin: 0;
-                                        color: var(--background-color-primary);
                                     }
                                 }
 
