@@ -83,25 +83,45 @@ const handleWheel = (event: WheelEvent) => {
     if (!modalContent) return;
 
     // Check if the event target is within the modal content
-    const target = event.target;
-    if (!target || !modalContent.contains(target as Node)) {
+    const target = event.target as Node | null;
+    if (!target || !modalContent.contains(target)) {
         // If the event is not within modal content, prevent scrolling
         event.preventDefault();
         return;
     }
 
-    // Check if modal content is scrollable and handle scroll blocking
-    const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
+    // Find the closest scrollable parent element within the modal
+    let scrollableElement: HTMLElement | null = null;
+    let currentElement = target as HTMLElement;
     
-    if (!isScrollable) {
-        // If modal content is not scrollable, prevent the event
+    while (currentElement && modalContent.contains(currentElement)) {
+        if (currentElement === modalContent) {
+            scrollableElement = modalContent;
+            break;
+        }
+        
+        const overflowY = window.getComputedStyle(currentElement).overflowY;
+        const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && 
+                            currentElement.scrollHeight > currentElement.clientHeight;
+        
+        if (isScrollable) {
+            scrollableElement = currentElement;
+            break;
+        }
+        
+        currentElement = currentElement.parentElement as HTMLElement;
+    }
+
+    // If no scrollable element found, prevent scrolling
+    if (!scrollableElement) {
         event.preventDefault();
         return;
     }
 
-    // Check if we're at the scroll boundaries
-    const atTop = modalContent.scrollTop === 0;
-    const atBottom = modalContent.scrollTop + modalContent.clientHeight >= modalContent.scrollHeight - SCROLL_TOLERANCE;
+    // Check if we're at the scroll boundaries of the scrollable element
+    const atTop = scrollableElement.scrollTop === 0;
+    const atBottom = scrollableElement.scrollTop + scrollableElement.clientHeight >= 
+                     scrollableElement.scrollHeight - SCROLL_TOLERANCE;
 
     // Prevent scroll if we're at the boundaries and trying to scroll further
     if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
