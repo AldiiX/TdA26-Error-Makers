@@ -45,7 +45,7 @@ public class APIv2(
         {
             status = "ok",
             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            message = "This is API version 2.",
+            message = "Toto je API verze 2.",
         });
     }
 
@@ -89,13 +89,13 @@ public class APIv2(
         {
             return new BadRequestObjectResult(new
             {
-                message = "Username and password are required."
+                message = "Uživatelské jméno a heslo jsou povinné."
             });
         }
 
         var acc = await auth.LoginAsync(body.Username, body.Password, ct);
         
-        if (acc == null) return new UnauthorizedObjectResult(new { message = "Invalid username or password." });
+        if (acc == null) return new UnauthorizedObjectResult(new { message = "Neplatné uživatelské jméno nebo heslo." });
         
         // odstraneni policek
         foreach (var like in acc?.Ratings ?? [])
@@ -111,7 +111,7 @@ public class APIv2(
     public async Task<IActionResult> Logout(CancellationToken ct = default)
     {
         await auth.LogoutAsync(ct);
-        return Ok(new { message = "Logged out successfully." });
+        return Ok(new { message = "Úspěšně odhlášen." });
     }
 
     [HttpPost("register")]
@@ -124,7 +124,7 @@ public class APIv2(
         {
             return new BadRequestObjectResult(new
             {
-                message = "Username and password are required."
+                message = "Uživatelské jméno a heslo jsou povinné."
             });
         }
 
@@ -134,7 +134,7 @@ public class APIv2(
         {
             return new ConflictObjectResult(new
             {
-                message = "Username already exists."
+                message = "Uživatelské jméno už existuje."
             });
         }
 
@@ -168,7 +168,7 @@ public class APIv2(
         var existingAccount = await accounts.GetByUsernameAsync(body.Username!, ct);
         
         if (existingAccount != null) {
-            return new ConflictObjectResult(new { message = "Username already exists." });
+            return new ConflictObjectResult(new { message = "Uživatelské jméno už existuje." });
         }
 
         var newLecturer = new Lecturer {
@@ -206,7 +206,7 @@ public class APIv2(
     [HttpGet("lecturers/{uuid:guid}")]
     public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct = default) {
         var lecturer = await lecturers.GetByIdAsync(uuid, ct);
-        if (lecturer == null) return new NotFoundObjectResult(new { message = "Lecturer not found." });
+        if (lecturer == null) return new NotFoundObjectResult(new { message = "Lektor nenalezen." });
 
         return new OkObjectResult(lecturer);
     }
@@ -222,7 +222,7 @@ public class APIv2(
     [HttpGet("accounts/{uuid:guid}")]
     public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct = default) {
         var account = await accounts.GetByIdAsync(uuid, ct);
-        if (account == null) return new NotFoundObjectResult(new { message = "Account not found." });
+        if (account == null) return new NotFoundObjectResult(new { message = "Účet nenalezen." });
 
         // odstraneni policek
         foreach (var like in account?.Ratings ?? []) {

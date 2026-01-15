@@ -6,7 +6,7 @@
     // SEO
     useSeo({
         title: "Zásady používání cookies",
-        description: "Přečtěte si informace o tom, jak Think Different Academy používá cookies k zlepšení vašeho zážitku z používání platformy.",
+        description: "Přečti si informace o tom, jak Think Different Academy používá cookies k zlepšení tvého zážitku z používání platformy.",
         noindex: true // Legal pages often noindex
     });
 </script>
@@ -17,13 +17,13 @@
             <h1 :class="[$style.nadpis, 'text-gradient']">Zásady používání cookies</h1>
             <div :class="$style.cookieIcon" />
         </div>
-        <p :class="$style.podnapis">Vítejte na platformě Think different Academy. Tato stránka vysvětluje, jak používáme cookies k zlepšení vašeho zážitku z používání našich služeb.</p>
+        <p :class="$style.podnapis">Vítej na platformě Think different Academy. Tato stránka vysvětluje, jak používáme cookies k zlepšení tvého zážitku z používání našich služeb.</p>
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
                 <h2>1. Co jsou cookies?</h2>
             </div>
-            <p>Cookies jsou malé textové soubory, které se ukládají do vašeho zařízení při návštěvě webové stránky. Umožňují webu zapamatovat si vaše preference a zlepšit váš uživatelský zážitek.</p>
+            <p>Cookies jsou malé textové soubory, které se ukládají do tvého zařízení při návštěvě webové stránky. Umožňují webu zapamatovat si tvoje preference a zlepšit tvůj uživatelský zážitek.</p>
             <p>Cookies mohou být:</p>
             <ul>
                 <li><strong>Dočasné (session cookies)</strong> - jsou automaticky smazány po zavření prohlížeče</li>
@@ -61,7 +61,7 @@
 
             <div :class="$style.cookieType">
                 <h3>Funkční cookies</h3>
-                <p>Umožňují platformě zapamatovat si vaše volby a poskytovat vylepšené funkce.</p>
+                <p>Umožňují platformě zapamatovat si tvoje volby a poskytovat vylepšené funkce.</p>
                 <ul>
                     <li>Uchování nastavení zobrazení (tmavý/světlý režim)</li>
                     <li>Preferované nastavení kurzů</li>
@@ -74,13 +74,13 @@
             <div :class="$style.sectionHeader">
                 <h2>3. Správa cookies</h2>
             </div>
-            <p>Máte plnou kontrolu nad tím, jaké cookies akceptujete. Cookies můžete spravovat následujícími způsoby:</p>
+            <p>Máš plnou kontrolu nad tím, jaké cookies akceptuješ. Cookies můžeš spravovat následujícími způsoby:</p>
             <ul>
                 <li><strong>Nastavení prohlížeče</strong> - většina prohlížečů umožňuje blokovat nebo mazat cookies</li>
-                <li><strong>Nástroje třetích stran</strong> - můžete použít rozšíření prohlížeče pro správu cookies</li>
+                <li><strong>Nástroje třetích stran</strong> - můžeš použít rozšíření prohlížeče pro správu cookies</li>
                 <li><strong>Naše nastavení</strong> - v budoucnu budeme poskytovat nástroj pro správu preferencí cookies</li>
             </ul>
-            <p>Upozorňujeme, že zablokování některých cookies může ovlivnit funkčnost platformy a váš uživatelský zážitek.</p>
+            <p>Upozorňujeme, že zablokování některých cookies může ovlivnit funkčnost platformy a tvůj uživatelský zážitek.</p>
         </section>
 
         <section :class="$style.section">
@@ -113,7 +113,7 @@
             <div :class="$style.sectionHeader">
                 <h2>6. Jak smazat cookies?</h2>
             </div>
-            <p>Pokud si přejete smazat cookies, můžete tak učinit prostřednictvím nastavení vašeho prohlížeče:</p>
+            <p>Pokud si přeješ smazat cookies, můžeš tak učinit prostřednictvím nastavení tvého prohlížeče:</p>
             <ul>
                 <li><strong>Google Chrome</strong> - Nastavení → Soukromí a zabezpečení → Cookies a další data webů</li>
                 <li><strong>Mozilla Firefox</strong> - Možnosti → Soukromí a zabezpečení → Cookies a data stránek</li>
@@ -126,14 +126,14 @@
             <div :class="$style.sectionHeader">
                 <h2>7. Aktualizace těchto zásad</h2>
             </div>
-            <p>Tyto zásady používání cookies můžeme čas od času aktualizovat, abychom odráželi změny v našich postupech nebo z právních důvodů. O významných změnách vás budeme informovat prostřednictvím oznámení na platformě nebo emailem.</p>
+            <p>Tyto zásady používání cookies můžeme čas od času aktualizovat, abychom odráželi změny v našich postupech nebo z právních důvodů. O významných změnách tě budeme informovat prostřednictvím oznámení na platformě nebo emailem.</p>
         </section>
 
         <section :class="$style.section">
             <div :class="$style.sectionHeader">
                 <h2>8. Kontakt</h2>
             </div>
-            <p>Pokud máte jakékoli dotazy ohledně našeho používání cookies, neváhejte nás kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+            <p>Pokud máš jakékoli dotazy ohledně našeho používání cookies, neváhej nás kontaktovat prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
             <p :class="$style.lastUpdate">Poslední aktualizace: Listopad 2025</p>
         </section>
     </div>

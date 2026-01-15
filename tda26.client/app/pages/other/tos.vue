@@ -6,7 +6,7 @@
     // SEO
     useSeo({
         title: "Podmínky používání",
-        description: "Přečtěte si podmínky používání platformy Think Different Academy. Důležité informace o pravidlech a podmínkách pro uživatele.",
+        description: "Přečti si podmínky používání platformy Think Different Academy. Důležité informace o pravidlech a podmínkách pro uživatele.",
         noindex: true
     });
 </script>
@@ -14,21 +14,21 @@
 <template>
     <div :class="$style.container">
         <h1 :class="[$style.nadpis, 'text-gradient']">Podmínky používání</h1>
-        <p :class="$style.podnapis">Vítejte na platformě Think different Academy. Prosím, přečtěte si pečlivě následující podmínky používání.</p>
+        <p :class="$style.podnapis">Vítej na platformě Think different Academy. Prosím, přečti si pečlivě následující podmínky používání.</p>
 
         <section :class="$style.section">
             <h2>1. Obecná ustanovení</h2>
-            <p>Tyto podmínky používání (dále jen "Podmínky") upravují přístup a používání vzdělávací platformy Think different Academy (dále jen "Platforma"). Používáním této Platformy souhlasíte s těmito Podmínkami v plném rozsahu.</p>
+            <p>Tyto podmínky používání (dále jen "Podmínky") upravují přístup a používání vzdělávací platformy Think different Academy (dále jen "Platforma"). Používáním této Platformy souhlasíš s těmito Podmínkami v plném rozsahu.</p>
         </section>
 
         <section :class="$style.section">
             <h2>2. Registrace a uživatelský účet</h2>
-            <p>Pro přístup k některým funkcím Platformy je nutná registrace. Při registraci se zavazujete:</p>
+            <p>Pro přístup k některým funkcím Platformy je nutná registrace. Při registraci se zavazuješ:</p>
             <ul>
                 <li>Poskytovat pravdivé a aktuální údaje</li>
                 <li>Chránit své přihlašovací údaje před zneužitím</li>
                 <li>Neposkytovat přístup k účtu třetím stranám</li>
-                <li>Okamžitě nás informovat o jakémkoli neoprávněném použití vašeho účtu</li>
+                <li>Okamžitě nás informovat o jakémkoli neoprávněném použití tvého účtu</li>
             </ul>
         </section>
 
@@ -49,7 +49,7 @@
             <ul>
                 <li>Ceny jsou uvedeny vždy v českých korunách (CZK)</li>
                 <li>Platba je splatná předem prostřednictvím dostupných platebních metod</li>
-                <li>Po úspěšné platbě získáte přístup k zakoupenému obsahu</li>
+                <li>Po úspěšné platbě získáš přístup k zakoupenému obsahu</li>
                 <li>Vrácení peněz je možné pouze v souladu s reklamačním řádem</li>
             </ul>
         </section>
@@ -78,7 +78,7 @@
 
         <section :class="$style.section">
             <h2>7. Změny podmínek</h2>
-            <p>Vyhrazujeme si právo tyto Podmínky kdykoliv změnit. O významných změnách budeme uživatele informovat prostřednictvím emailu nebo oznámení na Platformě. Pokračováním v používání Platformy po změně Podmínek vyjadřujete souhlas s aktualizovanou verzí.</p>
+            <p>O významných změnách budeme uživatele informovat prostřednictvím emailu nebo oznámení na Platformě. Pokračováním v používání Platformy po změně Podmínek vyjadřuješ souhlas s aktualizovanou verzí.</p>
         </section>
 
         <section :class="$style.section">
@@ -88,7 +88,7 @@
 
         <section :class="$style.section">
             <h2>9. Kontaktní informace</h2>
-            <p>V případě dotazů ohledně těchto Podmínek nás prosím kontaktujte prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
+            <p>V případě dotazů ohledně těchto Podmínek nás prosím kontaktuj prostřednictvím kontaktního formuláře na našich webových stránkách.</p>
         </section>
 
         <section :class="$style.section">

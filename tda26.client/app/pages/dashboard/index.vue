@@ -145,7 +145,7 @@ const deleteCourse = async () => {
     <section>
 
         <h1 :class="$style.nadpis">Přehled</h1>
-        <p :class="$style.podnapis">Vítejte zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdete přehled svých kurzů a můžete spravovat svůj obsah.</p>
+        <p :class="$style.podnapis">Vítej zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdeš přehled svých kurzů a můžeš spravovat svůj obsah.</p>
 
         <div :class="$style.actionButtons">
             <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">

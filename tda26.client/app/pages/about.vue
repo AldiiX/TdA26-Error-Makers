@@ -136,7 +136,7 @@
 
         <section :class="[$style.section, $style.contactCta]">
             <h2>Pojďme to změnit společně</h2>
-            <p>Máte nápad na kurz? Chcete se stát lektorem? Nebo máte zpětnou vazbu k naší platformě? Neváhejte nás kontaktovat!</p>
+            <p>Máš nápad na kurz? Chceš se stát lektorem? Nebo máš zpětnou vazbu k naší platformě? Neváhej nás kontaktovat!</p>
         </section>
     </div>
 </template>

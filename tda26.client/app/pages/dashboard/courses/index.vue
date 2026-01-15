@@ -212,7 +212,7 @@ const deleteCourse = async () => {
     <section>
         <h1 :class="$style.nadpis">
             Moje kurzy
-            <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jste Admin, můžete spravovat úplně všechny kurzy)</span>
+            <span v-if="loggedAccount.type === 'admin'" :class="$style.admininfo">(jsi Admin, můžeš spravovat úplně všechny kurzy)</span>
         </h1>
         <!--    <p :class="$style.podnapis">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>-->
 
@@ -224,7 +224,7 @@ const deleteCourse = async () => {
             </template>
 
             <template v-else-if="courses.length === 0">
-                <p>Ještě nemáte žádné kurzy. Začněte vytvořením nového kurzu kliknutím na tlačítko výše.</p>
+                <p>Ještě nemáš žádné kurzy. Začni vytvořením nového kurzu kliknutím na tlačítko výše.</p>
             </template>
 
             <template v-else-if="courses.length > 0">
