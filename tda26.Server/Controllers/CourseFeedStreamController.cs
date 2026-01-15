@@ -34,17 +34,18 @@ public class CourseFeedStreamController(
 
         IAsyncEnumerator<FeedStreamMessage>? enumerator = null;
         Task<bool>? moveNextTask = null;
+        Task<bool>? keepAliveTask = null;
 
         try {
             enumerator = fsb.SubscribeAsync(courseId, linkedCt).GetAsyncEnumerator(linkedCt);
             moveNextTask = enumerator.MoveNextAsync().AsTask();
+            keepAliveTask = keepAliveTimer.WaitForNextTickAsync(linkedCt).AsTask();
 
             while(true) {
                 if(linkedCt.IsCancellationRequested) {
                     break;
                 }
 
-                var keepAliveTask = keepAliveTimer.WaitForNextTickAsync(linkedCt).AsTask();
                 var completed = await Task.WhenAny(moveNextTask, keepAliveTask);
 
                 if(completed == keepAliveTask) {
@@ -71,6 +72,8 @@ public class CourseFeedStreamController(
                         break;
                     }
 
+                    // Vytvorime novy keep-alive task pouze po dokonceni predchoziho
+                    keepAliveTask = keepAliveTimer.WaitForNextTickAsync(linkedCt).AsTask();
                     continue;
                 }
 
