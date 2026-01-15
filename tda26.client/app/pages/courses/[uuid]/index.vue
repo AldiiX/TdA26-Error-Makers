@@ -1052,6 +1052,30 @@ function onNewFeedPost(event: MessageEvent) {
     }
 }
 
+function onUpdateFeedPost(event: MessageEvent) {
+    try {
+        const post: FeedPost = JSON.parse(event.data);
+
+        feedData.value = feedData.value?.map(fp =>
+            fp.uuid === post.uuid ? post : fp
+        ) ?? [];
+    } catch (e) {
+        console.error("Failed to parse update_post SSE event", e);
+    }
+}
+
+function onDeleteFeedPost(event: MessageEvent) {
+    try {
+        const data: { uuid: string } = JSON.parse(event.data);
+
+        feedData.value = feedData.value?.filter(
+            fp => fp.uuid !== data.uuid
+        ) ?? [];
+    } catch (e) {
+        console.error("Failed to parse delete_post SSE event", e);
+    }
+}
+
 
 let feedEventSource: EventSource | null = null;
 
@@ -1065,6 +1089,8 @@ onMounted(() => {
     });
 
     feedEventSource.addEventListener("new_post", onNewFeedPost);
+    feedEventSource.addEventListener("update_post", onUpdateFeedPost);
+    feedEventSource.addEventListener("delete_post", onDeleteFeedPost);
 
     feedEventSource.onerror = (err) => {
         console.error("SSE feed error", err);

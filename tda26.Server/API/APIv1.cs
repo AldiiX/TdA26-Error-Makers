@@ -1028,6 +1028,8 @@ public class APIv1(
 
         await db.SaveChangesAsync(ct);
 
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("update_post", feedPost), ct);
+
         return Ok(feedPost);
     }
 
