@@ -1067,6 +1067,7 @@
 
         .bottomContainer {
             flex-direction: column;
+            gap: 80px;
 
             .left {
                 width: 100%;

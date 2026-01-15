@@ -1,17 +1,19 @@
 ﻿<script setup lang="ts">
-import type {Course, CourseFormModel, MaterialFormModel} from "#shared/types";
+import type {Course, CourseCategory, CourseFormModel, MaterialFormModel} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
 import { push } from "notivue";
 import {ref} from "vue";
+import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 
 type Material = MaterialFormModel;
 
 const props = defineProps<{
     mode: "create" | "edit";
     courseId?: string | null;
+    categories: CourseCategory[];
 }>();
 
 const emit = defineEmits<{
@@ -26,7 +28,9 @@ const isInProgress = ref<boolean>(false);
 const form = ref<CourseFormModel>({
     name: "",
     description: "",
-    materials: []
+    materials: [],
+    categoryUuid: props.categories[0]!.uuid,
+    tagsUuid: []
 });
 
 // LOAD EXISTING DATA WHEN EDITING
@@ -41,6 +45,8 @@ if (props.mode === "edit" && props.courseId) {
         form.value = {
             name: c.name,
             description: c.description ?? "",
+            categoryUuid: c.category.uuid,
+            tagsUuid: c.tags?.map(t => t.uuid) ?? [],
             materials: (c.materials ?? []).map(m => ({
                 uuid: m.uuid,
                 name: m.name,
@@ -86,6 +92,10 @@ const submitForm = async () => {
         const fd = new FormData();
         fd.append("Course.Name", form.value.name);
         fd.append("Course.Description", form.value.description ?? "");
+        fd.append("Course.CategoryUuid", form.value.categoryUuid);
+        form.value.tagsUuid.forEach((tagUuid, index) => {
+            fd.append(`Course.TagsUuid[${index}]`, tagUuid);
+        });
 
         if (props.mode === "edit") fd.append("Course.Uuid", props.courseId ?? "");
 
@@ -130,6 +140,11 @@ const submitForm = async () => {
         isInProgress.value = false;
     }
 };
+
+const resetTags = () => {
+    form.value.tagsUuid = [];
+};
+
 </script>
 
 <template>
@@ -144,6 +159,27 @@ const submitForm = async () => {
             <Input type="textarea" v-model="form.description" rows="4" maxlength="1048" :disabled="isInProgress" required />
         </div>
 
+        <div :class="$style.formGroup">
+            <label>Kategorie *</label>
+            <Input 
+                type="select" 
+                v-model="form.categoryUuid"
+                :disabled="isInProgress"
+                @input="resetTags"
+                required>
+                <option v-for="cat in props.categories" :key="cat.uuid" :value="cat.uuid">{{ cat.label }}</option>
+            </Input>
+        </div>
+
+        <div :class="$style.formGroup">
+            <label>Tagy (max 5)</label>
+
+            <CategoryAndTagsSelection
+                v-model="form.tagsUuid"
+                :category-uuid="form.categoryUuid"
+            />
+        </div>
+
         <div :class="$style.materials">
             <div :class="$style.header">
                 <label>Materiály</label>
@@ -151,10 +187,10 @@ const submitForm = async () => {
             </div>
 
             <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
-                <MaterialFormItem :model-value="m" :index="i" 
-                    @update:modelValue="(val) => updateMaterial(i, val)" 
-                    @remove="() => removeMaterial(i)" 
-                    @file-selected="handleFileChange" />
+                <MaterialFormItem :model-value="m" :index="i"
+                                  @update:modelValue="(val) => updateMaterial(i, val)"
+                                  @remove="() => removeMaterial(i)"
+                                  @file-selected="handleFileChange" />
             </div>
         </div>
 
@@ -183,9 +219,14 @@ const submitForm = async () => {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    position: relative;
 
     label {
         font-weight: 600;
+    }
+    
+    textarea {
+        resize: none;
     }
 }
 
@@ -224,21 +265,21 @@ const submitForm = async () => {
             margin-right: 4px;
         }
     }
-    
+
     .remove {
         font-size: 16px;
         font-weight: 600;
     }
-    
+
     .add {
         font-size: 16px;
         font-weight: 600;
-        
+
         &::before {
             content: '';
             mask-image: url("../../../public/icons/plus.svg");
         }
-        
+
         &:disabled {
             opacity: .5;
             cursor: not-allowed;
@@ -250,6 +291,7 @@ const submitForm = async () => {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    margin-top: 32px;
 
     button {
         width: 164px;

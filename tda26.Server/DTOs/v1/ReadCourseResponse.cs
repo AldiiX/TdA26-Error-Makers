@@ -19,4 +19,6 @@ public class ReadCourseResponse {
     public required ICollection<ReadQuizResponse> Quizzes { get; set; }
     public required ICollection<FeedPost> Feed { get; set; }
     public required byte RatingScore { get; set; }
+    public Category? Category { get; set; }
+    public List<Tag>? Tags { get; set; }
 }

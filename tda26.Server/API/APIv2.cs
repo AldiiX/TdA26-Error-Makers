@@ -266,6 +266,43 @@ public class APIv2(
         return Ok(categories);
     }
     
+    [HttpGet("course-tags")]
+    public async Task<IActionResult> GetCoursesTags([FromQuery] Guid categoryUuid, CancellationToken ct = default) {
+        var tags = await db.Tags
+            .Where(t => t.CategoryUuid == categoryUuid)
+            .ToListAsync(ct);
+        
+        return Ok(tags);
+    }
+    
+    [HttpPost("course-tags")]
+    public async Task<IActionResult> CreateCourseTag([FromBody] CreateCourseTagRequest body, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        if (acc is not Admin) return Forbid();
+
+        var category = await db.Categories.FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid, ct);
+        if (category == null) {
+            return NotFound(new { error = "Category not found." });
+        }
+
+        var newTag = new Tag {
+            DisplayName = body.DisplayName,
+            CategoryUuid = body.CategoryUuid
+        };
+
+        db.Tags.Add(newTag);
+        await db.SaveChangesAsync(ct);
+
+        return new CreatedAtActionResult(
+            actionName: nameof(GetCoursesTags),
+            controllerName: "APIv2",
+            routeValues: new { categoryUuid = body.CategoryUuid },
+            value: newTag
+        );
+    }
+    
     [HttpGet("me/courses")]
     public async Task<IActionResult> GetMyCourses(
         [FromQuery] bool full = false,
@@ -319,6 +356,8 @@ public class APIv2(
                 .Include(c => c.Feed)
                 .Include(c => c.Account)
                 .Include(c => c.Ratings)
+                .Include(c => c.Category)
+                .Include(c => c.Tags)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
@@ -331,6 +370,7 @@ public class APIv2(
             course = await db.Courses
                 .Include(c => c.Account)
                 .Include(c => c.Ratings)
+                .Include(c => c.Category)
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) {
@@ -367,7 +407,35 @@ public class APIv2(
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
+        
+        // Category
+        if (body.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid.Value, ct);
 
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            existingCourse.CategoryUuid = body.CategoryUuid;
+        }
+
+        // Tags
+        if (body.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            existingCourse.Tags = tags;
+        }
+        if (body.TagsUuid is { Count: 0 }) {
+            existingCourse.Tags = [];
+        }
+        
         await courseRepository.UpdateAsync(existingCourse, ct);
 
         return Ok(existingCourse);
@@ -479,6 +547,34 @@ public class APIv2(
             }
 
             await materialRepository.UpdateMaterialAsync(existingMaterial, ct);
+        }
+
+        // Category
+        if (body.Course.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.Course.CategoryUuid.Value, ct);
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            existingCourse.CategoryUuid = body.Course.CategoryUuid;
+        }
+
+        // Tags
+        if (body.Course.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.Course.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.Course.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            existingCourse.Tags = tags;
+        }
+        if (body.Course.TagsUuid is { Count: 0 }) {
+            existingCourse.Tags = [];
         }
 
         await courseRepository.UpdateAsync(existingCourse, ct);
@@ -750,6 +846,34 @@ public class APIv2(
             LecturerUuid = acc.Uuid
         };
 
+        // Category
+        if (body.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.CategoryUuid.Value, ct);
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            newCourse.CategoryUuid = body.CategoryUuid;
+        }
+
+        // Tags
+        if (body.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            newCourse.Tags = tags;
+        }
+        if (body.TagsUuid == null || body.TagsUuid.Count == 0) {
+            newCourse.Tags = [];
+        }
+
         await courseRepository.CreateAsync(newCourse, ct);
 
         return new CreatedAtActionResult(
@@ -818,6 +942,34 @@ public class APIv2(
             };
 
             newCourse.Materials.Add(newMaterial);
+        }
+
+        // Category
+        if (body.Course.CategoryUuid.HasValue) {
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Uuid == body.Course.CategoryUuid.Value, ct);
+
+            if (category == null) {
+                return BadRequest(new { error = "Invalid category UUID." });
+            }
+            
+            newCourse.CategoryUuid = body.Course.CategoryUuid;
+        }
+
+        // Tags
+        if (body.Course.TagsUuid is { Count: > 0 }) {
+            var tags = await db.Tags
+                .Where(t => body.Course.TagsUuid.Contains(t.Uuid))
+                .ToListAsync(ct);
+
+            if (tags.Count != body.Course.TagsUuid.Count) {
+                return BadRequest(new { error = "One or more tags are invalid." });
+            }
+            
+            newCourse.Tags = tags;
+        }
+        if (body.Course.TagsUuid == null || body.Course.TagsUuid.Count == 0) {
+            newCourse.Tags = [];
         }
 
         await courseRepository.CreateAsync(newCourse, ct);

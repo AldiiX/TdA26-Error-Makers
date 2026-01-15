@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import {type Account, type Course, type gRecaptcha, type Material, type Quiz, type FeedPost, type FeedPostView, type FeedPurposeType} from "#shared/types";
+import {
+    type Account,
+    type Course,
+    type gRecaptcha,
+    type Material,
+    type Quiz,
+    type FeedPost,
+    type FeedPostView,
+    type FeedPurposeType,
+    type CourseCategory
+} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -17,6 +27,7 @@ import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 import LoginForm from "~/components/LoginForm.vue";
 import RegisterForm from "~/components/RegisterForm.vue";
 import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
+import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -88,14 +99,28 @@ watch(_course, (val) => {
 
     course.value = structuredClone(val);
     originalCourse.value = structuredClone(val);
+    
+    if (val.category?.uuid) editedCategoryUuid.value = val.category?.uuid;
+    editedTagsUuid.value = val.tags?.map(t => t.uuid) ?? [];
 }, { immediate: true });
+
+const normalizeTags = (tags?: string[]) =>
+    [...(tags ?? [])].sort();
 
 const isDirty = computed(() => {
     if (!course.value || !originalCourse.value) return false;
 
+    const originalTags = normalizeTags(
+        originalCourse.value.tags?.map(t => t.uuid)
+    );
+
+    const editedTags = normalizeTags(editedTagsUuid.value);
+
     return (
         course.value.name !== originalCourse.value.name ||
-        course.value.description !== originalCourse.value.description
+        course.value.description !== originalCourse.value.description ||
+        editedCategoryUuid.value !== originalCourse.value.category?.uuid ||
+        JSON.stringify(editedTags) !== JSON.stringify(originalTags)
     );
 });
 
@@ -713,60 +738,48 @@ const updateCourseDescription = (newDescription: string) => {
 
 const saveCourseChanges = async () => {
     if (!course.value) return;
-    
+
     isActionInProgress.value = true;
 
-    // validace
-    if (course.value.name.trim().length === 0) {
-        push.error({
-            title: "Chyba při ukládání",
-            message: "Název kurzu nesmí být prázdný.",
-            duration: 4000
-        });
-        
-        isActionInProgress.value = false;
-        
-        return;
-    }
-
-    if(course.value.name.length > 128) {
-        push.error({
-            title: "Chyba při ukládání",
-            message: "Název kurzu nesmí být delší než 128 znaků.",
-            duration: 4000
-        });
-        
-        isActionInProgress.value = false;
-        return;
-    }
-
     try {
-        const updatedCourse = await $fetch<Course>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: {
-                name: course.value.name,
-                description: course.value.description,
+        const updatedCourse = await $fetch<Course>(
+            getBaseUrl() + `/api/v2/courses/${course.value.uuid}`,
+            {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: {
+                    name: course.value.name,
+                    description: course.value.description,
+                    categoryUuid: editedCategoryUuid.value,
+                    tagsUuid: editedTagsUuid.value
+                }
             }
-        });
+        );
 
+        course.value = structuredClone(updatedCourse);
         originalCourse.value = structuredClone(updatedCourse);
+
+        editedCategoryUuid.value = updatedCourse.category.uuid;
+        editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
+
         push.success({
             title: "Změny uloženy",
             message: "Změny kurzu byly úspěšně uloženy.",
             duration: 4000
-        })
+        });
+
     } catch (err) {
-        console.error("Error saving course changes:", err);
+        console.error(err);
         push.error({
             title: "Chyba při ukládání",
-            message: "Nepodařilo se uložit změny kurzu. Zkuste to prosím znovu.",
+            message: "Nepodařilo se uložit změny kurzu.",
             duration: 4000
         });
     } finally {
         isActionInProgress.value = false;
     }
 };
+
 
 const editBackClick = () => {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -1078,6 +1091,27 @@ onBeforeUnmount(() => {
     }
 });
 
+const { data: categories } = await useFetch<CourseCategory[]>(
+    getBaseUrl() + "/api/v2/course-categories",
+    { server: true }
+);
+
+const editedCategoryUuid = ref<string | null>(courseSmall.value.category?.uuid ?? categories.value?.[0]?.uuid ?? null);
+const editedTagsUuid = ref<string[]>([]);
+
+watch(
+    editedCategoryUuid,
+    (newVal, oldVal) => {
+        if (!oldVal) return;
+        if (newVal === oldVal) return;
+
+        editedTagsUuid.value = [];
+    }
+);
+
+watch(course, (val) => {
+    console.log(val)
+});
 </script>
 
 <template>
@@ -1098,6 +1132,43 @@ onBeforeUnmount(() => {
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
+                <div :class="$style.categoryAndTags">
+                    <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
+                        <div :class="$style.wrp">
+                            <Input
+                                v-if="isEditMode"
+                                :key="course?.tags?.length"
+                                type="select"
+                                v-model="editedCategoryUuid"
+                            >
+                                <option
+                                    v-for="cat in categories"
+                                    :key="cat.uuid"
+                                    :value="cat.uuid"
+                                >
+                                    {{ cat.label }}
+                                </option>
+                            </Input>
+
+                            <p v-else-if="course?.category !== null" :class="$style.category">
+                                {{ course?.category.label }}
+                            </p>
+
+                            <ul :class="$style.tags" v-if="isEditMode || (course?.tags && course?.tags.length >= 1)">
+                                <li v-if="!isEditMode && course?.tags && course?.tags?.length >= 1" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
+                                <CategoryAndTagsSelection
+                                    v-else-if="editedCategoryUuid && isEditMode"
+                                    :key="editedCategoryUuid"
+                                    v-model="editedTagsUuid"
+                                    :category-uuid="editedCategoryUuid"
+                                />
+                            </ul>
+
+                            <div :style="{ width: '100%', height: '1px', marginTop: '12px', background: 'color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%)' }"></div>
+                        </div>
+                    </SmoothSizeWrapper>
+                </div>
+
                 <div :class="$style.fields">
                     <div :class="$style.el">
                         <p :class="$style.title">Zhlédnutí</p>
@@ -1782,6 +1853,53 @@ onBeforeUnmount(() => {
         background: none;
         -webkit-text-fill-color: currentColor;
     }
+    
+    .categoryAndTags {
+        padding: 4px;
+        
+        .tags {
+            width: 100%;
+            margin: 12px 0;
+            
+            >li {
+                cursor: pointer;
+
+                &::after {
+                    content: '';
+                    margin-left: 6px;
+                    mask-image: url("../../../../public/icons/x.svg");
+                    mask-size: cover;
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    background-color: var(--text-color-secondary);
+                }
+            }
+
+            >div {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                
+                span {
+                    p {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        width: 100%;
+                    }
+                }
+                
+                >* {
+                    width: 100%;
+                }
+                
+                input {
+                    width: 100%;
+                }
+            }
+        }
+    }
 }
 
 .editControls {
@@ -2015,6 +2133,46 @@ ul {
                     button {
                         flex: 1;
                         min-width: 140px;
+                    }
+                }
+            }
+
+            .categoryAndTags {
+                .wrp {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+
+                    .category {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin: 0;
+                        font-size: 20px;
+                        font-weight: 600;
+                        color: var(--text-color-secondary);
+                    }
+
+                    .tags {
+                        display: flex;
+                        gap: 8px;
+                        flex-wrap: wrap;
+
+                        >li {
+                            padding: 6px 12px;
+                            border-radius: 12px;
+                            background-color: var(--background-color-3);
+                            margin: 0;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: var(--text-color);
+                            display: flex;
+                            align-items: center;
+
+                            p {
+                                margin: 0;
+                            }
+                        }
                     }
                 }
             }

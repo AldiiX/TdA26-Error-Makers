@@ -78,6 +78,8 @@ export interface CourseFormModel {
     name: string;
     description: string;
     materials: MaterialFormModel[];
+    categoryUuid: string;
+    tagsUuid: string[];
 }
 
 export interface Lecturer extends Account {
@@ -165,4 +167,9 @@ export interface Author {
     bio: string | null,
     fullName: string,
     fullNameWithoutTitles: string,
+}
+
+export interface CourseCategory { 
+    uuid: string;
+    label: string;
 }
