@@ -94,9 +94,10 @@ const handleWheel = (event: WheelEvent) => {
     let scrollableElement: HTMLElement | null = null;
     let currentNode: Node | null = target;
     
-    // If target is not an HTMLElement (e.g., text node), start from its parent
-    let currentElement: HTMLElement | null = 
-        currentNode instanceof HTMLElement ? currentNode : currentNode.parentElement;
+    // Start from the target element, or its parent if target is a text node
+    let currentElement: HTMLElement | null = currentNode instanceof HTMLElement 
+        ? currentNode 
+        : currentNode.parentElement;
     
     // Limit traversal depth to avoid performance issues with deeply nested structures
     let depth = 0;
@@ -129,8 +130,8 @@ const handleWheel = (event: WheelEvent) => {
 
     // Check if we're at the scroll boundaries of the scrollable element
     const atTop = scrollableElement.scrollTop === 0;
-    const atBottom = scrollableElement.scrollTop + scrollableElement.clientHeight >= 
-                     scrollableElement.scrollHeight - SCROLL_TOLERANCE;
+    const atBottom = scrollableElement.scrollTop + scrollableElement.clientHeight 
+        >= scrollableElement.scrollHeight - SCROLL_TOLERANCE;
 
     // Prevent scroll if we're at the boundaries and trying to scroll further
     if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
