@@ -101,7 +101,7 @@ const handleWheel = (event: WheelEvent) => {
         }
         
         const overflowY = window.getComputedStyle(currentElement).overflowY;
-        const isScrollable = (overflowY === 'auto' || overflowY === 'scroll') && 
+        const isScrollable = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && 
                             currentElement.scrollHeight > currentElement.clientHeight;
         
         if (isScrollable) {
@@ -109,7 +109,9 @@ const handleWheel = (event: WheelEvent) => {
             break;
         }
         
-        currentElement = currentElement.parentElement as HTMLElement;
+        const parent = currentElement.parentElement;
+        if (!parent) break;
+        currentElement = parent;
     }
 
     // If no scrollable element found, prevent scrolling
