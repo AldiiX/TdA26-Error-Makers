@@ -1129,6 +1129,42 @@ watch(
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
+                <div :class="$style.categoryAndTags" v-show="course?.tags?.length > 1 && course?.category !== null">
+                    <SmoothSizeWrapper :change-width="false">
+                        <div :class="$style.wrp">
+                            <Input
+                                v-if="isEditMode"
+                                type="select"
+                                v-model="editedCategoryUuid"
+                            >
+                                <option
+                                    v-for="cat in categories"
+                                    :key="cat.uuid"
+                                    :value="cat.uuid"
+                                >
+                                    {{ cat.label }}
+                                </option>
+                            </Input>
+
+                            <p v-else :class="$style.category">
+                                {{ course?.category.label }}
+                            </p>
+
+                            <ul :class="$style.tags">
+                                <li v-if="!isEditMode" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
+                                <CategoryAndTagsSelection
+                                    v-else
+                                    :key="editedCategoryUuid || 'no-category'"
+                                    v-model="editedTagsUuid"
+                                    :category-uuid="editedCategoryUuid"
+                                />
+                            </ul>
+
+                            <div :style="{ width: '100%', height: '1px', marginTop: '12px', background: 'color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%)' }"></div>
+                        </div>
+                    </SmoothSizeWrapper>
+                </div>
+
                 <div :class="$style.fields">
                     <div :class="$style.el">
                         <p :class="$style.title">Zhlédnutí</p>
@@ -1145,35 +1181,6 @@ watch(
                 </div>
 
                 <div :class="$style.otherinfo">
-                    <div :class="$style.categoryAndTags">
-                        <Input
-                            v-if="isEditMode"
-                            type="select"
-                            v-model="editedCategoryUuid"
-                        >
-                            <option
-                                v-for="cat in categories"
-                                :key="cat.uuid"
-                                :value="cat.uuid"
-                            >
-                                {{ cat.label }}
-                            </option>
-                        </Input>
-
-                        <p v-else :class="$style.category">
-                            {{ course?.category.label }}
-                        </p>
-                        <ul :class="$style.tags">
-                            <li v-if="!isEditMode" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
-                            <CategoryAndTagsSelection
-                                v-else
-                                :key="editedCategoryUuid || 'no-category'"
-                                v-model="editedTagsUuid"
-                                :category-uuid="editedCategoryUuid"
-                            />
-                        </ul>
-                    </div>
-                    
                     <div :class="$style.authorAndRating">
                         <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
                             <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
@@ -2121,8 +2128,12 @@ ul {
                         min-width: 140px;
                     }
                 }
-                
-                .categoryAndTags {
+            }
+
+            .categoryAndTags {
+                overflow: hidden;
+
+                .wrp {
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
@@ -2149,10 +2160,10 @@ ul {
                             margin: 0;
                             font-size: 14px;
                             font-weight: 500;
-                            color: var(--text-color-secondary);
+                            color: var(--text-color);
                             display: flex;
                             align-items: center;
-                            
+
                             p {
                                 margin: 0;
                             }
