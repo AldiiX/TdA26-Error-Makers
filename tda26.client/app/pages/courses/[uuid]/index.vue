@@ -1133,7 +1133,7 @@ watch(course, (val) => {
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
                 <div :class="$style.categoryAndTags">
-                    <SmoothSizeWrapper :change-width="false" v-show="isEditMode || course?.category !== null || (course?.tags && course?.tags.length >= 1)">
+                    <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
                             <Input
                                 v-if="isEditMode"
