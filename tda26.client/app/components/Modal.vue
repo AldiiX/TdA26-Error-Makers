@@ -29,27 +29,6 @@ const emit = defineEmits<{
     (e: "close"): void;
 }>();
 
-let scrollTop = 0;
-
-const lockScroll = () => {
-    const el = document.documentElement; 
-    scrollTop = el.scrollTop;
-
-    el.style.position = "fixed";
-    el.style.top = `-${scrollTop}px`;
-    el.style.width = "100%";
-};
-
-const unlockScroll = () => {
-    const el = document.documentElement;
-
-    el.style.position = "";
-    el.style.top = "";
-    el.style.width = "";
-
-    el.scrollTop = scrollTop;
-};
-
 const isOpen = ref(props.enabled);
 const animationState = ref<AnimationState>("closed");
 const modalContentRef = ref<HTMLDivElement | null>(null);
@@ -133,14 +112,14 @@ const handleWheel = (event: WheelEvent) => {
 watch(
     () => isOpen.value,
     (open) => {
-        if (typeof document === "undefined") return;
+        if (typeof document === "undefined") return; // <-- SSR SAFE
 
         if (open) {
-            lockScroll();
             document.addEventListener("keydown", handleKeydown);
+            document.addEventListener("wheel", handleWheel, { passive: false });
         } else {
-            unlockScroll();
             document.removeEventListener("keydown", handleKeydown);
+            document.removeEventListener("wheel", handleWheel);
         }
     },
     { immediate: true }
