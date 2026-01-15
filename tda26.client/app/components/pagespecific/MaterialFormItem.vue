@@ -75,6 +75,7 @@ function onFileChange(event: Event) {
 </template>
 
 <style module lang="scss">
+@use "../../app" as app;
 .item {
     flex: 1;
     display: flex;
@@ -110,6 +111,22 @@ function onFileChange(event: Event) {
         color: var(--accent-color-primary);
         font-weight: 600;
         cursor: pointer;
+    }
+}
+
+
+/* Mobile */
+@media screen and (max-width: app.$mobileBreakpoint) {
+    .item {
+        .headInputs {
+            flex-direction: column;
+
+            :first-child,
+            :last-child {
+                flex: unset;
+                width: 100%;
+            }
+        }
     }
 }
 </style>

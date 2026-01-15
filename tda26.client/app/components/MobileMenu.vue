@@ -97,10 +97,10 @@ watch(() => useRoute().path, (newPath) => {
                             </div>
 
                             <div :class="$style.accountActions">
-                                <button :class="$style.actionButton" @click="toggleTheme">
-                                    <div :class="[$style.icon, $style.themeIcon]"></div>
-                                    <span>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</span>
-                                </button>
+<!--                                <button :class="$style.actionButton" @click="toggleTheme">-->
+<!--                                    <div :class="[$style.icon, $style.themeIcon]"></div>-->
+<!--                                    <span>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</span>-->
+<!--                                </button>-->
 
                                 <button :class="[$style.actionButton, $style.logout]" @click="logout">
                                     <div :class="[$style.icon, $style.logoutIcon]"></div>
