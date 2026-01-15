@@ -1796,6 +1796,7 @@ onBeforeUnmount(() => {
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    width: max-content;
     
     a button {
         height: 100%;
@@ -2444,6 +2445,20 @@ ul {
             >.brief {
                 min-width: unset;
             }
+        }
+    }
+}
+
+@media screen and (max-width: 875px) {
+    .editControls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        bottom: 2%;
+        
+        button {
+            width: 100% !important;
+            font-size: 12px !important;
         }
     }
 }
