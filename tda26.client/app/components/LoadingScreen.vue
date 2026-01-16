@@ -56,7 +56,7 @@ onMounted(() => {
                     <div :class="$style.icon"></div>
                 </div>
                 <h1 :class="$style.loadingTitle" :style="{ color: titleColor }">Think Different Academy se načítá</h1>
-                <p :class="$style.loadingText" :style="{ color: textColor }">... připravte se na úžasné vzdělávací zážitky! ...</p>
+                <p :class="$style.loadingText" :style="{ color: textColor }">... připrav se na úžasné vzdělávací zážitky! ...</p>
             </div>
         </div>
     </Transition>
