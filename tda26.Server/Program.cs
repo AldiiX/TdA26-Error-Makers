@@ -142,11 +142,11 @@ public static class Program {
 
         Console.WriteLine($"--- Configuration using the {workingConnectionName} database. ---");
 
-        builder.Services.AddSingleton(sp => new MySqlDataSourceBuilder(workingConnectionString).Build());
+        builder.Services.AddSingleton(sp => new MySqlDataSourceBuilder(workingConnectionString + ";Convert Zero Datetime=True;DateTimeKind=Utc").Build());
 
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(
-                workingConnectionString,
+                workingConnectionString + ";Convert Zero Datetime=True;DateTimeKind=Utc",
                 ServerVersion.AutoDetect(workingConnectionString),
                 mySqlOptions => mySqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
