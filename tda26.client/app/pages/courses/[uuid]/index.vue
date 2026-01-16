@@ -174,6 +174,13 @@ const authTab = ref<"login" | "register">("login");
 const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
 
+watch(enabledModal, (val) => {
+    if (val === null) return;
+    
+    updateError.value = null;
+    deleteError.value = null;
+});
+
 const editingMaterial = ref<any>(null);
 
 const isThisCourseLiked = computed(() => {
