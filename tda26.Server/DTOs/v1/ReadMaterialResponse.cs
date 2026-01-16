@@ -11,6 +11,6 @@ public class ReadMaterialResponse {
     [Required] [MaxLength(128)] public required string Name { get; set; }
     [MaxLength(1048)] public string? Description { get; set; }
     [Required] public required string Type { get; set; }
-    public required DateTime CreatedAt { get; set; } = DateTime.Now;
-    public required DateTime UpdatedAt { get; set; } = DateTime.Now;
+    public required DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
+    public required DateTimeOffset UpdatedAt { get; set; } = DateTime.UtcNow;
 }

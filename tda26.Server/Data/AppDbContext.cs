@@ -45,7 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         foreach (var entityEntry in entries) {
             // For newly added entities, always set UpdatedAt
             if (entityEntry.State == EntityState.Added) {
-                ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
+                ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.UtcNow;
                 continue;
             }
 
@@ -67,7 +67,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 continue;
             }
 
-            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.Now;
+            ((IAuditable)entityEntry.Entity).UpdatedAt = DateTime.UtcNow;
         }
     }
 
