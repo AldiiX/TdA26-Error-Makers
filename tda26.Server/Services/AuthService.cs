@@ -81,8 +81,8 @@ public class AuthService(
             Username = username,
             PrimaryEmail = email,
             Password = hashedPassword,
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         await accounts.CreateAsync(acc, ct);
