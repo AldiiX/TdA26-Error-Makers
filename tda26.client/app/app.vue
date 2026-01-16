@@ -5,6 +5,7 @@ import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
 import { NuxtLink, ClientOnly, NuxtLayout } from '#components';
 import type {WebTheme} from "#shared/types";
 import MobileMenu from "~/components/MobileMenu.vue";
+import LoadingScreen from "~/components/LoadingScreen.vue";
 import { Notivue, NotivueSwipe, Notification } from 'notivue';
 
 // state
@@ -45,6 +46,9 @@ useSeo({
 </script>
 
 <template>
+    <!-- Loading screen -->
+    <LoadingScreen />
+    
     <!-- Mobile menu -->
     <MobileMenu />
 
