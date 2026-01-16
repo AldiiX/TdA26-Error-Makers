@@ -198,7 +198,7 @@ public static class Program {
                 // Simple health check - list buckets with timeout
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 var bucketsTask = testClient.ListBucketsAsync(cts.Token);
-                bucketsTask.Wait(cts.Token);
+                bucketsTask.GetAwaiter().GetResult();
 
                 minioEndpoint = primaryEndpoint;
                 minioAccessKey = primaryAccessKey;
@@ -220,9 +220,9 @@ public static class Program {
         // Fallback to local MinIO
         if (minioEndpoint == null)
         {
-            var fallbackEndpoint = "127.0.0.1:9000";
-            var fallbackAccessKey = "admin";
-            var fallbackSecretKey = "adminadmin";
+            var fallbackEndpoint = ENV.GetValueOrNull("MINIO_FALLBACK_ENDPOINT") ?? "127.0.0.1:9000";
+            var fallbackAccessKey = ENV.GetValueOrNull("MINIO_FALLBACK_ACCESS_KEY") ?? "admin";
+            var fallbackSecretKey = ENV.GetValueOrNull("MINIO_FALLBACK_SECRET_KEY") ?? "adminadmin";
 
             try
             {
@@ -237,7 +237,7 @@ public static class Program {
                 // Simple health check - list buckets with timeout
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 var bucketsTask = testClient.ListBucketsAsync(cts.Token);
-                bucketsTask.Wait(cts.Token);
+                bucketsTask.GetAwaiter().GetResult();
 
                 minioEndpoint = fallbackEndpoint;
                 minioAccessKey = fallbackAccessKey;
