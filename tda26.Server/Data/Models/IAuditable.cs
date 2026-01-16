@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace tda26.Server.Data.Models;
+﻿namespace tda26.Server.Data.Models;
 
 public interface IAuditable {
     DateTime UpdatedAt { get; set; }

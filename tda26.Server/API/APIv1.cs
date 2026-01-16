@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Minio;
 using tda26.Server.Controllers;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;

@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using dotenv.net;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -157,8 +156,7 @@ public static class Program {
         );
 
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-        builder.Services.AddControllers().AddJsonOptions(options =>
-        {
+        builder.Services.AddControllers().AddJsonOptions(options => {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
         });
         
@@ -175,6 +173,7 @@ public static class Program {
         bool useSSL = false;
         string? minioConnectionName = null;
 
+        #if DEBUG
         // Try primary MinIO from environment variables
         var primaryEndpoint = ENV.GetValueOrNull("MINIO_ENDPOINT");
         var primaryAccessKey = ENV.GetValueOrNull("MINIO_ACCESS_KEY");
@@ -216,16 +215,15 @@ public static class Program {
         {
             Console.WriteLine("Primary MinIO configuration incomplete, checking environment variables...");
         }
+        #endif
 
         // Fallback to local MinIO
-        if (minioEndpoint == null)
-        {
+        if (minioEndpoint == null) {
             var fallbackEndpoint = ENV.GetValueOrNull("MINIO_FALLBACK_ENDPOINT") ?? "127.0.0.1:9000";
             var fallbackAccessKey = ENV.GetValueOrNull("MINIO_FALLBACK_ACCESS_KEY") ?? "admin";
             var fallbackSecretKey = ENV.GetValueOrNull("MINIO_FALLBACK_SECRET_KEY") ?? "adminadmin";
 
-            try
-            {
+            try {
                 Console.WriteLine($"Attempting connection to Fallback MinIO: {fallbackEndpoint}");
                 
                 // Test connection without SSL for local
@@ -245,15 +243,12 @@ public static class Program {
                 useSSL = false;
                 minioConnectionName = "Fallback";
                 Console.WriteLine($"Successfully connected to Fallback MinIO: {fallbackEndpoint}");
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 Console.WriteLine($"Failed to connect to Fallback MinIO ({fallbackEndpoint}). Error: {ex.Message}");
             }
         }
 
-        if (minioEndpoint == null)
-        {
+        if (minioEndpoint == null) {
             Console.WriteLine("---------------------------------------------");
             throw new InvalidOperationException("CRITICAL: Failed to connect to both primary and fallback MinIO. Application startup aborted.");
         }
@@ -265,16 +260,13 @@ public static class Program {
         var finalSecretKey = minioSecretKey!;
         var finalUseSSL = useSSL;
 
-        builder.Services.AddMinio(options =>
-        {
+        builder.Services.AddMinio(options => {
             options.Endpoint = finalEndpoint;
             options.AccessKey = finalAccessKey;
             options.SecretKey = finalSecretKey;
 
-            if (finalUseSSL)
-            {
-                options.ConfigureClient(client =>
-                {
+            if (finalUseSSL) {
+                options.ConfigureClient(client => {
                     client.WithSSL();
                 });
             }
@@ -290,10 +282,9 @@ public static class Program {
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
         
         // Nastaveni
-        builder.Services.Configure<CustomMinioOptions>(options =>
-            {
-                options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";
-            });
+        builder.Services.Configure<CustomMinioOptions>(options => {
+            options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";
+        });
 
         Application = builder.Build();
 
