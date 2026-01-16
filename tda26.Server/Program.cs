@@ -168,17 +168,116 @@ public static class Program {
         builder.Services.AddOpenApi();
         builder.Services.AddHttpClient();
         
-        // Minio
+        // Minio with fallback support
+        string? minioEndpoint = null;
+        string? minioAccessKey = null;
+        string? minioSecretKey = null;
+        bool useSSL = false;
+        string? minioConnectionName = null;
+
+        // Try primary MinIO from environment variables
+        var primaryEndpoint = ENV.GetValueOrNull("MINIO_ENDPOINT");
+        var primaryAccessKey = ENV.GetValueOrNull("MINIO_ACCESS_KEY");
+        var primarySecretKey = ENV.GetValueOrNull("MINIO_SECRET_KEY");
+
+        if (!string.IsNullOrWhiteSpace(primaryEndpoint) && 
+            !string.IsNullOrWhiteSpace(primaryAccessKey) && 
+            !string.IsNullOrWhiteSpace(primarySecretKey))
+        {
+            try
+            {
+                Console.WriteLine($"Attempting connection to Primary MinIO: {primaryEndpoint}");
+                
+                // Test connection
+                var testClient = new MinioClient()
+                    .WithEndpoint(primaryEndpoint)
+                    .WithCredentials(primaryAccessKey, primarySecretKey)
+                    .WithSSL()
+                    .Build();
+
+                // Simple health check - list buckets with timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var bucketsTask = testClient.ListBucketsAsync(cts.Token);
+                bucketsTask.Wait(cts.Token);
+
+                minioEndpoint = primaryEndpoint;
+                minioAccessKey = primaryAccessKey;
+                minioSecretKey = primarySecretKey;
+                useSSL = true;
+                minioConnectionName = "Primary";
+                Console.WriteLine($"Successfully connected to Primary MinIO: {primaryEndpoint}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to Primary MinIO ({primaryEndpoint}). Error: {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Primary MinIO configuration incomplete, checking environment variables...");
+        }
+
+        // Fallback to local MinIO
+        if (minioEndpoint == null)
+        {
+            var fallbackEndpoint = "127.0.0.1:9000";
+            var fallbackAccessKey = "admin";
+            var fallbackSecretKey = "adminadmin";
+
+            try
+            {
+                Console.WriteLine($"Attempting connection to Fallback MinIO: {fallbackEndpoint}");
+                
+                // Test connection without SSL for local
+                var testClient = new MinioClient()
+                    .WithEndpoint(fallbackEndpoint)
+                    .WithCredentials(fallbackAccessKey, fallbackSecretKey)
+                    .Build();
+
+                // Simple health check - list buckets with timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var bucketsTask = testClient.ListBucketsAsync(cts.Token);
+                bucketsTask.Wait(cts.Token);
+
+                minioEndpoint = fallbackEndpoint;
+                minioAccessKey = fallbackAccessKey;
+                minioSecretKey = fallbackSecretKey;
+                useSSL = false;
+                minioConnectionName = "Fallback";
+                Console.WriteLine($"Successfully connected to Fallback MinIO: {fallbackEndpoint}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to Fallback MinIO ({fallbackEndpoint}). Error: {ex.Message}");
+            }
+        }
+
+        if (minioEndpoint == null)
+        {
+            Console.WriteLine("---------------------------------------------");
+            throw new InvalidOperationException("CRITICAL: Failed to connect to both primary and fallback MinIO. Application startup aborted.");
+        }
+
+        Console.WriteLine($"--- Configuration using the {minioConnectionName} MinIO. ---");
+
+        var finalEndpoint = minioEndpoint!;
+        var finalAccessKey = minioAccessKey!;
+        var finalSecretKey = minioSecretKey!;
+        var finalUseSSL = useSSL;
+
         builder.Services.AddMinio(options =>
         {
-            options.Endpoint = ENV["MINIO_ENDPOINT"];
-            options.AccessKey = ENV["MINIO_ACCESS_KEY"];
-            options.SecretKey = ENV["MINIO_SECRET_KEY"];
+            options.Endpoint = finalEndpoint;
+            options.AccessKey = finalAccessKey;
+            options.SecretKey = finalSecretKey;
 
-            options.ConfigureClient(client =>
+            if (finalUseSSL)
             {
-                client.WithSSL();
-            });
+                options.ConfigureClient(client =>
+                {
+                    client.WithSSL();
+                });
+            }
         });
         
         // repozitare a service
