@@ -4,19 +4,24 @@ import { ref, onMounted } from 'vue';
 const isLoading = ref(true);
 
 onMounted(() => {
+    const startTime = Date.now();
+    const minLoadingTime = 500; // Minimum time to show loading screen (in ms)
+    
     // Wait for fonts and critical resources to load
-    if (document.fonts) {
-        document.fonts.ready.then(() => {
-            // Add a small delay to ensure all styles are applied
-            setTimeout(() => {
-                isLoading.value = false;
-            }, 100);
-        });
-    } else {
-        // Fallback for browsers without Font Loading API
+    const hideLoader = () => {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        
         setTimeout(() => {
             isLoading.value = false;
-        }, 1000);
+        }, remainingTime);
+    };
+    
+    if (document.fonts) {
+        document.fonts.ready.then(hideLoader);
+    } else {
+        // Fallback for browsers without Font Loading API
+        setTimeout(hideLoader, 1000);
     }
 });
 </script>
@@ -48,6 +53,11 @@ onMounted(() => {
     justify-content: center;
     align-items: center;
     z-index: 9999999;
+    
+    // Dark theme support
+    :root[data-theme='dark'] & {
+        background: linear-gradient(180deg, #1a1a1a 0%, #090b0d 100%);
+    }
 }
 
 .loaderContainer {
@@ -105,6 +115,11 @@ onMounted(() => {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: pulse 2s ease-in-out infinite;
+    
+    // Dark theme support
+    :root[data-theme='dark'] & {
+        color: #FFFFFF;
+    }
 }
 
 @keyframes pulse {
