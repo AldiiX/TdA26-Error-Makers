@@ -4,11 +4,19 @@ import { ref, onMounted, computed } from 'vue';
 const isLoading = ref(true);
 const theme = useState<string>('theme', () => 'light');
 
-// Compute background gradient based on theme
+// Compute styles based on theme
 const backgroundGradient = computed(() => {
     return theme.value === 'dark'
         ? 'linear-gradient(180deg, #1a1a1a 0%, #090b0d 100%)'
         : 'linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%)';
+});
+
+const titleColor = computed(() => {
+    return theme.value === 'dark' ? '#FFFFFF' : '#080808';
+});
+
+const textColor = computed(() => {
+    return theme.value === 'dark' ? '#999999' : '#666666';
 });
 
 onMounted(() => {
@@ -46,8 +54,8 @@ onMounted(() => {
                 <div :class="$style.iconWrapper">
                     <div :class="$style.icon"></div>
                 </div>
-                <h1 :class="$style.loadingTitle">Think Different Academy se načítá</h1>
-                <p :class="$style.loadingText">... připravte se na úžasné vzdělávací zážitky! ...</p>
+                <h1 :class="$style.loadingTitle" :style="{ color: titleColor }">Think Different Academy se načítá</h1>
+                <p :class="$style.loadingText" :style="{ color: textColor }">... připravte se na úžasné vzdělávací zážitky! ...</p>
             </div>
         </div>
     </Transition>
@@ -118,12 +126,7 @@ onMounted(() => {
     font-weight: 700;
     margin: 32px auto 8px;
     text-align: center;
-    color: #080808;
     max-width: 90vw;
-    
-    @media (prefers-color-scheme: dark) {
-        color: #FFFFFF;
-    }
 }
 
 .loadingText {
@@ -132,12 +135,7 @@ onMounted(() => {
     font-weight: 500;
     margin: 0 auto;
     text-align: center;
-    color: #666666;
     max-width: 90vw;
-    
-    @media (prefers-color-scheme: dark) {
-        color: #999999;
-    }
 }
 </style>
 
