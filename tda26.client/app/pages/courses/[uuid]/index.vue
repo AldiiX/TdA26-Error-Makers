@@ -896,9 +896,9 @@ const handleFeedPostCreate = async () => {
         );
 
         // okamžitě přidáme do feedu
-        feedData.value = feedData.value
+        /*feedData.value = feedData.value
             ? [created, ...feedData.value]
-            : [created];
+            : [created];*/
 
         push.success({
             title: "Příspěvek přidán",
