@@ -43,12 +43,11 @@ onMounted(() => {
     <Transition name="fade-out">
         <div v-if="isLoading" :class="$style.loadingScreen" :style="{ background: backgroundGradient }">
             <div :class="$style.loaderContainer">
-                <div :class="$style.loader">
-                    <div :class="$style.circle"></div>
-                    <div :class="$style.circle"></div>
-                    <div :class="$style.circle"></div>
+                <div :class="$style.iconWrapper">
+                    <div :class="$style.icon"></div>
                 </div>
-                <p :class="$style.loadingText">Think Different Academy</p>
+                <h1 :class="$style.loadingTitle">Think Different Academy se načítá</h1>
+                <p :class="$style.loadingText">... připravte se na úžasné vzdělávací zážitky! ...</p>
             </div>
         </div>
     </Transition>
@@ -72,65 +71,72 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     gap: 24px;
+    padding: 64px;
+    border-radius: 12px;
+    min-width: 600px;
+    max-width: 90vw;
 }
 
-.loader {
+.iconWrapper {
+    width: 250px;
+    max-width: 90vw;
+    aspect-ratio: 1/1;
     display: flex;
-    gap: 12px;
+    justify-content: center;
     align-items: center;
 }
 
-.circle {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
+.icon {
+    width: 100%;
+    height: 100%;
+    mask: url("/icons/zarivka_sad_bile.svg") no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url("/icons/zarivka_sad_bile.svg") no-repeat center;
+    -webkit-mask-size: contain;
     background: linear-gradient(135deg, #0070BB 0%, #91F5AD 100%);
-    animation: bounce 1.4s infinite ease-in-out both;
-    
-    &:nth-child(1) {
-        animation-delay: -0.32s;
+    animation: loading-icon-swing 3s ease-in-out infinite;
+}
+
+@keyframes loading-icon-swing {
+    0% {
+        transform: rotate(0deg);
     }
-    
-    &:nth-child(2) {
-        animation-delay: -0.16s;
+    20% {
+        transform: rotate(-20deg);
     }
-    
-    &:nth-child(3) {
-        animation-delay: 0s;
+    60% {
+        transform: rotate(20deg);
+    }
+    100% {
+        transform: rotate(0deg);
     }
 }
 
-@keyframes bounce {
-    0%, 80%, 100% {
-        transform: scale(0.6) translateY(0);
-        opacity: 0.5;
-    }
-    40% {
-        transform: scale(1) translateY(-20px);
-        opacity: 1;
+.loadingTitle {
+    font-family: 'Dosis', Arial, sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    margin: 32px auto 8px;
+    text-align: center;
+    color: #080808;
+    max-width: 90vw;
+    
+    @media (prefers-color-scheme: dark) {
+        color: #FFFFFF;
     }
 }
 
 .loadingText {
     font-family: 'Dosis', Arial, sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0;
-    background: linear-gradient(90deg, #0070BB 0%, #55c374 100%);
-    -webkit-background-clip: text;
-    -moz-background-clip: text;
-    -o-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 0.7;
-    }
-    50% {
-        opacity: 1;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 auto;
+    text-align: center;
+    color: #666666;
+    max-width: 90vw;
+    
+    @media (prefers-color-scheme: dark) {
+        color: #999999;
     }
 }
 </style>
