@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 
 const isLoading = ref(true);
 const theme = useState<string>('theme', () => 'light');
@@ -21,9 +22,8 @@ const textColor = computed(() => {
 
 onMounted(() => {
     const startTime = Date.now();
-    const minLoadingTime = 500; // Minimum time to show loading screen (in ms)
-    
-    // Wait for fonts and critical resources to load
+    const minLoadingTime = 500;
+
     const hideLoader = () => {
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
@@ -37,11 +37,9 @@ onMounted(() => {
         document.fonts.ready
             .then(hideLoader)
             .catch(() => {
-                // Fallback if font loading fails
                 hideLoader();
             });
     } else {
-        // Fallback for browsers without Font Loading API
         setTimeout(hideLoader, 1000);
     }
 });
@@ -50,6 +48,9 @@ onMounted(() => {
 <template>
     <Transition name="fade-out">
         <div v-if="isLoading" :class="$style.loadingScreen" :style="{ background: backgroundGradient }">
+            <CircleBlurBlob top="10vw" left="-10vw" blur="10vw" color="var(--accent-color-secondary-theme)" />
+            <CircleBlurBlob bottom="10vw" right="-10vw" blur="10vw" color="var(--accent-color-primary)" />
+
             <div :class="$style.loaderContainer">
                 <div :class="$style.iconWrapper">
                     <div :class="$style.icon"></div>
@@ -78,7 +79,6 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
     padding: 64px;
     border-radius: 12px;
     min-width: 600px;
@@ -99,9 +99,9 @@ onMounted(() => {
     height: 100%;
     mask: url("/icons/zarivka_sad_bile.svg") no-repeat center;
     mask-size: contain;
-    -webkit-mask: url("/icons/zarivka_sad_bile.svg") no-repeat center;
+    -webkit-mask: url("/icons/zarivka_thinking_bile.svg") no-repeat center;
     -webkit-mask-size: contain;
-    background: linear-gradient(135deg, #0070BB 0%, #91F5AD 100%);
+    background: var(--text-color);
     animation: loading-icon-swing 3s ease-in-out infinite;
 }
 
@@ -123,7 +123,7 @@ onMounted(() => {
 .loadingTitle {
     font-family: 'Dosis', Arial, sans-serif;
     font-size: 32px;
-    font-weight: 700;
+    font-weight: 800;
     margin: 32px auto 8px;
     text-align: center;
     max-width: 90vw;
