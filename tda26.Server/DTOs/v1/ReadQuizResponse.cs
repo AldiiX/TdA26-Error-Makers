@@ -6,7 +6,7 @@ public class ReadQuizResponse
     public string Title { get; set; } = default!;
     public int AttemptsCount { get; set; }
     
-    public DateTime? CreatedAt { get; set; }
+    public DateTimeOffset? CreatedAt { get; set; }
 
     public List<object> Questions { get; set; } = new();
 }

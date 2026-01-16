@@ -3,6 +3,7 @@ import type { FeedPostView } from "#shared/types";
 import Button from "~/components/Button.vue";
 import Avatar from "~/components/Avatar.vue";
 import { defineEmits, computed } from "vue";
+import timeAgoString from "#shared/utils/timeAgoString";
 
 const props = defineProps<{
     feedPost: FeedPostView,
@@ -13,65 +14,6 @@ const emit = defineEmits<{
     (e: "edit", post: FeedPostView): void;
     (e: "delete", post: FeedPostView): void;
 }>();
-function formatRelativeTime(
-    dateInput: string | Date,
-    options?: {
-        locale?: string;
-        weekLimitDays?: number;
-    }
-): string {
-    const locale = options?.locale ?? 'cs-CZ';
-    const weekLimitDays = options?.weekLimitDays ?? 7;
-
-    let date: Date;
-
-    if (typeof dateInput === 'string') {
-        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
-        date = hasTimezone
-            ? new Date(dateInput)
-            : new Date(dateInput.replace(' ', 'T'));
-    } else {
-        date = dateInput;
-    }
-
-    const diffMs = Date.now() - date.getTime();
-
-    if (diffMs < 0 || diffMs < 60_000) {
-        return 'právě teď';
-    }
-
-    const minute = 60_000;
-    const hour = 3_600_000;
-    const day = 86_400_000;
-
-    const diffMinutes = Math.floor(diffMs / minute);
-    const diffHours = Math.floor(diffMs / hour);
-    const diffDays = Math.floor(diffMs / day);
-
-    if (diffMinutes < 60) {
-        return diffMinutes === 1
-            ? 'před 1 minutou'
-            : `před ${diffMinutes} minutami`;
-    }
-
-    if (diffHours < 24) {
-        return diffHours === 1
-            ? 'před 1 hodinou'
-            : `před ${diffHours} hodinami`;
-    }
-
-    if (diffDays < weekLimitDays) {
-        return diffDays === 1
-            ? 'před 1 dnem'
-            : `před ${diffDays} dny`;
-    }
-
-    return date.toLocaleDateString(locale, {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
 
 const feedPostStyle = computed(() => ({
     borderLeft: `8px solid var(${props.feedPost.background})`
@@ -109,7 +51,7 @@ const feedPostStyle = computed(() => ({
                 <div :class="$style.feedPurpose" :style="{ backgroundColor: `var(${feedPost.background})` }">
                     <p>{{ feedPost.purposeLabel }}</p>
                 </div>
-                <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
+                <div :class="$style.feedTimestamp">{{ timeAgoString(feedPost.createdAt) }}</div>
             </div>
 
             <div v-if="feedPost.author" :class="$style.feedPostAuthor">

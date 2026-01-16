@@ -28,6 +28,7 @@ import LoginForm from "~/components/LoginForm.vue";
 import RegisterForm from "~/components/RegisterForm.vue";
 import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
+import timeAgoString from "#shared/utils/timeAgoString";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -203,66 +204,6 @@ watch(() => courseSmall.value?.likeCount, (newCount) => {
         optimisticLikeCount.value = newCount;
     }
 }, { immediate: true });
-
-function formatRelativeTime(
-    dateInput: string | Date,
-    options?: {
-        locale?: string;
-        weekLimitDays?: number;
-    }
-): string {
-    const locale = options?.locale ?? 'cs-CZ';
-    const weekLimitDays = options?.weekLimitDays ?? 7;
-
-    let date: Date;
-
-    if (typeof dateInput === 'string') {
-        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(dateInput);
-        date = hasTimezone
-            ? new Date(dateInput)
-            : new Date(dateInput.replace(' ', 'T'));
-    } else {
-        date = dateInput;
-    }
-
-    const diffMs = Date.now() - date.getTime();
-
-    if (diffMs < 0 || diffMs < 60_000) {
-        return 'právě teď';
-    }
-
-    const minute = 60_000;
-    const hour = 3_600_000;
-    const day = 86_400_000;
-
-    const diffMinutes = Math.floor(diffMs / minute);
-    const diffHours = Math.floor(diffMs / hour);
-    const diffDays = Math.floor(diffMs / day);
-
-    if (diffMinutes < 60) {
-        return diffMinutes === 1
-            ? 'před 1 minutou'
-            : `před ${diffMinutes} minutami`;
-    }
-
-    if (diffHours < 24) {
-        return diffHours === 1
-            ? 'před 1 hodinou'
-            : `před ${diffHours} hodinami`;
-    }
-
-    if (diffDays < weekLimitDays) {
-        return diffDays === 1
-            ? 'před 1 dnem'
-            : `před ${diffDays} dny`;
-    }
-
-    return date.toLocaleDateString(locale, {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
 
 function mapFeedPurpose(
     purpose?: FeedPost["purpose"],
@@ -1403,7 +1344,7 @@ watch(course, (val) => {
                                                         {{ feedPost.purposeLabel }}
                                                     </p>
                                                 </div>
-                                                <div :class="$style.feedTimestamp">{{ formatRelativeTime(feedPost.createdAt) }}</div>
+                                                <div :class="$style.feedTimestamp">{{ timeAgoString(feedPost.createdAt) }}</div>
                                             </div>
                                             <div v-if="feedPost.author !== null " :class="$style.feedPostAuthor">
                                                 <Avatar
@@ -1695,7 +1636,7 @@ watch(course, (val) => {
             <h3>Nový příspěvek do aktivity</h3>
 
             <form @submit.prevent="handleFeedPostCreate">
-                <label for="feedMessage" :class="$style.feedLabel">Text příspěvku</label>
+                <label for="feedMessage" :class="$style.feedLabel">Text příspěvku *</label>
 
 <!--                <textarea-->
 <!--                    id="feedMessage"-->
@@ -1709,6 +1650,7 @@ watch(course, (val) => {
                     rows="5"
                     placeholder="Napiš oznámení pro studenty…"
                     :disabled="isActionInProgress"
+                    required
                 />
 
                 <div :class="$style.modalButtons">
