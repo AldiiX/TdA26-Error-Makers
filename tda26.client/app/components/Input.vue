@@ -80,7 +80,7 @@
         :class="$style.input"
         :required="required"
         :value="modelValue"
-        @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+        @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
     >
         <slot />
     </select>
