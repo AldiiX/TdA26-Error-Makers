@@ -549,7 +549,7 @@
                         />
                     </div>
 
-                    <SmoothSizeWrapper style="width: 100%">
+                    <SmoothSizeWrapper style="width: 100%; overflow: hidden;">
                         <div :class="[$style.categories, $style.cont]" v-if="allCategories && allCategories?.length > 0">
                             <p>Kategorie</p>
 
@@ -779,7 +779,6 @@
             width: 22%;
             border-radius: 24px;
             padding: 32px;
-            overflow: hidden;
 
             @extend .liquid-glass;
 
