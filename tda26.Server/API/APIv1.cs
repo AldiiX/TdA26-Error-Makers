@@ -970,6 +970,8 @@ public class APIv1(
         db.FeedPosts.Add(newFeedPost);
         await db.SaveChangesAsync(ct);
 
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
+
         return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
     }
 
@@ -994,6 +996,8 @@ public class APIv1(
 
         db.FeedPosts.Remove(feedPost);
         await db.SaveChangesAsync(ct);
+
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
 
         return NoContent();
     }
@@ -1023,6 +1027,8 @@ public class APIv1(
         feedPost.Edited = body.Edited;
 
         await db.SaveChangesAsync(ct);
+
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("update_post", feedPost), ct);
 
         return Ok(feedPost);
     }
