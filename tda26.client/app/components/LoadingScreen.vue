@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 const isLoading = ref(true);
+const theme = useState<string>('theme', () => 'light');
+
+// Compute background gradient based on theme
+const backgroundGradient = computed(() => {
+    return theme.value === 'dark'
+        ? 'linear-gradient(180deg, #1a1a1a 0%, #090b0d 100%)'
+        : 'linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%)';
+});
 
 onMounted(() => {
     const startTime = Date.now();
@@ -18,7 +26,12 @@ onMounted(() => {
     };
     
     if (document.fonts) {
-        document.fonts.ready.then(hideLoader);
+        document.fonts.ready
+            .then(hideLoader)
+            .catch(() => {
+                // Fallback if font loading fails
+                hideLoader();
+            });
     } else {
         // Fallback for browsers without Font Loading API
         setTimeout(hideLoader, 1000);
@@ -28,7 +41,7 @@ onMounted(() => {
 
 <template>
     <Transition name="fade-out">
-        <div v-if="isLoading" :class="$style.loadingScreen">
+        <div v-if="isLoading" :class="$style.loadingScreen" :style="{ background: backgroundGradient }">
             <div :class="$style.loaderContainer">
                 <div :class="$style.loader">
                     <div :class="$style.circle"></div>
@@ -48,16 +61,10 @@ onMounted(() => {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999999;
-    
-    // Dark theme support
-    :root[data-theme='dark'] & {
-        background: linear-gradient(180deg, #1a1a1a 0%, #090b0d 100%);
-    }
+    z-index: 10000;
 }
 
 .loaderContainer {
@@ -108,18 +115,14 @@ onMounted(() => {
     font-family: 'Dosis', Arial, sans-serif;
     font-size: 20px;
     font-weight: 600;
-    color: #080808;
     margin: 0;
     background: linear-gradient(90deg, #0070BB 0%, #55c374 100%);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -moz-background-clip: text;
+    -o-background-clip: text;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
     animation: pulse 2s ease-in-out infinite;
-    
-    // Dark theme support
-    :root[data-theme='dark'] & {
-        color: #FFFFFF;
-    }
 }
 
 @keyframes pulse {
