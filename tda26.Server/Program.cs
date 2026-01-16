@@ -142,11 +142,15 @@ public static class Program {
 
         Console.WriteLine($"--- Configuration using the {workingConnectionName} database. ---");
 
-        builder.Services.AddSingleton(sp => new MySqlDataSourceBuilder(workingConnectionString + ";Convert Zero Datetime=True;DateTimeKind=Utc").Build());
+        // Configure MySQL connection string with UTC timezone handling
+        const string utcParams = ";Convert Zero Datetime=True;DateTimeKind=Utc";
+        var connectionStringWithUtc = workingConnectionString + utcParams;
+
+        builder.Services.AddSingleton(sp => new MySqlDataSourceBuilder(connectionStringWithUtc).Build());
 
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(
-                workingConnectionString + ";Convert Zero Datetime=True;DateTimeKind=Utc",
+                connectionStringWithUtc,
                 ServerVersion.AutoDetect(workingConnectionString),
                 mySqlOptions => mySqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
