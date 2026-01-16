@@ -160,6 +160,7 @@ public static class Program {
         builder.Services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
+            options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
         });
         
         builder.Services.AddHttpContextAccessor();

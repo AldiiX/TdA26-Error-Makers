@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
+using tda26.Server.DTOs.Converters;
 
 namespace tda26.Server.Controllers;
 
@@ -13,7 +14,10 @@ public class CourseFeedStreamController(
     IFeedStreamBroker fsb,
     AppDbContext db
 ) : ControllerBase {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new UtcDateTimeConverter() }
+    };
 
     [HttpGet("{courseId:guid}/feed/stream")]
     [Produces("text/event-stream")]
