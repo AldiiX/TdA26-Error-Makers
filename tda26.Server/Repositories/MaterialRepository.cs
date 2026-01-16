@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
-using tda26.Server.Services;
 
 namespace tda26.Server.Repositories;
 
