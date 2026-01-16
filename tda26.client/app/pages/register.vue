@@ -78,11 +78,9 @@ async function submitRegisterForm(event: Event) {
         return;
     }
     
-    for (const rule of passwordRules.value) {
-        if (!rule.pass) errorMsg.value.push(rule.text);
-    }
-
-    if (errorMsg.value.length > 0) {
+    // Check if all password rules pass
+    const allRulesPass = passwordRules.value.every(rule => rule.pass);
+    if (!allRulesPass) {
         isLoading.value = false;
         return;
     }
