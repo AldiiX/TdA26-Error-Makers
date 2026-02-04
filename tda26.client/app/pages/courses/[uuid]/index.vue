@@ -684,6 +684,30 @@ const updateCourseDescription = (newDescription: string) => {
     }
 };
 
+const clearCourseCaches = () => {
+    // Clear individual course caches
+    const courseSmallCache = useState(`course-${uuid}-small`, () => null);
+    const courseFullCache = useState(`course-${uuid}-full`, () => null);
+    courseSmallCache.value = null;
+    courseFullCache.value = null;
+    
+    // Clear global courses list cache
+    const allCoursesCache = useState('allCourses', () => null);
+    allCoursesCache.value = null;
+    
+    // Reset fetch flags to allow refetch
+    const hasFetchedAllCourses = useState('hasFetchedAllCourses', () => false);
+    hasFetchedAllCourses.value = false;
+    
+    // Clear my courses cache (dashboard)
+    const myCoursesCache = useState('myCoursesCache', () => null);
+    myCoursesCache.value = null;
+    
+    // Reset dashboard fetch flag
+    const hasFetchedAllMyCourses = useState('hasFetchedAllMyCourses', () => false);
+    hasFetchedAllMyCourses.value = false;
+};
+
 const saveCourseChanges = async () => {
     if (!course.value) return;
 
@@ -709,6 +733,9 @@ const saveCourseChanges = async () => {
 
         editedCategoryUuid.value = updatedCourse.category.uuid;
         editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
+
+        // Clear course caches to force refetch on next navigation
+        clearCourseCaches();
 
         push.success({
             title: "Změny uloženy",
@@ -752,6 +779,9 @@ const handleCourseDelete = async () => {
         await $fetch<void>(getBaseUrl() + `/api/v2/courses/${courseSmall.value.uuid}`, {
             method: 'DELETE'
         });
+
+        // Clear course caches to force refetch on next navigation
+        clearCourseCaches();
 
         push.success({
             title: "Kurz smazán",
