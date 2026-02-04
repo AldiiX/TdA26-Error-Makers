@@ -695,9 +695,17 @@ const clearCourseCaches = () => {
     const allCoursesCache = useState('allCourses', () => null);
     allCoursesCache.value = null;
     
+    // Reset fetch flags to allow refetch
+    const hasFetchedAllCourses = useState('hasFetchedAllCourses', () => false);
+    hasFetchedAllCourses.value = false;
+    
     // Clear my courses cache (dashboard)
     const myCoursesCache = useState('myCoursesCache', () => null);
     myCoursesCache.value = null;
+    
+    // Reset dashboard fetch flag
+    const hasFetchedAllMyCourses = useState('hasFetchedAllMyCourses', () => false);
+    hasFetchedAllMyCourses.value = false;
 };
 
 const saveCourseChanges = async () => {
