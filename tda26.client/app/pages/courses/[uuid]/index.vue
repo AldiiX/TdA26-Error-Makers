@@ -684,6 +684,22 @@ const updateCourseDescription = (newDescription: string) => {
     }
 };
 
+const clearCourseCaches = () => {
+    // Clear individual course caches
+    const courseSmallCache = useState(`course-${uuid}-small`, () => null);
+    const courseFullCache = useState(`course-${uuid}-full`, () => null);
+    courseSmallCache.value = null;
+    courseFullCache.value = null;
+    
+    // Clear global courses list cache
+    const allCoursesCache = useState('allCourses', () => null);
+    allCoursesCache.value = null;
+    
+    // Clear my courses cache (dashboard)
+    const myCoursesCache = useState('myCoursesCache', () => null);
+    myCoursesCache.value = null;
+};
+
 const saveCourseChanges = async () => {
     if (!course.value) return;
 
@@ -709,6 +725,9 @@ const saveCourseChanges = async () => {
 
         editedCategoryUuid.value = updatedCourse.category.uuid;
         editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
+
+        // Clear course caches to force refetch on next navigation
+        clearCourseCaches();
 
         push.success({
             title: "Změny uloženy",
@@ -752,6 +771,9 @@ const handleCourseDelete = async () => {
         await $fetch<void>(getBaseUrl() + `/api/v2/courses/${courseSmall.value.uuid}`, {
             method: 'DELETE'
         });
+
+        // Clear course caches to force refetch on next navigation
+        clearCourseCaches();
 
         push.success({
             title: "Kurz smazán",
