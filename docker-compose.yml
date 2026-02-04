@@ -1,0 +1,57 @@
+﻿version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: error-makers-web:local
+    ports:
+      - "80:80"
+      - "3306:3306" # mysql
+      - "9000:9000" # minio
+      - "6379:6379" # redis
+    environment:
+      DOTENV_B64: ${BACKEND_ENV_B64}
+    restart: unless-stopped
+
+  mysql:
+    build:
+      context: ./tda26.mysql
+      dockerfile: ./Dockerfile
+    image: error-makers-mysql:local
+    network_mode: "service:web"
+    depends_on:
+      - web
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  minio:
+    build:
+      context: ./tda26.minio
+      dockerfile: ./Dockerfile
+    image: error-makers-minio:local
+    network_mode: "service:web"
+    depends_on:
+      - web
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  redis:
+    build:
+      context: ./tda26.redis
+      dockerfile: ./Dockerfile
+    image: error-makers-redis:local
+    network_mode: "service:web"
+    depends_on:
+      - web
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  minio_data:
+  redis_data:
