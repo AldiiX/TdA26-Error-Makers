@@ -173,7 +173,6 @@ public static class Program {
         bool useSSL = false;
         string? minioConnectionName = null;
 
-        #if DEBUG
         // Try primary MinIO from environment variables
         var primaryEndpoint = ENV.GetValueOrNull("MINIO_ENDPOINT");
         var primaryAccessKey = ENV.GetValueOrNull("MINIO_ACCESS_KEY");
@@ -215,7 +214,6 @@ public static class Program {
         {
             Console.WriteLine("Primary MinIO configuration incomplete, checking environment variables...");
         }
-        #endif
 
         // Fallback to local MinIO
         if (minioEndpoint == null) {
