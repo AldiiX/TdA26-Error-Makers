@@ -776,7 +776,7 @@ public class APIv2(
         );
 
         var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
-            { "secret", Program.ENV["RECAPTCHA_SECRET_KEY"] },
+            { "secret", Program.ENV.GetValueOrNull("RECAPTCHA_SECRET_KEY") ?? "x" },
             { "response", ctr.Token }
             // { "remoteip", HttpContext.GetIPAddress()?.ToString() ?? "" } // volitelne pro recaptchu
         });

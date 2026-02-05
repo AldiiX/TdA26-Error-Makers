@@ -8,9 +8,9 @@ services:
     image: error-makers-web:local
     ports:
       - "80:80"
-      - "3306:3306" # mysql
-      - "9000:9000" # minio
-      - "6379:6379" # redis
+      - "3306:3306"
+      - "9000:9000"
+      - "6379:6379"
     environment:
       DOTENV_B64: ${BACKEND_ENV_B64}
     restart: unless-stopped
@@ -25,6 +25,11 @@ services:
       - web
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u tda26 -ptda26 --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     restart: unless-stopped
 
   minio:
@@ -37,6 +42,11 @@ services:
       - web
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'curl -fsS http://127.0.0.1:9000/minio/health/ready || wget -qO- http://127.0.0.1:9000/minio/health/ready >/dev/null'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     restart: unless-stopped
 
   redis:
@@ -49,6 +59,11 @@ services:
       - web
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     restart: unless-stopped
 
 volumes:

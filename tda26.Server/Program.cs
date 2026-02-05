@@ -17,6 +17,10 @@ using tda26.Server.Services;
 
 namespace tda26.Server;
 
+
+
+
+
 public static class Program {
 
     public static ILogger Logger { get; private set; } = null!;
@@ -40,9 +44,17 @@ public static class Program {
         builder.Logging.AddFilter("System.Net.Http.HttpClient.ServiceChecker.LogicalHandler", LogLevel.Warning);
         builder.Logging.AddFilter("System.Net.Http.HttpClient.ServiceChecker.ClientHandler", LogLevel.Warning);
 
+
+
+
+
+        // ----------------------
+        // REDIS (SESSION)
+        // ----------------------
+
         // pripojeni k redisu
-        var rhost = ENV.GetValueOrNull("REDIS_IP") ?? ENV["DATABASE_IP"];
-        var rport = ENV["REDIS_PORT"];
+        var rhost = ENV.GetValueOrNull("REDIS_IP") ?? ENV.GetValueOrNull("DATABASE_IP") ?? "127.0.0.1";
+        var rport = ENV.GetValueOrNull("REDIS_PORT") ?? "6379";
         var rpassword = ENV.GetValueOrNull("REDIS_PASSWORD");
 
         var redis = ConnectionMultiplexer.Connect(new ConfigurationOptions {
@@ -69,13 +81,21 @@ public static class Program {
             options.Cookie.MaxAge = TimeSpan.FromDays(365);
             options.Cookie.Name = "tda26_session";
         });
-        
+
+
+
+
+
+        // ----------------------
+        // MYSQL DATABAZE
+        // ----------------------
+
         // Primary Connection Configuration
         var primaryConnectionStringBuilder = new MySqlConnectionStringBuilder {
-            Server = ENV["DATABASE_IP"],
-            UserID = ENV["DATABASE_USER"],
-            Password = ENV["DATABASE_PASSWORD"],
-            Database = ENV["DATABASE_DBNAME"],
+            Server = ENV.GetValueOrNull("DATABASE_IP") ?? "localhost",
+            UserID = ENV.GetValueOrNull("DATABASE_USER") ?? "tda26",
+            Password = ENV.GetValueOrNull("DATABASE_PASSWORD") ?? "tda26",
+            Database = ENV.GetValueOrNull("DATABASE_DBNAME") ?? "tda26",
             Pooling = true,
             MaximumPoolSize = 300,
             AllowUserVariables = true,
@@ -97,12 +117,7 @@ public static class Program {
         };
 
         List<(string Name, string ConnectionString)> potentialConnections = [
-            //#if RELEASE
-            //("Primary", fallbackConnectionStringBuilder.ConnectionString),
-            //#else
             ("Primary", primaryConnectionStringBuilder.ConnectionString),
-            //#endif
-
             ("Fallback", fallbackConnectionStringBuilder.ConnectionString)
         ];
 
@@ -160,11 +175,15 @@ public static class Program {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
         });
         
-        builder.Services.AddHttpContextAccessor();
 
-        // openapi generator (vestaveny v asp.net core)
-        builder.Services.AddOpenApi();
-        builder.Services.AddHttpClient();
+
+
+
+
+
+        // ----------------------
+        // MINIO STORAGE
+        // ----------------------
         
         // Minio with fallback support
         string? minioEndpoint = null;
@@ -183,8 +202,7 @@ public static class Program {
             !string.IsNullOrWhiteSpace(primaryAccessKey) && 
             !string.IsNullOrWhiteSpace(primarySecretKey))
         {
-            try
-            {
+            try {
                 Console.WriteLine($"Attempting connection to Primary MinIO: {primaryEndpoint}");
                 
                 // Test connection
@@ -205,22 +223,18 @@ public static class Program {
                 minioUseSSL = primaryUseSSL;
                 minioConnectionName = "Primary";
                 Console.WriteLine($"Successfully connected to Primary MinIO: {primaryEndpoint}");
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 Console.WriteLine($"Failed to connect to Primary MinIO ({primaryEndpoint}). Error: {ex.Message}");
             }
-        }
-        else
-        {
+        } else {
             Console.WriteLine("Primary MinIO configuration incomplete, checking environment variables...");
         }
 
         // Fallback to local MinIO
         if (minioEndpoint == null) {
-            var fallbackEndpoint = ENV.GetValueOrNull("MINIO_FALLBACK_ENDPOINT") ?? "127.0.0.1:9000";
-            var fallbackAccessKey = ENV.GetValueOrNull("MINIO_FALLBACK_ACCESS_KEY") ?? "admin";
-            var fallbackSecretKey = ENV.GetValueOrNull("MINIO_FALLBACK_SECRET_KEY") ?? "adminadmin";
+            const string fallbackEndpoint = "127.0.0.1:9000";
+            const string fallbackAccessKey = "admin";
+            const string fallbackSecretKey = "adminadmin";
 
             try {
                 Console.WriteLine($"Attempting connection to Fallback MinIO: {fallbackEndpoint}");
@@ -229,6 +243,7 @@ public static class Program {
                 var testClient = new MinioClient()
                     .WithEndpoint(fallbackEndpoint)
                     .WithCredentials(fallbackAccessKey, fallbackSecretKey)
+                    .WithSSL(false)
                     .Build();
 
                 // Simple health check - list buckets with timeout
@@ -270,7 +285,11 @@ public static class Program {
                 });
             }
         });
-        
+
+
+
+
+
         // repozitare a service
         builder.Services.AddScoped<ICourseRepository, CourseRepository>();
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -284,6 +303,10 @@ public static class Program {
         builder.Services.Configure<CustomMinioOptions>(options => {
             options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";
         });
+
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddOpenApi();
+        builder.Services.AddHttpClient();
 
         Application = builder.Build();
 
