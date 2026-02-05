@@ -96,7 +96,7 @@
                     mask-position: center;
                     height: 128px;
                     aspect-ratio: 2 / 1;
-                    background: linear-gradient(90deg, var(--accent-color), var(--accent-color-secondary-theme));
+                    background: var(--accent-color);
                 }
 
                 .mobileTitle {

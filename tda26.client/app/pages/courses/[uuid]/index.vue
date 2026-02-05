@@ -1136,7 +1136,7 @@ watch(course, (val) => {
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
-                <div :class="$style.categoryAndTags">
+                <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
                     <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
                             <Input
@@ -1410,41 +1410,43 @@ watch(course, (val) => {
 
     <Teleport to="#teleports"> 
         <!-- Edit controls -->
-        <div
-            v-if="isEditMode"
-            :class="$style.editControls"
-        >
-            <Button
-                button-style="primary"
-                :disabled="!isDirty || isActionInProgress"
-                @click="saveCourseChanges"
-            >
-                Uložit změny
-            </Button>
-            <Button
-                button-style="secondary"
-                :disabled="!isDirty || isActionInProgress"
-                @click="saveCourseChanges(); editBackClick()"
-            >
-                Uložit a ukončit úpravy
-            </Button>
-            <Button
-                buttonStyle="tertiary"
-                @click="editBackClick"
-                :disabled="isActionInProgress"
+        <div :class="$style.editControls" v-if="isEditMode">
+            <div :class="$style.top">
+                <Button
+                    button-style="secondary"
+                    :style="{ '--color': 'var(--color-error)' }"
+                    @click="openDeleteCourseModal"
+                    :disabled="isActionInProgress"
                 >
-                Ukončit úpravy
-            </Button>
-            <div :class="$style.separator"></div>
-            <Button
-                button-style="secondary"
-                :style="{ '--color': 'var(--color-error)' }"
-                @click="openDeleteCourseModal"
-                :disabled="isActionInProgress"
-            >
-                Smazat kurz
-            </Button>
+                    Smazat kurz
+                </Button>
+            </div>
+
+            <div :class="$style.bottom">
+                <Button
+                    button-style="primary"
+                    :disabled="!isDirty || isActionInProgress"
+                    @click="saveCourseChanges"
+                >
+                    Uložit změny
+                </Button>
+                <Button
+                    button-style="secondary"
+                    :disabled="!isDirty || isActionInProgress"
+                    @click="saveCourseChanges(); editBackClick()"
+                >
+                    Uložit a ukončit úpravy
+                </Button>
+                <Button
+                    buttonStyle="tertiary"
+                    @click="editBackClick"
+                    :disabled="isActionInProgress"
+                >
+                    Ukončit úpravy
+                </Button>
+            </div>
         </div>
+
         
         
         
@@ -1861,7 +1863,7 @@ watch(course, (val) => {
     
     .categoryAndTags {
         padding: 4px;
-        
+
         .tags {
             width: 100%;
             margin: 12px 0;
@@ -1912,26 +1914,40 @@ watch(course, (val) => {
     bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    gap: 16px;
-    z-index: 1000;
-    background-color: var(--background-color-secondary);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    width: max-content;
-    
-    a button {
-        height: 100%;
-        padding: 14px 24px;
+    display: grid;
+    justify-items: center;
+    filter: drop-shadow(0 16px 28px rgb(0 0 0 / 0.15));
+
+
+    .bottom, .top {
+        display: flex;
+        gap: 16px;
+        z-index: 1000;
+        background-color: var(--background-color-secondary);
+        border-radius: 16px;
+        padding: 16px;
+        width: max-content;
+
+        a button {
+            height: 100%;
+            padding: 14px 24px;
+        }
+
+        .separator {
+            width: 1px;
+            background: var(--border-color-secondary);
+            margin: 0 4px;
+        }
     }
-    
-    .separator {
-        width: 1px;
-        background: var(--border-color-secondary);
-        margin: 0 4px;
+
+    .top {
+        //width: 200px;
+        padding-bottom: 24px;
+        margin-bottom: -24px;
+        justify-content: center;
     }
 }
+
 
 .modalButtons {
     display: flex;
@@ -2143,6 +2159,10 @@ ul {
             }
 
             .categoryAndTags {
+                &:not(.editMode) {
+                    overflow: hidden;
+                }
+
                 .wrp {
                     display: flex;
                     flex-direction: column;
