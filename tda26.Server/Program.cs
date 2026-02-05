@@ -170,13 +170,14 @@ public static class Program {
         string? minioEndpoint = null;
         string? minioAccessKey = null;
         string? minioSecretKey = null;
-        bool useSSL = false;
         string? minioConnectionName = null;
+        bool minioUseSSL = false;
 
         // Try primary MinIO from environment variables
         var primaryEndpoint = ENV.GetValueOrNull("MINIO_ENDPOINT");
         var primaryAccessKey = ENV.GetValueOrNull("MINIO_ACCESS_KEY");
         var primarySecretKey = ENV.GetValueOrNull("MINIO_SECRET_KEY");
+        var primaryUseSSL = ENV.GetValueOrNull("MINIO_USE_SSL")?.ToLower() == "true";
 
         if (!string.IsNullOrWhiteSpace(primaryEndpoint) && 
             !string.IsNullOrWhiteSpace(primaryAccessKey) && 
@@ -201,7 +202,7 @@ public static class Program {
                 minioEndpoint = primaryEndpoint;
                 minioAccessKey = primaryAccessKey;
                 minioSecretKey = primarySecretKey;
-                useSSL = true;
+                minioUseSSL = primaryUseSSL;
                 minioConnectionName = "Primary";
                 Console.WriteLine($"Successfully connected to Primary MinIO: {primaryEndpoint}");
             }
@@ -238,7 +239,7 @@ public static class Program {
                 minioEndpoint = fallbackEndpoint;
                 minioAccessKey = fallbackAccessKey;
                 minioSecretKey = fallbackSecretKey;
-                useSSL = false;
+                minioUseSSL = false;
                 minioConnectionName = "Fallback";
                 Console.WriteLine($"Successfully connected to Fallback MinIO: {fallbackEndpoint}");
             } catch (Exception ex) {
@@ -256,7 +257,7 @@ public static class Program {
         var finalEndpoint = minioEndpoint!;
         var finalAccessKey = minioAccessKey!;
         var finalSecretKey = minioSecretKey!;
-        var finalUseSSL = useSSL;
+        var finalUseSSL = minioUseSSL;
 
         builder.Services.AddMinio(options => {
             options.Endpoint = finalEndpoint;
