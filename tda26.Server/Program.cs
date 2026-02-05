@@ -191,7 +191,7 @@ public static class Program {
                 var testClient = new MinioClient()
                     .WithEndpoint(primaryEndpoint)
                     .WithCredentials(primaryAccessKey, primarySecretKey)
-                    .WithSSL()
+                    .WithSSL(primaryUseSSL)
                     .Build();
 
                 // Simple health check - list buckets with timeout
