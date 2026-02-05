@@ -9,6 +9,7 @@
     import Pagination from '~/components/Pagination.vue'
     import Select from '~/components/Select.vue'
     import SelectLecturer from "~/components/pagespecific/SelectLecturer.vue";
+    import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -467,22 +468,25 @@
     </Head>
 
     <Teleport to="#teleports">
-        <Blob
-                top="120vh"
-                right="1vw"
-                left="unset"
-                background="linear-gradient(0deg, var(--accent-color-primary) 0%, transparent 80%)"
-                style="opacity: 0.5"
-                :class="$style.blob1"
-        />
-        <Blob
-                top="100vh"
-                left="2vw"
-                right="unset"
-                background="linear-gradient(0deg, transparent 0%, var(--accent-color-secondary-theme)  80%)"
-                style="opacity: 0.5"
-                :class="$style.blob2"
-        />
+<!--        <Blob-->
+<!--                top="120vh"-->
+<!--                right="1vw"-->
+<!--                left="unset"-->
+<!--                background="linear-gradient(0deg, var(&#45;&#45;accent-color-primary) 0%, transparent 80%)"-->
+<!--                style="opacity: 0.5"-->
+<!--                :class="$style.blob1"-->
+<!--        />-->
+<!--        <Blob-->
+<!--                top="100vh"-->
+<!--                left="2vw"-->
+<!--                right="unset"-->
+<!--                background="linear-gradient(0deg, transparent 0%, var(&#45;&#45;accent-color-secondary-theme)  80%)"-->
+<!--                style="opacity: 0.5"-->
+<!--                :class="$style.blob2"-->
+<!--        />-->
+
+        <CircleBlurBlob top="12.5vh" right="-12.5vw" color="var(--accent-color-primary)" size="20vw" blur="14vw" />
+        <CircleBlurBlob top="100vh" left="-12.5vw" color="var(--accent-color-secondary-theme)" size="20vw" blur="14vw" />
     </Teleport>
 
     <section :class="$style.section">
@@ -771,6 +775,7 @@
         min-height: 90vh;
         gap: 64px;
         align-items: start;
+        z-index: 1;
 
         .left {
             display: flex;

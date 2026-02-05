@@ -34,28 +34,12 @@ COPY --from=publish /app/publish .
 
 USER root
 
-# instalace nginx + redis + "mysql" (mariadb) + nodejs
+# instalace nginx + nodejs
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl ca-certificates nginx \
-      redis-server \
-      mariadb-server mariadb-client \
   && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
-
-# instalace minio + mc
-RUN curl -fsSL https://dl.min.io/server/minio/release/linux-amd64/minio -o /usr/local/bin/minio \
-  && chmod +x /usr/local/bin/minio \
-  && curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc \
-  && chmod +x /usr/local/bin/mc
-
-# seed dump pro mysql
-RUN mkdir -p /app/seed
-COPY ["tda26.sql", "/app/seed/tda26.sql"]
-
-# diry pro mysql socket + minio data
-RUN mkdir -p /var/run/mysqld /data/minio \
-  && chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
 # frontend build
 COPY ["tda26.client/", "/app/client/"]
@@ -68,8 +52,8 @@ RUN npm run build
 # nginx konfigurace
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# porty: app + redis + mysql + minio api + minio konzole
-EXPOSE 80 6379 3306 9000 9001
+# porty: app
+EXPOSE 80
 
 WORKDIR /app
 COPY --chmod=0755 start.sh .

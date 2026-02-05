@@ -46,9 +46,6 @@ useSeo({
 </script>
 
 <template>
-    <!-- Loading screen -->
-    <LoadingScreen />
-    
     <!-- Mobile menu -->
     <MobileMenu />
 

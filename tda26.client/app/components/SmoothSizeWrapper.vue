@@ -115,7 +115,7 @@ watchEffect(() => {
 </script>
 
 <template>
-    <component :is="props.tag" ref="wrapperRef" :style="wrapperStyle">
+    <component :is="props.tag" ref="wrapperRef" :style="wrapperStyle" data-smooth-size-wrapper>
         <!--
           content jako vnoreny box, jeho prirozena velikost se meri pres resizeobserver
           display:block je predvybrane, aby vyska odrazela tok obsahu
