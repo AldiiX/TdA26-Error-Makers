@@ -92,7 +92,7 @@ trap shutdown SIGINT SIGTERM
 # -------------------------
 # wait for mysql/minio/redis
 # -------------------------
-wait_for_deps
+#wait_for_deps
 
 # -------------------------
 # app + frontend + nginx
