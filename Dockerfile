@@ -1,4 +1,4 @@
-ARG APP_UID=1000
+#ARG APP_UID=1000
 
 # base stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
@@ -52,9 +52,8 @@ RUN npm run build
 # nginx konfigurace
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# porty: app
 EXPOSE 80
 
 WORKDIR /app
-COPY --chmod=0755 start.sh .
+COPY --chmod=0755 ./start.sh ./start.sh
 CMD ["./start.sh"]
