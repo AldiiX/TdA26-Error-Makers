@@ -23,10 +23,10 @@ build:
     dockerfile: ./Dockerfile
   - name: mysql
     context: ./tda26.mysql
-    dockerfile: ./Dockerfile
+    dockerfile: ./tda26.mysql/Dockerfile
   - name: minio
     context: ./tda26.minio
-    dockerfile: ./Dockerfile
+    dockerfile: ./tda26.minio/Dockerfile
   - name: redis
     context: ./tda26.redis
-    dockerfile: ./Dockerfile
+    dockerfile: ./tda26.redis/Dockerfile
