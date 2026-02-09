@@ -12,7 +12,7 @@
   Soutěžíme za <a href="https://educhem.cz"><b>Střední školu EDUCHEM, a.s.</b></a>
 </p>
 
----
+--- 
 
 ## Tým
 
