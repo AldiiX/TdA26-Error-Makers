@@ -97,6 +97,7 @@ public static class Program {
             Password = ENV.GetValueOrNull("DATABASE_PASSWORD") ?? "tda26",
             Database = ENV.GetValueOrNull("DATABASE_DBNAME") ?? "tda26",
             Pooling = true,
+            Port = 3306,
             MaximumPoolSize = 300,
             AllowUserVariables = true,
             UseAffectedRows = false,
@@ -111,6 +112,7 @@ public static class Program {
             Database = "tda26",
             Pooling = true,
             MaximumPoolSize = 300,
+            Port = 3306,
             AllowUserVariables = true,
             UseAffectedRows = false,
             ConnectionTimeout = 10
