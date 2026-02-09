@@ -12,8 +12,8 @@ permissions:
 jobs:
   build:
     # vytvoreni env souboru pro backend
-    env:
-      BACKEND_ENV_B64: ${{ secrets.DOTENV_BACKEND_B64 }} # base64 obsahu backend .env
+    #env:
+    #  BACKEND_ENV_B64: ${{ secrets.DOTENV_BACKEND_B64 }} # base64 obsahu backend .env
 
     runs-on: ubuntu-latest
     steps:

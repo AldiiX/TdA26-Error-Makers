@@ -3,8 +3,8 @@ containers:
   - name: web
     image: registry.tourde.cloud/error-makers/web
     port: 80
-    env:
-      DOTENV_B64: {{BACKEND_ENV_B64}}
+    #env:
+    #  DOTENV_B64: {{ BACKEND_ENV_B64 }}
 
   - name: mysql
     image: registry.tourde.cloud/error-makers/mysql
