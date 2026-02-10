@@ -166,7 +166,7 @@ const isDeleteModalOpen = ref(false);
         </div>
         <div v-if="mode === 'play'" :class="$style.questionTypeIndicator">
             <span v-if="question.type === 'singleChoice'" :class="$style.singleChoiceIcon"></span>
-            <span v-if="question.type === 'multipleChoice'" :class="$style.multipleChoiceIcon"></span>
+            <span v-else-if="question.type === 'multipleChoice'" :class="$style.multipleChoiceIcon"></span>
             <p>{{ question.type === 'singleChoice' ? 'Vyber jednu odpověď' : 'Vyber jednu nebo více odpovědí' }}</p>
         </div>
         <ul :key="question.options.length">
