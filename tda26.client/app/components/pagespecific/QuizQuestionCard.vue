@@ -164,6 +164,11 @@ const isDeleteModalOpen = ref(false);
                 @input="mode === 'edit' && updateQuestionText($event)"
             >{{ question.question }}</p>
         </div>
+        <div v-if="mode === 'play'" :class="$style.questionTypeIndicator">
+            <span v-if="question.type === 'singleChoice'" :class="$style.singleChoiceIcon"></span>
+            <span v-else-if="question.type === 'multipleChoice'" :class="$style.multipleChoiceIcon"></span>
+            <p>{{ question.type === 'singleChoice' ? 'Vyber jednu odpověď' : 'Vyber jednu nebo více odpovědí' }}</p>
+        </div>
         <ul :key="question.options.length">
             <li v-for="(option, index) in question.options" :key="index">
                 <div
@@ -330,6 +335,44 @@ const isDeleteModalOpen = ref(false);
         p {
             font-size: 32px;
             word-break: break-all;
+        }
+    }
+    
+    .questionTypeIndicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background-color: var(--background-color-tertiary);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        width: fit-content;
+        align-self: center;
+        
+        p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-color-secondary);
+        }
+        
+        .singleChoiceIcon, .multipleChoiceIcon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            background-color: var(--text-color-secondary);
+            mask-position: center;
+            mask-repeat: no-repeat;
+            mask-size: contain;
+        }
+        
+        .singleChoiceIcon {
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='4' fill='currentColor'/%3E%3C/svg%3E");
+        }
+        
+        .multipleChoiceIcon {
+            mask-image: url("/icons/done.svg");
         }
     }
 
