@@ -6,7 +6,6 @@ using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
 using tda26.Server.Infrastructure;
-using tda26.Server.Repositories;
 using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v1.CreateCourseRequest;
 
@@ -15,10 +14,7 @@ namespace tda26.Server.API;
 [ApiController]
 [Route("api/v1"), Route("api")]
 public class APIv1(
-    ICourseRepository courseRepository,
-    IMaterialRepository materialRepository,
     IMaterialAccessService materialAccessService,
-    IAccountRepository accountRepository,
     IAuthService auth,
     AppDbContext db,
     IFeedStreamBroker fsb
@@ -37,7 +33,21 @@ public class APIv1(
     
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
-        var courses = await courseRepository.GetAllAsyncFull();
+        var courses = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes
+                .OrderByDescending(q => q.CreatedAt))
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .OrderByDescending(c => c.CreatedAt)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToListAsync();
 
         var obj = courses.Select(course => course.ToReadDto());
 
@@ -46,7 +56,19 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByUuidAsyncFull(uuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -56,7 +78,17 @@ public class APIv1(
 
     [HttpPut("courses/{uuid:guid}")]
     public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body) {
-        var course = await courseRepository.GetByUuidAsyncFull(uuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -69,22 +101,38 @@ public class APIv1(
             course.Description = body.Description;
         }
 
-        await courseRepository.UpdateAsync(course);
+        var entry = db.Entry(course);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(course);
+        }
+        await db.SaveChangesAsync();
 
         return Ok(course.ToReadDto());
     }
 
     [HttpDelete("courses/{uuid:guid}")]
     public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByUuidAsync(uuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var success = await courseRepository.DeleteAsync(uuid);
-        if (!success) {
+        var courseToDelete = await db.Courses.FindAsync(uuid);
+        if (courseToDelete == null) {
             return StatusCode(500, new { error = "Failed to delete course." });
         }
+
+        db.Courses.Remove(courseToDelete);
+        await db.SaveChangesAsync();
 
         return NoContent();
     }
@@ -95,7 +143,11 @@ public class APIv1(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var adminLecturer = await accountRepository.GetByUsernameAsync("lecturer");
+        var adminLecturer = await db.Accounts
+            .Include(a => a.Ratings)
+            .ThenInclude(l => l.Course)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Username == "lecturer");
 
         var newCourse = new Course {
             Name = body.Name,
@@ -103,7 +155,8 @@ public class APIv1(
             LecturerUuid = adminLecturer?.Uuid ?? null
         };
 
-        await courseRepository.CreateAsync(newCourse);
+        db.Courses.Add(newCourse);
+        await db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, newCourse.ToReadDto());
     }
@@ -121,7 +174,16 @@ public class APIv1(
             return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
         }
 
-        var course = await courseRepository.GetByUuidAsync(uuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -139,7 +201,8 @@ public class APIv1(
             CourseUuid = course.Uuid
         };
 
-        await materialRepository.AddMaterialAsync(course.Uuid, newMaterial);
+        db.Materials.Add(newMaterial);
+        await db.SaveChangesAsync();
 
         var obj = new {
             uuid = newMaterial.Uuid,
@@ -192,7 +255,16 @@ public class APIv1(
             return BadRequest(new { error = "File size exceeds the maximum allowed limit of 30 MB." });
         }
 
-        var course = await courseRepository.GetByUuidAsync(courseId);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseId);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -216,7 +288,8 @@ public class APIv1(
             UpdatedAt = DateTime.UtcNow
         };
 
-        await materialRepository.AddMaterialAsync(course.Uuid, newMaterial);
+        db.Materials.Add(newMaterial);
+        await db.SaveChangesAsync();
 
         var responseObj = new {
             uuid = newMaterial.Uuid,
@@ -257,11 +330,24 @@ public class APIv1(
 
     [HttpGet("courses/{uuid:guid}/materials")]
     public async Task<IActionResult> GetMaterialsByCourseId([FromRoute] Guid uuid) {
-        var course = await courseRepository.GetByUuidAsync(uuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
-        var materials = await materialRepository.GetMaterialsByCourseIdAsync(course.Uuid);
+        var materials = await db.Materials
+            .Where(m => m.CourseUuid == course.Uuid)
+            .OrderByDescending(m => m.CreatedAt)
+            .AsNoTracking()
+            .ToListAsync();
 
         var obj = materials.Select(material => material.ToReadDto());
 
@@ -275,12 +361,22 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromBody] UpdateUrlMaterialRequest body
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid);
 
         switch (material) {
             case UrlMaterial urlMaterial:
@@ -295,7 +391,10 @@ public class APIv1(
                     urlMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(body.Url).Host}&sz=64";
                 }
 
-                await materialRepository.UpdateMaterialAsync(urlMaterial);
+                urlMaterial.UpdatedAt = DateTime.UtcNow;
+                
+                db.Materials.Update(urlMaterial);
+                await db.SaveChangesAsync();
 
                 // odesilani info do sse 
                 var newFeedPost = new FeedPost {
@@ -322,7 +421,10 @@ public class APIv1(
                 if (!string.IsNullOrEmpty(body.Description))
                     fileMaterial.Description = body.Description;
 
-                await materialRepository.UpdateMaterialAsync(fileMaterial);
+                fileMaterial.UpdatedAt = DateTime.UtcNow;
+                
+                db.Materials.Update(fileMaterial);
+                await db.SaveChangesAsync();
 
                 return Ok(fileMaterial.ToReadDto());
 
@@ -339,12 +441,22 @@ public class APIv1(
         [FromRoute] Guid materialUuid,
         [FromForm] UpdateFileMaterialRequest body
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid);
 
         if (material == null || material.CourseUuid != course.Uuid)
             return NotFound(new { error = "Material not found in the specified course." });
@@ -372,7 +484,10 @@ public class APIv1(
             fileMaterial.SizeBytes = (int)body.File.Length;
         }
 
-        await materialRepository.UpdateMaterialAsync(fileMaterial);
+        fileMaterial.UpdatedAt = DateTime.UtcNow;
+        
+        db.Materials.Update(fileMaterial);
+        await db.SaveChangesAsync();
 
         // odesilani info do sse 
         var newFeedPost = new FeedPost {
@@ -398,12 +513,22 @@ public class APIv1(
         [FromRoute] Guid courseUuid,
         [FromRoute] Guid materialUuid
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid);
 
         if (material == null || material.CourseUuid != course.Uuid)
             return NotFound(new { error = "Material not found in the specified course." });
@@ -412,7 +537,8 @@ public class APIv1(
         if (material is FileMaterial fileMaterial)
             await materialAccessService.DeleteFileMaterialAsync(fileMaterial.FileUrl);
 
-        await materialRepository.DeleteMaterialAsync(material);
+        db.Materials.Remove(material);
+        await db.SaveChangesAsync();
 
         // odeslani info do sse
         var newFeedPost = new FeedPost {
@@ -443,7 +569,16 @@ public class APIv1(
 
     [HttpGet("courses/{courseUuid:guid}/quizzes")]
     public async Task<IActionResult> GetQuizzesByCourseId([FromRoute] Guid courseUuid) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -463,7 +598,19 @@ public class APIv1(
 
     [HttpPost("courses/{courseUuid:guid}/quizzes")]
     public async Task<IActionResult> CreateQuizInCourse([FromRoute] Guid courseUuid, [FromBody] CreateUpdateQuizRequest body, CancellationToken ct = default) {
-        var course = await courseRepository.GetByUuidAsyncFull(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -555,7 +702,16 @@ public class APIv1(
 
     [HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
     public async Task<IActionResult> GetQuizById([FromRoute] Guid courseUuid, [FromRoute] Guid quizUuid) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
@@ -579,7 +735,16 @@ public class APIv1(
         [FromRoute] Guid quizUuid,
         [FromBody] CreateUpdateQuizRequest body)
     {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
@@ -787,7 +952,16 @@ public class APIv1(
         [FromRoute] Guid courseUuid,
         [FromRoute] Guid quizUuid
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
@@ -928,7 +1102,16 @@ public class APIv1(
 
     [HttpGet("courses/{courseUuid:guid}/feed")]
     public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -949,7 +1132,16 @@ public class APIv1(
         [FromBody] CreateCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course is null)
             return NotFound(new { error = "Course not found." });
 
@@ -981,7 +1173,16 @@ public class APIv1(
         [FromRoute] Guid feedPostUuid,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course is null)
             return NotFound(new { error = "Course not found." });
 
@@ -1008,7 +1209,16 @@ public class APIv1(
         [FromBody] EditCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course is null)
             return NotFound(new { error = "Course not found." });
 
