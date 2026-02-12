@@ -265,10 +265,8 @@ public static class Program {
 
         if (minioEndpoint == null) {
             Console.WriteLine("---------------------------------------------");
-            throw new InvalidOperationException("CRITICAL: Failed to connect to both primary and fallback MinIO. Application startup aborted.");
-        }
-
-        Console.WriteLine($"--- Configuration using the {minioConnectionName} MinIO. ---");
+            Console.WriteLine("CRITICAL: Failed to connect to both primary and fallback MinIO.");
+        } else Console.WriteLine($"--- Configuration using the {minioConnectionName} MinIO. ---");
 
         var finalEndpoint = minioEndpoint!;
         var finalAccessKey = minioAccessKey!;
