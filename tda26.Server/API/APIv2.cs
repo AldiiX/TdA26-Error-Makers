@@ -767,23 +767,23 @@ public class APIv2(
     
     [HttpGet("courses/{uuid:guid}/image")]
     public async Task<IActionResult> GetCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var imageUrl = await db.Courses
+        var courseImageData = await db.Courses
             .Where(c => c.Uuid == uuid)
-            .Select(c => c.ImageUrl)
+            .Select(c => new { Exists = true, c.ImageUrl })
             .FirstOrDefaultAsync(ct);
         
-        if (imageUrl == null) return NotFound(new { error = "Course not found." });
+        if (courseImageData == null) return NotFound(new { error = "Course not found." });
 
-        if (string.IsNullOrEmpty(imageUrl)) {
+        if (string.IsNullOrEmpty(courseImageData.ImageUrl)) {
             return NotFound(new { error = "Course image not found." });
         }
 
-        var imageStream = await materialAccessService.DownloadFileMaterialAsync(imageUrl, ct);
+        var imageStream = await materialAccessService.DownloadFileMaterialAsync(courseImageData.ImageUrl, ct);
         imageStream.Position = 0;
 
         // Determine content type based on file extension
         string contentType = "application/octet-stream"; // Default content type
-        var extension = Path.GetExtension(imageUrl).ToLowerInvariant();
+        var extension = Path.GetExtension(courseImageData.ImageUrl).ToLowerInvariant();
         switch (extension) {
             case ".jpg":
             case ".jpeg":
@@ -1357,6 +1357,7 @@ public class APIv2(
 
         var existingCourse = await db.Courses
             .Select(c => new { c.Uuid, c.LecturerUuid })
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (existingCourse == null) return NotFound();
 

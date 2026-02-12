@@ -113,13 +113,8 @@ public class AuthService(
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
         http.HttpContext.Items["loggedaccount"] = json;
 
-        // Load full account with relationships for the response
-        return await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
+        // For newly registered accounts, there are no relationships yet, so return the created entity
+        return acc;
     }
 
 
