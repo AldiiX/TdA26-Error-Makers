@@ -112,26 +112,12 @@ public class APIv1(
 
     [HttpDelete("courses/{uuid:guid}")]
     public async Task<IActionResult> DeleteCourse([FromRoute] Guid uuid) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == uuid);
+        var course = await db.Courses.FindAsync(uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
-        var courseToDelete = await db.Courses.FindAsync(uuid);
-        if (courseToDelete == null) {
-            return StatusCode(500, new { error = "Failed to delete course." });
-        }
-
-        db.Courses.Remove(courseToDelete);
+        db.Courses.Remove(course);
         await db.SaveChangesAsync();
 
         return NoContent();
@@ -392,7 +378,6 @@ public class APIv1(
                 }
 
                 urlMaterial.UpdatedAt = DateTime.UtcNow;
-                
                 db.Materials.Update(urlMaterial);
                 await db.SaveChangesAsync();
 
@@ -422,7 +407,6 @@ public class APIv1(
                     fileMaterial.Description = body.Description;
 
                 fileMaterial.UpdatedAt = DateTime.UtcNow;
-                
                 db.Materials.Update(fileMaterial);
                 await db.SaveChangesAsync();
 
@@ -485,7 +469,6 @@ public class APIv1(
         }
 
         fileMaterial.UpdatedAt = DateTime.UtcNow;
-        
         db.Materials.Update(fileMaterial);
         await db.SaveChangesAsync();
 
