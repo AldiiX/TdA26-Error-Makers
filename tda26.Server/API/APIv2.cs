@@ -772,7 +772,7 @@ public class APIv2(
             .Select(c => c.ImageUrl)
             .FirstOrDefaultAsync(ct);
         
-        if (imageUrl == null) return NotFound();
+        if (imageUrl == null) return NotFound(new { error = "Course not found." });
 
         if (string.IsNullOrEmpty(imageUrl)) {
             return NotFound(new { error = "Course image not found." });
@@ -1356,12 +1356,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .Select(c => new { c.Uuid, c.LecturerUuid })
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (existingCourse == null) return NotFound();
 
