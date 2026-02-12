@@ -261,7 +261,8 @@ const isDeleteModalOpen = ref(false);
         
         &:hover {
             opacity: 1 !important;
-            background-color: inherit !important;
+            background-color: rgb(239, 239, 239);
+            filter: none !important;
         }
     }
     

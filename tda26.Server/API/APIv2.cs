@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿﻿﻿using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1543,6 +1543,7 @@ public class APIv2(
                         .OfType<MultipleChoiceQuestion>()
                         .First(q => q.Uuid == question.Uuid)
                         .Options
+                        .OrderBy(o => o.Order)
                         .Select((o, index) => new { o.IsCorrect, index })
                         .Where(x => x.IsCorrect)
                         .Select(x => x.index)

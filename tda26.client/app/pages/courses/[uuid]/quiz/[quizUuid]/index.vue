@@ -28,6 +28,9 @@ const currentQuestion = computed(() =>
 
 const savedResponses = ref<AnswerSubmission[]>([]);
 
+const isGuid = (value?: string): value is string =>
+    !!value && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
+
 const incrementQuestionIndex = (i: number) => {
     if (!quiz.value) return;
     
@@ -55,10 +58,33 @@ const updateSelectedIndices = (i: number, selectedIndices: number[]) => {
 };
 
 const endQuiz = async () => {
+    if (!quiz.value) return;
+
+    const answers = quiz.value.questions
+        .map((question, i) => {
+            const saved = savedResponses.value[i];
+            if (!saved || !isGuid(question.uuid)) return null;
+
+            if (question.type === "singleChoice") {
+                if (saved.selectedIndex === undefined) return null;
+                return {
+                    uuid: question.uuid,
+                    selectedIndex: saved.selectedIndex
+                } satisfies AnswerSubmission;
+            }
+
+            if (!saved.selectedIndices || saved.selectedIndices.length === 0) return null;
+            return {
+                uuid: question.uuid,
+                selectedIndices: saved.selectedIndices
+            } satisfies AnswerSubmission;
+        })
+        .filter((entry): entry is AnswerSubmission => entry !== null);
+
     const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/submit`, {
         method: 'POST',
         body: {
-            answers: savedResponses.value,
+            answers,
         }
     });
     
