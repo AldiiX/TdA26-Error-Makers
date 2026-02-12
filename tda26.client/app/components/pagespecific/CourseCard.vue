@@ -193,7 +193,7 @@ const resetBgImage = async () => {
 </template>
 
 <style module lang="scss">
-@use "../../app" as app;
+@use "@/assets/variables" as app;
 
 .liquid-glass {
     box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / 0.75), 0 4px 30px rgba(0, 0, 0, 0.15);

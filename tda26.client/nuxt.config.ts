@@ -18,8 +18,9 @@ export default defineNuxtConfig({
     modules: ['notivue/nuxt'],
 
     css: [
+        '@/assets/global.scss',
         'notivue/notification.css',
-        'notivue/animations.css'
+        'notivue/animations.css',
     ],
 
     notivue: {

@@ -106,7 +106,7 @@ const generateRandomNbspNumber = ( min: number, max: number ): string => {
 </template>
 
 <style module lang="scss">
-@use "../../app" as app;
+@use "@/assets/variables" as app;
 
 .vizitka {
     /* base layout */

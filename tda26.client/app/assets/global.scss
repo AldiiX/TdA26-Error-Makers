@@ -1,9 +1,4 @@
-$mobileBreakpoint: 600px;
-$tabletBreakpoint: 960px;
-$laptopBreakpoint: 1264px;
-$desktopBreakpoint: 1800px;
-
-
+@use "./variables" as *;
 
 :root[data-theme='light'] {
     --page-background: linear-gradient(180deg, #FBFDFF 0%, #E7F0FB 100%);
@@ -37,13 +32,13 @@ $desktopBreakpoint: 1800px;
     --color-warning: #ffcc00;
     --color-error: #ff4444;
     --color-success: #00cc66;
-    --footer-tda-logo: url(../public/icons/Think-different-Academy_LOGO_oficialni-cerne.svg);
-    --footer-divider: url("../public/images/wave_light.svg");
-    --divider1: url("../public/images/wave2_light.svg");
-    --divider2: url("../public/images/wave2_light_2.svg");
+    --footer-tda-logo: url("../../public/icons/Think-different-Academy_LOGO_oficialni-cerne.svg");
+    --footer-divider: url("../../public/images/wave_light.svg");
+    --divider1: url("../../public/images/wave2_light.svg");
+    --divider2: url("../../public/images/wave2_light_2.svg");
     --scrollbar-color: #b7b7b7;
-    --tda-logo-small: url("../public/icons/Think-different-Academy_LOGO_cerny.svg");
-    --theme-icon: url("../public/icons/moon.svg");
+    --tda-logo-small: url("../../public/icons/Think-different-Academy_LOGO_cerny.svg");
+    --theme-icon: url("../../public/icons/moon.svg");
     --gameboard-cell-notmyturn-bg: #f0f0f0;
     --button-bg: #e8e8e8;
     --button-outline-color: #dadada;
@@ -52,7 +47,7 @@ $desktopBreakpoint: 1800px;
     --input-border-color: #cccccc;
     --input-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
     --modal-blur-color: rgba(0, 0, 0, 0.5);
-    --close-icon: url("../public/icons/Close_Dark.svg");
+    --close-icon: url("../../public/icons/Close_Dark.svg");
 }
 
 :root[data-theme='dark'] {
@@ -84,19 +79,19 @@ $desktopBreakpoint: 1800px;
     --color-warning: #ffcc00;
     --color-error: #ff4444;
     --color-success: #00cc66;
-    --footer-tda-logo: url("../public/icons/Think-different-Academy_LOGO_oficialni-bile.svg");
-    --footer-divider: url("../public/images/wave_dark.svg");
-    --divider1: url("../public/images/wave2_dark.svg");
-    --divider2: url("../public/images/wave2_dark_2.svg");
+    --footer-tda-logo: url("../../public/icons/Think-different-Academy_LOGO_oficialni-bile.svg");
+    --footer-divider: url("../../public/images/wave_dark.svg");
+    --divider1: url("../../public/images/wave2_dark.svg");
+    --divider2: url("../../public/images/wave2_dark_2.svg");
     --scrollbar-color: #2d2d2d;
-    --tda-logo-small: url("../public/icons/Think-different-Academy_LOGO_bily.svg");
-    --theme-icon: url("../public/icons/sun.svg");
+    --tda-logo-small: url("../../public/icons/Think-different-Academy_LOGO_bily.svg");
+    --theme-icon: url("../../public/icons/sun.svg");
     --gameboard-cell-notmyturn-bg: #101010;
     --button-bg: #191919;
     --button-bg-hover: #212121;
     --button-outline-color: #2d2d2d;
     --modal-blur-color: rgba(0, 0, 0, 0.75);
-    --close-icon: url("../public/icons/Close_Light.svg");
+    --close-icon: url("../../public/icons/Close_Light.svg");
 }
 
 * {
@@ -243,7 +238,7 @@ body {
 
 @font-face {
     font-family: 'Dosis';
-    src: url("/fonts/dosis.ttf")  format('truetype');
+    src: url("../../public/fonts/dosis.ttf")  format('truetype');
     font-display: swap;
 }
 
@@ -274,25 +269,6 @@ button,input,textarea,select {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.5);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 1);
     backdrop-filter: blur(8px) saturate(1.6);
-}
-
-@mixin liquid-glass($size: 24px, $alpha-bg: 0.5, $alpha-border: 1) {
-    box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b / $alpha-bg), 0 4px $size rgba(0, 0, 0, 0.1);
-    background-color: rgb(from var(--background-color-secondary) r g b / $alpha-bg);
-    border: 1px solid rgb(from var(--background-color-secondary) r g b / $alpha-border);
-    backdrop-filter: blur(8px) saturate(1.6);
-}
-
-@mixin editable {
-    border: 2px dashed var(--text-color) !important;
-    padding: 8px;
-    border-radius: 12px;
-    cursor: text;
-    transition: all 0.2s;
-
-    &:focus {
-        outline: none;
-    }
 }
 
 .error-text {

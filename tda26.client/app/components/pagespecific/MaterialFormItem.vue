@@ -75,7 +75,8 @@ function onFileChange(event: Event) {
 </template>
 
 <style module lang="scss">
-@use "../../app" as app;
+@use "@/assets/variables" as app;
+
 .item {
     flex: 1;
     display: flex;

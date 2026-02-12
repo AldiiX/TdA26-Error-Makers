@@ -212,7 +212,7 @@ const deleteCourse = async () => {
 </template>
 
 <style module lang="scss">
-@use "../../app" as app;
+@use "@/assets/variables" as app;
 
 .createCourseModal {
     h3 {

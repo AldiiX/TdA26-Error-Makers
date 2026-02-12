@@ -34,7 +34,7 @@
 
 
 <style module lang="scss">
-@use "../app" as app;
+@use "@/assets/variables" as app;
 
 @keyframes ospfpodskfposdkfpsok {
     from { opacity: 0; margin-top: 100px; }

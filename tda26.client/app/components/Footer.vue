@@ -58,7 +58,7 @@
 
 <style module lang="scss">
 
-@use "../app" as app;
+@use "@/assets/variables" as app;
 
 .footer {
     background-color: rgb(from var(--background-color-secondary) r g b / 0.2);

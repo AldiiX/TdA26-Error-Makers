@@ -105,7 +105,7 @@
 </template>
 
 <style module lang="scss">
-@use "../app" as app;
+@use "@/assets/variables" as app;
 
 @keyframes slideUp {
     from {

@@ -65,8 +65,6 @@ useSeo({
     </NuxtLayout>
 </template>
 
-<style src="./app.scss" />
-
 <style module lang="scss">
 .smallDevice {
     display: none;

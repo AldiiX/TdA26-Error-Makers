@@ -647,7 +647,7 @@
 </template>
 
 <style module lang="scss">
-@use "../../app" as app;
+@use "@/assets/variables" as app;
 
 /* zbytek stylu nechavam stejny */
 .blob {

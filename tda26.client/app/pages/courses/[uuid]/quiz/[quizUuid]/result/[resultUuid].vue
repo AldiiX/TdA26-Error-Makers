@@ -114,7 +114,7 @@ const setQuestionIndex = (i: number) => {
 </template>
 
 <style module lang="scss">
-@use "../../../../../../app" as app;
+@use "@/assets/variables" as app;
 
 .container {
     display: flex;

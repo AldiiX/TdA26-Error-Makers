@@ -155,7 +155,7 @@
 </template>
 
 <style module lang="scss">
-@use "../app.scss";
+@use "@/assets/variables" as app;
 
 .header {
     position: fixed;

@@ -49,7 +49,7 @@ const goNext = () => goToPage(props.page + 1);
 </template>
 
 <style module lang="scss">
-@use "../app" as app;
+@use "@/assets/variables" as app;
 
 .paginationContainer {
     display: flex;
