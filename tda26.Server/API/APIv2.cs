@@ -767,28 +767,23 @@ public class APIv2(
     
     [HttpGet("courses/{uuid:guid}/image")]
     public async Task<IActionResult> GetCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
-        if (existingCourse == null) return NotFound();
+        var imageUrl = await db.Courses
+            .Where(c => c.Uuid == uuid)
+            .Select(c => c.ImageUrl)
+            .FirstOrDefaultAsync(ct);
+        
+        if (imageUrl == null) return NotFound();
 
-        if (string.IsNullOrEmpty(existingCourse.ImageUrl)) {
+        if (string.IsNullOrEmpty(imageUrl)) {
             return NotFound(new { error = "Course image not found." });
         }
 
-        var imageStream = await materialAccessService.DownloadFileMaterialAsync(existingCourse.ImageUrl, ct);
+        var imageStream = await materialAccessService.DownloadFileMaterialAsync(imageUrl, ct);
         imageStream.Position = 0;
 
         // Determine content type based on file extension
         string contentType = "application/octet-stream"; // Default content type
-        var extension = Path.GetExtension(existingCourse.ImageUrl).ToLowerInvariant();
+        var extension = Path.GetExtension(imageUrl).ToLowerInvariant();
         switch (extension) {
             case ".jpg":
             case ".jpeg":
@@ -1787,22 +1782,14 @@ public class APIv2(
 
     [HttpGet("courses/{courseUuid:guid}/feed")]
     public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
-        if (course == null) {
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid);
+        if (!courseExists) {
             return NotFound(new { error = "Course not found." });
         }
 
         var feedPosts = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Include(fp => fp.Course)
             .Include(fp => fp.Account)
             .OrderByDescending(fp => fp.CreatedAt)
@@ -1817,17 +1804,9 @@ public class APIv2(
         [FromBody] CreateCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
 
@@ -1837,7 +1816,7 @@ public class APIv2(
             Uuid = Guid.NewGuid(),
             Type = FeedPost.FeedPostType.Manual,
             Message = body.Message,
-            CourseUuid = course.Uuid,
+            CourseUuid = courseUuid,
             AccountUuid = loggedAccount?.Uuid,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -1846,9 +1825,9 @@ public class APIv2(
         db.FeedPosts.Add(newFeedPost);
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
-        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
+        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid }, newFeedPost);
     }
 
 
@@ -1858,21 +1837,13 @@ public class APIv2(
         [FromRoute] Guid feedPostUuid,
         CancellationToken ct
     ) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
         var feedPost = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
             .FirstOrDefaultAsync(ct);
 
@@ -1882,7 +1853,7 @@ public class APIv2(
         db.FeedPosts.Remove(feedPost);
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
 
         return NoContent();
     }
@@ -1894,21 +1865,13 @@ public class APIv2(
         [FromBody] EditCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
-            .AsNoTracking()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
         var feedPost = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
             .Include(fp => fp.Course)
             .Include(fp => fp.Account)
@@ -1922,7 +1885,7 @@ public class APIv2(
 
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("update_post", feedPost), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("update_post", feedPost), ct);
 
         return Ok(feedPost);
     }
