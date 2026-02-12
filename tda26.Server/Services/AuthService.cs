@@ -1,8 +1,8 @@
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
 using tda26.Server.DTOs;
 using tda26.Server.Infrastructure;
-using tda26.Server.Repositories;
 using Account = tda26.Server.Data.Models.Account;
 
 namespace tda26.Server.Services;
@@ -13,13 +13,14 @@ namespace tda26.Server.Services;
 
 public class AuthService(
     AppDbContext db,
-    IHttpContextAccessor http,
-    IAccountRepository accounts
+    IHttpContextAccessor http
 ) : IAuthService {
 
 
     public async Task<Account?> LoginAsync(string identifier, string plainPassword, CancellationToken ct = default) {
-        var acc = await accounts.GetByUsernameLightAsync(identifier, ct);
+        var acc = await db.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Username.ToLower() == identifier.ToLower(), ct);
         if (acc == null) return null;
 
         var json = new AccountSessionDto {
@@ -37,7 +38,12 @@ public class AuthService(
         http.HttpContext.Items["loggedaccount"] = json;
         
         // Load full account with relationships for the response
-        return await accounts.GetByIdAsync(acc.Uuid, ct);
+        return await db.Accounts
+            .Include(a => a.Ratings)
+            .ThenInclude(l => l.Course)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
     }
     
     // FIX:
@@ -50,7 +56,9 @@ public class AuthService(
         if (sessionAcc == null) return null;
 
         // First check password without loading relationships
-        var accLight = await accounts.GetByIdLightAsync(sessionAcc.Uuid, ct);
+        var accLight = await db.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
         if (accLight == null || accLight.Password != sessionAcc.Password) return null;
 
         // Keep session data consistent by storing AccountSessionDto instead of full Account
@@ -65,12 +73,19 @@ public class AuthService(
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
         
         // Load full account with relationships for the response
-        return await accounts.GetByIdAsync(sessionAcc.Uuid, ct);
+        return await db.Accounts
+            .Include(a => a.Ratings)
+            .ThenInclude(l => l.Course)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
     }
 
     public async Task<Account?> RegisterAsync(string username, string email, string plainPassword,  CancellationToken ct = default)
     {
-        var existing = await accounts.GetByUsernameLightAsync(username, ct);
+        var existing = await db.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Username.ToLower() == username.ToLower(), ct);
         if (existing != null) return null;
 
         var hashedPassword = Utilities.HashPassword(plainPassword);
@@ -84,7 +99,8 @@ public class AuthService(
             UpdatedAt = DateTime.UtcNow
         };
 
-        await accounts.CreateAsync(acc, ct);
+        db.Accounts.Add(acc);
+        await db.SaveChangesAsync(ct);
 
         var json = new AccountSessionDto {
             Uuid = acc.Uuid,
@@ -98,7 +114,12 @@ public class AuthService(
         http.HttpContext.Items["loggedaccount"] = json;
 
         // Load full account with relationships for the response
-        return await accounts.GetByIdAsync(acc.Uuid, ct);
+        return await db.Accounts
+            .Include(a => a.Ratings)
+            .ThenInclude(l => l.Course)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
     }
 
 
