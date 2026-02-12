@@ -12,7 +12,6 @@ using tda26.Server.Data;
 using tda26.Server.DTOs.Converters;
 using tda26.Server.Infrastructure;
 using tda26.Server.Options;
-using tda26.Server.Repositories;
 using tda26.Server.Services;
 
 namespace tda26.Server;
@@ -293,11 +292,7 @@ public static class Program {
 
 
         // repozitare a service
-        builder.Services.AddScoped<ICourseRepository, CourseRepository>();
         builder.Services.AddScoped<IAuthService, AuthService>();
-        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-        builder.Services.AddScoped<ILecturerRepository, LecturerRepository>();
-        builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
         

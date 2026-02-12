@@ -12,7 +12,6 @@ using tda26.Server.DTOs.Mapping;
 using tda26.Server.DTOs.v1;
 using tda26.Server.DTOs.v2;
 using tda26.Server.Infrastructure;
-using tda26.Server.Repositories;
 using tda26.Server.Services;
 using CreateCourseRequest = tda26.Server.DTOs.v2.CreateCourseRequest;
 
@@ -22,11 +21,7 @@ namespace tda26.Server.API;
 [Route("api/v2")]
 public class APIv2(
     IAuthService auth,
-    ILecturerRepository lecturers,
-    ICourseRepository courseRepository,
-    IAccountRepository accounts,
     IMaterialAccessService materialAccessService,
-    IMaterialRepository materialRepository,
     AppDbContext db,
     IFeedStreamBroker fsb
 ) : Controller
@@ -158,14 +153,21 @@ public class APIv2(
     // lecturers
     [HttpGet("lecturers")]
     public async Task<IActionResult> GetLecturers([FromQuery] uint limit = 0, CancellationToken ct = default) {
-        var all = await lecturers.GetAllAsync(limit, ct);
+        var isLimited = limit > 0;
+
+        var all = await db.Lecturers
+            .OrderBy(l => l.CreatedAt)
+            .Take(isLimited ? (int) limit : int.MaxValue)
+            .AsNoTracking()
+            .ToListAsync(ct);
         return new OkObjectResult(all);
     }
 
     #if DEBUG
     [HttpPost("lecturers")]
     public async Task<IActionResult> CreateLecturer([FromBody] CreateLecturerRequest body, CancellationToken ct = default) {
-        var existingAccount = await accounts.GetByUsernameAsync(body.Username!, ct);
+        var existingAccount = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Username == body.Username!, ct);
         
         if (existingAccount != null) {
             return new ConflictObjectResult(new { message = "Uživatelské jméno už existuje." });
@@ -191,7 +193,8 @@ public class APIv2(
             Tags = body.Tags
         };
         
-        await accounts.CreateAsync(newLecturer, ct);
+        db.Accounts.Add(newLecturer);
+        await db.SaveChangesAsync(ct);
         
         return new CreatedAtActionResult(
             actionName: nameof(GetLecturer),
@@ -205,7 +208,9 @@ public class APIv2(
 
     [HttpGet("lecturers/{uuid:guid}")]
     public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var lecturer = await lecturers.GetByIdAsync(uuid, ct);
+        var lecturer = await db.Lecturers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(l => l.Uuid == uuid, ct);
         if (lecturer == null) return new NotFoundObjectResult(new { message = "Lektor nenalezen." });
 
         return new OkObjectResult(lecturer);
@@ -221,7 +226,12 @@ public class APIv2(
     
     [HttpGet("accounts/{uuid:guid}")]
     public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var account = await accounts.GetByIdAsync(uuid, ct);
+        var account = await db.Accounts
+            .Include(a => a.Ratings)
+            .ThenInclude(l => l.Course)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
         if (account == null) return new NotFoundObjectResult(new { message = "Účet nenalezen." });
 
         // odstraneni policek
@@ -246,7 +256,20 @@ public class APIv2(
     
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
-        var courses = await courseRepository.GetAllAsync(limit, ct);
+        var isLimited = limit > 0;
+
+        var courses = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Category)
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(isLimited ? (int) limit : int.MaxValue)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToListAsync(ct);
 
         foreach (var c in courses) {
             c.Materials = [];
@@ -312,8 +335,31 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
     
+        var isLimited = limit > 0;
+        var takeCount = limit == 0 ? int.MaxValue : (int)limit;
+        
         if (full) {
-            var courses = acc is Admin ? await courseRepository.GetAllAsyncFull(limit, ct) : await courseRepository.GetByLecturerUuidAsyncFull(acc.Uuid, limit == 0 ? -1 : (int) limit, ct);
+            var query = db.Courses.AsQueryable();
+            if (acc is not Admin) {
+                query = query.Where(c => c.LecturerUuid == acc.Uuid);
+            }
+            
+            var courses = await query
+                .Include(c => c.Tags)
+                .ThenInclude(t => t.Category)
+                .Include(c => c.Ratings)
+                .ThenInclude(l => l.Account)
+                .Include(c => c.Account)
+                .Include(c => c.Materials)
+                .Include(c => c.Quizzes
+                    .OrderByDescending(q => q.CreatedAt))
+                .Include(c => c.Feed)
+                .Include(c => c.Category)
+                .OrderByDescending(c => c.CreatedAt)
+                .Take(takeCount)
+                .AsNoTracking()
+                .AsSplitQuery()
+                .ToListAsync(ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
@@ -325,7 +371,22 @@ public class APIv2(
 
             return Ok(courses);
         } else {
-            var courses = acc is Admin ? await courseRepository.GetAllAsync(limit, ct) : await courseRepository.GetByLecturerUuidAsync(acc.Uuid, limit == 0 ? -1 : (int) limit, ct);
+            var query = db.Courses.AsQueryable();
+            if (acc is not Admin) {
+                query = query.Where(c => c.LecturerUuid == acc.Uuid);
+            }
+            
+            var courses = await query
+                .Include(c => c.Tags)
+                .ThenInclude(t => t.Category)
+                .Include(c => c.Ratings)
+                .ThenInclude(l => l.Account)
+                .Include(c => c.Category)
+                .OrderByDescending(c => c.CreatedAt)
+                .Take(takeCount)
+                .AsNoTracking()
+                .AsSplitQuery()
+                .ToListAsync(ct);
 
             foreach (var c in courses) {
                 c.Materials = [];
@@ -396,7 +457,14 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        var existingCourse = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
@@ -436,7 +504,11 @@ public class APIv2(
             existingCourse.Tags = [];
         }
         
-        await courseRepository.UpdateAsync(existingCourse, ct);
+        var entry = db.Entry(existingCourse);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(existingCourse);
+        }
+        await db.SaveChangesAsync(ct);
 
         return Ok(existingCourse);
     }
@@ -451,7 +523,17 @@ public class APIv2(
             return BadRequest(new { error = "Course name and description are required." });
         }
 
-        var existingCourse = await courseRepository.GetByUuidAsyncFull(uuid, ct);
+        var existingCourse = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
@@ -487,7 +569,8 @@ public class APIv2(
                     FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64"
                 };
 
-                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial, ct);
+                db.Materials.Add(newMaterial);
+                await db.SaveChangesAsync(ct);
                 continue;
             }
 
@@ -498,7 +581,9 @@ public class APIv2(
                 existingMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(urlMaterial.Url).Host}&sz=64";
             }
 
-            await materialRepository.UpdateMaterialAsync(existingMaterial, ct);
+            existingMaterial.UpdatedAt = DateTime.UtcNow;
+            db.Materials.Update(existingMaterial);
+            await db.SaveChangesAsync(ct);
         }
 
         foreach (var fileMaterial in body.FileMaterials) {
@@ -531,7 +616,8 @@ public class APIv2(
                     SizeBytes = (int)fileMaterial.File.Length
                 };
 
-                await materialRepository.AddMaterialAsync(existingCourse.Uuid, newMaterial, ct);
+                db.Materials.Add(newMaterial);
+                await db.SaveChangesAsync(ct);
                 continue;
             }
 
@@ -546,7 +632,9 @@ public class APIv2(
                 existingMaterial.FileUrl = uploadedUrl;
             }
 
-            await materialRepository.UpdateMaterialAsync(existingMaterial, ct);
+            existingMaterial.UpdatedAt = DateTime.UtcNow;
+            db.Materials.Update(existingMaterial);
+            await db.SaveChangesAsync(ct);
         }
 
         // Category
@@ -577,7 +665,11 @@ public class APIv2(
             existingCourse.Tags = [];
         }
 
-        await courseRepository.UpdateAsync(existingCourse, ct);
+        var entry = db.Entry(existingCourse);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(existingCourse);
+        }
+        await db.SaveChangesAsync(ct);
         
         return Ok(existingCourse.ToReadDto(true));
     }
@@ -587,7 +679,14 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        var existingCourse = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
@@ -602,7 +701,11 @@ public class APIv2(
         var imageUrl = await materialAccessService.UploadCourseImageAsync(existingCourse.Uuid, resizedImage, ct);
         existingCourse.ImageUrl = imageUrl;
 
-        await courseRepository.UpdateAsync(existingCourse, ct);
+        var entry = db.Entry(existingCourse);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(existingCourse);
+        }
+        await db.SaveChangesAsync(ct);
 
         return Ok(new { imageUrl = existingCourse.ImageUrl });
     }
@@ -634,7 +737,14 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        var existingCourse = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
@@ -646,26 +756,34 @@ public class APIv2(
         await materialAccessService.DeleteFileMaterialAsync(existingCourse.ImageUrl, ct);
         existingCourse.ImageUrl = null;
 
-        await courseRepository.UpdateAsync(existingCourse, ct);
+        var entry = db.Entry(existingCourse);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(existingCourse);
+        }
+        await db.SaveChangesAsync(ct);
 
         return NoContent();
     }
     
     [HttpGet("courses/{uuid:guid}/image")]
     public async Task<IActionResult> GetCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
-        if (existingCourse == null) return NotFound();
+        var courseImageData = await db.Courses
+            .Where(c => c.Uuid == uuid)
+            .Select(c => new { Exists = true, c.ImageUrl })
+            .FirstOrDefaultAsync(ct);
+        
+        if (courseImageData == null) return NotFound(new { error = "Course not found." });
 
-        if (string.IsNullOrEmpty(existingCourse.ImageUrl)) {
+        if (string.IsNullOrEmpty(courseImageData.ImageUrl)) {
             return NotFound(new { error = "Course image not found." });
         }
 
-        var imageStream = await materialAccessService.DownloadFileMaterialAsync(existingCourse.ImageUrl, ct);
+        var imageStream = await materialAccessService.DownloadFileMaterialAsync(courseImageData.ImageUrl, ct);
         imageStream.Position = 0;
 
         // Determine content type based on file extension
         string contentType = "application/octet-stream"; // Default content type
-        var extension = Path.GetExtension(existingCourse.ImageUrl).ToLowerInvariant();
+        var extension = Path.GetExtension(courseImageData.ImageUrl).ToLowerInvariant();
         switch (extension) {
             case ".jpg":
             case ".jpeg":
@@ -693,7 +811,14 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await courseRepository.GetByUuidAsync(uuid, ct);
+        var existingCourse = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
@@ -703,10 +828,8 @@ public class APIv2(
         existingCourse.Feed = [];
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
 
-        var success = await courseRepository.DeleteAsync(uuid, ct);
-        if (!success) {
-            return NotFound(new { error = "Course not found." });
-        }
+        db.Courses.Remove(existingCourse);
+        await db.SaveChangesAsync(ct);
 
         return NoContent();
     }
@@ -716,7 +839,14 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await courseRepository.GetByUuidAsync(uuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -793,7 +923,14 @@ public class APIv2(
         }
 
         // nalezeni kurzu v db
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -822,7 +959,11 @@ public class APIv2(
 
         // aktualizace poctu zobrazeni kurzu
         course.ViewCount += 1;
-        await courseRepository.UpdateAsync(course, ct);
+        var entry = db.Entry(course);
+        if (entry.State == EntityState.Detached) {
+            db.Courses.Update(course);
+        }
+        await db.SaveChangesAsync(ct);
 
         return NoContent();
     }
@@ -874,7 +1015,8 @@ public class APIv2(
             newCourse.Tags = [];
         }
 
-        await courseRepository.CreateAsync(newCourse, ct);
+        db.Courses.Add(newCourse);
+        await db.SaveChangesAsync(ct);
 
         return new CreatedAtActionResult(
             actionName: nameof(GetCourseById),
@@ -972,7 +1114,8 @@ public class APIv2(
             newCourse.Tags = [];
         }
 
-        await courseRepository.CreateAsync(newCourse, ct);
+        db.Courses.Add(newCourse);
+        await db.SaveChangesAsync(ct);
 
         return CreatedAtAction(nameof(GetCourseById), new { uuid = newCourse.Uuid }, null);
     }
@@ -985,7 +1128,16 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await courseRepository.GetByUuidAsync(uuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -1009,7 +1161,8 @@ public class APIv2(
             CourseUuid = course.Uuid
         };
 
-        await materialRepository.AddMaterialAsync(course.Uuid, newMaterial, ct);
+        db.Materials.Add(newMaterial);
+        await db.SaveChangesAsync(ct);
 
         var obj = new {
             uuid = newMaterial.Uuid,
@@ -1050,7 +1203,16 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await courseRepository.GetByUuidAsync(courseId, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseId, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -1092,7 +1254,8 @@ public class APIv2(
             UpdatedAt = DateTime.UtcNow
         };
 
-        await materialRepository.AddMaterialAsync(course.Uuid, newMaterial, ct);
+        db.Materials.Add(newMaterial);
+        await db.SaveChangesAsync(ct);
 
         var responseObj = new {
             uuid = newMaterial.Uuid,
@@ -1126,7 +1289,19 @@ public class APIv2(
 
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
-        var course = await courseRepository.GetByUuidAsyncFull(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Account)
+            .Include(c => c.Materials)
+            .Include(c => c.Quizzes)
+            .Include(c => c.Feed)
+            .Include(c => c.Category)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
@@ -1180,12 +1355,16 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var existingCourse = await db.Courses
+            .Select(c => new { c.Uuid, c.LecturerUuid })
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (existingCourse == null) return NotFound();
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
         if (material == null || material.CourseUuid != courseUuid) {
             return NotFound(new { error = "Material not found." });
         }
@@ -1209,7 +1388,8 @@ public class APIv2(
             new FeedStreamMessage("new_post", newFeedPost)
         );
 
-        await materialRepository.DeleteMaterialAsync(material, ct);
+        db.Materials.Remove(material);
+        await db.SaveChangesAsync(ct);
 
         return NoContent();
     }
@@ -1226,14 +1406,22 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
 
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
         if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
 
         switch (material) {
             case UrlMaterial urlMaterial:
@@ -1248,7 +1436,9 @@ public class APIv2(
                     urlMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(body.Url).Host}&sz=64";
                 }
 
-                await materialRepository.UpdateMaterialAsync(urlMaterial, ct);
+                urlMaterial.UpdatedAt = DateTime.UtcNow;
+                db.Materials.Update(urlMaterial);
+                await db.SaveChangesAsync(ct);
                 
                 var newFeedPost = new FeedPost {
                     Uuid = Guid.NewGuid(),
@@ -1278,7 +1468,9 @@ public class APIv2(
                 if (!string.IsNullOrEmpty(body.Description))
                     fileMaterial.Description = body.Description;
 
-                await materialRepository.UpdateMaterialAsync(fileMaterial, ct);
+                fileMaterial.UpdatedAt = DateTime.UtcNow;
+                db.Materials.Update(fileMaterial);
+                await db.SaveChangesAsync(ct);
                 
                 return Ok(fileMaterial.ToReadDto());
 
@@ -1299,14 +1491,22 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
 
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
+        var course = await db.Courses
+            .Include(c => c.Tags)
+            .ThenInclude(t => t.Category)
+            .Include(c => c.Account)
+            .Include(c => c.Ratings)
+            .ThenInclude(l => l.Account)
+            .Include(c => c.Category)
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
 
         if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
 
-        var material = await materialRepository.GetMaterialByUuidAsync(materialUuid, ct);
+        var material = await db.Materials
+            .FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
 
         if (material == null || material.CourseUuid != course.Uuid)
             return NotFound(new { error = "Material not found in the specified course." });
@@ -1334,7 +1534,9 @@ public class APIv2(
             fileMaterial.SizeBytes = (int)body.File.Length;
         }
 
-        await materialRepository.UpdateMaterialAsync(fileMaterial, ct);
+        fileMaterial.UpdatedAt = DateTime.UtcNow;
+        db.Materials.Update(fileMaterial);
+        await db.SaveChangesAsync(ct);
 
         // odeslani info do sse
         
@@ -1577,13 +1779,14 @@ public class APIv2(
 
     [HttpGet("courses/{courseUuid:guid}/feed")]
     public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid);
-        if (course == null) {
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid);
+        if (!courseExists) {
             return NotFound(new { error = "Course not found." });
         }
 
         var feedPosts = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Include(fp => fp.Course)
             .Include(fp => fp.Account)
             .OrderByDescending(fp => fp.CreatedAt)
@@ -1598,8 +1801,9 @@ public class APIv2(
         [FromBody] CreateCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
 
@@ -1609,7 +1813,7 @@ public class APIv2(
             Uuid = Guid.NewGuid(),
             Type = FeedPost.FeedPostType.Manual,
             Message = body.Message,
-            CourseUuid = course.Uuid,
+            CourseUuid = courseUuid,
             AccountUuid = loggedAccount?.Uuid,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -1618,9 +1822,9 @@ public class APIv2(
         db.FeedPosts.Add(newFeedPost);
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
-        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid = course.Uuid }, newFeedPost);
+        return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid }, newFeedPost);
     }
 
 
@@ -1630,12 +1834,13 @@ public class APIv2(
         [FromRoute] Guid feedPostUuid,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
         var feedPost = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
             .FirstOrDefaultAsync(ct);
 
@@ -1645,7 +1850,7 @@ public class APIv2(
         db.FeedPosts.Remove(feedPost);
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
 
         return NoContent();
     }
@@ -1657,12 +1862,13 @@ public class APIv2(
         [FromBody] EditCourseFeedPostRequest body,
         CancellationToken ct
     ) {
-        var course = await courseRepository.GetByUuidAsync(courseUuid, ct);
-        if (course is null)
+        var courseExists = await db.Courses
+            .AnyAsync(c => c.Uuid == courseUuid, ct);
+        if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
         var feedPost = await db.FeedPosts
-            .Where(fp => fp.CourseUuid == course.Uuid)
+            .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
             .Include(fp => fp.Course)
             .Include(fp => fp.Account)
@@ -1676,7 +1882,7 @@ public class APIv2(
 
         await db.SaveChangesAsync(ct);
 
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("update_post", feedPost), ct);
+        await fsb.PublishAsync(courseUuid, new FeedStreamMessage("update_post", feedPost), ct);
 
         return Ok(feedPost);
     }
