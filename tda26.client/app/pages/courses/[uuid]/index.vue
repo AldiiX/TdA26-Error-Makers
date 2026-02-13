@@ -29,6 +29,7 @@ import RegisterForm from "~/components/RegisterForm.vue";
 import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
+import {statusToText} from "#shared/utils/statusMapper";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -1136,6 +1137,7 @@ watch(course, (val) => {
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
+                <p :class="$style.status" :data-status="courseSmall?.status">{{ statusToText(courseSmall?.status) }}</p>
                 <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
                     <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
@@ -2007,6 +2009,49 @@ ul {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    
+    .status {
+        padding: 8px 18px;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 10px;
+        user-select: none;
+        white-space: nowrap;
+        width: fit-content;
+        font-size: 20px;
+        margin: 0;
+
+        // Draft
+        &[data-status="0"] {
+            color: #6b7280;
+            background: #f3f4f6;
+        }
+
+        // Scheduled
+        &[data-status="1"] {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        // Live
+        &[data-status="2"] {
+            color: #16a34a;
+            background: #ecfdf5;
+        }
+
+        // Paused
+        &[data-status="3"] {
+            color: #d97706;
+            background: #fffbeb;
+        }
+
+        // Archived
+        &[data-status="4"] {
+            color: #7c3aed;
+            background: #f5f3ff;
+            opacity: 0.75;
+        }
+    }
 
     >.info {
         display: flex;

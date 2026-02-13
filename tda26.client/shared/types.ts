@@ -1,3 +1,5 @@
+import type {DbStatus} from "#shared/utils/statusMapper";
+
 export type WebTheme = "dark" | "light";
 
 export interface Course {
@@ -6,6 +8,7 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
+    status: DbStatus
     //lecturerUuid: string;
     lecturer: Lecturer | null;
     account: Account | null;

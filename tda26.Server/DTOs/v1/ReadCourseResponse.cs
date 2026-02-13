@@ -8,6 +8,7 @@ public class ReadCourseResponse {
     public required string Description { get; set; }
     public required DateTimeOffset CreatedAt { get; set; }
     public required DateTimeOffset UpdatedAt { get; set; }
+    public required CourseStatus Status { get; set; }
     public required int ViewCount { get; set; }
     public required int LikeCount { get; set; }
     public string? ImageUrl { get; set; }
