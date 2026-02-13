@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Net;
+﻿using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -457,13 +457,7 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var existingCourse = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 

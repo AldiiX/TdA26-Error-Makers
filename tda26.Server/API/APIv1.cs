@@ -129,9 +129,7 @@ public class APIv1(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var adminLecturer = await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+        var adminLecturer = await db.AccountsEf()
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Username == "lecturer");
 
