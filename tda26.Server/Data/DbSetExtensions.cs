@@ -22,7 +22,6 @@ public static class DbSetExtensions {
             .Include(c => c.Tags)
             .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
             .Include(c => c.Account)
             .Include(c => c.Materials)
             .Include(c => c.Quizzes)
@@ -45,7 +44,6 @@ public static class DbSetExtensions {
             .Include(c => c.Tags)
             .ThenInclude(t => t.Category)
             .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
             .Include(c => c.Account)
             .Include(c => c.Category);
     }
