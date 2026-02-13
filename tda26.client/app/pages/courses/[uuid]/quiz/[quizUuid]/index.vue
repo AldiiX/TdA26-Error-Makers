@@ -9,6 +9,7 @@ definePageMeta({
     layout: "normal-page-layout"
 });
 
+
 const { uuid, quizUuid } = useRoute().params;
 
 const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
@@ -26,7 +27,9 @@ const currentQuestion = computed(() =>
     quiz.value?.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value]
 );
 
-const savedResponses = ref<AnswerSubmission[]>([]);
+const savedResponses = ref<AnswerSubmission[]>(
+    Array(quiz.value?.questions.length || 0).fill(null)
+);
 
 const isGuid = (value?: string): value is string =>
     !!value && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
@@ -44,12 +47,14 @@ const incrementQuestionIndex = (i: number) => {
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
 };
 
-const updateSelectedIndices = (i: number, selectedIndices: number[]) => {
+const updateSelectedIndices = async (i: number, selectedIndices: number[]) => {
     if (!quiz.value) return;
 
     const question = quiz.value.questions[i];
     if (!question) return;
 
+    if (!savedResponses.value[i]) savedResponses.value[i] = {} as AnswerSubmission;
+    
     savedResponses.value[i] = {
         uuid: question.uuid!,
         selectedIndex: question.type === "singleChoice" ? selectedIndices[0] : undefined,

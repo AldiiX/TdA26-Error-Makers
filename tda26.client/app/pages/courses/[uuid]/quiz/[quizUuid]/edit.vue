@@ -149,7 +149,7 @@ const saveQuiz = async () => {
 
 const saveAndExit = async () => {
     await saveQuiz();
-    await navigateTo(`/courses/${uuid}/quiz/${quizUuid}`);
+    window.location.href = (`/courses/${uuid}/quiz/${quizUuid}`);
 };
 
 const updateQuestion = (i: number, patch: Partial<Question>) => {    
