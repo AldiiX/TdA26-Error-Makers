@@ -979,10 +979,8 @@ public class APIv1(
             return NotFound(new { error = "Course not found." });
         }
 
-        var feedPosts = await db.FeedPosts
+        var feedPosts = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == course.Uuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
@@ -1067,11 +1065,9 @@ public class APIv1(
         if (course is null)
             return NotFound(new { error = "Course not found." });
 
-        var feedPost = await db.FeedPosts
+        var feedPost = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == course.Uuid)
             .Where(fp => fp.Uuid == feedPostUuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .FirstOrDefaultAsync(ct);
 
         if (feedPost is null)

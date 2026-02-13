@@ -1305,13 +1305,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1589,10 +1583,8 @@ public class APIv2(
         if (quiz == null || quiz.CourseUuid != course.Uuid)
             return NotFound(new { error = "Quiz not found in the specified course." });
         
-        var quizResult = await db.QuizResults
+        var quizResult = await db.QuizResultsEf()
             .Where(qr => qr.Uuid == resultUuid)
-            .Include(qr => qr.Answers)
-                .ThenInclude(a => a.SelectedOptions)
             .FirstOrDefaultAsync();
         
         if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
@@ -1673,10 +1665,8 @@ public class APIv2(
             return NotFound(new { error = "Course not found." });
         }
 
-        var feedPosts = await db.FeedPosts
+        var feedPosts = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == courseUuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
@@ -1755,11 +1745,9 @@ public class APIv2(
         if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
-        var feedPost = await db.FeedPosts
+        var feedPost = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .FirstOrDefaultAsync(ct);
 
         if (feedPost is null)
