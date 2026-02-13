@@ -59,17 +59,17 @@ public static class EntityFrameworkIncludes {
 	}
 
 	// Backwards compatibility with old method names
-	[Obsolete("Use .IncludeBasic() instead")]
+	[Obsolete("Use db.Courses.IncludeBasic() instead", error: false)]
 	public static IQueryable<Course> CoursesMinimalEf(this AppDbContext db) {
 		return db.Courses.IncludeBasic();
 	}
 
-	[Obsolete("Use .IncludeAll() instead")]
+	[Obsolete("Use db.Courses.IncludeAll() instead", error: false)]
 	public static IQueryable<Course> CoursesFullEf(this AppDbContext db) {
 		return db.Courses.IncludeAll();
 	}
 
-	[Obsolete("Use .IncludeAll() instead")]
+	[Obsolete("Use db.Accounts.IncludeAll() instead", error: false)]
 	public static IQueryable<Account> AccountsEf(this AppDbContext db) {
 		return db.Accounts.IncludeAll();
 	}
