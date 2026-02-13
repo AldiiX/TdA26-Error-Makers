@@ -6,6 +6,8 @@ import timeAgoString from "#shared/utils/timeAgoString";
 import type { Account } from "#shared/types";
 import { NuxtLink } from "#components";
 import Avatar from "~/components/Avatar.vue";
+import {statusToText} from "#shared/utils/statusMapper";
+import StatusBadge from "~/components/StatusBadge.vue";
 
 const props = defineProps<{
     course: Course,
@@ -107,7 +109,10 @@ const resetBgImage = async () => {
                 <div :class="$style.spinner"></div>
                 <p>{{ uploadStatusText }}</p>
             </div>
-            <div 
+
+            <StatusBadge :class="$style.statusIcon" :status="course.status"/>
+
+            <div
                 :class="$style.editOverlay"
                 v-if="editMode"
             >
@@ -341,6 +346,13 @@ const resetBgImage = async () => {
     .top {
         position: relative;
         width: 100%;
+        
+        .statusIcon {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            z-index: 2;
+        }
 
         .uploadOverlay {
             position: absolute;

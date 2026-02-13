@@ -2,9 +2,18 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using tda26.Server.DTOs;
+using tda26.Server.DTOs.Converters;
 using tda26.Server.DTOs.Mapping;
 
 namespace tda26.Server.Data.Models;
+
+public enum CourseStatus {
+    Draft,
+    Scheduled,
+    Live,
+    Paused,
+    Archived
+}
 
 public class Course : Auditable {
 
@@ -20,6 +29,10 @@ public class Course : Auditable {
 
     [MaxLength(512)]
     public string? ImageUrl { get; set; }
+
+    public CourseStatus Status { get; set; } = CourseStatus.Draft;
+    
+    public DateTime? ScheduledStart { get; set; }
 
     public int ViewCount { get; set; } = 0;
 

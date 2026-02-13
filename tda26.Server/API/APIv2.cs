@@ -257,6 +257,7 @@ public class APIv2(
         var isLimited = limit > 0;
 
         var courses = await db.CoursesMinimalEf()
+            .Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused)
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int) limit : int.MaxValue)
             .AsNoTracking()
@@ -434,6 +435,7 @@ public class APIv2(
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
+        existingCourse.Status = body.Status;
         
         // Category
         if (body.CategoryUuid.HasValue) {
