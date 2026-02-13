@@ -507,6 +507,9 @@ public class APIv2(
 
         if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+        // Save loaded materials before clearing for comparison
+        var loadedMaterials = existingCourse.Materials.ToList();
+        
         existingCourse.Materials = [];
         existingCourse.Quizzes = [];
         existingCourse.Feed = [];
@@ -516,7 +519,7 @@ public class APIv2(
 
         foreach (var urlMaterial in body.UrlMaterials) {
 
-            var existingMaterial = existingCourse.Materials
+            var existingMaterial = loadedMaterials
                 .OfType<UrlMaterial>()
                 .FirstOrDefault(m => m.Uuid == urlMaterial.Uuid);
 
@@ -556,7 +559,7 @@ public class APIv2(
         }
 
         foreach (var fileMaterial in body.FileMaterials) {
-            var existingMaterial = existingCourse.Materials
+            var existingMaterial = loadedMaterials
                 .OfType<FileMaterial>()
                 .FirstOrDefault(m => m.Uuid == fileMaterial.Uuid);
 
