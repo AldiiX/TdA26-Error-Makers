@@ -57,15 +57,7 @@ public class APIv1(
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == uuid);
@@ -79,15 +71,7 @@ public class APIv1(
     [HttpPut("courses/{uuid:guid}")]
     public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body) {
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .FirstOrDefaultAsync(c => c.Uuid == uuid);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
