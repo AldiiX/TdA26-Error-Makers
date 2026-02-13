@@ -1,5 +1,5 @@
-﻿<script setup lang="ts">
-import {computed, ref} from "vue";
+<script setup lang="ts">
+import {computed, ref, watch} from "vue";
 import type { Course } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
@@ -41,7 +41,17 @@ const revealStyle = computed(() => {
     } as Record<string, string>;
 });
 
+const isUploading = ref(false);
+const uploadStatusText = ref("Nahrávám obrázek...");
+const displayedImageUrl = ref(props.course.imageUrl);
+
+watch(() => props.course.imageUrl, (value) => {
+    displayedImageUrl.value = value;
+});
+
 const editBgImage = () => {
+    if (isUploading.value) return;
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -49,11 +59,21 @@ const editBgImage = () => {
         if (input.files && input.files[0]) {
             const formData = new FormData();
             formData.append('image', input.files[0]);
-            await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
-                method: 'POST',
-                body: formData
-            });
-            location.reload();
+            isUploading.value = true;
+            uploadStatusText.value = "Nahrávám obrázek...";
+
+            try {
+                const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) return;
+
+                displayedImageUrl.value = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+            } finally {
+                isUploading.value = false;
+            }
         }
     }
     
@@ -61,16 +81,32 @@ const editBgImage = () => {
 }
 
 const resetBgImage = async () => {
-    await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
-        method: 'DELETE'
-    });
-    location.reload();
+    if (isUploading.value) return;
+
+    isUploading.value = true;
+    uploadStatusText.value = "Odstraňuji obrázek...";
+
+    try {
+        const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) return;
+
+        displayedImageUrl.value = null;
+    } finally {
+        isUploading.value = false;
+    }
 }
 </script>
 
 <template>
     <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
         <div :class="$style.top">
+            <div v-if="isUploading" :class="$style.uploadOverlay">
+                <div :class="$style.spinner"></div>
+                <p>{{ uploadStatusText }}</p>
+            </div>
             <div 
                 :class="$style.editOverlay"
                 v-if="editMode"
@@ -80,20 +116,20 @@ const resetBgImage = async () => {
                 >
                     <span
                         @click="editBgImage"
-                        :class="$style.edit"
+                        :class="[$style.edit, isUploading && $style.disabled]"
                         title="Změnit obrázek kurzu"
                     ></span>
                     <span
                         @click="resetBgImage"
-                        :class="$style.reset"
+                        :class="[$style.reset, isUploading && $style.disabled]"
                         title="Obnovit výchozí obrázek kurzu"
                     ></span>
                 </div>
             </div>
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image" v-if="course.imageUrl" :style="{ '--bg': `url(${course.imageUrl})` }"></div>
+                <div :class="$style.image" v-if="displayedImageUrl" :style="{ '--bg': `url(${displayedImageUrl})` }"></div>
 
-                <template v-if="!course.imageUrl">
+                <template v-if="!displayedImageUrl">
                     <div :class="$style.blob1"></div>
                     <div :class="$style.blob2"></div>
                     <div :class="$style.blob3"></div>
@@ -303,7 +339,38 @@ const resetBgImage = async () => {
     animation-delay: var(--reveal-delay-ms, 0ms);
 
     .top {
+        position: relative;
         width: 100%;
+
+        .uploadOverlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 24px;
+            background-color: rgba(0, 0, 0, 0.35);
+            color: white;
+            pointer-events: all;
+
+            p {
+                margin: 0;
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            .spinner {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                border: 3px solid rgba(255, 255, 255, 0.35);
+                border-top-color: white;
+                animation: spin 0.9s linear infinite;
+            }
+        }
 
         .imageContainer {
             display: block;
@@ -577,6 +644,17 @@ const resetBgImage = async () => {
     }
 }
 
+.disabled {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @media screen and (max-width: app.$mobileBreakpoint) {
     .bottom {
         gap: 8px;
@@ -599,3 +677,5 @@ const resetBgImage = async () => {
     }
 }
 </style>
+
+
