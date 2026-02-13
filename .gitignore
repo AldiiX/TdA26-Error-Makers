@@ -7,4 +7,5 @@ bin
 .env.dev
 .env.prod
 node_modules
-disttda26.client/obj/
+dist
+tda26.client/obj/

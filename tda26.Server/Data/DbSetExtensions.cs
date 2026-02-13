@@ -11,16 +11,7 @@ public static class DbSetExtensions {
     /// Includes all related entities for Course (including Materials, Quizzes, and Feed)
     /// </summary>
     public static IQueryable<Course> IncludeAll(this DbSet<Course> courses) {
-        return courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category);
+        return ((IQueryable<Course>)courses).IncludeAll();
     }
 
     /// <summary>
@@ -43,13 +34,7 @@ public static class DbSetExtensions {
     /// Includes basic related entities for Course (excludes Materials, Quizzes, and Feed for performance)
     /// </summary>
     public static IQueryable<Course> IncludeBasic(this DbSet<Course> courses) {
-        return courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Category);
+        return ((IQueryable<Course>)courses).IncludeBasic();
     }
 
     /// <summary>
@@ -69,8 +54,7 @@ public static class DbSetExtensions {
     /// Includes all related entities for Account
     /// </summary>
     public static IQueryable<Account> IncludeAll(this DbSet<Account> accounts) {
-        return accounts
-            .Include(a => a.Ratings);
+        return ((IQueryable<Account>)accounts).IncludeAll();
     }
 
     /// <summary>
