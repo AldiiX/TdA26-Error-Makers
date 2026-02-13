@@ -434,6 +434,7 @@ public class APIv2(
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
+        existingCourse.Status = body.Status;
         
         // Category
         if (body.CategoryUuid.HasValue) {

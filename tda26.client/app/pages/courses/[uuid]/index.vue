@@ -29,7 +29,7 @@ import RegisterForm from "~/components/RegisterForm.vue";
 import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
-import {statusToText} from "#shared/utils/statusMapper";
+import { type DbStatus, statusToText } from "#shared/utils/statusMapper";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -95,6 +95,17 @@ if (courseError.value) {
 
 const course = ref<Course | null>(_course.value ?? null);
 const originalCourse = ref<Course | null>(null);
+const statusOptions: DbStatus[] = [0, 1, 2, 3, 4];
+const editedStatus = ref<DbStatus>(courseSmall.value.status);
+const displayedStatus = computed<DbStatus>(() => course.value?.status ?? courseSmall.value.status);
+const editedStatusModel = computed<string>({
+    get: () => String(editedStatus.value),
+    set: (value) => {
+        const parsed = Number(value);
+        if (Number.isNaN(parsed)) return;
+        editedStatus.value = parsed as DbStatus;
+    }
+});
 
 watch(_course, (val) => {
     if (!val) return;
@@ -121,6 +132,7 @@ const isDirty = computed(() => {
     return (
         course.value.name !== originalCourse.value.name ||
         course.value.description !== originalCourse.value.description ||
+        editedStatus.value !== originalCourse.value.status ||
         editedCategoryUuid.value !== originalCourse.value.category?.uuid ||
         JSON.stringify(editedTags) !== JSON.stringify(originalTags)
     );
@@ -723,6 +735,7 @@ const saveCourseChanges = async () => {
                 body: {
                     name: course.value.name,
                     description: course.value.description,
+                    status: editedStatus.value,
                     categoryUuid: editedCategoryUuid.value,
                     tagsUuid: editedTagsUuid.value
                 }
@@ -734,6 +747,7 @@ const saveCourseChanges = async () => {
 
         editedCategoryUuid.value = updatedCourse.category.uuid;
         editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
+        editedStatus.value = updatedCourse.status;
 
         // Clear course caches to force refetch on next navigation
         clearCourseCaches();
@@ -1117,6 +1131,15 @@ watch(
 watch(course, (val) => {
     console.log(val)
 });
+
+watch(
+    course,
+    (val) => {
+        if (!val) return;
+        editedStatus.value = val.status;
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -1137,7 +1160,30 @@ watch(course, (val) => {
                 @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
-                <p :class="$style.status" :data-status="courseSmall?.status">{{ statusToText(courseSmall?.status) }}</p>
+                <Input
+                    v-if="isEditMode"
+                    type="select"
+                    v-model="editedStatusModel"
+                    :class="[$style.status, $style.statusSelect]"
+                    :data-status="editedStatus"
+                    :key="editedStatusModel"
+                >
+                    <option
+                        v-for="status in statusOptions"
+                        :key="status"
+                        :value="String(status)"
+                        :selected="editedStatusModel === String(status)"
+                    >
+                        {{ statusToText(status) }}
+                    </option>
+                </Input>
+                <p
+                    v-else
+                    :class="$style.status"
+                    :data-status="displayedStatus"
+                >
+                    {{ statusToText(displayedStatus) }}
+                </p>
                 <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
                     <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
@@ -2051,6 +2097,11 @@ ul {
             background: #f5f3ff;
             opacity: 0.75;
         }
+    }
+
+    .statusSelect {
+        border: none;
+        cursor: pointer;
     }
 
     >.info {
