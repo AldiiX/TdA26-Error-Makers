@@ -226,9 +226,7 @@ public class APIv2(
     
     [HttpGet("accounts/{uuid:guid}")]
     public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct = default) {
-        var account = await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+        var account = await db.AccountsEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
@@ -258,13 +256,7 @@ public class APIv2(
     public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
         var isLimited = limit > 0;
 
-        var courses = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Category)
+        var courses = await db.CoursesMinimalEf()
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int) limit : int.MaxValue)
             .AsNoTracking()
@@ -339,22 +331,12 @@ public class APIv2(
         var takeCount = limit == 0 ? int.MaxValue : (int)limit;
         
         if (full) {
-            var query = db.Courses.AsQueryable();
+            var query = db.CoursesFullEf();
             if (acc is not Admin) {
                 query = query.Where(c => c.LecturerUuid == acc.Uuid);
             }
             
             var courses = await query
-                .Include(c => c.Tags)
-                .ThenInclude(t => t.Category)
-                .Include(c => c.Ratings)
-                .ThenInclude(l => l.Account)
-                .Include(c => c.Account)
-                .Include(c => c.Materials)
-                .Include(c => c.Quizzes
-                    .OrderByDescending(q => q.CreatedAt))
-                .Include(c => c.Feed)
-                .Include(c => c.Category)
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(takeCount)
                 .AsNoTracking()
@@ -371,17 +353,12 @@ public class APIv2(
 
             return Ok(courses);
         } else {
-            var query = db.Courses.AsQueryable();
+            var query = db.CoursesMinimalEf();
             if (acc is not Admin) {
                 query = query.Where(c => c.LecturerUuid == acc.Uuid);
             }
             
             var courses = await query
-                .Include(c => c.Tags)
-                .ThenInclude(t => t.Category)
-                .Include(c => c.Ratings)
-                .ThenInclude(l => l.Account)
-                .Include(c => c.Category)
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(takeCount)
                 .AsNoTracking()
@@ -409,16 +386,7 @@ public class APIv2(
         Course? course;
 
         if (full) {
-            course = await db.Courses
-                .Include(c => c.Materials
-                    .OrderByDescending(m => m.CreatedAt))
-                .Include(c => c.Quizzes
-                    .OrderByDescending(q => q.CreatedAt))
-                .Include(c => c.Feed)
-                .Include(c => c.Account)
-                .Include(c => c.Ratings)
-                .Include(c => c.Category)
-                .Include(c => c.Tags)
+            course = await db.CoursesFullEf()
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
@@ -428,10 +396,7 @@ public class APIv2(
 
             Console.WriteLine(course.LecturerUuid + " " + course.Account?.Uuid);*/
         } else {
-            course = await db.Courses
-                .Include(c => c.Account)
-                .Include(c => c.Ratings)
-                .Include(c => c.Category)
+            course = await db.CoursesMinimalEf()
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) {
@@ -517,16 +482,7 @@ public class APIv2(
             return BadRequest(new { error = "Course name and description are required." });
         }
 
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+        var existingCourse = await db.CoursesFullEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -673,13 +629,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var existingCourse = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -731,13 +681,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var existingCourse = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -805,13 +749,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var existingCourse = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -833,13 +771,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -917,13 +849,7 @@ public class APIv2(
         }
 
         // nalezeni kurzu v db
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1122,13 +1048,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
@@ -1197,13 +1117,7 @@ public class APIv2(
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseId, ct);
@@ -1283,16 +1197,7 @@ public class APIv2(
 
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+        var course = await db.CoursesFullEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
@@ -1400,13 +1305,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1485,13 +1384,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
 
-        var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+        var course = await db.CoursesMinimalEf()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1572,11 +1465,9 @@ public class APIv2(
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
-        var quiz = await db.Quizzes
+        var quiz = await db.QuizzesEf()
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
-            .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
         
         if (quiz == null)
@@ -1684,21 +1575,16 @@ public class APIv2(
         if (course == null)
             return NotFound(new { error = "Course not found." });
         
-        var quiz = await db.Quizzes
+        var quiz = await db.QuizzesEf()
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions
-                .OrderBy(qs => qs.Order))
-                .ThenInclude(qn => qn.Options)
             .FirstOrDefaultAsync();
 
         if (quiz == null || quiz.CourseUuid != course.Uuid)
             return NotFound(new { error = "Quiz not found in the specified course." });
         
-        var quizResult = await db.QuizResults
+        var quizResult = await db.QuizResultsEf()
             .Where(qr => qr.Uuid == resultUuid)
-            .Include(qr => qr.Answers)
-                .ThenInclude(a => a.SelectedOptions)
             .FirstOrDefaultAsync();
         
         if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
@@ -1779,10 +1665,8 @@ public class APIv2(
             return NotFound(new { error = "Course not found." });
         }
 
-        var feedPosts = await db.FeedPosts
+        var feedPosts = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == courseUuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
@@ -1861,11 +1745,9 @@ public class APIv2(
         if (!courseExists)
             return NotFound(new { error = "Course not found." });
 
-        var feedPost = await db.FeedPosts
+        var feedPost = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == courseUuid)
             .Where(fp => fp.Uuid == feedPostUuid)
-            .Include(fp => fp.Course)
-            .Include(fp => fp.Account)
             .FirstOrDefaultAsync(ct);
 
         if (feedPost is null)

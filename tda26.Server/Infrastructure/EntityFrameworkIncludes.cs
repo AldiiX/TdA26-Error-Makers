@@ -33,4 +33,23 @@ public static class EntityFrameworkIncludes {
 			.Include(a => a.Ratings)
 				.ThenInclude(r => r.Course);
 	}
+
+	public static IQueryable<Quiz> QuizzesEf(this AppDbContext db) {
+		return db.Quizzes
+			.Include(q => q.Questions
+				.OrderBy(qs => qs.Order))
+			.ThenInclude(qn => qn.Options);
+	}
+
+	public static IQueryable<QuizResult> QuizResultsEf(this AppDbContext db) {
+		return db.QuizResults
+			.Include(qr => qr.Answers)
+				.ThenInclude(a => a.SelectedOptions);
+	}
+
+	public static IQueryable<FeedPost> FeedPostsEf(this AppDbContext db) {
+		return db.FeedPosts
+			.Include(fp => fp.Course)
+			.Include(fp => fp.Account);
+	}
 }
