@@ -34,16 +34,7 @@ public class APIv1(
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses() {
         var courses = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes
-                .OrderByDescending(q => q.CreatedAt))
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .OrderByDescending(c => c.CreatedAt)
             .AsNoTracking()
             .AsSplitQuery()
@@ -57,15 +48,7 @@ public class APIv1(
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById([FromRoute] Guid uuid) {
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == uuid);
@@ -129,7 +112,8 @@ public class APIv1(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var adminLecturer = await db.AccountsEf()
+        var adminLecturer = await db.Accounts
+            .IncludeAll()
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Username == "lecturer");
 

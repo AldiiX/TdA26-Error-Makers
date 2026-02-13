@@ -227,8 +227,7 @@ public class APIv2(
     [HttpGet("accounts/{uuid:guid}")]
     public async Task<IActionResult> GetAccount([FromRoute] Guid uuid, CancellationToken ct = default) {
         var account = await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == uuid, ct);
@@ -259,12 +258,7 @@ public class APIv2(
         var isLimited = limit > 0;
 
         var courses = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int) limit : int.MaxValue)
             .AsNoTracking()
@@ -345,16 +339,7 @@ public class APIv2(
             }
             
             var courses = await query
-                .Include(c => c.Tags)
-                .ThenInclude(t => t.Category)
-                .Include(c => c.Ratings)
-                .ThenInclude(l => l.Account)
-                .Include(c => c.Account)
-                .Include(c => c.Materials)
-                .Include(c => c.Quizzes
-                    .OrderByDescending(q => q.CreatedAt))
-                .Include(c => c.Feed)
-                .Include(c => c.Category)
+                .IncludeAll()
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(takeCount)
                 .AsNoTracking()
@@ -377,11 +362,7 @@ public class APIv2(
             }
             
             var courses = await query
-                .Include(c => c.Tags)
-                .ThenInclude(t => t.Category)
-                .Include(c => c.Ratings)
-                .ThenInclude(l => l.Account)
-                .Include(c => c.Category)
+                .IncludeBasic()
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(takeCount)
                 .AsNoTracking()
@@ -410,15 +391,7 @@ public class APIv2(
 
         if (full) {
             course = await db.Courses
-                .Include(c => c.Materials
-                    .OrderByDescending(m => m.CreatedAt))
-                .Include(c => c.Quizzes
-                    .OrderByDescending(q => q.CreatedAt))
-                .Include(c => c.Feed)
-                .Include(c => c.Account)
-                .Include(c => c.Ratings)
-                .Include(c => c.Category)
-                .Include(c => c.Tags)
+                .IncludeAll()
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
@@ -457,7 +430,8 @@ public class APIv2(
             return BadRequest(new { error = "Name and description are required." });
         }
 
-        var existingCourse = await db.CoursesMinimalEf()
+        var existingCourse = await db.Courses
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -518,15 +492,7 @@ public class APIv2(
         }
 
         var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -674,12 +640,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -732,12 +693,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -806,12 +762,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var existingCourse = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (existingCourse == null) return NotFound();
 
@@ -834,12 +785,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -918,12 +864,7 @@ public class APIv2(
 
         // nalezeni kurzu v db
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1123,12 +1064,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
@@ -1198,12 +1134,7 @@ public class APIv2(
         if (acc == null) return Unauthorized();
 
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseId, ct);
@@ -1284,15 +1215,7 @@ public class APIv2(
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Account)
-            .Include(c => c.Materials)
-            .Include(c => c.Quizzes)
-            .Include(c => c.Feed)
-            .Include(c => c.Category)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
@@ -1401,12 +1324,7 @@ public class APIv2(
 
 
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1486,12 +1404,7 @@ public class APIv2(
 
 
         var course = await db.Courses
-            .Include(c => c.Tags)
-            .ThenInclude(t => t.Category)
-            .Include(c => c.Account)
-            .Include(c => c.Ratings)
-            .ThenInclude(l => l.Account)
-            .Include(c => c.Category)
+            .IncludeBasic()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
@@ -1575,8 +1488,7 @@ public class APIv2(
         var quiz = await db.Quizzes
             .Where(q => q.CourseUuid == courseUuid)
             .Where(q => q.Uuid == quizUuid)
-            .Include(q => q.Questions)
-            .ThenInclude(qn => qn.Options)
+            .IncludeAll()
             .FirstOrDefaultAsync();
         
         if (quiz == null)
@@ -1697,8 +1609,7 @@ public class APIv2(
         
         var quizResult = await db.QuizResults
             .Where(qr => qr.Uuid == resultUuid)
-            .Include(qr => qr.Answers)
-                .ThenInclude(a => a.SelectedOptions)
+            .IncludeAll()
             .FirstOrDefaultAsync();
         
         if (quizResult == null || quizResult.QuizUuid != quiz.Uuid)
