@@ -2066,36 +2066,35 @@ ul {
         width: fit-content;
         font-size: 20px;
         margin: 0;
-
+        
         // Draft
         &[data-status="0"] {
-            color: #6b7280;
-            background: #f3f4f6;
+            color: var(--status-draft-text);
+            background: var(--status-draft-bg);
         }
 
         // Scheduled
         &[data-status="1"] {
-            color: #2563eb;
-            background: #eff6ff;
+            color: var(--status-scheduled-text);
+            background: var(--status-scheduled-bg);
         }
 
         // Live
         &[data-status="2"] {
-            color: #16a34a;
-            background: #ecfdf5;
+            color: var(--status-live-text);
+            background: var(--status-live-bg);
         }
 
         // Paused
         &[data-status="3"] {
-            color: #d97706;
-            background: #fffbeb;
+            color: var(--status-paused-text);
+            background: var(--status-paused-bg);
         }
 
         // Archived
         &[data-status="4"] {
-            color: #7c3aed;
-            background: #f5f3ff;
-            opacity: 0.75;
+            color: var(--status-archived-text);
+            background: var(--status-archived-bg);
         }
     }
 

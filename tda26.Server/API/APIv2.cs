@@ -257,6 +257,7 @@ public class APIv2(
         var isLimited = limit > 0;
 
         var courses = await db.CoursesMinimalEf()
+            .Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused)
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int) limit : int.MaxValue)
             .AsNoTracking()

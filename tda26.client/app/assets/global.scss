@@ -48,6 +48,22 @@
     --input-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
     --modal-blur-color: rgba(0, 0, 0, 0.5);
     --close-icon: url("../../public/icons/Close_Dark.svg");
+
+    /* Status colors */
+    --status-draft-text: #6b7280;
+    --status-draft-bg: #e9f0ff;
+
+    --status-scheduled-text: #2563eb;
+    --status-scheduled-bg: #cee3ff;
+
+    --status-live-text: #108e3e;
+    --status-live-bg: #b4ffdf;
+
+    --status-paused-text: #d97706;
+    --status-paused-bg: #fff4ca;
+
+    --status-archived-text: #7c3aed;
+    --status-archived-bg: #d1c8ff;
 }
 
 :root[data-theme='dark'] {
@@ -92,6 +108,22 @@
     --button-outline-color: #2d2d2d;
     --modal-blur-color: rgba(0, 0, 0, 0.75);
     --close-icon: url("../../public/icons/Close_Light.svg");
+    
+    /* Status colors */
+    --status-draft-text: #9ca3af;
+    --status-draft-bg: #1f2933;
+
+    --status-scheduled-text: #60a5fa;
+    --status-scheduled-bg: #0b1220;
+
+    --status-live-text: #22c55e;
+    --status-live-bg: #052e1a;
+
+    --status-paused-text: #f59e0b;
+    --status-paused-bg: #2a1d04;
+
+    --status-archived-text: #a78bfa;
+    --status-archived-bg: #1e1433;
 }
 
 * {
