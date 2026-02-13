@@ -39,8 +39,7 @@ public class AuthService(
         
         // Load full account with relationships for the response
         return await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
@@ -74,8 +73,7 @@ public class AuthService(
         
         // Load full account with relationships for the response
         return await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+            .IncludeAll()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
