@@ -109,10 +109,10 @@ const resetBgImage = async () => {
                 <div :class="$style.spinner"></div>
                 <p>{{ uploadStatusText }}</p>
             </div>
-            <div :class="$style.statusIcon">
-                <StatusBadge :status="course.status"/>
-            </div>
-            <div 
+
+            <StatusBadge :class="$style.statusIcon" :status="course.status"/>
+
+            <div
                 :class="$style.editOverlay"
                 v-if="editMode"
             >

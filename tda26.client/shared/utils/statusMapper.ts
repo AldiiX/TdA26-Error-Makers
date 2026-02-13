@@ -3,7 +3,7 @@ export type DbStatus = 0 | 1 | 2 | 3 | 4;
 const STATUS_TEXT_BY_CODE: Record<DbStatus, string> = {
     0: "Návrh",
     1: "Naplánováno",
-    2: "Live",
+    2: "Probíhá",
     3: "Pauza",
     4: "Archivováno",
 };

@@ -21,19 +21,39 @@ const props = defineProps<{
     justify-content: center;
     border-radius: 500px;
     opacity: .8;
-    height: 32px;
-    padding-left: 4px;
-    padding-right: 8px;
-    
-    p {
-        font-weight: 600;
+    padding: 4px 8px;
+    backdrop-filter: blur(10px);
+
+    &:is(.live) {
+        >div {
+            animation: pulse 2s ease infinite;
+
+            @keyframes pulse {
+                0% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: .5;
+                }
+                100% {
+                    opacity: 1;
+                }
+            }
+        }
     }
     
-    div {
+    >p {
+        font-weight: 600;
+        margin: 0;
+        margin-bottom: 1px;
+    }
+    
+    >div {
         mask-size: cover;
-        width: 30px;
-        height: 30px;
+        width: 16px;
+        height: 16px;
         mask-position: center;
+        margin-right: 4px;
     }
 
     &.scheduled {
@@ -44,9 +64,6 @@ const props = defineProps<{
             mask-image: url("../../public/icons/clock.svg");
             background-color: var(--status-scheduled-text);
 
-            width: 24px;
-            height: 24px;
-            margin-right: 4px;
         }
         
         p {
@@ -61,8 +78,6 @@ const props = defineProps<{
         div {
             mask-image: url("../../public/icons/access_point.svg");
             background-color: var(--status-live-text);
-
-            margin-right: 2px;
         }
         
         p {
@@ -77,10 +92,6 @@ const props = defineProps<{
         div {
             mask-image: url("../../public/icons/pause.svg");
             background-color: var(--status-paused-text);
-
-            width: 24px;
-            height: 24px;
-            margin-right: 2px;
         }
         
         p {

@@ -12,7 +12,7 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260213183229_AddStatusToCourse")]
+    [Migration("20260213231152_AddStatusToCourse")]
     partial class AddStatusToCourse
     {
         /// <inheritdoc />
