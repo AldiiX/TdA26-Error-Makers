@@ -38,9 +38,7 @@ public class AuthService(
         http.HttpContext.Items["loggedaccount"] = json;
         
         // Load full account with relationships for the response
-        return await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+        return await db.AccountsEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
@@ -73,9 +71,7 @@ public class AuthService(
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(sessionDto));
         
         // Load full account with relationships for the response
-        return await db.Accounts
-            .Include(a => a.Ratings)
-            .ThenInclude(l => l.Course)
+        return await db.AccountsEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
