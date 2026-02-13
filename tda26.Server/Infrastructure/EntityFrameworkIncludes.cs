@@ -38,7 +38,8 @@ public static class EntityFrameworkIncludes {
 		return db.Quizzes
 			.Include(q => q.Questions
 				.OrderBy(qs => qs.Order))
-			.ThenInclude(qn => qn.Options);
+			.ThenInclude(qn => qn.Options
+				.OrderBy(o => o.Order));
 	}
 
 	public static IQueryable<QuizResult> QuizResultsEf(this AppDbContext db) {
