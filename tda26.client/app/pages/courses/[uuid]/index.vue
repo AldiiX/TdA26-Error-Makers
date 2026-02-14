@@ -60,6 +60,8 @@ const route = useRoute();
 const uuid = route.params.uuid as string;
 const isEditMode = route.query.edit === 'true';
 
+const customDateTime = ref<string>("");
+
 const isActionInProgress = ref(false);
 
 // server small fetch
@@ -119,53 +121,18 @@ const timeOptions: TimeOption[] = [
 ];
 
 
-function formatDate(e: Event) {
-    const input = e.target as HTMLInputElement;
+const maxCustomDatetime = "2200-01-01T12:00"
+const minCustomDatetime = computed(() => getLocalDateTimeString())
 
-    let digits = input.value.replace(/\D/g, "");
-
-    if (digits.length > 8) digits = digits.slice(0, 8);
-
-    let formatted = digits;
-
-    if (digits.length > 4) {
-        formatted = digits.slice(0, 2) + "." + digits.slice(2, 4) + "." + digits.slice(4);
-    } else if (digits.length > 2) {
-        formatted = digits.slice(0, 2) + "." + digits.slice(2);
-    }
-
-    input.value = formatted;
-    customDate.value = formatted;
+function getLocalDateTimeString(): string {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+    return now.toISOString().slice(0, 16)
 }
-
-function formatTime(e: Event) {
-    const input = e.target as HTMLInputElement;
-
-    let digits = input.value.replace(/\D/g, "");
-
-    if (digits.length > 4) digits = digits.slice(0, 4);
-
-    let formatted = "";
-    if (digits.length <= 2) {
-        formatted = digits;
-    } else {
-        formatted = digits.slice(0, 2) + ":" + digits.slice(2);
-    }
-
-    input.value = formatted;
-    customTime.value = formatted;
-}
-
-const isDateValid = computed(() => {
-    const [day, month, year] = customDate.value.split(":").map(Number);
-    if (!day || !month || !year) return false;
-    const date = new Date(year, month - 1, day);
-    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
-});
 
 const selectedTimeOption = ref<number | "custom">(5);
 
-const customDate = ref(""); 
+const customDate = ref("");
 const customTime = ref("");
 
 
@@ -197,7 +164,7 @@ watch(_course, (val) => {
 
     course.value = structuredClone(val);
     originalCourse.value = structuredClone(val);
-    
+
     if (val.category?.uuid) editedCategoryUuid.value = val.category?.uuid;
     editedTagsUuid.value = val.tags?.map(t => t.uuid) ?? [];
 }, { immediate: true });
@@ -274,31 +241,26 @@ const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
 
 watch(editedStatus, (newValue) => {
-    if (newValue === 1) { 
+    if (newValue === 1) {
         planningModal.value = "schedulePublication";
     }
 });
 
 watch(selectedTimeOption, (val) => {
     if (val === "custom") {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() + 5);
+        const now = new Date()
+        now.setMinutes(now.getMinutes() + 5)
+        now.setSeconds(0)
 
-        customDate.value =
-            String(now.getDate()).padStart(2, "0") + "." +
-            String(now.getMonth() + 1).padStart(2, "0") + "." +
-            now.getFullYear();
-
-        customTime.value =
-            String(now.getHours()).padStart(2, "0") + ":" +
-            String(now.getMinutes()).padStart(2, "0");
+        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        customDateTime.value = local.toISOString().slice(0, 16)
     }
-});
+})
 
 function confirmPublicationSchedule() {
     if (!finalDateTime.value || !course.value) return;
 
-    
+
 
     planningModal.value = null;
 }
@@ -313,7 +275,7 @@ const formattedPublishTime = computed(() =>
 );
 watch(enabledModal, (val) => {
     if (val === null) return;
-    
+
     updateError.value = null;
     deleteError.value = null;
 });
@@ -1650,19 +1612,14 @@ watch(
 
                 <div v-if="selectedTimeOption === 'custom'" :class="$style.customDateWrapper">
                     <Input
-                        v-model="customDate"
-                        placeholder="DD.MM.RRRR"
-                        @input="formatDate"
-                        maxlength="10"
-                    />
-                    <Input
-                        v-model="customTime"
-                        placeholder="HH:MM"
-                        @input="formatTime"
-                        maxlength="5"
-                    />
-                    <p v-if="selectedTimeOption === 'custom' && !isDateValid" :style="{ color: 'var(--color-error)'}">
-                        Neplatné datum!
+                        type="datetime-local"
+                        v-model="customDateTime"
+                        :maxDate="maxCustomDatetime"
+                        :minDate="minCustomDatetime"
+                    >
+                    </Input>
+                    <p>
+                        {{ customDateTime }}
                     </p>
                 </div>
 
