@@ -8,6 +8,7 @@ import { NuxtLink } from "#components";
 import Avatar from "~/components/Avatar.vue";
 import {statusToText} from "#shared/utils/statusMapper";
 import StatusBadge from "~/components/StatusBadge.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 
 const props = defineProps<{
     course: Course,
@@ -100,6 +101,17 @@ const resetBgImage = async () => {
         isUploading.value = false;
     }
 }
+
+const isContextMenuOpen = ref(false);
+const menuX = ref(0)
+const menuY = ref(0)
+
+function openContextMenu(e: MouseEvent) {
+    e.preventDefault()
+    menuX.value = e.clientX
+    menuY.value = e.clientY
+    isContextMenuOpen.value = true;
+}
 </script>
 
 <template>
@@ -120,15 +132,28 @@ const resetBgImage = async () => {
                     :class="$style.bgButton"
                 >
                     <span
-                        @click="editBgImage"
-                        :class="[$style.edit, isUploading && $style.disabled]"
-                        title="Změnit obrázek kurzu"
+                        @click="openContextMenu"
+                        :class="[$style.contextMenuButton]"
                     ></span>
-                    <span
-                        @click="resetBgImage"
-                        :class="[$style.reset, isUploading && $style.disabled]"
-                        title="Obnovit výchozí obrázek kurzu"
-                    ></span>
+                    <ContextMenu :items="[
+                        { 
+                            text: 'Změnit obrázek', 
+                            onClick: editBgImage, 
+                            disabled: isUploading,
+                            iconPath: '/icons/imageEdit.svg'
+                        },
+                        { 
+                            text: 'Obnovit výchozí obrázek', 
+                            onClick: resetBgImage, 
+                            disabled: isUploading,
+                            iconPath: '/icons/trash.svg'
+                        }
+                    ]"
+                                 @close="isContextMenuOpen = false"
+                                 :visible="isContextMenuOpen"
+                                 :x="menuX"
+                                 :y="menuY"
+                    />
                 </div>
             </div>
             <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
@@ -316,6 +341,38 @@ const resetBgImage = async () => {
                 mask-position: center;
                 mask-repeat: no-repeat;
                 mask-image: url("/icons/trash.svg");
+            }
+        }
+        
+        .contextMenuButton {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition-duration: 0.3s;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+            @extend .liquid-glass;
+
+            &::before {
+                content: '';
+                display: block;
+                width: 20px;
+                height: 20px;
+                background-color: black;
+                mask-size: contain;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                mask-image: url("/icons/ellipsis.svg");
+            }
+            
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.7);
+                transition-duration: 0.3s;
             }
         }
     }
