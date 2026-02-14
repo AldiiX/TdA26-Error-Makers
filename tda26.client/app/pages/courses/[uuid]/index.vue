@@ -2,13 +2,7 @@
 import {
     type Account,
     type Course,
-    type gRecaptcha,
-    type Material,
-    type Quiz,
-    type FeedPost,
-    type FeedPostView,
-    type FeedPurposeType,
-    type CourseCategory
+    type CourseCategory, type Quiz
 } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
@@ -16,22 +10,29 @@ import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
-import { ref, computed } from "vue";
-import QuizItem from "~/components/pagespecific/QuizItem.vue";
-import {ClientOnly, NuxtLink} from "#components";
+import { ref } from "vue";
+import QuizItem from "~/components/courses/[uuid]/QuizItem.vue";
+import { ClientOnly, NuxtLink, Head, Title } from "#components";
 import NumberExponential from "~/components/NumberExponential.vue";
 import Avatar from "~/components/Avatar.vue";
 import Input from "~/components/Input.vue";
-import { push } from "notivue";
 import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 import LoginForm from "~/components/LoginForm.vue";
 import RegisterForm from "~/components/RegisterForm.vue";
-import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
-import { type DbStatus, statusToText } from "#shared/utils/statusMapper";
+import { statusToText } from "#shared/utils/statusMapper";
 
-declare const grecaptcha: gRecaptcha;
+import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
+import { useCourseEdit } from "~/composables/courses/[uuid]/useCourseEdit";
+import { useCourseMaterials } from "~/composables/courses/[uuid]/useCourseMaterials";
+import { useCourseQuizzes } from "~/composables/courses/[uuid]/useCourseQuizzes";
+import { useCourseFeed } from "~/composables/courses/[uuid]/useCourseFeed";
+import { useCourseRating } from "~/composables/courses/[uuid]/useCourseRating";
+import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
+import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
+import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
+import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -53,12 +54,15 @@ definePageMeta({
     ]
 });
 
-const loggedAccount = useState<Account | null>('loggedAccount');
+const loggedAccount = useState<Account | null>("loggedAccount");
 const route = useRoute();
 const uuid = route.params.uuid as string;
-const isEditMode = route.query.edit === 'true';
+const isEditMode = route.query.edit === "true";
 
 const isActionInProgress = ref(false);
+
+// modaly + sdilene errory
+const {enabledModal, authTab, updateError, deleteError, feedPostError} = useCourseDialogs();
 
 // server small fetch
 const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
@@ -69,18 +73,17 @@ const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`
 
 if (courseSmallError.value || !_courseSmall.value) {
     console.error("Error loading small course:", courseSmallError.value);
-    await navigateTo('/courses');
+    await navigateTo("/courses");
 }
 
 const courseSmall = ref<Course>(_courseSmall.value!);
 
 // pokud je edit mode, musi byt prihlasen uzivatel a vlastnik kurzu
 if (isEditMode) {
-    if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value.account?.uuid)) {
+    if (loggedAccount.value?.type !== "admin" && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value.account?.uuid)) {
         await navigateTo(`/courses/${uuid}`);
     }
 }
-
 
 // client full fetch
 const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
@@ -95,1051 +98,62 @@ if (courseError.value) {
 
 const course = ref<Course | null>(_course.value ?? null);
 const originalCourse = ref<Course | null>(null);
-const statusOptions: DbStatus[] = [0, 1, 2, 3, 4];
-const editedStatus = ref<DbStatus>(courseSmall.value.status);
-const displayedStatus = computed<DbStatus>(() => course.value?.status ?? courseSmall.value.status);
-const editedStatusModel = computed<string>({
-    get: () => String(editedStatus.value),
-    set: (value) => {
-        const parsed = Number(value);
-        if (Number.isNaN(parsed)) return;
-        editedStatus.value = parsed as DbStatus;
-    }
-});
 
-watch(_course, (val) => {
-    if (!val) return;
+// categories jsou server-renderovane, aby select mel data hned
+const { data: categories } = await useFetch<CourseCategory[]>(
+    getBaseUrl() + "/api/v2/course-categories",
+    { server: true }
+);
 
-    course.value = structuredClone(val);
-    originalCourse.value = structuredClone(val);
-    
-    if (val.category?.uuid) editedCategoryUuid.value = val.category?.uuid;
-    editedTagsUuid.value = val.tags?.map(t => t.uuid) ?? [];
-}, { immediate: true });
+// view event (recaptcha)
+useCourseViewEvent(uuid);
 
-const normalizeTags = (tags?: string[]) =>
-    [...(tags ?? [])].sort();
+// edit stav + ulozeni
+const {statusOptions, editedStatus, editedStatusModel, displayedStatus, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
 
-const isDirty = computed(() => {
-    if (!course.value || !originalCourse.value) return false;
+// upozorneni pri zavirani tab
+useBeforeUnloadUnsavedChanges(isDirty);
 
-    const originalTags = normalizeTags(
-        originalCourse.value.tags?.map(t => t.uuid)
-    );
+// rating
+const {ratingLoading, isThisCourseLikedDesign, isThisCourseDislikedDesign, optimisticLikeCount, addRating,} = useCourseRating({uuid, loggedAccount, courseSmall, course, enabledModal,});
 
-    const editedTags = normalizeTags(editedTagsUuid.value);
-
-    return (
-        course.value.name !== originalCourse.value.name ||
-        course.value.description !== originalCourse.value.description ||
-        editedStatus.value !== originalCourse.value.status ||
-        editedCategoryUuid.value !== originalCourse.value.category?.uuid ||
-        JSON.stringify(editedTags) !== JSON.stringify(originalTags)
-    );
-});
-
-const ratingLoading = ref<boolean>(false);
-const menuItems = ['Materiály', "Kvízy", 'Aktivita'];
+// menu
+const menuItems = ["Materiály", "Kvízy", "Aktivita"];
 const selectedItem = ref(menuItems[0]);
 
 const selectItem = (item: string) => {
     selectedItem.value = item;
 };
 
-// datetime to small 
-const getHostname = (url?: string) => {
-    try {
-        return url ? new URL(url).hostname : ''
-    } catch {
-        return ''
-    }
-}
+// materiály
+const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
 
-// frontendove poslani view eventu
-onMounted(async () => {
-    // Wait for reCAPTCHA to be ready before executing
-    if (typeof grecaptcha === 'undefined') {
-        console.warn('reCAPTCHA not loaded, skipping view event');
-        return;
-    }
+// kvízy
+const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError });
 
-    grecaptcha.ready(async () => {
-        const captchaToken = await grecaptcha.execute(
-            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
-            { action: "submit" }
-        );
+// feed
+const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
 
-        await fetch(`/api/v2/courses/${uuid}/view`, {
-            method: 'POST',
-            body: JSON.stringify({ token: captchaToken }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-    });
-})
+// delete course
+const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
-
-const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | "deleteCourse" | null>(null);
-let selectedMaterial = ref<Material | null>(null);
-let selectedQuiz = ref<Quiz | null>(null);
-const authTab = ref<"login" | "register">("login");
-
-const updateError = ref<string | null>(null);
-const deleteError = ref<string | null>(null);
-
-watch(enabledModal, (val) => {
-    if (val === null) return;
-    
-    updateError.value = null;
-    deleteError.value = null;
-});
-
-const editingMaterial = ref<any>(null);
-
-const isThisCourseLiked = computed(() => {
-    if (!loggedAccount.value || !courseSmall.value) return false;
-    return loggedAccount.value.likes.some(l => l.course?.uuid === courseSmall.value!.uuid);
-});
-
-const isThisCourseDisliked = computed(() => {
-    if (!loggedAccount.value || !courseSmall.value) return false;
-    return loggedAccount.value.dislikes.some(l => l.course?.uuid === courseSmall.value!.uuid);
-});
-
-const isThisCourseLikedDesign = ref<boolean>(isThisCourseLiked.value);
-const isThisCourseDislikedDesign = ref<boolean>(isThisCourseDisliked.value);
-const optimisticLikeCount = ref<number>(courseSmall.value?.likeCount ?? 0);
-
-// Keep optimistic count in sync with fetched data
-watch(() => courseSmall.value?.likeCount, (newCount) => {
-    if (newCount !== undefined) {
-        optimisticLikeCount.value = newCount;
-    }
-}, { immediate: true });
-
-function mapFeedPurpose(
-    purpose?: FeedPost["purpose"],
-    type?: FeedPost["type"]
-): {
-    label: string;
-    type: FeedPurposeType;
-    icon: string;
-    color: string;
-    background: string;
-} {
-
-    // manuální oznámení
-    if (type === "manual") {
-        return {
-            label: "Oznámení",
-            type: "announcement",
-            icon: "/icons/megaphone.svg",
-            color: "--accent-color-secondary-theme",
-            background: "--accent-color-secondary-theme",
-        };
-    }
-
-    switch (purpose) {
-
-        // ===== MATERIAL =====
-        case "createMaterial":
-            return {
-                label: "Přidán materiál",
-                type: "material",
-                icon: "/icons/addFile.svg",
-                color: "--accent-color-primary",
-                background: "--accent-color-primary",
-            };
-
-        case "updateMaterial":
-            return {
-                label: "Upraven materiál",
-                type: "material",
-                icon: "/icons/editFile.svg",
-                color: "--accent-color-primary",
-                background: "--accent-color-primary",
-            };
-
-        case "deleteMaterial":
-            return {
-                label: "Smazán materiál",
-                type: "material",
-                icon: "/icons/deleteFile.svg",
-                color: "--color-error",
-                background: "--color-error",
-            };
-
-        // ===== QUIZ =====
-        case "createQuiz":
-            return {
-                label: "Přidán kvíz",
-                type: "quiz",
-                icon: "/icons/addQuiz.svg",
-                color: "--accent-color-primary",
-                background: "--accent-color-primary",
-            };
-
-        case "updateQuiz":
-            return {
-                label: "Upraven kvíz",
-                type: "quiz",
-                icon: "/icons/editQuiz.svg",
-                color: "--accent-color-primary",
-                background: "--accent-color-primary",
-            };
-
-        case "deleteQuiz":
-            return {
-                label: "Smazán kvíz",
-                type: "quiz",
-                icon: "/icons/deleteQuiz.svg",
-                color: "--color-error",
-                background: "--color-error",
-            };
-
-        // ===== fallback =====
-        default:
-            return {
-                label: "Aktivita",
-                type: "announcement",
-                icon: "/icons/activity.svg",
-                color: "--accent-color-secondary-theme",
-                background: "--accent-color-secondary-theme",
-            };
-    }
-}
-
-const openCreateMaterialModal = () => {
-    editingMaterial.value = {
-        name: "",
-        description: "",
-        type: "file",
-        file: null,
-        url: ""
-    };
-    enabledModal.value = "createMaterial";
-};
-
-const openUpdateMaterialModal = (material: Material) => {
-    selectedMaterial.value = material;
-    editingMaterial.value = JSON.parse(JSON.stringify(material)); // deep clone
-    enabledModal.value = "updateMaterial";
-};
-
-const openDeleteMaterialModal = (material: Material) => {
-    selectedMaterial.value = material;
-    enabledModal.value = 'deleteMaterial';
-};
-
-const handleMaterialUpdate = async () => {
-    if (!course.value || !selectedMaterial.value || !editingMaterial.value) return;
-
-    const material = selectedMaterial.value;
-    const edited = editingMaterial.value;
-    
-    isActionInProgress.value = true;
-
-    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${material.uuid}`;
-
-    if (edited.name.trim().length === 0) {
-        updateError.value = "Název materiálu je povinný.";
-        return;
-    }
-
-    try {
-        let updatedMaterial;
-
-        if (material.type === 'url') {
-            try {
-                edited.url = formatUrl(edited.url);
-            } catch (error) {
-                updateError.value = "Zadaná URL adresa není platná.";
-                return;
-            }
-            
-            // JSON update
-            updatedMaterial = await $fetch<Material>(url, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: {
-                    name: edited.name,
-                    description: edited.description,
-                    url: edited.url,
-                }
-            });
-        } else {
-            // FILE MATERIAL UPDATE (multipart/form-data)
-            const form = new FormData();
-            form.append("Name", edited.name ?? "");
-            form.append("Description", edited.description ?? "");
-
-            // if a NEW FILE was selected
-            if (edited.file instanceof File) {
-                form.append("File", edited.file);
-            }
-
-            updatedMaterial = await $fetch<Material>(url, {
-                method: "PUT",
-                body: form
-            });
-        }
-
-        // update local state
-        course.value.materials = course.value.materials!.map(m =>
-            m.uuid === updatedMaterial.uuid ? updatedMaterial : m
-        );
-
-        enabledModal.value = null;
-
-    } catch (err) {
-        console.error("Update failed:", err);
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const handleMaterialDelete = async () => {
-    if (!course.value || !course.value.materials) return;
-    
-    isActionInProgress.value = true;
-
-    await $fetch<void>(getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
-        method: 'DELETE'
-    }).then(() => {
-        // remove from local state
-        course.value!.materials = course.value!.materials!.filter(m => m.uuid !== selectedMaterial.value?.uuid);
-        enabledModal.value = null;
-        deleteError.value = null;
-    }).catch((err) => {
-        console.error("Error deleting material:", err);
-        deleteError.value = "Nepodařilo se smazat materiál. Zkuste to prosím znovu.";
-    }).finally(() => {
-        isActionInProgress.value = false;
-    });
-};
-
-const handleMaterialCreate = async () => {
-    if (!course.value || !editingMaterial.value) return;
-
-    const edited = editingMaterial.value;
-    
-    isActionInProgress.value = true;
-
-    const url = getBaseUrl() + `/api/v2/courses/${course.value.uuid}/materials`;
-
-    if (edited.name.trim().length === 0) {
-        updateError.value = "Název materiálu je povinný.";
-        return;
-    }
-
-    try {
-        let createdMaterial;
-
-        if (edited.type === "url") {
-            try {
-                edited.url = formatUrl(edited.url);
-            } catch (error) {
-                updateError.value = "Zadaná URL adresa není platná.";
-                return;
-            }
-            
-            // JSON create
-            createdMaterial = await $fetch<Material>(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: {
-                    type: "url",
-                    name: edited.name,
-                    description: edited.description,
-                    url: edited.url,
-                }
-            });
-        } else {
-            // FILE MATERIAL CREATE (multipart/form-data)
-            const form = new FormData();
-            form.append("Type", "file");
-            form.append("Name", edited.name ?? "");
-            form.append("Description", edited.description ?? "");
-            form.append("File", edited.file);
-
-            if (edited.file instanceof File) {
-                form.append("File", edited.file);
-            } else {
-                throw new Error("No file selected for file material.");
-            }
-
-            createdMaterial = await $fetch<Material>(url, {
-                method: "POST",
-                body: form
-            });
-        }
-
-        // add to local state
-        course.value.materials = course.value.materials ?? [];
-        course.value.materials.unshift(createdMaterial);
-
-        enabledModal.value = null;
-
-    } catch (err) {
-        console.error("Creation failed:", err);
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-function formatUrl(url: string): string {
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-    }
-    
-    const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi);
-    
-    if (!urlRegex.test(url)) {
-        throw new Error("Invalid URL format");
-    }
-    
-    const parsedUrl = new URL(url);
-    
-    return parsedUrl.href;
-}
-
-const ownsCourse = computed(() => {
-    if (!loggedAccount.value || !courseSmall.value) return false;
-    if(loggedAccount.value.type === 'admin') return true;
-    return loggedAccount.value?.uuid === courseSmall.value?.account?.uuid;
-});
-
-async function addRating(rating: "like" | "dislike" | null) {
-    // Check if user is logged in, if not show login modal
-    if (!loggedAccount.value) {
-        enabledModal.value = "loginRequired";
-        return;
-    }
-    
-    if (!courseSmall.value || ratingLoading.value) return;
-
-    const baseUrl = getBaseUrl();
-    const uuid = courseSmall.value.uuid;
-    const url = baseUrl + `/api/v2/courses/${uuid}/rating`;
-
-    // Store previous state for rollback
-    const previousLikedDesign = isThisCourseLikedDesign.value;
-    const previousDislikedDesign = isThisCourseDislikedDesign.value;
-    const previousLikeCount = optimisticLikeCount.value;
-
-    switch (rating) {
-        case "like": {
-            if (isThisCourseLikedDesign.value) {
-                // Unliking: remove the like
-                isThisCourseLikedDesign.value = false;
-                optimisticLikeCount.value--;
-                rating = null;
-            } else {
-                // Liking (either from no rating or from dislike)
-                isThisCourseLikedDesign.value = true;
-                isThisCourseDislikedDesign.value = false;
-                optimisticLikeCount.value++;
-            }
-        } break;
-
-        case "dislike": {
-            if (isThisCourseDislikedDesign.value) {
-                // Removing dislike: no change to like count
-                isThisCourseDislikedDesign.value = false;
-                rating = null;
-            } else {
-                // Disliking (either from no rating or from like)
-                // If transitioning from like to dislike, remove the like
-                if (isThisCourseLikedDesign.value) {
-                    optimisticLikeCount.value--;
-                }
-                isThisCourseDislikedDesign.value = true;
-                isThisCourseLikedDesign.value = false;
-            }
-        } break;
-    }
-
-    try {
-        ratingLoading.value = true;
-
-        await $fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: { type: rating }
-        });
-
-        // spusteni vsech refreshu paralelne
-        const userPromise = $fetch<Account>(baseUrl + `/api/v2/me`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-        });
-
-        const courseSmallPromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            query: { full: false },
-        });
-
-        const coursePromise = $fetch<Course>(baseUrl + `/api/v2/courses/${uuid}`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            query: { full: true },
-        });
-
-        const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
-            userPromise,
-            courseSmallPromise,
-            coursePromise,
-        ]);
-
-        // hromadne prirazeni dat az po dokonceni vsech requestu
-        loggedAccount.value = updatedUser ?? null;
-        courseSmall.value = updatedCourseSmall;
-        course.value = updatedCourse;
-        // optimisticLikeCount is automatically synced via watcher
-    }
-
-    catch(err) {
-        console.error("Error updating rating:", err);
-        // Rollback optimistic updates on error
-        isThisCourseLikedDesign.value = previousLikedDesign;
-        isThisCourseDislikedDesign.value = previousDislikedDesign;
-        optimisticLikeCount.value = previousLikeCount;
-    }
-
-    finally {
-        ratingLoading.value = false;
-    }
-}
-
-const handleQuizDelete = async () => {
-    if (!course.value || !course.value.quizzes) return;
-    
-    isActionInProgress.value = true;
-
-    await $fetch<void>(getBaseUrl() + `/api/v1/courses/${course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
-        method: 'DELETE'
-    }).then(() => {
-        course.value!.quizzes = course.value!.quizzes!.filter(q => q.uuid !== selectedQuiz.value?.uuid);
-        push.success({
-            title: "Kvíz smazán",
-            message: "Kvíz byl úspěšně smazán.",
-            duration: 4000
-        });
-        enabledModal.value = null;
-        deleteError.value = null;
-    }).catch((err) => {
-        console.error("Error deleting quiz:", err);
-        deleteError.value = "Nepodařilo se smazat kvíz. Zkuste to prosím znovu.";
-    }).finally(() => {
-        isActionInProgress.value = false;
-    });
-};
-
-const handleQuizCreate = async (e: Event) => {
-    if (!course.value) return;
-    
-    isActionInProgress.value = true;
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const quizName = formData.get('createQuizName')?.toString().trim();
-
-    if (!quizName) {
-        updateError.value = "Název kvízu je povinný.";
-        return;
-    }
-
-    try {
-        const newQuiz = await $fetch<Quiz>(
-            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/quizzes`,
-            {
-                method: 'POST',
-                body: { title: quizName }
-            }
-        );
-
-        course.value.quizzes = course.value.quizzes ?? [];
-        newQuiz.createdAt = new Date().toISOString();
-        course.value.quizzes.unshift(newQuiz);
-
-        push.success({
-            title: "Kvíz vytvořen",
-            message: "Kvíz byl úspěšně vytvořen.",
-            duration: 4000
-        });
-
-        enabledModal.value = null;
-        updateError.value = null;
-        form.reset();
-    } catch (err) {
-        console.error("Creation failed:", err);
-        updateError.value = "Nepodařilo se vytvořit kvíz. Zkuste to prosím znovu.";
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const updateCourseTitle = (newTitle: string) => {
-    if (!isEditMode) return;
-    
-    if (course.value) {
-        course.value.name = newTitle;
-    }
-};
-
-const updateCourseDescription = (newDescription: string) => {
-    if (!isEditMode) return;
-    
-    if (course.value) {
-        course.value.description = newDescription;
-    }
-};
-
-const clearCourseCaches = () => {
-    // Clear individual course caches
-    const courseSmallCache = useState(`course-${uuid}-small`, () => null);
-    const courseFullCache = useState(`course-${uuid}-full`, () => null);
-    courseSmallCache.value = null;
-    courseFullCache.value = null;
-    
-    // Clear global courses list cache
-    const allCoursesCache = useState('allCourses', () => null);
-    allCoursesCache.value = null;
-    
-    // Reset fetch flags to allow refetch
-    const hasFetchedAllCourses = useState('hasFetchedAllCourses', () => false);
-    hasFetchedAllCourses.value = false;
-    
-    // Clear my courses cache (dashboard)
-    const myCoursesCache = useState('myCoursesCache', () => null);
-    myCoursesCache.value = null;
-    
-    // Reset dashboard fetch flag
-    const hasFetchedAllMyCourses = useState('hasFetchedAllMyCourses', () => false);
-    hasFetchedAllMyCourses.value = false;
-};
-
-const saveCourseChanges = async () => {
-    if (!course.value) return;
-
-    isActionInProgress.value = true;
-
-    try {
-        const updatedCourse = await $fetch<Course>(
-            getBaseUrl() + `/api/v2/courses/${course.value.uuid}`,
-            {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: {
-                    name: course.value.name,
-                    description: course.value.description,
-                    status: editedStatus.value,
-                    categoryUuid: editedCategoryUuid.value,
-                    tagsUuid: editedTagsUuid.value
-                }
-            }
-        );
-
-        course.value = structuredClone(updatedCourse);
-        originalCourse.value = structuredClone(updatedCourse);
-
-        editedCategoryUuid.value = updatedCourse.category.uuid;
-        editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
-        editedStatus.value = updatedCourse.status;
-
-        // Clear course caches to force refetch on next navigation
-        clearCourseCaches();
-
-        push.success({
-            title: "Změny uloženy",
-            message: "Změny kurzu byly úspěšně uloženy.",
-            duration: 4000
-        });
-
-    } catch (err) {
-        console.error(err);
-        push.error({
-            title: "Chyba při ukládání",
-            message: "Nepodařilo se uložit změny kurzu.",
-            duration: 4000
-        });
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-
-const editBackClick = () => {
+function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
-};
+}
 
-const editClick = () => {
+async function saveCourseAndExit() {
+    await saveCourseChanges();
+    editBackClick();
+}
+
+function editClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}?edit=true`;
-};
+}
 
-const openDeleteCourseModal = () => {
-    deleteError.value = null; // Reset any previous error
-    enabledModal.value = 'deleteCourse';
-};
-
-const handleCourseDelete = async () => {
-    if (!courseSmall.value) return;
-    
-    isActionInProgress.value = true;
-    deleteError.value = null;
-
-    try {
-        await $fetch<void>(getBaseUrl() + `/api/v2/courses/${courseSmall.value.uuid}`, {
-            method: 'DELETE'
-        });
-
-        // Clear course caches to force refetch on next navigation
-        clearCourseCaches();
-
-        push.success({
-            title: "Kurz smazán",
-            message: "Kurz byl úspěšně smazán.",
-            duration: 4000
-        });
-
-        // Přesměrování na seznam kurzů
-        await navigateTo('/courses');
-    } catch (err) {
-        console.error("Error deleting course:", err);
-        deleteError.value = "Nepodařilo se smazat kurz. Zkuste to prosím znovu.";
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const handleAuthSuccess = (account: Account) => {
-    // Close the modal
+function handleAuthSuccess() {
     enabledModal.value = null;
-    
-    // Reload the page to refresh course data with new user context
     window.location.reload();
-};
-
-onMounted(() => {
-    // Warn user about unsaved changes
-    if (!import.meta.dev) {
-        window.addEventListener("beforeunload", (e) => {
-            if (!isDirty.value) return;
-            
-            e.preventDefault();
-            e.returnValue = "";
-        });
-    }
-});
-
-type FeedFilter = "all" | "material" | "quiz";
-
-const selectedFeedFilter = ref<FeedFilter>("all");
-
-const openCreateFeedPost = () => {
-    editingFeedPost.value.message = "";
-    editingFeedPost.value.type = "manual";
-    feedPostError.value = null;
-    enabledModal.value = "createFeedPost";
-};
-
-const feedPosts = computed<FeedPostView[]>(() => {
-    if (!feedData.value) return [];
-
-    return feedData.value
-        .filter(post => {
-            switch (selectedFeedFilter.value) {
-                case "all":
-                    return true;
-                
-                case "material":
-                    return post.purpose === "createMaterial" || post.purpose === "updateMaterial" || post.purpose === "deleteMaterial";
-                    
-                case "quiz":
-                    return post.purpose === "createQuiz" || post.purpose === "updateQuiz" || post.purpose === "deleteQuiz";
-
-                default:
-                    return true;
-            }
-        })
-        .map(post => {
-            const mapped = mapFeedPurpose(post.purpose, post.type);
-
-            return {
-                ...post,
-                purposeLabel: mapped.label,
-                purposeType: mapped.type,
-                icon: mapped.icon,
-                color: mapped.color,
-                background: mapped.background ?? mapped.color
-            };
-        });
-});
-
-const handleFeedPostCreate = async () => {
-    if (!course.value) return;
-
-    if (!editingFeedPost.value.message.trim()) {
-        feedPostError.value = "Text příspěvku nesmí být prázdný.";
-        return;
-    }
-
-    isActionInProgress.value = true;
-    feedPostError.value = null;
-
-    try {
-        const created = await $fetch<FeedPost>(
-            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed`,
-            {
-                method: "POST",
-                body: {
-                    message: editingFeedPost.value.message,
-                    type: editingFeedPost.value.type
-                }
-            }
-        );
-
-        // okamžitě přidáme do feedu
-        /*feedData.value = feedData.value
-            ? [created, ...feedData.value]
-            : [created];*/
-
-        push.success({
-            title: "Příspěvek přidán",
-            message: "Příspěvek byl úspěšně publikován.",
-            duration: 4000
-        });
-
-        enabledModal.value = null;
-        editingFeedPost.value.message = "";
-        editingFeedPost.value.type = "manual";
-
-    } catch (err) {
-        console.error(err);
-        feedPostError.value = "Nepodařilo se vytvořit příspěvek.";
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const editingFeedPost = ref<{
-    message: string;
-    type: FeedPost["type"];
-}>({
-    message: "",
-    type: "manual"
-});
-
-const openUpdateFeedPost = (post: FeedPost) => {
-    selectedFeedPost.value = post;
-
-    editingFeedPost.value.message = post.message;
-    editingFeedPost.value.type = post.type;
-
-    feedPostError.value = null;
-    enabledModal.value = "updateFeedPost";
-};
-
-const openDeleteFeedPost = (post: FeedPost) => {
-    selectedFeedPost.value = post;
-    feedPostError.value = null;
-    enabledModal.value = "deleteFeedPost";
-};
-
-
-const handleFeedPostUpdate = async () => {
-    if (!course.value || !selectedFeedPost.value) return;
-
-    if (!editingFeedPost.value.message.trim()) {
-        feedPostError.value = "Text příspěvku nesmí být prázdný.";
-        return;
-    }
-
-    isActionInProgress.value = true;
-    feedPostError.value = null;
-
-    try {
-        const updated = await $fetch<FeedPost>(
-            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
-            {
-                method: "PUT",
-                body: {
-                    message: editingFeedPost.value.message,
-                    type: editingFeedPost.value.type
-                }
-            }
-        );
-
-        // update v local feedu
-        feedData.value = feedData.value?.map(fp =>
-            fp.uuid === updated.uuid ? updated : fp
-        ) ?? [];
-
-        push.success({
-            title: "Příspěvek upraven",
-            message: "Změny byly uloženy.",
-            duration: 4000
-        });
-
-        enabledModal.value = null;
-        selectedFeedPost.value = null;
-
-        editingFeedPost.value.message = "";
-        editingFeedPost.value.type = "manual";
-
-    } catch (err) {
-        console.error(err);
-        feedPostError.value = "Nepodařilo se upravit příspěvek.";
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const handleFeedPostDelete = async () => {
-    if (!course.value || !selectedFeedPost.value) return;
-
-    isActionInProgress.value = true;
-    feedPostError.value = null;
-
-    try {
-        await $fetch(
-            `${getBaseUrl()}/api/v1/courses/${course.value.uuid}/feed/${selectedFeedPost.value.uuid}`,
-            { method: "DELETE" }
-        );
-
-        feedData.value = feedData.value?.filter(
-            fp => fp.uuid !== selectedFeedPost.value?.uuid
-        ) ?? [];
-
-        push.success({
-            title: "Příspěvek smazán",
-            message: "Příspěvek byl odstraněn.",
-            duration: 4000
-        });
-
-        enabledModal.value = null;
-        selectedFeedPost.value = null;
-
-    } catch (err) {
-        console.error(err);
-        feedPostError.value = "Nepodařilo se smazat příspěvek.";
-    } finally {
-        isActionInProgress.value = false;
-    }
-};
-
-const selectedFeedPost = ref<FeedPost | null>(null);
-
-const feedPostError = ref<string | null>(null);
-
-const { data: feedData, pending: feedPending, error: feedError } = useFetch<FeedPost[]>(() => getBaseUrl() + `/api/v1/courses/${uuid}/feed`, {
-    server: false,
-    key: `course-${uuid}-feed`,
-    lazy: true,
-    method: "GET",
-});
-
-function onNewFeedPost(event: MessageEvent) {
-    try {
-        const post: FeedPost = JSON.parse(event.data);
-
-        // ochrana proti duplicitám (refresh + SSE)
-        if (feedData.value?.some(p => p.uuid === post.uuid)) {
-            return;
-        }
-
-        feedData.value = feedData.value
-            ? [post, ...feedData.value]
-            : [post];
-    } catch (e) {
-        console.error("Failed to parse feed SSE event", e);
-    }
 }
-
-function onUpdateFeedPost(event: MessageEvent) {
-    try {
-        const post: FeedPost = JSON.parse(event.data);
-
-        feedData.value = feedData.value?.map(fp =>
-            fp.uuid === post.uuid ? post : fp
-        ) ?? [];
-    } catch (e) {
-        console.error("Failed to parse update_post SSE event", e);
-    }
-}
-
-function onDeleteFeedPost(event: MessageEvent) {
-    try {
-        const data: { uuid: string } = JSON.parse(event.data);
-
-        feedData.value = feedData.value?.filter(
-            fp => fp.uuid !== data.uuid
-        ) ?? [];
-    } catch (e) {
-        console.error("Failed to parse delete_post SSE event", e);
-    }
-}
-
-
-let feedEventSource: EventSource | null = null;
-
-onMounted(() => {
-    if (!import.meta.client || !uuid) return;
-
-    const url = `${getBaseUrl()}/api/v1/courses/${uuid}/feed/stream`;
-
-    feedEventSource = new EventSource(url, {
-        withCredentials: true
-    });
-
-    feedEventSource.addEventListener("new_post", onNewFeedPost);
-    feedEventSource.addEventListener("update_post", onUpdateFeedPost);
-    feedEventSource.addEventListener("delete_post", onDeleteFeedPost);
-
-    feedEventSource.onerror = (err) => {
-        console.error("SSE feed error", err);
-    };
-});
-
-onBeforeUnmount(() => {
-    if (feedEventSource) {
-        feedEventSource.close();
-        feedEventSource = null;
-    }
-});
-
-const { data: categories } = await useFetch<CourseCategory[]>(
-    getBaseUrl() + "/api/v2/course-categories",
-    { server: true }
-);
-
-const editedCategoryUuid = ref<string | null>(courseSmall.value.category?.uuid ?? categories.value?.[0]?.uuid ?? null);
-const editedTagsUuid = ref<string[]>([]);
-
-watch(
-    editedCategoryUuid,
-    (newVal, oldVal) => {
-        if (!oldVal) return;
-        if (newVal === oldVal) return;
-
-        editedTagsUuid.value = [];
-    }
-);
-
-watch(course, (val) => {
-    //console.log(val)
-});
-
-watch(
-    course,
-    (val) => {
-        if (!val) return;
-        editedStatus.value = val.status;
-    },
-    { immediate: true }
-);
 </script>
 
 <template>
@@ -1148,18 +162,53 @@ watch(
     </Head>
 
     <div :class="[$style.course, isEditMode && $style.editMode]">
-        <h1 
-            :class="['text-gradient', $style.title, $style.editable]"
-            :contenteditable="isEditMode"
-            @input="(e) => updateCourseTitle((e.target as HTMLElement).innerText.trim())"
-        >{{ courseSmall?.name }}</h1>
-        <div :class="$style.info">
-            <p
-                :class="[$style.editable]"
-                :contenteditable="isEditMode"
-                @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
-            >{{ courseSmall?.description }}</p>
-            <div :class="['liquid-glass', $style.brief]">
+        <div :class="$style.basic">
+            <div :class="$style.left">
+                <div :class="$style.categoryAndTags">
+                    <Input
+                        v-if="isEditMode && course"
+                        :key="course?.tags?.length"
+                        type="select"
+                        v-model="editedCategoryUuid"
+                        :class="$style.editableInput"
+                    >
+                        <option
+                            v-for="cat in categories"
+                            :key="cat.uuid"
+                            :value="cat.uuid"
+                        >
+                            {{ cat.label }}
+                        </option>
+                    </Input>
+
+                    <p v-else-if="courseSmall.category" :class="$style.category">{{ courseSmall.category.label }}</p>
+
+                    <template :class="$style.tags" v-if="isEditMode && course">
+                        <CategoryAndTagsSelection
+                            v-if="editedCategoryUuid && isEditMode"
+                            :key="editedCategoryUuid"
+                            v-model="editedTagsUuid"
+                            :category-uuid="editedCategoryUuid"
+                        />
+                    </template>
+                </div>
+
+                <h1
+                    :class="['text-gradient', $style.title, $style.editable]"
+                    :contenteditable="isEditMode"
+                    @input="(e) => updateCourseTitle((e.target as HTMLElement).innerText.trim())"
+                >{{ courseSmall?.name }}</h1>
+
+                <p
+                    :class="[$style.editable]"
+                    :contenteditable="isEditMode"
+                    @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
+                >{{ courseSmall?.description }}</p>
+            </div>
+
+            <div :class="['liquid-glass',$style.right]">
+                <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
+
                 <Input
                     v-if="isEditMode"
                     type="select"
@@ -1177,103 +226,62 @@ watch(
                         {{ statusToText(status) }}
                     </option>
                 </Input>
-                <p
-                    v-else
-                    :class="$style.status"
-                    :data-status="displayedStatus"
-                >
-                    {{ statusToText(displayedStatus) }}
-                </p>
-                <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
-                    <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
-                        <div :class="$style.wrp">
-                            <Input
-                                v-if="isEditMode"
-                                :key="course?.tags?.length"
-                                type="select"
-                                v-model="editedCategoryUuid"
-                            >
-                                <option
-                                    v-for="cat in categories"
-                                    :key="cat.uuid"
-                                    :value="cat.uuid"
-                                >
-                                    {{ cat.label }}
-                                </option>
-                            </Input>
 
-                            <p v-else-if="course?.category !== null" :class="$style.category">
-                                {{ course?.category.label }}
-                            </p>
-
-                            <ul :class="$style.tags" v-if="isEditMode || (course?.tags && course?.tags.length >= 1)">
-                                <li v-if="!isEditMode && course?.tags && course?.tags?.length >= 1" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
-                                <CategoryAndTagsSelection
-                                    v-else-if="editedCategoryUuid && isEditMode"
-                                    :key="editedCategoryUuid"
-                                    v-model="editedTagsUuid"
-                                    :category-uuid="editedCategoryUuid"
-                                />
-                            </ul>
-
-                            <div :style="{ width: '100%', height: '1px', marginTop: '12px', background: 'color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%)' }"></div>
-                        </div>
-                    </SmoothSizeWrapper>
-                </div>
+                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
-                        <p :class="$style.title">Zhlédnutí</p>
                         <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <p :class="$style.title">Zhlédnutí</p>
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Materiály</p>
                         <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <p :class="$style.title">Materiály</p>
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Kvízy</p>
                         <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
+                        <p :class="$style.title">Kvízy</p>
                     </div>
                 </div>
 
-                <div :class="$style.otherinfo">
-                    <div :class="$style.authorAndRating">
-                        <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
-                            <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
-                            <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
-                        </NuxtLink>
+                <div :class="$style.authorAndRating">
+                    <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
+                        <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                        <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
+                    </NuxtLink>
 
-                        <div :class="$style.rating">
-                            <!-- like a dislike button -->
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
-                                <div :class="$style.icon"></div>
-                                <p>{{ optimisticLikeCount }}</p>
-                            </div>
+                    <div :class="$style.rating">
+                        <!-- like a dislike button -->
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
+                            <div :class="$style.icon"></div>
+                            <p>{{ optimisticLikeCount }}</p>
+                        </div>
 
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
-                                <div :class="$style.icon" style="rotate: 180deg"></div>
-                                <p>Nelíbí se</p>
-                            </div>
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
+                            <div :class="$style.icon" style="rotate: 180deg"></div>
+                            <p>Nelíbí se</p>
                         </div>
                     </div>
-                    <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
-                        <Button 
-                            button-style="primary"
-                            accent-color="secondary"
-                            @click="editClick"
-                        >Upravit kurz</Button>
-                        <Button 
-                            button-style="secondary"
-                            accent-color="secondary"
-                            :style="{ /*'--color': 'var(--color-error)'*/ }"
-                            @click="openDeleteCourseModal"
-                        >Smazat kurz</Button>
-                    </div>
+                </div>
+
+                <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        @click="editClick"
+                    >Upravit kurz</Button>
+                    <Button
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :style="{ /*'--color': 'var(--color-error)'*/ }"
+                        @click="openDeleteCourseModal"
+                    >Smazat kurz</Button>
                 </div>
             </div>
         </div>
 
-        <div :class="$style.details">
+        <!-- moduly (kvizy, aktivita, materialy..) -->
+        <div :class="$style.modules">
             <nav>
                 <ul>
                     <li
@@ -1294,9 +302,9 @@ watch(
                             </Button>
 
                             <p v-if="coursePending">Načítání materiálů...</p>
-                            <p v-else-if="course?.materials === undefined || course.materials.length == 0">Tento kurz nemá žádné materiály.</p>
+                            <p v-else-if="course?.materials === undefined || course?.materials.length == 0">Tento kurz nemá žádné materiály.</p>
                             <ul v-else>
-                                <li v-for="material in course.materials" :key="material.uuid">
+                                <li v-for="material in course?.materials" :key="material.uuid">
                                     <MaterialItem
                                         :material="material"
                                         :course="course"
@@ -1313,9 +321,9 @@ watch(
                             </Button>
 
                             <p v-if="coursePending">Načítání kvízů...</p>
-                            <p v-else-if="course?.quizzes === undefined || course.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
+                            <p v-else-if="course?.quizzes === undefined || course?.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
                             <ul v-else>
-                                <li v-for="quiz in course.quizzes" :key="quiz.uuid">
+                                <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
                                     <QuizItem
                                         :quiz="quiz"
                                         :course="course"
@@ -1338,7 +346,7 @@ watch(
                                 </Button>
 
                                 <div :class="$style.feedPostFilter">
-<!--                                    <p :class="$style.feedFilterLabel">Filtr:</p>-->
+                                    <!--                                    <p :class="$style.feedFilterLabel">Filtr:</p>-->
                                     <!--                                <Input-->
                                     <!--                                    placeholder="Hledat v aktivitě..."-->
                                     <!--                                    :disabled="true"-->
@@ -1367,12 +375,14 @@ watch(
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <ul>
-                                <p v-if="feedPending">Načítání aktivity...</p>
-                                <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
-                                <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
-                                
+                                <li>
+                                    <p v-if="feedPending">Načítání aktivity...</p>
+                                    <p v-else-if="!feedData || feedData.length == 0">Tento kurz nemá žádnou aktivitu.</p>
+                                    <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
+                                </li>
+
                                 <li v-if="feedData" v-for=" feedPost in feedPosts" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
                                         <div
@@ -1434,18 +444,18 @@ watch(
                                                 />
                                                 <p :class="$style.authorName">{{ feedPost.author?.fullName }}</p>
                                             </div>
-                                            <div :class="$style.feedPostContent">   
+                                            <div :class="$style.feedPostContent">
                                                 <p> {{ feedPost.message }} </p>
                                             </div>
                                         </div>
                                     </div>
-                                    
-<!--                                    <FeedPostItem-->
-<!--                                        :feed-post="feedPost"-->
-<!--                                        :edit-mode="ownsCourse"-->
-<!--                                        @edit="openEditFeedPost"-->
-<!--                                        @delete="openDeleteFeedPost"-->
-<!--                                    />-->
+
+                                    <!--                                    <FeedPostItem-->
+                                    <!--                                        :feed-post="feedPost"-->
+                                    <!--                                        :edit-mode="ownsCourse"-->
+                                    <!--                                        @edit="openEditFeedPost"-->
+                                    <!--                                        @delete="openDeleteFeedPost"-->
+                                    <!--                                    />-->
                                 </li>
                             </ul>
                         </div>
@@ -1456,7 +466,7 @@ watch(
     </div>
 
 
-    <Teleport to="#teleports"> 
+    <Teleport to="#teleports">
         <!-- Edit controls -->
         <div :class="$style.editControls" v-if="isEditMode">
             <div :class="$style.top">
@@ -1481,7 +491,7 @@ watch(
                 <Button
                     button-style="secondary"
                     :disabled="!isDirty || isActionInProgress"
-                    @click="saveCourseChanges(); editBackClick()"
+                    @click="saveCourseAndExit()"
                 >
                     Uložit a ukončit úpravy
                 </Button>
@@ -1495,10 +505,10 @@ watch(
             </div>
         </div>
 
-        
-        
-        
-        
+
+
+
+
         <!-- CREATE -->
         <Modal
             :enabled="enabledModal === 'createMaterial'"
@@ -1613,7 +623,7 @@ watch(
             </div>
             <p v-if="deleteError" class="error-text">{{ deleteError }}</p>
         </ModalDestructive>
-        
+
         <!-- CREATE QUIZ -->
         <Modal
             :enabled="enabledModal === 'createQuiz'"
@@ -1623,11 +633,11 @@ watch(
             :class-name="$style.createQuizModal"
         >
             <h3>Vytvoření nového kvízu</h3>
-            <form 
+            <form
                 @submit.prevent="handleQuizCreate"
             >
                 <label for="createQuizName">Název kvízu</label>
-                <Input 
+                <Input
                     id="createQuizName"
                     name="createQuizName"
                     max="128"
@@ -1650,7 +660,7 @@ watch(
             </form>
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
-        
+
         <!-- LOGIN REQUIRED MODAL -->
         <Modal
             :enabled="enabledModal === 'loginRequired'"
@@ -1705,8 +715,8 @@ watch(
                 </div>
             </SmoothSizeWrapper>
         </Modal>
-        
-        
+
+
         <!-- CREATE FEED POST -->
         <Modal
             :enabled="enabledModal === 'createFeedPost'"
@@ -1718,11 +728,11 @@ watch(
             <form @submit.prevent="handleFeedPostCreate">
                 <label for="feedMessage" :class="$style.feedLabel">Text příspěvku *</label>
 
-<!--                <textarea-->
-<!--                    id="feedMessage"-->
-<!--                    maxlength="1000"-->
-<!--                    required-->
-<!--                />-->
+                <!--                <textarea-->
+                <!--                    id="feedMessage"-->
+                <!--                    maxlength="1000"-->
+                <!--                    required-->
+                <!--                />-->
 
                 <textarea
                     v-model="editingFeedPost.message"
@@ -1754,11 +764,11 @@ watch(
                 </div>
             </form>
 
-            <p v-if="updateError" class="error-text">
-                {{ updateError }}
+            <p v-if="feedPostError" class="error-text">
+                {{ feedPostError }}
             </p>
         </Modal>
-        
+
         <!-- UPDATE FEED POST -->
         <Modal
             :enabled="enabledModal === 'updateFeedPost'"
@@ -1792,7 +802,7 @@ watch(
 
             <p v-if="feedPostError" class="error-text">{{ feedPostError }}</p>
         </Modal>
-        
+
         <!-- DELETE FEED POST -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteFeedPost'"
@@ -1805,7 +815,7 @@ watch(
                 Opravdu chceš smazat tento příspěvek?
             </p>
         </ModalDestructive>
-        
+
         <!-- DELETE COURSE -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteCourse'"
@@ -1822,12 +832,206 @@ watch(
             </p>
             <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
         </ModalDestructive>
-        
+
     </Teleport>
 </template>
 
 <style module lang="scss">
 @use "@/assets/variables" as app;
+
+
+.basic {
+    display: flex;
+    position: relative;
+    gap: 64px;
+    align-items: start;
+
+    >.left {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+
+        >.title{
+            font-size: 72px;
+            margin: 0;
+            overflow: visible;
+            width: fit-content;
+            padding-bottom: 4px;
+        }
+
+        >p {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        >.categoryAndTags {
+            display: flex;
+            margin-bottom: -8px;
+            gap: 6px;
+
+            >.editableInput {
+                border: 2px dashed var(--text-color);
+            }
+
+            >.category {
+                font-family: "Dosis", sans-serif;
+                background: linear-gradient(340deg, var(--accent-color-primary) -40%, var(--accent-color-secondary-theme) 110%);
+                color: var(--accent-color-primary-text);
+                width: fit-content;
+                padding: 8px 16px;
+                border-radius: 24px;
+                margin: 0;
+                user-select: none;
+            }
+        }
+
+    }
+
+    >.right {
+        width: 30%;
+        max-width: 600px;
+        border-radius: 24px;
+        box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/.6),0 0 8px #0000000a;
+        margin-top: 64px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+
+        >.image {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 56%;
+            aspect-ratio: 16/9;
+            min-height: unset;
+            pointer-events: none;
+            border-radius: 0 0 0 24px;
+            mask: radial-gradient(circle at top right, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 80%);
+        }
+
+        >.fields {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            >.el {
+                display: flex;
+                align-items: end;
+                gap: 20px;
+
+                p {
+                    margin: 0;
+                }
+
+                .title {
+                    font-size: 20px;
+                    opacity: 0.5;
+                }
+
+                .item {
+                    font-size: 32px;
+                    font-weight: 600;
+                }
+            }
+        }
+
+        >.authorAndRating {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+
+            .author {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: unset;
+                text-decoration: none;
+                transition-duration: 0.3s;
+
+                &:is(.clickable) {
+                    &:hover {
+                        opacity: 0.5;
+                        transition-duration: 0.3s;
+                    }
+                }
+
+
+                .avatar {
+                    --size: 24px !important;
+                }
+
+                p {
+                    margin: 0;
+                    font-weight: 600;
+                    font-size: 16px;
+                    color: var(--text-color-secondary);
+                }
+            }
+
+            .rating {
+                display: flex;
+                gap: 12px;
+
+                .duo {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    user-select: none;
+                    padding: 8px 16px;
+                    border-radius: 999px;
+                    background-color: var(--background-color-3);
+                    transition-duration: 0.3s;
+
+                    &:is(.active) .icon {
+                        mask-image: url(/icons/thumbs_up_filled.svg);
+                    }
+
+                    &:hover {
+                        background-color: var(--background-color-primary);
+                        transition-duration: 0.3s;
+                    }
+
+                    .icon {
+                        width: 16px;
+                        aspect-ratio: 1/1;
+                        background-color: var(--text-color-primary);
+                        border-radius: 4px;
+                        mask-image: url(/icons/thumbs_up_outline.svg);
+                        mask-size: cover;
+                        mask-repeat: no-repeat;
+                        mask-position: center;
+                    }
+
+                    p {
+                        margin: 0;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: var(--text-color-secondary);
+                    }
+                }
+            }
+        }
+
+        >.courseActions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+
+            button {
+                flex: 1;
+                min-width: 140px;
+            }
+        }
+    }
+}
+
 
 .updateFeedPostModal {
     h3 {
@@ -1908,14 +1112,14 @@ watch(
         background: none;
         -webkit-text-fill-color: currentColor;
     }
-    
+
     .categoryAndTags {
         padding: 4px;
 
         .tags {
             width: 100%;
             margin: 12px 0;
-            
+
             >li {
                 cursor: pointer;
 
@@ -1935,7 +1139,7 @@ watch(
                 display: flex;
                 flex-direction: column;
                 width: 100%;
-                
+
                 span {
                     p {
                         display: flex;
@@ -1944,11 +1148,11 @@ watch(
                         width: 100%;
                     }
                 }
-                
+
                 >* {
                     width: 100%;
                 }
-                
+
                 input {
                     width: 100%;
                 }
@@ -2008,13 +1212,6 @@ watch(
     }
 }
 
-.title{
-    font-size: 72px;
-    margin: 0;
-    overflow: visible;
-    width: fit-content;
-    padding-bottom: 4px;
-}
 
 ul {
     list-style: none;
@@ -2055,7 +1252,7 @@ ul {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    
+
     .status {
         padding: 8px 18px;
         font-weight: 600;
@@ -2066,7 +1263,7 @@ ul {
         width: fit-content;
         font-size: 20px;
         margin: 0;
-        
+
         // Draft
         &[data-status="0"] {
             color: var(--status-draft-text);
@@ -2161,96 +1358,9 @@ ul {
                 display: grid;
                 gap: 16px;
 
-                .authorAndRating {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 16px;
-
-                    .author {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        color: unset;
-                        text-decoration: none;
-                        transition-duration: 0.3s;
-
-                        &:is(.clickable) {
-                            &:hover {
-                                opacity: 0.5;
-                                transition-duration: 0.3s;
-                            }
-                        }
 
 
-                        .avatar {
-                            --size: 24px !important;
-                        }
 
-                        p {
-                            margin: 0;
-                            font-weight: 600;
-                            font-size: 16px;
-                            color: var(--text-color-secondary);
-                        }
-                    }
-
-                    .rating {
-                        display: flex;
-                        gap: 12px;
-
-                        .duo {
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            cursor: pointer;
-                            user-select: none;
-                            padding: 8px 16px;
-                            border-radius: 999px;
-                            background-color: var(--background-color-3);
-                            transition-duration: 0.3s;
-
-                            &:is(.active) .icon {
-                                mask-image: url(/icons/thumbs_up_filled.svg);
-                            }
-
-                            &:hover {
-                                background-color: var(--background-color-primary);
-                                transition-duration: 0.3s;
-                            }
-
-                            .icon {
-                                width: 16px;
-                                aspect-ratio: 1/1;
-                                background-color: var(--text-color-primary);
-                                border-radius: 4px;
-                                mask-image: url(/icons/thumbs_up_outline.svg);
-                                mask-size: cover;
-                                mask-repeat: no-repeat;
-                                mask-position: center;
-                            }
-
-                            p {
-                                margin: 0;
-                                font-size: 16px;
-                                font-weight: 600;
-                                color: var(--text-color-secondary);
-                            }
-                        }
-                    }
-                }
-                
-                .courseActions {
-                    display: flex;
-                    gap: 12px;
-                    flex-wrap: wrap;
-                    
-                    button {
-                        flex: 1;
-                        min-width: 140px;
-                    }
-                }
             }
 
             .categoryAndTags {
@@ -2300,7 +1410,7 @@ ul {
     }
 
 
-    .details {
+    .modules {
         margin-top: 32px;
 
         nav {
@@ -2368,9 +1478,9 @@ ul {
                 gap: 12px;
             }
         }
-        
+
         .activity {
-            
+
             .activityHeader{
                 display: flex;
                 //border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 20%, transparent 40%);
@@ -2382,7 +1492,7 @@ ul {
                 gap: 16px;
 
                 .feedPostFilter {
-                    
+
 
                     .feedFilterLabel {
                         margin: 0;
@@ -2433,12 +1543,12 @@ ul {
                     }
                 }
             }
-            
+
             ul {
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-                
+
                 li{
                     .feedDate {
                         display: flex;
@@ -2510,7 +1620,7 @@ ul {
                             }
                         }
 
-                        .feedPostRight{ 
+                        .feedPostRight{
                             display: flex;
                             flex-direction: column;
                             padding: 16px 12px;
@@ -2602,7 +1712,7 @@ ul {
 
 .authModalHeader {
     margin-bottom: 24px;
-    
+
     h3 {
         margin: 0;
         margin-bottom: 32px;
@@ -2628,12 +1738,12 @@ ul {
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: -2px;
-    
+
     &:hover {
         color: var(--text-color-primary);
         background: var(--background-color-3);
     }
-    
+
     &.active {
         color: var(--accent-color-primary);
         border-bottom-color: var(--accent-color-primary);
@@ -2665,7 +1775,7 @@ ul {
 }
 
 /* Mobile */
-@media screen and (max-width: app.$mobileBreakpoint) {    
+@media screen and (max-width: app.$mobileBreakpoint) {
     .course {
         >.info {
             >.brief {
@@ -2679,7 +1789,7 @@ ul {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
-                        
+
                         >p {
                             margin: 0 !important;
                             padding: 0;
@@ -2709,11 +1819,11 @@ ul {
     .section {
         margin-top: -50px;
     }
-    
+
     .title {
         font-size: clamp(40px, 8vw, 64px);
     }
-    
+
     .course {
         >.info {
             flex-direction: column;
@@ -2732,7 +1842,7 @@ ul {
         align-items: stretch;
         gap: 8px;
         bottom: 2%;
-        
+
         button {
             width: 100% !important;
             font-size: 12px !important;
@@ -2745,7 +1855,7 @@ ul {
     .feedPostWrapper {
         .feedPostLeft {
             padding: 0 !important;
-            
+
             .iconWrapper {
                 display: none !important;
             }

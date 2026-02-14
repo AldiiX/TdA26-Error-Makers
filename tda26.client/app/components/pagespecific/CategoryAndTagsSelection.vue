@@ -245,6 +245,12 @@ const removeTag = (uuid: string) => {
     cursor: pointer;
     display: flex;
     align-items: center;
+    transition-duration: 0.3s;
+
+    &:hover {
+        background: var(--accent-color-primary-darker);
+        transition-duration: 0.3s;
+    }
 
     p {
         margin: 0;
