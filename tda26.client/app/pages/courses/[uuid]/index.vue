@@ -137,18 +137,23 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 // delete course
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
-const editBackClick = () => {
+function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
-};
+}
 
-const editClick = () => {
+async function saveCourseAndExit() {
+    await saveCourseChanges();
+    editBackClick();
+}
+
+function editClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}?edit=true`;
-};
+}
 
-const handleAuthSuccess = () => {
+function handleAuthSuccess() {
     enabledModal.value = null;
     window.location.reload();
-};
+}
 </script>
 
 <template>
@@ -486,7 +491,7 @@ const handleAuthSuccess = () => {
                 <Button
                     button-style="secondary"
                     :disabled="!isDirty || isActionInProgress"
-                    @click="saveCourseChanges(); editBackClick()"
+                    @click="saveCourseAndExit()"
                 >
                     Uložit a ukončit úpravy
                 </Button>
