@@ -14,4 +14,8 @@ public interface IMaterialAccessService {
     Task DeleteFileMaterialAsync(string fileUrl, CancellationToken ct = default);
     
     Task<MemoryStream> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default);
+
+    Task CopyCourseMaterialsDirectoryAsync(Guid sourceCourseUuid, Guid targetCourseUuid, CancellationToken ct = default);
+
+    Task<string> CopyFileAsync(string sourceKey, string targetKey, CancellationToken ct = default);
 }
