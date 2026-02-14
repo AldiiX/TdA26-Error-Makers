@@ -1129,7 +1129,7 @@ watch(
 );
 
 watch(course, (val) => {
-    console.log(val)
+    //console.log(val)
 });
 
 watch(

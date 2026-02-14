@@ -110,8 +110,16 @@ const menuY = ref(0)
 
 function openContextMenu(e: MouseEvent) {
     e.preventDefault()
-    menuX.value = e.clientX
-    menuY.value = e.clientY
+
+    if(isContextMenuOpen.value === true) {
+        isContextMenuOpen.value = false;
+        return;
+    }
+
+    menuX.value = e.clientX;
+    menuY.value = e.clientY;
+
+
     isContextMenuOpen.value = true;
 }
 
@@ -156,29 +164,30 @@ async function duplicateCourse() {
                         :class="[$style.contextMenuButton]"
                     ></span>
                     <ContextMenu :items="[
-                        { 
-                            text: 'Změnit obrázek', 
-                            onClick: editBgImage, 
-                            disabled: isUploading,
-                            iconPath: '/icons/imageEdit.svg'
-                        },
-                        { 
-                            text: 'Obnovit výchozí obrázek', 
-                            onClick: resetBgImage, 
-                            disabled: isUploading,
-                            iconPath: '/icons/trash.svg'
-                        },
-                        {
-                            text: 'Duplikovat kurz',
-                            onClick: duplicateCourse,
-                            disabled: isUploading || isDuplicating,
-                            iconPath: '/icons/copy.svg'
-                        }
-                    ]"
-                                 @close="isContextMenuOpen = false"
-                                 :visible="isContextMenuOpen"
-                                 :x="menuX"
-                                 :y="menuY"
+                            {
+                                text: 'Změnit obrázek',
+                                onClick: editBgImage,
+                                disabled: isUploading,
+                                iconPath: '/icons/imageEdit.svg'
+                            },
+                            {
+                                text: 'Obnovit výchozí obrázek',
+                                onClick: resetBgImage,
+                                disabled: isUploading,
+                                iconPath: '/icons/trash.svg'
+                            },
+                            {
+                                text: 'Duplikovat kurz',
+                                onClick: duplicateCourse,
+                                disabled: isUploading || isDuplicating,
+                                iconPath: '/icons/copy.svg'
+                            }
+                        ]"
+
+                         @close="isContextMenuOpen = false"
+                         :visible="isContextMenuOpen"
+                         :x="menuX"
+                         :y="menuY"
                     />
                 </div>
             </div>

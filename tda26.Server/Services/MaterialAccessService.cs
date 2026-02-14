@@ -103,7 +103,8 @@ public class MaterialAccessService(
         var delay = TimeSpan.FromMilliseconds(150);
 
         while (retries-- > 0) {
-            Console.WriteLine("Try number: " + (4 - retries));
+            //Console.WriteLine("Try number: " + (4 - retries));
+
             try {
                 var listArgs = new ListObjectsArgs()
                     .WithBucket(minioOptions.Value.BucketName)

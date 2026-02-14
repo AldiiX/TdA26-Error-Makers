@@ -22,13 +22,18 @@ const emit = defineEmits<{
 }>()
 
 const menuRef = ref<HTMLElement | null>(null)
+const zoneRef = ref<HTMLElement | null>(null)
 
 function onDocumentClick(event: MouseEvent) {
     if (!menuRef.value) return
 
-    if (!menuRef.value.contains(event.target as Node)) {
+    if (!menuRef.value.contains(event.target as Node) || (zoneRef.value && zoneRef.value.contains(event.target as Node))) {
         emit("close")
     }
+}
+
+function onDocumentScroll() {
+    emit("close")
 }
 
 function handleItemClick(item: ContextMenuItemType) {
@@ -50,10 +55,12 @@ function handleLinkClick(item: ContextMenuItemType) {
 
 onMounted(() => {
     document.addEventListener("mousedown", onDocumentClick)
+    document.addEventListener("scroll", onDocumentScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
     document.removeEventListener("mousedown", onDocumentClick)
+    document.removeEventListener("scroll", onDocumentScroll)
 })
 </script>
 
@@ -66,6 +73,8 @@ onBeforeUnmount(() => {
                 ref="menuRef"
                 v-if="visible"
             >
+                <div :class="$style.zone" ref="zoneRef"></div>
+
                 <template v-for="(item, index) in items" :key="index">
                     <ContextMenuItem
                         v-if="!item.href && !item.forceLoad"
@@ -101,9 +110,10 @@ onBeforeUnmount(() => {
     min-width: 200px;
     padding: 8px;
     //background: var(--background-color-secondary);
+    background: rgb(from var(--background-color-secondary) r g b/ 0.75);
     border: 1px solid var(--input-border-color);
     border-radius: 12px;
-    z-index: 3000;
+    z-index: 10;
     //box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 
     a {
@@ -118,9 +128,22 @@ onBeforeUnmount(() => {
         opacity: .5;
     }
 }
+
+.zone {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 050%;
+    left: 050%;
+    transform: translate(-50%, -50%);
+    padding: 32px;
+    box-sizing: content-box;
+    z-index: -1;
+}
+
 </style>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .context-menu-fade-enter-active,
 .context-menu-fade-leave-active {
     transition:
