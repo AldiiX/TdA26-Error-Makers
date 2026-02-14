@@ -7,7 +7,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div :class="[$style.statusIcon, props.status === 1 ? $style.scheduled : '', props.status === 2 ? $style.live : '', props.status === 3 ? $style.paused : '']">
+    <div :class="[$style.statusIcon, props.status === 0 ? $style.draft : props.status === 1 ? $style.scheduled : props.status === 2 ? $style.live : props.status === 3 ? $style.paused : $style.archived]">
         <div></div>
         <p>{{ statusToText(props.status) }}</p>
     </div>
@@ -55,6 +55,25 @@ const props = defineProps<{
         mask-position: center;
         margin-right: 4px;
     }
+    
+    &.draft {
+        background-color: var(--status-draft-bg);
+        //padding: 4px;
+
+        div {
+            mask-image: url("../../public/icons/file-full.svg");
+            background-color: var(--status-draft-text);
+
+            width: 18px;
+            height: 18px;
+            margin-bottom: 1px;
+
+        }
+
+        p {
+            color: var(--status-draft-text);
+        }
+    }
 
     &.scheduled {
         background-color: var(--status-scheduled-bg);
@@ -65,7 +84,7 @@ const props = defineProps<{
             background-color: var(--status-scheduled-text);
 
         }
-        
+
         p {
             color: var(--status-scheduled-text);
         }
@@ -96,6 +115,21 @@ const props = defineProps<{
         
         p {
             color: var(--status-paused-text);
+        }
+    }
+
+    &.archived {
+        background-color: var(--status-archived-bg);
+        //padding: 4px;
+
+        div {
+            mask-image: url("../../public/icons/box-archive.svg");
+            background-color: var(--status-archived-text);
+
+        }
+
+        p {
+            color: var(--status-archived-text);
         }
     }
 }
