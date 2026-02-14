@@ -2,7 +2,7 @@ import type { Ref } from "vue";
 import type { Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import { push } from "notivue";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
 export function useCourseDelete(params: {
     courseSmall: Ref<Course>;

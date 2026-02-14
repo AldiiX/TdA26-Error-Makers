@@ -2,7 +2,7 @@ import { ref, computed, onMounted, onBeforeUnmount, type Ref } from "vue";
 import type { Course, FeedPost, FeedPostView } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import { push } from "notivue";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 import { mapFeedPurpose } from "~/utils/course/mapFeedPurpose";
 
 type FeedFilter = "all" | "material" | "quiz";

@@ -1,7 +1,7 @@
 import { ref, computed, watch, type Ref } from "vue";
 import type { Account, Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
 export function useCourseRating(params: {
     uuid: string;

@@ -1,5 +1,5 @@
 import { ref, watch } from "vue";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
 export function useCourseDialogs() {
     const enabledModal = ref<CourseDetailModal>(null);

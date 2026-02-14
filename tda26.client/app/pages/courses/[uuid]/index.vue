@@ -32,6 +32,7 @@ import { useCourseRating } from "~/composables/courses/[uuid]/useCourseRating";
 import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
+import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -156,18 +157,26 @@ const handleAuthSuccess = () => {
     </Head>
 
     <div :class="[$style.course, isEditMode && $style.editMode]">
-        <h1
-            :class="['text-gradient', $style.title, $style.editable]"
-            :contenteditable="isEditMode"
-            @input="(e) => updateCourseTitle((e.target as HTMLElement).innerText.trim())"
-        >{{ courseSmall?.name }}</h1>
-        <div :class="$style.info">
-            <p
-                :class="[$style.editable]"
-                :contenteditable="isEditMode"
-                @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
-            >{{ courseSmall?.description }}</p>
-            <div :class="['liquid-glass', $style.brief]">
+        <div :class="$style.basic">
+            <div :class="$style.left">
+                <p :class="$style.category">{{ courseSmall.category.label }}</p>
+
+                <h1
+                    :class="['text-gradient', $style.title, $style.editable]"
+                    :contenteditable="isEditMode"
+                    @input="(e) => updateCourseTitle((e.target as HTMLElement).innerText.trim())"
+                >{{ courseSmall?.name }}</h1>
+
+                <p
+                    :class="[$style.editable]"
+                    :contenteditable="isEditMode"
+                    @input="(e) => updateCourseDescription((e.target as HTMLElement).innerText.trim())"
+                >{{ courseSmall?.description }}</p>
+            </div>
+
+            <div :class="['liquid-glass',$style.right]">
+                <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
+
                 <Input
                     v-if="isEditMode"
                     type="select"
@@ -185,103 +194,62 @@ const handleAuthSuccess = () => {
                         {{ statusToText(status) }}
                     </option>
                 </Input>
-                <p
-                    v-else
-                    :class="$style.status"
-                    :data-status="displayedStatus"
-                >
-                    {{ statusToText(displayedStatus) }}
-                </p>
-                <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
-                    <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
-                        <div :class="$style.wrp">
-                            <Input
-                                v-if="isEditMode"
-                                :key="course?.tags?.length"
-                                type="select"
-                                v-model="editedCategoryUuid"
-                            >
-                                <option
-                                    v-for="cat in categories"
-                                    :key="cat.uuid"
-                                    :value="cat.uuid"
-                                >
-                                    {{ cat.label }}
-                                </option>
-                            </Input>
 
-                            <p v-else-if="course?.category !== null" :class="$style.category">
-                                {{ course?.category.label }}
-                            </p>
-
-                            <ul :class="$style.tags" v-if="isEditMode || (course?.tags && course?.tags.length >= 1)">
-                                <li v-if="!isEditMode && course?.tags && course?.tags?.length >= 1" v-for="tag in course?.tags" :key="tag.uuid">{{ tag.displayName }}</li>
-                                <CategoryAndTagsSelection
-                                    v-else-if="editedCategoryUuid && isEditMode"
-                                    :key="editedCategoryUuid"
-                                    v-model="editedTagsUuid"
-                                    :category-uuid="editedCategoryUuid"
-                                />
-                            </ul>
-
-                            <div :style="{ width: '100%', height: '1px', marginTop: '12px', background: 'color-mix(in srgb, var(--text-color-secondary) 30%, transparent 40%)' }"></div>
-                        </div>
-                    </SmoothSizeWrapper>
-                </div>
+                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
-                        <p :class="$style.title">Zhlédnutí</p>
                         <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <p :class="$style.title">Zhlédnutí</p>
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Materiály</p>
                         <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <p :class="$style.title">Materiály</p>
                     </div>
                     <div :class="$style.el">
-                        <p :class="$style.title">Kvízy</p>
                         <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
+                        <p :class="$style.title">Kvízy</p>
                     </div>
                 </div>
 
-                <div :class="$style.otherinfo">
-                    <div :class="$style.authorAndRating">
-                        <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
-                            <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
-                            <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
-                        </NuxtLink>
+                <div :class="$style.authorAndRating">
+                    <NuxtLink v-if="courseSmall?.account" :class="[$style.author, { [$style.clickable]: courseSmall.lecturer }]" :to="courseSmall?.lecturer ? `/lecturer/${courseSmall?.lecturer?.uuid}` : '' ">
+                        <Avatar :class="$style.avatar" :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }" :name="courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName ?? '?'" :src="courseSmall?.lecturer?.pictureUrl ?? null" />
+                        <p>{{ courseSmall?.lecturer?.fullName ?? courseSmall?.account?.fullName }}</p>
+                    </NuxtLink>
 
-                        <div :class="$style.rating">
-                            <!-- like a dislike button -->
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
-                                <div :class="$style.icon"></div>
-                                <p>{{ optimisticLikeCount }}</p>
-                            </div>
+                    <div :class="$style.rating">
+                        <!-- like a dislike button -->
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
+                            <div :class="$style.icon"></div>
+                            <p>{{ optimisticLikeCount }}</p>
+                        </div>
 
-                            <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
-                                <div :class="$style.icon" style="rotate: 180deg"></div>
-                                <p>Nelíbí se</p>
-                            </div>
+                        <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
+                            <div :class="$style.icon" style="rotate: 180deg"></div>
+                            <p>Nelíbí se</p>
                         </div>
                     </div>
-                    <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
-                        <Button
-                            button-style="primary"
-                            accent-color="secondary"
-                            @click="editClick"
-                        >Upravit kurz</Button>
-                        <Button
-                            button-style="secondary"
-                            accent-color="secondary"
-                            :style="{ /*'--color': 'var(--color-error)'*/ }"
-                            @click="openDeleteCourseModal"
-                        >Smazat kurz</Button>
-                    </div>
+                </div>
+
+                <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        @click="editClick"
+                    >Upravit kurz</Button>
+                    <Button
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :style="{ /*'--color': 'var(--color-error)'*/ }"
+                        @click="openDeleteCourseModal"
+                    >Smazat kurz</Button>
                 </div>
             </div>
         </div>
 
-        <div :class="$style.details">
+        <!-- moduly (kvizy, aktivita, materialy..) -->
+        <div :class="$style.modules">
             <nav>
                 <ul>
                     <li
@@ -839,6 +807,188 @@ const handleAuthSuccess = () => {
 <style module lang="scss">
 @use "@/assets/variables" as app;
 
+
+.basic {
+    display: flex;
+    position: relative;
+    gap: 64px;
+
+    >.left {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+
+        >.title{
+            font-size: 72px;
+            margin: 0;
+            overflow: visible;
+            width: fit-content;
+            padding-bottom: 4px;
+        }
+
+        >p {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        >.category {
+            font-family: "Dosis", sans-serif;
+            background: linear-gradient(340deg, var(--accent-color-primary) -40%, var(--accent-color-secondary-theme) 110%);
+            color: var(--accent-color-primary-text);
+            width: fit-content;
+            padding: 8px 16px;
+            border-radius: 24px;
+            margin-bottom: -8px;
+        }
+    }
+
+    >.right {
+        width: 30%;
+        max-width: 600px;
+        min-height: 64px;
+        border-radius: 24px;
+        box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/.6),0 0 8px #0000000a;
+        margin-top: 64px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+
+        >.image {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 56%;
+            aspect-ratio: 16/9;
+            min-height: unset;
+            pointer-events: none;
+            border-radius: 0 0 0 24px;
+            mask: radial-gradient(circle at top right, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 80%);
+        }
+
+        >.fields {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            >.el {
+                display: flex;
+                align-items: end;
+                gap: 20px;
+
+                p {
+                    margin: 0;
+                }
+
+                .title {
+                    font-size: 20px;
+                    opacity: 0.5;
+                }
+
+                .item {
+                    font-size: 32px;
+                    font-weight: 600;
+                }
+            }
+        }
+
+        >.authorAndRating {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+
+            .author {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: unset;
+                text-decoration: none;
+                transition-duration: 0.3s;
+
+                &:is(.clickable) {
+                    &:hover {
+                        opacity: 0.5;
+                        transition-duration: 0.3s;
+                    }
+                }
+
+
+                .avatar {
+                    --size: 24px !important;
+                }
+
+                p {
+                    margin: 0;
+                    font-weight: 600;
+                    font-size: 16px;
+                    color: var(--text-color-secondary);
+                }
+            }
+
+            .rating {
+                display: flex;
+                gap: 12px;
+
+                .duo {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    user-select: none;
+                    padding: 8px 16px;
+                    border-radius: 999px;
+                    background-color: var(--background-color-3);
+                    transition-duration: 0.3s;
+
+                    &:is(.active) .icon {
+                        mask-image: url(/icons/thumbs_up_filled.svg);
+                    }
+
+                    &:hover {
+                        background-color: var(--background-color-primary);
+                        transition-duration: 0.3s;
+                    }
+
+                    .icon {
+                        width: 16px;
+                        aspect-ratio: 1/1;
+                        background-color: var(--text-color-primary);
+                        border-radius: 4px;
+                        mask-image: url(/icons/thumbs_up_outline.svg);
+                        mask-size: cover;
+                        mask-repeat: no-repeat;
+                        mask-position: center;
+                    }
+
+                    p {
+                        margin: 0;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: var(--text-color-secondary);
+                    }
+                }
+            }
+        }
+
+        >.courseActions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+
+            button {
+                flex: 1;
+                min-width: 140px;
+            }
+        }
+    }
+}
+
+
 .updateFeedPostModal {
     h3 {
         margin: 0;
@@ -1018,13 +1168,6 @@ const handleAuthSuccess = () => {
     }
 }
 
-.title{
-    font-size: 72px;
-    margin: 0;
-    overflow: visible;
-    width: fit-content;
-    padding-bottom: 4px;
-}
 
 ul {
     list-style: none;
@@ -1171,96 +1314,9 @@ ul {
                 display: grid;
                 gap: 16px;
 
-                .authorAndRating {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 16px;
-
-                    .author {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        color: unset;
-                        text-decoration: none;
-                        transition-duration: 0.3s;
-
-                        &:is(.clickable) {
-                            &:hover {
-                                opacity: 0.5;
-                                transition-duration: 0.3s;
-                            }
-                        }
 
 
-                        .avatar {
-                            --size: 24px !important;
-                        }
 
-                        p {
-                            margin: 0;
-                            font-weight: 600;
-                            font-size: 16px;
-                            color: var(--text-color-secondary);
-                        }
-                    }
-
-                    .rating {
-                        display: flex;
-                        gap: 12px;
-
-                        .duo {
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            cursor: pointer;
-                            user-select: none;
-                            padding: 8px 16px;
-                            border-radius: 999px;
-                            background-color: var(--background-color-3);
-                            transition-duration: 0.3s;
-
-                            &:is(.active) .icon {
-                                mask-image: url(/icons/thumbs_up_filled.svg);
-                            }
-
-                            &:hover {
-                                background-color: var(--background-color-primary);
-                                transition-duration: 0.3s;
-                            }
-
-                            .icon {
-                                width: 16px;
-                                aspect-ratio: 1/1;
-                                background-color: var(--text-color-primary);
-                                border-radius: 4px;
-                                mask-image: url(/icons/thumbs_up_outline.svg);
-                                mask-size: cover;
-                                mask-repeat: no-repeat;
-                                mask-position: center;
-                            }
-
-                            p {
-                                margin: 0;
-                                font-size: 16px;
-                                font-weight: 600;
-                                color: var(--text-color-secondary);
-                            }
-                        }
-                    }
-                }
-
-                .courseActions {
-                    display: flex;
-                    gap: 12px;
-                    flex-wrap: wrap;
-
-                    button {
-                        flex: 1;
-                        min-width: 140px;
-                    }
-                }
             }
 
             .categoryAndTags {
@@ -1310,7 +1366,7 @@ ul {
     }
 
 
-    .details {
+    .modules {
         margin-top: 32px;
 
         nav {

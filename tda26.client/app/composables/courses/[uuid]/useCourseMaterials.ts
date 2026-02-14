@@ -1,7 +1,7 @@
 import { ref, type Ref } from "vue";
 import type { Course, Material } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 import { formatUrl } from "~/utils/course/formatUrl";
 
 export type MaterialFormModel =

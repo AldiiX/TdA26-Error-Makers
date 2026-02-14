@@ -2,7 +2,7 @@ import { ref, type Ref } from "vue";
 import type { Course, Quiz } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import { push } from "notivue";
-import type { CourseDetailModal } from "~/composables/course/courseDetailTypes";
+import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
 export function useCourseQuizzes(params: {
     course: Ref<Course | null>;
