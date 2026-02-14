@@ -30,6 +30,7 @@
         categoryLabel: string | null
         tagUuids: string[]
         searchText: string
+        status: number 
     }
 
     const PAGE_SIZE = 8
@@ -37,7 +38,7 @@
 
 
 
-
+    const activeStatus = ref<string | null>(null);
 
     // -----------------------------
     // fetchovani
@@ -321,13 +322,15 @@
                     (course.tags ?? []).map((t) => t.displayName).join(' ')
                 ].join(' ')
             )
+            
 
             return {
                 course,
                 createdAtMs,
                 categoryLabel,
                 tagUuids,
-                searchText
+                searchText,
+                status: course.status
             }
         })
     })
@@ -354,6 +357,14 @@
         return list
     })
 
+
+    const stateOptions = [
+        { value: '0', label: 'Koncept' },
+        { value: '1', label: 'Naplánovaný' },
+        { value: '2', label: 'Aktivní' },
+        { value: '3', label: 'Pozastavený' },
+        { value: '4', label: 'Archivovaný' }
+    ]
     const filteredCourses = computed<Course[]>(() => {
         let list = sortedCourses.value
 
@@ -372,6 +383,12 @@
             })
         }
 
+        if (activeStatus.value !== null) {
+            const statusNumber = Number(activeStatus.value)
+            list = list.filter(c => c.course.status === statusNumber)
+        }
+        
+        
         const query = normalizeText(debouncedQuery.value)
         if (query) {
             list = list.filter((c) => c.searchText.includes(query))
@@ -380,7 +397,7 @@
         return list.map((x) => x.course)
     })
 
-    watch([sort, debouncedQuery, activeAuthor], () => {
+    watch([sort, debouncedQuery, activeAuthor, activeStatus], () => {
         page.value = 1
     })
 
@@ -401,6 +418,7 @@
         page.value = newPage
     }
 
+    
     const visiblePages = computed<(number | '...')[]>(() => {
         const total = totalPages.value
         const current = page.value
@@ -444,7 +462,7 @@
 
     // resetovani filteru
     const isAnyFilterActive = computed<boolean>(() => {
-        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || false
+        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || activeStatus.value !== null || false
     })
 
     const filterButtonClicked = ref(false);
@@ -453,6 +471,7 @@
         activeCategory.value = null
         activeTags.value = []
         activeAuthor.value = null
+        activeStatus.value = null
         searchQuery.value = ''
         page.value = 1
         filterButtonClicked.value = true;
@@ -550,6 +569,18 @@
                                 :dropdownClass="$style.sdd"
                                 special-render="withAvatar"
                                 :class="$style.selection"
+                        />
+                    </div>
+                    
+                    <div :class="$style.state">
+                        <p>Stav</p>
+                        <Select
+                                :options="stateOptions"
+                                v-model="activeStatus"
+                                placeholder="Všechny stavy"
+                                search-placeholder="Hledat stav..."
+                                :class="$style.selection"
+                                :dropdownClass="$style.sdd"
                         />
                     </div>
 
