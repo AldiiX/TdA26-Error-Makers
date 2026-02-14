@@ -47,6 +47,8 @@ const revealStyle = computed(() => {
 const isUploading = ref(false);
 const uploadStatusText = ref("Nahrávám obrázek...");
 const displayedImageUrl = ref(props.course.imageUrl);
+const isDuplicating = ref(false);
+const duplicateStatusText = ref("Duplikuji kurz...");
 
 watch(() => props.course.imageUrl, (value) => {
     displayedImageUrl.value = value;
@@ -112,14 +114,32 @@ function openContextMenu(e: MouseEvent) {
     menuY.value = e.clientY
     isContextMenuOpen.value = true;
 }
+
+async function duplicateCourse() {
+    if (isUploading.value || isDuplicating.value) return;
+
+    isDuplicating.value = true;
+
+    try {
+        const newCourse = await $fetch<Course>(`/api/v2/courses/${props.course.uuid}/duplicate`, {
+            method: "POST"
+        });
+
+        if (newCourse?.uuid) {
+            await navigateTo(`/courses/${newCourse.uuid}?edit=true`);
+        }
+    } finally {
+        isDuplicating.value = false;
+    }
+}
 </script>
 
 <template>
     <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
         <div :class="$style.top">
-            <div v-if="isUploading" :class="$style.uploadOverlay">
+            <div v-if="isUploading || isDuplicating" :class="$style.uploadOverlay">
                 <div :class="$style.spinner"></div>
-                <p>{{ uploadStatusText }}</p>
+                <p>{{ isDuplicating ? duplicateStatusText : uploadStatusText }}</p>
             </div>
 
             <StatusBadge :class="$style.statusIcon" :status="course.status"/>
@@ -147,6 +167,12 @@ function openContextMenu(e: MouseEvent) {
                             onClick: resetBgImage, 
                             disabled: isUploading,
                             iconPath: '/icons/trash.svg'
+                        },
+                        {
+                            text: 'Duplikovat kurz',
+                            onClick: duplicateCourse,
+                            disabled: isUploading || isDuplicating,
+                            iconPath: '/icons/copy.svg'
                         }
                     ]"
                                  @close="isContextMenuOpen = false"
