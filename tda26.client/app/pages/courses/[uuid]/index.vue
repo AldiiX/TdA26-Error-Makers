@@ -168,14 +168,7 @@ const selectedTimeOption = ref<number | "custom">(5);
 const customDate = ref(""); 
 const customTime = ref("");
 
-watch(customDate, (newVal) => {
-    if (isDateValid.value) {
-        const [day, month, year] = newVal.split(":").map(Number);
-        finalDateTime.value = new Date(year, month - 1, day);
-    } else {
-        finalDateTime.value = null;
-    }
-});
+
 const finalDateTime = computed<Date | null>(() => {
     if (selectedTimeOption.value === "custom") {
         if (!customDate.value || !customTime.value) return null;
