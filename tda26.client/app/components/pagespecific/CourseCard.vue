@@ -349,8 +349,8 @@ const resetBgImage = async () => {
         
         .statusIcon {
             position: absolute;
-            top: 12px;
-            right: 16px;
+            top: 16px;
+            left: 16px;
             z-index: 2;
         }
 
