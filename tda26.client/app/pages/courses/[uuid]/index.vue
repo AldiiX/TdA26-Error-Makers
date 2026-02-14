@@ -159,7 +159,34 @@ const handleAuthSuccess = () => {
     <div :class="[$style.course, isEditMode && $style.editMode]">
         <div :class="$style.basic">
             <div :class="$style.left">
-                <p :class="$style.category">{{ courseSmall.category.label }}</p>
+                <div :class="$style.categoryAndTags">
+                    <Input
+                        v-if="isEditMode && course"
+                        :key="course?.tags?.length"
+                        type="select"
+                        v-model="editedCategoryUuid"
+                        :class="$style.editableInput"
+                    >
+                        <option
+                            v-for="cat in categories"
+                            :key="cat.uuid"
+                            :value="cat.uuid"
+                        >
+                            {{ cat.label }}
+                        </option>
+                    </Input>
+
+                    <p v-else-if="courseSmall.category" :class="$style.category">{{ courseSmall.category.label }}</p>
+
+                    <template :class="$style.tags" v-if="isEditMode && course">
+                        <CategoryAndTagsSelection
+                            v-if="editedCategoryUuid && isEditMode"
+                            :key="editedCategoryUuid"
+                            v-model="editedTagsUuid"
+                            :category-uuid="editedCategoryUuid"
+                        />
+                    </template>
+                </div>
 
                 <h1
                     :class="['text-gradient', $style.title, $style.editable]"
@@ -812,6 +839,7 @@ const handleAuthSuccess = () => {
     display: flex;
     position: relative;
     gap: 64px;
+    align-items: start;
 
     >.left {
         display: flex;
@@ -832,21 +860,32 @@ const handleAuthSuccess = () => {
             margin: 0;
         }
 
-        >.category {
-            font-family: "Dosis", sans-serif;
-            background: linear-gradient(340deg, var(--accent-color-primary) -40%, var(--accent-color-secondary-theme) 110%);
-            color: var(--accent-color-primary-text);
-            width: fit-content;
-            padding: 8px 16px;
-            border-radius: 24px;
+        >.categoryAndTags {
+            display: flex;
             margin-bottom: -8px;
+            gap: 6px;
+
+            >.editableInput {
+                border: 2px dashed var(--text-color);
+            }
+
+            >.category {
+                font-family: "Dosis", sans-serif;
+                background: linear-gradient(340deg, var(--accent-color-primary) -40%, var(--accent-color-secondary-theme) 110%);
+                color: var(--accent-color-primary-text);
+                width: fit-content;
+                padding: 8px 16px;
+                border-radius: 24px;
+                margin: 0;
+                user-select: none;
+            }
         }
+
     }
 
     >.right {
         width: 30%;
         max-width: 600px;
-        min-height: 64px;
         border-radius: 24px;
         box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/.6),0 0 8px #0000000a;
         margin-top: 64px;
