@@ -176,3 +176,8 @@ export interface CourseCategory {
     uuid: string;
     label: string;
 }
+
+export type TimeOption = {
+    label: string;
+    values: number | "custom";
+};

@@ -8,7 +8,8 @@ import {
     type FeedPost,
     type FeedPostView,
     type FeedPurposeType,
-    type CourseCategory
+    type CourseCategory,
+    type TimeOption
 } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
@@ -30,6 +31,7 @@ import FeedPostItem from "~/components/pagespecific/FeedPostItem.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
 import { type DbStatus, statusToText } from "#shared/utils/statusMapper";
+import { formatDateTime } from "#shared/utils/timeFormatter";
 
 declare const grecaptcha: gRecaptcha;
 
@@ -107,6 +109,96 @@ const editedStatusModel = computed<string>({
     }
 });
 
+const timeOptions: TimeOption[] = [
+    { label: "Za 5 minut", values: 5 },
+    { label: "Za 15 minut", values: 15 },
+    { label: "Za 30 minut", values: 30 },
+    { label: "Za 1 hodinu", values: 60 },
+    { label: "Za 12 hodin", values: 720 },
+    { label: "Vlastní datum a čas", values: "custom" }
+];
+
+
+function formatDate(e: Event) {
+    const input = e.target as HTMLInputElement;
+
+    let digits = input.value.replace(/\D/g, "");
+
+    if (digits.length > 8) digits = digits.slice(0, 8);
+
+    let formatted = digits;
+
+    if (digits.length > 4) {
+        formatted = digits.slice(0, 2) + "." + digits.slice(2, 4) + "." + digits.slice(4);
+    } else if (digits.length > 2) {
+        formatted = digits.slice(0, 2) + "." + digits.slice(2);
+    }
+
+    input.value = formatted;
+    customDate.value = formatted;
+}
+
+function formatTime(e: Event) {
+    const input = e.target as HTMLInputElement;
+
+    let digits = input.value.replace(/\D/g, "");
+
+    if (digits.length > 4) digits = digits.slice(0, 4);
+
+    let formatted = "";
+    if (digits.length <= 2) {
+        formatted = digits;
+    } else {
+        formatted = digits.slice(0, 2) + ":" + digits.slice(2);
+    }
+
+    input.value = formatted;
+    customTime.value = formatted;
+}
+
+const isDateValid = computed(() => {
+    const [day, month, year] = customDate.value.split(":").map(Number);
+    if (!day || !month || !year) return false;
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+});
+
+const selectedTimeOption = ref<number | "custom">(5);
+
+const customDate = ref(""); 
+const customTime = ref("");
+
+watch(customDate, (newVal) => {
+    if (isDateValid.value) {
+        const [day, month, year] = newVal.split(":").map(Number);
+        finalDateTime.value = new Date(year, month - 1, day);
+    } else {
+        finalDateTime.value = null;
+    }
+});
+const finalDateTime = computed<Date | null>(() => {
+    if (selectedTimeOption.value === "custom") {
+        if (!customDate.value || !customTime.value) return null;
+
+        const [day, month, year] = customDate.value.split(".");
+        const [hours, minutes] = customTime.value.split(":");
+
+        if (!day || !month || !year || !hours || !minutes) return null;
+
+        const parsed = new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            Number(hours),
+            Number(minutes)
+        );
+
+        return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const now = new Date();
+    return new Date(now.getTime() + Number(selectedTimeOption.value) * 60000);
+});
 watch(_course, (val) => {
     if (!val) return;
 
@@ -119,7 +211,6 @@ watch(_course, (val) => {
 
 const normalizeTags = (tags?: string[]) =>
     [...(tags ?? [])].sort();
-
 const isDirty = computed(() => {
     if (!course.value || !originalCourse.value) return false;
 
@@ -181,6 +272,7 @@ onMounted(async () => {
 
 
 const enabledModal = ref<"updateMaterial" | "deleteMaterial" | "createMaterial" | "deleteQuiz" | "createQuiz" | "createFeedPost" | "deleteFeedPost" | "updateFeedPost" | "loginRequired" | "deleteCourse" | null>(null);
+const planningModal = ref<"schedulePublication" | null>(null);
 let selectedMaterial = ref<Material | null>(null);
 let selectedQuiz = ref<Quiz | null>(null);
 const authTab = ref<"login" | "register">("login");
@@ -188,6 +280,44 @@ const authTab = ref<"login" | "register">("login");
 const updateError = ref<string | null>(null);
 const deleteError = ref<string | null>(null);
 
+watch(editedStatus, (newValue) => {
+    if (newValue === 1) { 
+        planningModal.value = "schedulePublication";
+    }
+});
+
+watch(selectedTimeOption, (val) => {
+    if (val === "custom") {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 5);
+
+        customDate.value =
+            String(now.getDate()).padStart(2, "0") + "." +
+            String(now.getMonth() + 1).padStart(2, "0") + "." +
+            now.getFullYear();
+
+        customTime.value =
+            String(now.getHours()).padStart(2, "0") + ":" +
+            String(now.getMinutes()).padStart(2, "0");
+    }
+});
+
+function confirmPublicationSchedule() {
+    if (!finalDateTime.value || !course.value) return;
+
+    
+
+    planningModal.value = null;
+}
+
+function cancelPublicationSchedule() {
+    editedStatus.value = originalCourse.value?.status ?? 0;
+    planningModal.value = null;
+}
+
+const formattedPublishTime = computed(() =>
+    formatDateTime(finalDateTime.value)
+);
 watch(enabledModal, (val) => {
     if (val === null) return;
     
@@ -1161,7 +1291,7 @@ watch(
             >{{ courseSmall?.description }}</p>
             <div :class="['liquid-glass', $style.brief]">
                 <Input
-                    v-if="isEditMode"
+                    v-if="isEditMode && ownsCourse"
                     type="select"
                     v-model="editedStatusModel"
                     :class="[$style.status, $style.statusSelect]"
@@ -1184,6 +1314,7 @@ watch(
                 >
                     {{ statusToText(displayedStatus) }}
                 </p>
+                
                 <div :class="[$style.categoryAndTags, { [$style.editMode]: isEditMode }]">
                     <SmoothSizeWrapper :change-width="false" v-show="(isEditMode && course !== null) || (!isEditMode && course?.tags && course?.tags.length >= 1)">
                         <div :class="$style.wrp">
@@ -1256,7 +1387,17 @@ watch(
                             </div>
                         </div>
                     </div>
-                    <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
+                    
+                    <div :class="$style.courseActions" v-if="isEditMode && ownsCourse">
+                        <Button
+                            button-style="secondary"
+                            accent-color="secondary"
+                            :style="{ /*'--color': 'var(--color-error)'*/ }"
+                            @click="openDeleteCourseModal"
+                        >Smazat kurz</Button>
+                    </div>
+                    
+                    <div :class="$style.courseActions" v-else-if="ownsCourse && !isEditMode">
                         <Button 
                             button-style="primary"
                             accent-color="secondary"
@@ -1459,17 +1600,6 @@ watch(
     <Teleport to="#teleports"> 
         <!-- Edit controls -->
         <div :class="$style.editControls" v-if="isEditMode">
-            <div :class="$style.top">
-                <Button
-                    button-style="secondary"
-                    :style="{ '--color': 'var(--color-error)' }"
-                    @click="openDeleteCourseModal"
-                    :disabled="isActionInProgress"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-
             <div :class="$style.bottom">
                 <Button
                     button-style="primary"
@@ -1495,10 +1625,72 @@ watch(
             </div>
         </div>
 
-        
-        
-        
-        
+
+
+
+        <!-- SCHEDULE PUBLICATION -->
+        <Modal
+            :enabled="planningModal === 'schedulePublication'"
+            @close="cancelPublicationSchedule"
+            can-be-closed-by-clicking-outside
+            title="Naplánovat publikaci"
+            :modalStyle="{ maxWidth: '800px' }"
+        >
+            <div :class="$style.modalContent">
+
+                <label>Čas publikace</label>
+
+                <div v-if="formattedPublishTime" :class="$style.scheduledInfo">
+                    <p>Publikace proběhne:</p>
+                    <p>{{ formattedPublishTime }}</p>
+                </div>
+
+                <Input type="select" v-model="selectedTimeOption">
+                    <option
+                        v-for="option in timeOptions"
+                        :key="option.label"
+                        :value="option.values"
+                    >
+                        {{ option.label }}
+                    </option>
+                </Input>
+
+                <div v-if="selectedTimeOption === 'custom'" :class="$style.customDateWrapper">
+                    <Input
+                        v-model="customDate"
+                        placeholder="DD.MM.RRRR"
+                        @input="formatDate"
+                        maxlength="10"
+                    />
+                    <Input
+                        v-model="customTime"
+                        placeholder="HH:MM"
+                        @input="formatTime"
+                        maxlength="5"
+                    />
+                    <p v-if="selectedTimeOption === 'custom' && !isDateValid" :style="{ color: 'var(--color-error)'}">
+                        Neplatné datum!
+                    </p>
+                </div>
+
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" @click="cancelPublicationSchedule">
+                        Zrušit
+                    </Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        :disabled="!finalDateTime"
+                        @click="confirmPublicationSchedule"
+                    >
+                        Naplánovat
+                    </Button>
+                </div>
+
+            </div>
+        </Modal>
+            
         <!-- CREATE -->
         <Modal
             :enabled="enabledModal === 'createMaterial'"
@@ -1987,26 +2179,34 @@ watch(
             margin: 0 4px;
         }
     }
-
-    .top {
-        //width: 200px;
-        padding-bottom: 24px;
-        margin-bottom: -24px;
-        justify-content: center;
-    }
 }
 
-
-.modalButtons {
+.modalContent {
     display: flex;
-    gap: 16px;
-    margin-top: 32px;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 24px;
+    
+    .customDateWrapper {
+        display: flex;
+        gap: 16px;
 
-    button {
-        width: 164px;
+        input {
+            flex: 1;
+        }
+    }
+    
+    .modalButtons {
+        display: flex;
+        gap: 16px;
+        margin-top: 32px;
+        justify-content: flex-end;
+
+        button {
+            width: 164px;
+        }
     }
 }
+
 
 .title{
     font-size: 72px;
