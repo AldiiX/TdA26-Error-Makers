@@ -132,26 +132,11 @@ function getLocalDateTimeString(): string {
 
 const selectedTimeOption = ref<number | "custom">(5);
 
-const customDate = ref("");
-const customTime = ref("");
-
-
 const finalDateTime = computed<Date | null>(() => {
     if (selectedTimeOption.value === "custom") {
-        if (!customDate.value || !customTime.value) return null;
+        if (!customDateTime.value) return null;
 
-        const [day, month, year] = customDate.value.split(".");
-        const [hours, minutes] = customTime.value.split(":");
-
-        if (!day || !month || !year || !hours || !minutes) return null;
-
-        const parsed = new Date(
-            Number(year),
-            Number(month) - 1,
-            Number(day),
-            Number(hours),
-            Number(minutes)
-        );
+        const parsed = new Date(customDateTime.value);
 
         return isNaN(parsed.getTime()) ? null : parsed;
     }
@@ -257,12 +242,19 @@ watch(selectedTimeOption, (val) => {
     }
 })
 
-function confirmPublicationSchedule() {
+async function confirmPublicationSchedule() {
     if (!finalDateTime.value || !course.value) return;
 
-
+    await fetch(`/api/v1/courses/${uuid}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            scheduledStart: finalDateTime.value.toISOString()
+        })
+    });
 
     planningModal.value = null;
+    editedStatus.value = 1;
 }
 
 function cancelPublicationSchedule() {
@@ -1618,9 +1610,6 @@ watch(
                         :minDate="minCustomDatetime"
                     >
                     </Input>
-                    <p>
-                        {{ customDateTime }}
-                    </p>
                 </div>
 
                 <div :class="$style.modalButtons">

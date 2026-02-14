@@ -73,6 +73,11 @@ public class APIv1(
             course.Description = body.Description;
         }
 
+        if (body.ScheduledStart.HasValue)
+        {
+            course.ScheduledStart = body.ScheduledStart.Value;
+        }
+
         var entry = db.Entry(course);
         if (entry.State == EntityState.Detached) {
             db.Courses.Update(course);

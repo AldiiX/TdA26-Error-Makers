@@ -437,6 +437,8 @@ public class APIv2(
         existingCourse.Description = body.Description;
         existingCourse.Status = body.Status;
         
+        
+        
         // Category
         if (body.CategoryUuid.HasValue) {
             var category = await db.Categories

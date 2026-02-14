@@ -7,6 +7,7 @@ namespace tda26.Server.Infrastructure;
 public static class EntityFrameworkIncludes {
 
 	public static IQueryable<Course> CoursesMinimalEf(this AppDbContext db) {
+		db.CheckScheduling();
 		return db.Courses
 			.Include(c => c.Tags)
 				.ThenInclude(t => t.Category)
@@ -51,5 +52,14 @@ public static class EntityFrameworkIncludes {
 		return db.FeedPosts
 			.Include(fp => fp.Course)
 			.Include(fp => fp.Account);
+	}
+	
+	public static void CheckScheduling(this AppDbContext db) {
+		var now = DateTime.UtcNow;
+		var coursesToStart = db.Courses.Where(c => c.Status == CourseStatus.Scheduled && c.ScheduledStart <= now).ToList();
+		foreach (var course in coursesToStart) {
+			course.Status = CourseStatus.Live;
+		}
+		db.SaveChanges();
 	}
 }
