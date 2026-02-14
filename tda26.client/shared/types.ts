@@ -20,7 +20,6 @@ export interface Course {
     viewCount: number,
     imageUrl: string | null,
     imageUrlOrDefault: string,
-    image: string | null,
     ratingScore: number,
     category: {
         uuid: string,

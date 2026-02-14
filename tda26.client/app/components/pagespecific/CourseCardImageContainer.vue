@@ -1,22 +1,74 @@
-﻿<script setup lang="ts">
-    import { NuxtLink } from "#components";
-    import type {Course} from "#shared/types";
-    import {ref, type Ref, shallowRef, toRef} from "vue";
+<script setup lang="ts">
+import { NuxtLink } from "#components";
+import type { Course } from "#shared/types";
+import { computed, toRef, type Ref } from "vue";
 
-    const props = defineProps<{
-        course: Course;
-        class?: string;
-    }>();
+type CourseWithImageHelpers = Course & {
+    uuid: string;
+    imageUrl?: string | null;
+    imageUrlOrDefault?: string | null;
+};
 
-    const courseRef = toRef(props, 'course') as Ref<Course>;
-    const displayedImageUrl = computed(() => courseRef.value.imageUrl);
+const props = defineProps<{
+    course: Course;
+    class?: string;
+
+    // undefined = bez override (vezme se course.imageUrl)
+    // null = vynutit "zadny obrazek"
+    // string = vynutit konkretni url
+    imageUrlOverride?: string | null;
+}>();
+
+const courseRef = toRef(props, "course") as Ref<CourseWithImageHelpers>;
+
+function normalizeUrl(value: unknown): string | null {
+    if(typeof value !== "string") {
+        return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+const displayedImageUrl = computed(() => {
+    // kdyz parent posle override, bereme ho jako zdroj pravdy
+    if(props.imageUrlOverride !== undefined) {
+        return normalizeUrl(props.imageUrlOverride);
+    }
+
+    return normalizeUrl(courseRef.value.imageUrl ?? null);
+});
+
+const imageStyle = computed(() => {
+    const url = displayedImageUrl.value;
+
+    if(!url) {
+        return {};
+    }
+
+    return {
+        backgroundImage: `url(\"${url}\")`,
+    } as Record<string, string>;
+});
+
+const fallbackIconUrl = computed(() => {
+    return courseRef.value.imageUrlOrDefault ?? "/icons/courseicons/paint.svg";
+});
 </script>
 
 <template>
-    <NuxtLink :to="`/courses/${course.uuid}`" :class="[$style.imageContainer, props.class]">
-        <div :class="$style.image" v-if="displayedImageUrl" :style="{ '--bg': `url(${displayedImageUrl})` }"></div>
+    <NuxtLink
+        :to="`/courses/${courseRef.uuid}`"
+        :class="[$style.imageContainer, props.class]"
+        :key="`${courseRef.uuid}|${displayedImageUrl ?? ''}`"
+    >
+        <div
+            v-if="displayedImageUrl"
+            :class="$style.image"
+            :style="imageStyle"
+        ></div>
 
-        <template v-if="!displayedImageUrl">
+        <template v-else>
             <div :class="$style.blob1"></div>
             <div :class="$style.blob2"></div>
             <div :class="$style.blob3"></div>
@@ -24,14 +76,13 @@
             <div :class="$style.blob5"></div>
 
             <div :class="$style.circle">
-                <div :class="$style.icon" :style="{ maskImage: `url(${courseRef.imageUrlOrDefault})` }"></div>
+                <div :class="$style.icon" :style="{ maskImage: `url(${fallbackIconUrl})` }"></div>
             </div>
         </template>
     </NuxtLink>
 </template>
 
 <style module lang="scss">
-
 .imageContainer {
     display: block;
     min-height: 200px;
@@ -54,7 +105,6 @@
     .image {
         width: 100%;
         height: 100%;
-        background-image: var(--bg);
         background-size: cover;
         background-position: center;
         position: absolute;
@@ -142,7 +192,6 @@
             mask-size: contain;
             mask-position: center;
             mask-repeat: no-repeat;
-            //mask-image: url(/icons/courseicons/paint.svg);
         }
     }
 }

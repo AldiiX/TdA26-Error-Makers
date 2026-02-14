@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import {computed, ref, watch} from "vue";
+import { computed, ref, watch } from "vue";
 import type { Course } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
 import type { Account } from "#shared/types";
 import { NuxtLink } from "#components";
 import Avatar from "~/components/Avatar.vue";
-import {statusToText} from "#shared/utils/statusMapper";
 import StatusBadge from "~/components/StatusBadge.vue";
 import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
-import {useState} from "#app";
+import { useState } from "#app";
 
 const props = defineProps<{
     course: Course,
@@ -23,7 +22,6 @@ const emit = defineEmits<{
     (e: "delete"): void;
 }>();
 
-const course = toRef(props, "course") as Ref<Course>;
 const loggedAccount = useState<Account | null>("loggedAccount");
 
 const lecturerDisplayName = computed(() => {
@@ -45,6 +43,20 @@ const revealStyle = computed(() => {
     return {
         "--reveal-delay-ms": `${props.revealDelayMs ?? 0}ms`
     } as Record<string, string>;
+});
+const courseReactive = ref(props.course);
+
+const course = computed(() => courseReactive.value);
+
+// tri-state override pro obrazek
+// undefined = bez override
+// null = vynutit "zadny obrazek"
+// string = vynutit konkretni url
+const imageUrlOverride = ref<string | null | undefined>(undefined);
+
+watch(() => props.course, (value) => {
+    courseReactive.value = value;
+    imageUrlOverride.value = undefined;
 });
 
 const isUploading = ref(false);
@@ -74,13 +86,16 @@ const editBgImage = () => {
 
                 if (!response.ok) return;
 
-                course.value.imageUrl = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                const newUrl = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                imageUrlOverride.value = newUrl;
+                // pokud model obsahuje imageUrl, udrzime to i v course objektu
+                (courseReactive.value as any).imageUrl = newUrl;
             } finally {
                 isUploading.value = false;
             }
         }
     }
-
+    
     input.click();
 }
 
@@ -97,7 +112,8 @@ const resetBgImage = async () => {
 
         if (!response.ok) return;
 
-        course.value.imageUrl = null;
+        imageUrlOverride.value = null;
+        (courseReactive.value as any).imageUrl = null;
     } finally {
         isUploading.value = false;
     }
@@ -139,6 +155,29 @@ async function duplicateCourse() {
         isDuplicating.value = false;
     }
 }
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Změnit obrázek",
+            onClick: editBgImage,
+            disabled: isUploading.value,
+            iconPath: "/icons/imageEdit.svg",
+        },
+        {
+            text: "Obnovit výchozí obrázek",
+            onClick: resetBgImage,
+            disabled: isUploading.value,
+            iconPath: "/icons/trash.svg",
+        },
+        {
+            text: "Duplikovat kurz",
+            onClick: duplicateCourse,
+            disabled: isUploading.value || isDuplicating.value,
+            iconPath: "/icons/copy.svg",
+        },
+    ];
+});
 </script>
 
 <template>
@@ -162,26 +201,8 @@ async function duplicateCourse() {
                         @click="openContextMenu"
                         :class="[$style.contextMenuButton]"
                     ></span>
-                    <ContextMenu :items="[
-                            {
-                                text: 'Změnit obrázek',
-                                onClick: editBgImage,
-                                disabled: isUploading,
-                                iconPath: '/icons/imageEdit.svg'
-                            },
-                            {
-                                text: 'Obnovit výchozí obrázek',
-                                onClick: resetBgImage,
-                                disabled: isUploading,
-                                iconPath: '/icons/trash.svg'
-                            },
-                            {
-                                text: 'Duplikovat kurz',
-                                onClick: duplicateCourse,
-                                disabled: isUploading || isDuplicating,
-                                iconPath: '/icons/copy.svg'
-                            }
-                        ]"
+                    <ContextMenu
+                         :items="contextMenuItems"
 
                          @close="isContextMenuOpen = false"
                          :visible="isContextMenuOpen"
@@ -191,8 +212,10 @@ async function duplicateCourse() {
                 </div>
             </div>
 
-<!--            <p>{{ course.imageUrl }}</p>-->
-            <CourseCardImageContainer :course="course" />
+            <CourseCardImageContainer
+                :course="course"
+                :image-url-override="imageUrlOverride"
+            />
         </div>
         <div :class="$style.bottom">
             <div :class="$style.infoContainer">
@@ -327,11 +350,11 @@ async function duplicateCourse() {
                 mask-image: url("/icons/imageEdit.svg");
             }
         }
-
+        
         &:hover .reset {
             opacity: 1;
         }
-
+        
         .reset {
             opacity: 0;
             display: flex;
@@ -365,7 +388,7 @@ async function duplicateCourse() {
                 mask-image: url("/icons/trash.svg");
             }
         }
-
+        
         .contextMenuButton {
             display: flex;
             align-items: center;
@@ -391,7 +414,7 @@ async function duplicateCourse() {
                 mask-repeat: no-repeat;
                 mask-image: url("/icons/ellipsis.svg");
             }
-
+            
             &:hover {
                 background-color: rgba(255, 255, 255, 0.7);
                 transition-duration: 0.3s;
@@ -425,7 +448,7 @@ async function duplicateCourse() {
     .top {
         position: relative;
         width: 100%;
-
+        
         .statusIcon {
             position: absolute;
             top: 16px;
@@ -635,18 +658,18 @@ async function duplicateCourse() {
 @media screen and (max-width: app.$mobileBreakpoint) {
     .bottom {
         gap: 8px;
-
+        
         .buttonsContainer .anotherInfo {
             gap: 8px !important;
         }
     }
-
+    
     .editMode {
         .buttonsContainer {
             flex-direction: column;
             align-items: start !important;
             gap: 8px !important;
-
+            
             .actionContainer {
                 width: 100% !important;
             }
