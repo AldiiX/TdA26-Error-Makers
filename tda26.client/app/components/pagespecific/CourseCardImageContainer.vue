@@ -31,13 +31,18 @@ function normalizeUrl(value: unknown): string | null {
 }
 
 const displayedImageUrl = computed(() => {
-    // kdyz parent posle override, bereme ho jako zdroj pravdy
-    if(props.imageUrlOverride !== undefined) {
-        return normalizeUrl(props.imageUrlOverride);
+    const updatedAt = Date.parse(courseRef.value.updatedAt)
+
+    if (props.imageUrlOverride != null) {
+        return normalizeUrl(props.imageUrlOverride) + `?d=${updatedAt}`
     }
 
-    return normalizeUrl(courseRef.value.imageUrl ?? null);
-});
+    if (courseRef.value.imageUrl != null) {
+        return normalizeUrl(courseRef.value.imageUrl) + `?d=${updatedAt}`
+    }
+
+    return null
+})
 
 const imageStyle = computed(() => {
     const url = displayedImageUrl.value;
@@ -54,6 +59,11 @@ const imageStyle = computed(() => {
 const fallbackIconUrl = computed(() => {
     return courseRef.value.imageUrlOrDefault ?? "/icons/courseicons/paint.svg";
 });
+
+// onMounted(() => {
+//     console.log("CourseCardImageContainer mounted, course:", courseRef.value);
+//     displayedImageUrl.value = `${courseRef.value.imageUrl}?d=${Date.parse(courseRef.value.updatedAt)}`
+// })
 </script>
 
 <template>

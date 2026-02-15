@@ -114,6 +114,10 @@ const resetBgImage = async () => {
 
         imageUrlOverride.value = null;
         (courseReactive.value as any).imageUrl = null;
+        
+        // Temporary fix for when resetting the image after uploading two times it would have a corrupted mask for the fallback image url.
+        const courseRes = await fetch(`/api/v2/courses/${props.course.uuid}?full=false`).then(res => res.json());
+        courseReactive.value.imageUrlOrDefault = courseRes.imageUrlOrDefault;
     } finally {
         isUploading.value = false;
     }
