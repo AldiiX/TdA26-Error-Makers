@@ -293,7 +293,9 @@ public static class Program {
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
-        
+        builder.Services.AddSingleton<IStreamBroker, InMemoryStreamBroker>();
+        builder.Services.AddHostedService<CourseSchedulingHostedService>();
+
         // Nastaveni
         builder.Services.Configure<CustomMinioOptions>(options => {
             options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";

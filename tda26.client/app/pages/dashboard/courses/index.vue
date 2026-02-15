@@ -261,6 +261,7 @@ const deleteCourse = async () => {
             <h3>Vytvořit nový kurz</h3>
             <CourseForm
                 mode="create"
+                :categories="[]"
                 @finished="() => { enabledModal = null; refreshCourses(); }"
             />
         </Modal>
@@ -276,6 +277,7 @@ const deleteCourse = async () => {
             <CourseForm
                 mode="edit"
                 :course-id="editingCourseId"
+                :categories="[]"
                 @finished="() => { enabledModal = null; refreshCourses(); editingCourseId = null; }"
             />
         </Modal>

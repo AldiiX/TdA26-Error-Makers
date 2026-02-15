@@ -9,6 +9,7 @@
         defaultFileName?: string,
         allowedFileTypes?: string[] | null,
         maxFileSize?: number | null,
+        maxDate?: string | null,
     }>(), {
         modelValue: '',
         type: 'text',
@@ -24,7 +25,11 @@
     }>();
 
     const fileName = ref(props.defaultFileName);
-
+    
+    const isDateType = computed(() =>
+        props.type === 'date' || props.type === 'datetime-local'
+    )
+    
     function onFileChange(e: Event) {
         const target = e.target as HTMLInputElement;
         const selected = target.files?.[0] ?? null;
@@ -101,6 +106,7 @@
         :class="$style.input"
         :required="required"
         :value="modelValue"
+        :max="isDateType ? props.maxDate ?? undefined : undefined"
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
     >
 </template>

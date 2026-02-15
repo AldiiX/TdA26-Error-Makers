@@ -21,6 +21,7 @@ public static class CourseMapper
             CreatedAt = course.CreatedAt,
             UpdatedAt = course.UpdatedAt,
             Status = course.Status,
+            ScheduledStart = course.ScheduledStart,
             ImageUrl = course.ImageUrl != null && course.ImageUrl.StartsWith("course-images/")
                 ? $"/api/v2/courses/{course.Uuid}/image"
                 : null,

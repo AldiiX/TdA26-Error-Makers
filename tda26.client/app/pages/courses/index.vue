@@ -199,7 +199,7 @@
                         />
                     </div>
                     
-                    <div :class="$style.state">
+                    <div :class="[$style.state, $style.cont]">
                         <p>Stav</p>
                         <Select
                                 v-model="activeStatus"
