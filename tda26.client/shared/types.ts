@@ -19,7 +19,7 @@ export interface Course {
     likeCount: number,
     viewCount: number,
     imageUrl: string | null,
-    imageUrlOrDefault: string,
+    categoryImageUrl: string,
     ratingScore: number,
     category: {
         uuid: string,

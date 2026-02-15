@@ -6,7 +6,6 @@ import { computed, toRef, type Ref } from "vue";
 type CourseWithImageHelpers = Course & {
     uuid: string;
     imageUrl?: string | null;
-    imageUrlOrDefault?: string | null;
 };
 
 const props = defineProps<{
@@ -57,13 +56,8 @@ const imageStyle = computed(() => {
 });
 
 const fallbackIconUrl = computed(() => {
-    return courseRef.value.imageUrlOrDefault ?? "/icons/courseicons/paint.svg";
+    return courseRef.value.categoryImageUrl;
 });
-
-// onMounted(() => {
-//     console.log("CourseCardImageContainer mounted, course:", courseRef.value);
-//     displayedImageUrl.value = `${courseRef.value.imageUrl}?d=${Date.parse(courseRef.value.updatedAt)}`
-// })
 </script>
 
 <template>

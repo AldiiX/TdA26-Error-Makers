@@ -28,7 +28,7 @@ public static class CourseMapper
             Account = course.Account,
             ViewCount = course.ViewCount,
             LikeCount = course.LikeCount,
-            ImageUrlOrDefault = course.ImageUrlOrDefault,
+            CategoryImageUrl = course.CategoryImageUrl,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => q.ToReadDto(extended)).ToList(),
             Feed = course.Feed,
