@@ -4,7 +4,7 @@ import {
     type Course,
     type CourseCategory, type Quiz
 } from "#shared/types";
-import { formatCzechCount } from "#shared/utils/declineNumeral";
+import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";

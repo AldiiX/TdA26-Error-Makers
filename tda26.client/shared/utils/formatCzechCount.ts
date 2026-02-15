@@ -6,7 +6,7 @@
     many?: string;
 };
 
-export function formatCzechCount(count: number, forms: CzechForms): string {
+export default function (count: number, forms: CzechForms): string {
     const absCount = Math.abs(count);
 
     // Pokud je jen jeden tvar (např. "zhlédnutí")
