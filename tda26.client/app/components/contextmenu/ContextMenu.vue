@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
-import ContextMenuItem from "./ContextMenuItem.vue"
+import ContextMenuItem from "./ContextMenuItem.vue";
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 
 export interface ContextMenuItemType {
     text: string
@@ -11,57 +12,83 @@ export interface ContextMenuItemType {
 }
 
 const props = defineProps<{
-    items: ContextMenuItemType[]
-    x: number
-    y: number
-    visible: boolean
+    items: ContextMenuItemType[];
+    x: number;
+    y: number;
+    visible: boolean;
 }>()
 
 const emit = defineEmits<{
-    (e: "close"): void
+    (e: "close"): void;
 }>()
 
-const menuRef = ref<HTMLElement | null>(null)
-const zoneRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null);
+const zoneRef = ref<HTMLElement | null>(null);
 
 function onDocumentClick(event: MouseEvent) {
-    if (!menuRef.value) return
+    if (!menuRef.value) return;
 
     if (!menuRef.value.contains(event.target as Node) || (zoneRef.value && zoneRef.value.contains(event.target as Node))) {
-        emit("close")
+        emit("close");
     }
 }
 
 function onDocumentScroll() {
-    emit("close")
+    emit("close");
 }
 
 function handleItemClick(item: ContextMenuItemType) {
-    if (item.disabled) return
+    if (item.disabled) return;
 
-    emit("close")
-    item.onClick?.()
+    emit("close");
+    item.onClick?.();
 }
 
 function handleLinkClick(item: ContextMenuItemType) {
-    if (item.disabled) return
+    if (item.disabled) return;
 
     if (item.forceLoad && item.href) {
-        window.location.href = item.href
+        window.location.href = item.href;
     } else {
-        handleItemClick(item)
+        handleItemClick(item);
     }
 }
 
 onMounted(() => {
-    document.addEventListener("mousedown", onDocumentClick)
-    document.addEventListener("scroll", onDocumentScroll, { passive: true })
-})
+    document.addEventListener("mousedown", onDocumentClick);
+    document.addEventListener("scroll", onDocumentScroll, { passive: true });
+});
 
 onBeforeUnmount(() => {
-    document.removeEventListener("mousedown", onDocumentClick)
-    document.removeEventListener("scroll", onDocumentScroll)
+    document.removeEventListener("mousedown", onDocumentClick);
+    document.removeEventListener("scroll", onDocumentScroll);
 })
+
+watch(
+    () => props.visible,
+    async (isVisible) => {
+        if (!isVisible) return;
+
+        await nextTick();
+
+        const menu = menuRef.value;
+        if (!menu) return;
+        
+        const padding = 24;
+        const { innerWidth, innerHeight } = window;
+        const { offsetWidth, offsetHeight } = menu;
+
+        // Ensure the menu doesn't go off-screen
+        let left = Math.min(props.x, innerWidth - offsetWidth - padding);
+        let top = Math.min(props.y, innerHeight - offsetHeight - padding);
+
+        left = Math.max(padding, left);
+        top = Math.max(padding, top);
+
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+    }
+);
 </script>
 
 <template>
@@ -109,12 +136,10 @@ onBeforeUnmount(() => {
     left: 0;
     min-width: 200px;
     padding: 8px;
-    //background: var(--background-color-secondary);
     background: rgb(from var(--background-color-secondary) r g b/ 0.75);
     border: 1px solid var(--input-border-color);
     border-radius: 12px;
     z-index: 10;
-    //box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 
     a {
         color: inherit;

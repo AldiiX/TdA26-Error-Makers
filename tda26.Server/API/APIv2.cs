@@ -670,6 +670,7 @@ public class APIv2(
         var resizedImage = await ResizeImageAsync(body.Image, 500, ct);
         var imageUrl = await materialAccessService.UploadCourseImageAsync(existingCourse.Uuid, resizedImage, ct);
         existingCourse.ImageUrl = imageUrl;
+        existingCourse.UpdatedAt = DateTime.UtcNow;
 
         var entry = db.Entry(existingCourse);
         if (entry.State == EntityState.Detached) {
@@ -719,6 +720,7 @@ public class APIv2(
 
         await materialAccessService.DeleteFileMaterialAsync(existingCourse.ImageUrl, ct);
         existingCourse.ImageUrl = null;
+        existingCourse.UpdatedAt = DateTime.UtcNow;
 
         var entry = db.Entry(existingCourse);
         if (entry.State == EntityState.Detached) {

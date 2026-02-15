@@ -6,7 +6,6 @@ import { computed, toRef, type Ref } from "vue";
 type CourseWithImageHelpers = Course & {
     uuid: string;
     imageUrl?: string | null;
-    imageUrlOrDefault?: string | null;
 };
 
 const props = defineProps<{
@@ -31,13 +30,18 @@ function normalizeUrl(value: unknown): string | null {
 }
 
 const displayedImageUrl = computed(() => {
-    // kdyz parent posle override, bereme ho jako zdroj pravdy
-    if(props.imageUrlOverride !== undefined) {
-        return normalizeUrl(props.imageUrlOverride);
+    const updatedAt = Date.parse(courseRef.value.updatedAt)
+
+    if (props.imageUrlOverride != null) {
+        return normalizeUrl(props.imageUrlOverride) + `?d=${updatedAt}`
     }
 
-    return normalizeUrl(courseRef.value.imageUrl ?? null);
-});
+    if (courseRef.value.imageUrl != null) {
+        return normalizeUrl(courseRef.value.imageUrl) + `?d=${updatedAt}`
+    }
+
+    return null
+})
 
 const imageStyle = computed(() => {
     const url = displayedImageUrl.value;
@@ -52,7 +56,7 @@ const imageStyle = computed(() => {
 });
 
 const fallbackIconUrl = computed(() => {
-    return courseRef.value.imageUrlOrDefault ?? "/icons/courseicons/paint.svg";
+    return courseRef.value.categoryImageUrl;
 });
 </script>
 

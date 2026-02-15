@@ -45,6 +45,6 @@ export function useCourses() {
     return {
         courses,
         pending,
-        error
+        error,
     }
 }
