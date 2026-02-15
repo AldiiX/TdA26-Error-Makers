@@ -1,4 +1,4 @@
-﻿export default function getBaseUrl(): string {
+﻿export default function(): string {
     /** client **/
     if (import.meta.client) { return window.location.origin; }
 

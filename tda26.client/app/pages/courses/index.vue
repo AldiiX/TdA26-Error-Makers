@@ -10,6 +10,11 @@
     import Select from '~/components/Select.vue'
     import SelectLecturer from "~/components/pagespecific/SelectLecturer.vue";
     import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
+    
+    import { useCourses } from '~/composables/courses/useCourses'
+    import { useSearchQuery } from '~/composables/courses/useSearchQuery'
+    import { useCourseFiltering } from '~/composables/courses/useCourseFiltering'
+    import { usePagination } from '~/composables/courses/usePagination'
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -22,223 +27,32 @@
         keywords: "online kurzy, katalog kurzů, vzdělávací programy, e-learning kurzy, výuka online"
     });
 
-    type TagItem = { uuid: string; displayName: string }
+    const { courses } = useCourses()
+    const { searchQuery, debouncedQuery } = useSearchQuery()
 
-    type IndexedCourse = {
-        course: Course
-        createdAtMs: number
-        categoryLabel: string | null
-        tagUuids: string[]
-        searchText: string
-    }
+    const {
+        filteredCourses,
+        activeCategory,
+        activeTags,
+        activeAuthor,
+        activeStatus,
+        setCategory,
+        toggleTag,
+        categoryTags,
+        sort,
+        resetAllFilters
+    } = useCourseFiltering(courses, debouncedQuery)
 
-    const PAGE_SIZE = 8
-    const FIRST_FETCH_LIMIT = 25
+    const {
+        page,
+        totalPages,
+        visiblePages,
+        goToPage,
+        paginatedItems: paginatedCourses
+    } = usePagination(filteredCourses)
 
-
-
-
-
-    // -----------------------------
-    // fetchovani
-    // ----------------------------
-
-    // sdilena cache mezi navigacemi
-    const courses = useState<Course[] | null>('allCourses', () => null)
-
-    // ochrany proti opakovanemu full fetchi
-    const fullFetchRunning = ref(false)
-    const hasFetchedAllCourses = useState<boolean>('hasFetchedAllCourses', () => false)
-
-    async function fetchAllCoursesIfNeeded() {
-        //if (hasFetchedAllCourses.value) { return }
-        if (fullFetchRunning.value) { return }
-        if (!courses.value) { return }
-
-        // kdyz prvni fetch vratil mene nez limit, dalsi data uz pravdepodobne nejsou
-        if (courses.value.length < FIRST_FETCH_LIMIT) {
-            hasFetchedAllCourses.value = true
-            return
-        }
-
-        fullFetchRunning.value = true
-        try {
-            const allCourses = await $fetch<Course[]>('/api/v2/courses', {
-                baseURL: getBaseUrl()
-            })
-
-            courses.value = allCourses
-            hasFetchedAllCourses.value = true
-        } catch (e) {
-            // kdyz se full fetch nepovede, nechceme to zamknout navzdy
-            console.error('error fetching all courses:', e)
-        } finally {
-            fullFetchRunning.value = false
-        }
-    }
-
-    const { pending, error } = useLazyFetch<Course[]>(`/api/v2/courses?limit=${FIRST_FETCH_LIMIT}`, {
-        baseURL: getBaseUrl(),
-        key: `allCourses:limit:${FIRST_FETCH_LIMIT}`,
-        server: false,
-        immediate: true,
-        getCachedData: () => courses.value ?? undefined,
-        onResponse({ response }) {
-            courses.value = (response as any)._data as Course[]
-            void fetchAllCoursesIfNeeded()
-        }
-    })
-
-    // kdyz data prisla z cache, onresponse se nespusti, tak tohle zajisti upgrade fetch i v tom pripade
-    watch(() => courses.value?.length, () => {
-        void fetchAllCoursesIfNeeded()
-    }, { immediate: true })
-
-    watch(
-        error,
-        (e) => {
-            if (e) {
-                // logneme jen pro debug
-                console.error('error fetching courses:', e)
-            }
-        },
-        { immediate: true }
-    )
-
-
-
-
-
-    // -----------------------------
-    // query param sync (?search=...)
-    // -----------------------------
-    const route = useRoute()
-    const router = useRouter()
-
-    function getQueryString(value: unknown): string {
-        if (Array.isArray(value)) {
-            return typeof value[0] === 'string' ? value[0] : ''
-        }
-        return typeof value === 'string' ? value : ''
-    }
-
-    const routeSearchQuery = computed(() => getQueryString(route.query.search))
-
-    // filtrovani a strankovani
-    const page = ref(1)
-
-    // init hodnoty z url (aby input sedel hned pri prvnim renderu)
-    const searchQuery = ref(routeSearchQuery.value)
-
-    // filtry
-    const activeTags = ref<string[]>([])
-    const activeCategory = ref<string | null>(null)
-    const activeAuthor = ref<string | null>(null)
-
-    const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
-
-    function normalizeText(str: string): string {
-        return (str ?? '')
-            .normalize('NFD')
-            .replace(/\p{Diacritic}/gu, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toLowerCase()
-    }
-
-    // debounce pro vyhledavani
-    const debouncedQuery = ref('')
-    let queryTimer: ReturnType<typeof setTimeout> | null = null
-
-    watch(
-        searchQuery,
-        (val) => {
-            if (queryTimer) {
-                clearTimeout(queryTimer)
-            }
-            queryTimer = setTimeout(() => {
-                debouncedQuery.value = val
-            }, 200)
-        },
-        { immediate: true }
-    )
-
-    // kdyz se zmeni url (napr. back/forward nebo prime otevreni s jinym query), prepis input
-    const syncingFromRoute = ref(false)
-
-    watch(
-        routeSearchQuery,
-        async (val) => {
-            if (val === searchQuery.value) { return }
-
-            // zabrani zpetne smycce (route -> input -> replace -> route)
-            syncingFromRoute.value = true
-            searchQuery.value = val
-            page.value = 1
-
-            await nextTick()
-            syncingFromRoute.value = false
-        },
-        { immediate: true }
-    )
-
-    // po debounce syncneme url (bez pridani do historie)
-    watch(
-        debouncedQuery,
-        (val) => {
-            if (syncingFromRoute.value) { return }
-
-            const q = val.trim()
-            const current = routeSearchQuery.value.trim()
-
-            if (q === current) { return }
-
-            router.replace({
-                query: {
-                    ...route.query,
-                    // kdyz je prazdny, odstranime parametr z url
-                    search: q || undefined
-                }
-            })
-
-            page.value = 1
-        }
-    )
-
-
-
-
-
-    // -----------------------------
-    // filtrovani, razeni, strankovani
-    // -----------------------------
-
-    const activeTagSet = computed(() => new Set(activeTags.value))
-
-    // kategorie + tagy pro vybranou kategorii v jednom pruchodu daty
-    const categoryIndex = computed(() => {
-        const map = new Map<string, { tags: Map<string, TagItem> }>()
-        const list = courses.value ?? []
-
-        for (const course of list) {
-            const label = course.category?.label
-            if (!label) continue
-
-            let entry = map.get(label)
-            if (!entry) {
-                entry = { tags: new Map<string, TagItem>() }
-                map.set(label, entry)
-            }
-
-            for (const tag of course.tags ?? []) {
-                entry.tags.set(tag.uuid, { uuid: tag.uuid, displayName: tag.displayName })
-            }
-        }
-
-        return map
-    })
-
-    // fetchnuti categories z api neblokujici
+    
+    // // fetchnuti categories z api neblokujici
     const allCategories = useState<any[] | null>('courseCategories', () => null);
 
     onMounted(async () => {
@@ -254,16 +68,8 @@
             console.error('error fetching course categories:', e)
         }
     })
-
-    const categoryTags = computed(() => {
-        if (!activeCategory.value) return []
-        const tags = categoryIndex.value.get(activeCategory.value)?.tags
-        if (!tags) return []
-
-        return Array.from(tags.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
-    })
-
-    // seznam unikatnich autoru
+    
+    // // seznam unikatnich autoru
     const authorOptions = computed(() => {
         const list = courses.value ?? []
         const arr: any[] = []
@@ -287,179 +93,19 @@
 
         return arr.sort((a, b) => a.label.localeCompare(b.label))
     })
-
-    function toggleTag(uuid: string) {
-        activeTags.value = activeTags.value.includes(uuid)
-            ? activeTags.value.filter((t) => t !== uuid)
-            : [...activeTags.value, uuid]
-
-        page.value = 1
-    }
-
-    function setCategory(category: string | null) {
-        activeCategory.value = activeCategory.value === category ? null : category
-        activeTags.value = []
-        page.value = 1
-    }
-
-    // predpocitany index pro hledani/sort
-    const indexedCourses = computed<IndexedCourse[]>(() => {
-        const list = courses.value ?? []
-
-        return list.map((course) => {
-            const createdAtMs = Number.isFinite(Date.parse(course.createdAt))
-                ? Date.parse(course.createdAt)
-                : 0
-
-            const categoryLabel = course.category?.label ?? null
-            const tagUuids = (course.tags ?? []).map((t) => t.uuid)
-
-            const searchText = normalizeText(
-                [
-                    course.name,
-                    course.description ?? '',
-                    (course.tags ?? []).map((t) => t.displayName).join(' ')
-                ].join(' ')
-            )
-
-            return {
-                course,
-                createdAtMs,
-                categoryLabel,
-                tagUuids,
-                searchText
-            }
-        })
-    })
-
-    const sortedCourses = computed<IndexedCourse[]>(() => {
-        const list = indexedCourses.value.slice()
-
-        switch (sort.value) {
-            default:
-            case 'new':
-                list.sort((a, b) => b.createdAtMs - a.createdAtMs)
-                break
-            case 'old':
-                list.sort((a, b) => a.createdAtMs - b.createdAtMs)
-                break
-            case 'byViews':
-                list.sort((a, b) => (b.course.viewCount ?? 0) - (a.course.viewCount ?? 0))
-                break
-            case 'byLikes':
-                list.sort((a, b) => (b.course.likeCount ?? 0) - (a.course.likeCount ?? 0))
-                break
-        }
-
-        return list
-    })
-
-    const filteredCourses = computed<Course[]>(() => {
-        let list = sortedCourses.value
-
-        if (activeCategory.value) {
-            list = list.filter((c) => c.categoryLabel === activeCategory.value)
-        }
-
-        if (activeTagSet.value.size > 0) {
-            list = list.filter((c) => c.tagUuids.some((id) => activeTagSet.value.has(id)))
-        }
-
-        if (activeAuthor.value) {
-            list = list.filter((c) => {
-                const authorId = c.course.lecturer?.uuid ?? c.course.account?.uuid ?? null
-                return authorId === activeAuthor.value
-            })
-        }
-
-        const query = normalizeText(debouncedQuery.value)
-        if (query) {
-            list = list.filter((c) => c.searchText.includes(query))
-        }
-
-        return list.map((x) => x.course)
-    })
-
-    watch([sort, debouncedQuery, activeAuthor], () => {
-        page.value = 1
-    })
-
-    const totalPages = computed(() => {
-        const total = Math.ceil(filteredCourses.value.length / PAGE_SIZE)
-        return total > 0 ? total : 1
-    })
-
-    const paginatedCourses = computed(() => {
-        const start = (page.value - 1) * PAGE_SIZE
-        return filteredCourses.value.slice(start, start + PAGE_SIZE)
-    })
-
-    function goToPage(newPage: number) {
-        if (newPage < 1 || newPage > totalPages.value) return
-
-        scrollTo({ top: window.innerHeight * 0.2, behavior: 'smooth' })
-        page.value = newPage
-    }
-
-    const visiblePages = computed<(number | '...')[]>(() => {
-        const total = totalPages.value
-        const current = page.value
-
-        if (total <= 8) {
-            return Array.from({ length: total }, (_, i) => i + 1)
-        }
-
-        const result: (number | '...')[] = []
-        const push = (v: number | '...') => {
-            if (result[result.length - 1] === v) return
-            result.push(v)
-        }
-
-        push(1)
-
-        const start = Math.max(2, current - 2)
-        const end = Math.min(total - 1, current + 2)
-
-        if (start > 2) push('...')
-
-        for (let i = start; i <= end; i++) {
-            push(i)
-        }
-
-        if (end < total - 1) push('...')
-
-        push(total)
-
-        while (result.length > 8) {
-            const firstDots = result.indexOf('...')
-            if (firstDots !== -1) {
-                result.splice(firstDots, 1)
-            } else {
-                result.splice(1, 1)
-            }
-        }
-
-        return result
-    })
-
-    // resetovani filteru
+    
+    const stateOptions = [
+        { value: '0', label: 'Koncept' },
+        { value: '1', label: 'Naplánovaný' },
+        { value: '2', label: 'Aktivní' },
+        { value: '3', label: 'Pozastavený' },
+        { value: '4', label: 'Archivovaný' }
+    ]
     const isAnyFilterActive = computed<boolean>(() => {
-        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || false
+        return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || activeStatus.value !== null || false
     })
-
     const filterButtonClicked = ref(false);
-
-    function resetAllFilters() {
-        activeCategory.value = null
-        activeTags.value = []
-        activeAuthor.value = null
-        searchQuery.value = ''
-        page.value = 1
-        filterButtonClicked.value = true;
-        setTimeout(() => {
-            filterButtonClicked.value = false;
-        }, 500);
-    }
+    
 </script>
 
 <template>
@@ -499,7 +145,7 @@
                 </p>
             </div>
 
-            <div :class="$style.right" v-if="false">
+            <div v-if="false" :class="$style.right">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
                         <NumberExponential
@@ -527,34 +173,46 @@
                         <p>Filtry</p>
 
                         <transition name="fade">
-                            <div :class="[$style.resetbutton, { [$style.fadeout]: filterButtonClicked } ]" v-show="isAnyFilterActive" @click="resetAllFilters" :title="'Resetovat filtry'"></div>
+                            <div v-show="isAnyFilterActive" :class="[$style.resetbutton, { [$style.fadeout]: filterButtonClicked } ]" :title="'Resetovat filtry'" @click="resetAllFilters"/>
                         </transition>
                     </div>
 
                     <div :class="[$style.searchBar]">
-                        <div :class="$style.searchIcon"></div>
+                        <div :class="$style.searchIcon"/>
                         <input
+                                v-model="searchQuery"
                                 type="text"
                                 placeholder="Hledat kurz..."
-                                v-model="searchQuery"
-                        />
+                        >
                     </div>
 
                     <div :class="[$style.cont, $style.author]">
                         <p>Autor</p>
                         <SelectLecturer
-                                :options="authorOptions"
                                 v-model="activeAuthor"
+                                :options="authorOptions"
                                 placeholder="Všichni autoři"
                                 search-placeholder="Hledat autora..."
-                                :dropdownClass="$style.sdd"
+                                :dropdown-class="$style.sdd"
                                 special-render="withAvatar"
                                 :class="$style.selection"
                         />
                     </div>
+                    
+                    <div :class="$style.state">
+                        <p>Stav</p>
+                        <Select
+                                v-model="activeStatus"
+                                :options="stateOptions"
+                                placeholder="Všechny stavy"
+                                search-placeholder="Hledat stav..."
+                                :class="$style.selection"
+                                :dropdown-class="$style.sdd"
+                        />
+                    </div>
 
                     <SmoothSizeWrapper style="width: 100%; overflow: hidden;">
-                        <div :class="[$style.categories, $style.cont]" v-if="allCategories && allCategories?.length > 0">
+                        <div v-if="allCategories && allCategories?.length > 0" :class="[$style.categories, $style.cont]">
                             <p>Kategorie</p>
 
                             <div :class="$style.list">
@@ -570,7 +228,7 @@
                             </div>
                         </div>
 
-                        <div :class="[$style.tags, $style.cont]" v-if="activeCategory !== null && categoryTags?.length > 0">
+                        <div v-if="activeCategory !== null && categoryTags?.length > 0" :class="[$style.tags, $style.cont]">
                             <p>Tagy</p>
 
                             <div :class="$style.sortOptions">
@@ -616,13 +274,13 @@
 
                 <div :class="$style.courses">
                     <div :class="$style.coursesWrapper">
-                        <div :class="$style.loading" v-if="courses === null"></div>
+                        <div v-if="courses === null" :class="$style.loading"/>
 
-                        <div :class="$style.coursesList" v-else-if="paginatedCourses.length > 0">
+                        <div v-else-if="paginatedCourses.length > 0" :class="$style.coursesList">
                             <CourseCard
                                     v-for="(course, i) in paginatedCourses"
-                                    :course="course"
                                     :key="course.uuid"
+                                    :course="course"
                                     :reveal-delay-ms="i * 200"
                             />
                         </div>

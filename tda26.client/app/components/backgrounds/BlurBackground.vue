@@ -4,8 +4,8 @@
 
 <template>
     <div :class="$style.bg">
-        <div :class="$style.one"></div>
-        <div :class="$style.two"></div>
+        <div :class="$style.one"/>
+        <div :class="$style.two"/>
     </div>
 </template>
 

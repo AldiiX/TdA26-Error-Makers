@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import {computed, ref, watch} from "vue";
-import type { Course } from "#shared/types";
+import { computed, ref, watch } from "vue";
+import type { Course, Account  } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
-import type { Account } from "#shared/types";
+
 import { NuxtLink } from "#components";
 import Avatar from "~/components/Avatar.vue";
-import {statusToText} from "#shared/utils/statusMapper";
 import StatusBadge from "~/components/StatusBadge.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
+import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
+import { useState } from "#app";
 
 const props = defineProps<{
     course: Course,
@@ -42,14 +44,26 @@ const revealStyle = computed(() => {
         "--reveal-delay-ms": `${props.revealDelayMs ?? 0}ms`
     } as Record<string, string>;
 });
+const courseReactive = ref(props.course);
+
+const course = computed(() => courseReactive.value);
+
+// tri-state override pro obrazek
+// undefined = bez override
+// null = vynutit "zadny obrazek"
+// string = vynutit konkretni url
+const imageUrlOverride = ref<string | null | undefined>(undefined);
+
+watch(() => props.course, (value) => {
+    courseReactive.value = value;
+    imageUrlOverride.value = undefined;
+});
 
 const isUploading = ref(false);
 const uploadStatusText = ref("Nahrávám obrázek...");
-const displayedImageUrl = ref(props.course.imageUrl);
 
-watch(() => props.course.imageUrl, (value) => {
-    displayedImageUrl.value = value;
-});
+const isDuplicating = ref(false);
+const duplicateStatusText = ref("Duplikuji kurz...");
 
 const editBgImage = () => {
     if (isUploading.value) return;
@@ -72,7 +86,10 @@ const editBgImage = () => {
 
                 if (!response.ok) return;
 
-                displayedImageUrl.value = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                const newUrl = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                imageUrlOverride.value = newUrl;
+                // pokud model obsahuje imageUrl, udrzime to i v course objektu
+                (courseReactive.value as any).imageUrl = newUrl;
             } finally {
                 isUploading.value = false;
             }
@@ -95,57 +112,110 @@ const resetBgImage = async () => {
 
         if (!response.ok) return;
 
-        displayedImageUrl.value = null;
+        imageUrlOverride.value = null;
+        (courseReactive.value as any).imageUrl = null;
     } finally {
         isUploading.value = false;
     }
 }
+
+const isContextMenuOpen = ref(false);
+const menuX = ref(0)
+const menuY = ref(0)
+
+function openContextMenu(e: MouseEvent) {
+    e.preventDefault()
+
+    if(isContextMenuOpen.value === true) {
+        isContextMenuOpen.value = false;
+        return;
+    }
+
+    menuX.value = e.clientX;
+    menuY.value = e.clientY;
+
+
+    isContextMenuOpen.value = true;
+}
+
+async function duplicateCourse() {
+    if (isUploading.value || isDuplicating.value) return;
+
+    isDuplicating.value = true;
+
+    try {
+        const newCourse = await $fetch<Course>(`/api/v2/courses/${props.course.uuid}/duplicate`, {
+            method: "POST"
+        });
+
+        if (newCourse?.uuid) {
+            await navigateTo(`/courses/${newCourse.uuid}?edit=true`);
+        }
+    } finally {
+        isDuplicating.value = false;
+    }
+}
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Změnit obrázek",
+            onClick: editBgImage,
+            disabled: isUploading.value,
+            iconPath: "/icons/imageEdit.svg",
+        },
+        {
+            text: "Obnovit výchozí obrázek",
+            onClick: resetBgImage,
+            disabled: isUploading.value,
+            iconPath: "/icons/trash.svg",
+        },
+        {
+            text: "Duplikovat kurz",
+            onClick: duplicateCourse,
+            disabled: isUploading.value || isDuplicating.value,
+            iconPath: "/icons/copy.svg",
+        },
+    ];
+});
 </script>
 
 <template>
     <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
         <div :class="$style.top">
-            <div v-if="isUploading" :class="$style.uploadOverlay">
-                <div :class="$style.spinner"></div>
-                <p>{{ uploadStatusText }}</p>
+            <div v-if="isUploading || isDuplicating" :class="$style.uploadOverlay">
+                <div :class="$style.spinner"/>
+                <p>{{ isDuplicating ? duplicateStatusText : uploadStatusText }}</p>
             </div>
 
             <StatusBadge :class="$style.statusIcon" :status="course.status"/>
 
             <div
-                :class="$style.editOverlay"
                 v-if="editMode"
+                :class="$style.editOverlay"
             >
                 <div
                     :class="$style.bgButton"
                 >
                     <span
-                        @click="editBgImage"
-                        :class="[$style.edit, isUploading && $style.disabled]"
-                        title="Změnit obrázek kurzu"
-                    ></span>
-                    <span
-                        @click="resetBgImage"
-                        :class="[$style.reset, isUploading && $style.disabled]"
-                        title="Obnovit výchozí obrázek kurzu"
-                    ></span>
+                        :class="[$style.contextMenuButton]"
+                        @click="openContextMenu"
+                    />
+                    <ContextMenu
+                         :items="contextMenuItems"
+
+                         :visible="isContextMenuOpen"
+                         :x="menuX"
+                         :y="menuY"
+                         @close="isContextMenuOpen = false"
+                    />
                 </div>
             </div>
-            <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.imageContainer">
-                <div :class="$style.image" v-if="displayedImageUrl" :style="{ '--bg': `url(${displayedImageUrl})` }"></div>
 
-                <template v-if="!displayedImageUrl">
-                    <div :class="$style.blob1"></div>
-                    <div :class="$style.blob2"></div>
-                    <div :class="$style.blob3"></div>
-                    <div :class="$style.blob4"></div>
-                    <div :class="$style.blob5"></div>
-
-                    <div :class="$style.circle">
-                        <div :class="$style.icon" :style="{ maskImage: `url(${course.imageUrlOrDefault})` }"></div>
-                    </div>
-                </template>
-            </NuxtLink>
+            <CourseCardImageContainer
+                :course="course"
+                :image-url-override="imageUrlOverride"
+            />
         </div>
         <div :class="$style.bottom">
             <div :class="$style.infoContainer">
@@ -178,8 +248,7 @@ const resetBgImage = async () => {
                                 $style.star,
                                 course.ratingScore >= n * 2 ? $style.full : course.ratingScore === n * 2 - 1 ? $style.half : null
                             ]"
-                        >
-                        </div>
+                        />
                     </div>
                 </div>
 
@@ -192,11 +261,11 @@ const resetBgImage = async () => {
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"></div>
+                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"/>
                         <p>{{ course.likeCount }}</p>
                     </div>
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/views.svg)"></div>
+                        <div style="mask-image: url(/icons/views.svg)"/>
                         <p>{{ course.viewCount }}</p>
                     </div>
                 </div>
@@ -213,16 +282,16 @@ const resetBgImage = async () => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                                 style="width: 100%"
+                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                         >
                             Upravit
                         </Button>
                         <Button
                                 button-style="secondary"
                                 accent-color="secondary"
-                                @click="emit('delete')"
                                 style="width: 100%"
+                                @click="emit('delete')"
                         >
                             Smazat
                         </Button>
@@ -318,6 +387,38 @@ const resetBgImage = async () => {
                 mask-image: url("/icons/trash.svg");
             }
         }
+        
+        .contextMenuButton {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition-duration: 0.3s;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+            @extend .liquid-glass;
+
+            &::before {
+                content: '';
+                display: block;
+                width: 20px;
+                height: 20px;
+                background-color: black;
+                mask-size: contain;
+                mask-position: center;
+                mask-repeat: no-repeat;
+                mask-image: url("/icons/ellipsis.svg");
+            }
+            
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.7);
+                transition-duration: 0.3s;
+            }
+        }
     }
 }
 
@@ -349,8 +450,8 @@ const resetBgImage = async () => {
         
         .statusIcon {
             position: absolute;
-            top: 12px;
-            right: 16px;
+            top: 16px;
+            left: 16px;
             z-index: 2;
         }
 
@@ -384,120 +485,6 @@ const resetBgImage = async () => {
             }
         }
 
-        .imageContainer {
-            display: block;
-            min-height: 200px;
-            width: 100%;
-            background: linear-gradient(160deg, var(--accent-color-primary), var(--accent-color-primary-darker));
-            overflow: hidden;
-            border-radius: 24px;
-            transition: filter 0.3s;
-            position: relative;
-
-            >* {
-                pointer-events: none;
-            }
-
-            &:hover {
-                filter: brightness(0.75);
-                transition-duration: 0.3s;
-            }
-
-            .image {
-                width: 100%;
-                height: 100%;
-                background-image: var(--bg);
-                background-size: cover;
-                background-position: center;
-                position: absolute;
-            }
-
-            .blob1 {
-                width: 32px;
-                aspect-ratio: 1/1;
-                position: absolute;
-                top: 16%;
-                left: 10%;
-                background: white;
-                opacity: 0.1;
-                mask: linear-gradient(to bottom right, black, transparent);
-                border-radius: 50%;
-            }
-
-            .blob2 {
-                width: 64px;
-                aspect-ratio: 1/1;
-                position: absolute;
-                bottom: 8%;
-                left: 6%;
-                background: black;
-                opacity: 0.1;
-                mask: linear-gradient(to bottom right, black, transparent);
-                border-radius: 50%;
-            }
-
-            .blob3 {
-                width: 24px;
-                aspect-ratio: 1/1;
-                position: absolute;
-                top: 12%;
-                right: 6%;
-                background: black;
-                opacity: 0.1;
-                mask: linear-gradient(to bottom right, black, transparent);
-                border-radius: 50%;
-            }
-
-            .blob4 {
-                width: 92px;
-                aspect-ratio: 1/1;
-                position: absolute;
-                bottom: 12%;
-                right: -6%;
-                background: white;
-                opacity: 0.1;
-                mask: linear-gradient(206deg, black, transparent);
-                border-radius: 50%;
-            }
-
-            .blob5 {
-                width: 48px;
-                aspect-ratio: 1/1;
-                position: absolute;
-                bottom: 2%;
-                right: 12%;
-                background: black;
-                opacity: 0.1;
-                mask: linear-gradient(36deg, black, transparent);
-                border-radius: 50%;
-            }
-
-            .circle {
-                position: absolute;
-                width: calc(64px + 40px);
-                aspect-ratio: 1/1;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                border-radius: 50%;
-                background: linear-gradient(135deg, var(--accent-color-secondary-transparent-03), var(--accent-color-secondary-transparent-01));
-                box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
-
-                .icon {
-                    position: absolute;
-                    width: 50%;
-                    height: 50%;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: var(--accent-color-secondary-transparent-06);
-                    mask-size: contain;
-                    mask-position: center;
-                    mask-repeat: no-repeat;
-                    //mask-image: url(/icons/courseicons/paint.svg);
-                }
-            }
-        }
     }
 
     .bottom {

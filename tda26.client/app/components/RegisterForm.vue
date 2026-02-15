@@ -92,7 +92,7 @@ async function submitRegisterForm(event: Event) {
 </script>
 
 <template>
-    <form :class="$style.form" @submit.prevent="submitRegisterForm" aria-describedby="form-error" :aria-busy="isLoading">
+    <form :class="$style.form" aria-describedby="form-error" :aria-busy="isLoading" @submit.prevent="submitRegisterForm">
         <div :class="$style.group">
             <label :class="$style.label" for="register-username">Uživatelské jméno</label>
             <Input
@@ -110,8 +110,8 @@ async function submitRegisterForm(event: Event) {
         <div :class="$style.group">
             <label :class="$style.label" for="register-email">E-mailová adresa</label>
             <Input
-                v-model="email"
                 id="register-email"
+                v-model="email"
                 style="width: 100%"
                 name="email"
                 type="text"
@@ -126,8 +126,8 @@ async function submitRegisterForm(event: Event) {
             <label :class="$style.label" for="register-password">Heslo</label>
             <div :class="$style.passwordRow">
                 <Input
-                    v-model="password"
                     id="register-password"
+                    v-model="password"
                     style="width: 100%"
                     placeholder="••••••••"
                     aria-describedby="password-help"
@@ -139,10 +139,10 @@ async function submitRegisterForm(event: Event) {
                 <button
                     :class="$style.toggle"
                     type="button"
-                    @click="togglePassword"
                     :aria-pressed="showPassword"
                     aria-controls="register-password"
                     aria-label="Zobrazit nebo skrýt heslo"
+                    @click="togglePassword"
                 >
                     {{ showPassword ? 'Skrýt' : 'Zobrazit' }}
                 </button>
@@ -153,8 +153,8 @@ async function submitRegisterForm(event: Event) {
             <label :class="$style.label" for="register-password-approve">Potvrzení hesla</label>
             <div :class="$style.passwordRow">
                 <Input
-                    v-model="passwordApprove"
                     id="register-password-approve"
+                    v-model="passwordApprove"
                     style="width: 100%"
                     placeholder="••••••••"
                     aria-describedby="password-help"
@@ -165,10 +165,10 @@ async function submitRegisterForm(event: Event) {
                 <button
                     :class="$style.toggle"
                     type="button"
-                    @click="togglePasswordApprove"
                     :aria-pressed="showPasswordApprove"
                     aria-controls="register-password-approve"
                     aria-label="Zobrazit nebo skrýt heslo"
+                    @click="togglePasswordApprove"
                 >
                     {{ showPasswordApprove ? 'Skrýt' : 'Zobrazit' }}
                 </button>
@@ -179,7 +179,7 @@ async function submitRegisterForm(event: Event) {
             Zaregistrovat se
         </ButtonComponent>
 
-        <div :class="$style.errorGrid" v-if="errorMsg.length > 0 || password.length > 0">
+        <div v-if="errorMsg.length > 0 || password.length > 0" :class="$style.errorGrid">
             <!-- Vetsi chyby (Mail, existujici uzivatel) -->
             <template v-if="errorMsg.length > 0">
                 <p

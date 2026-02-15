@@ -147,7 +147,8 @@ const isDeleteModalOpen = ref(false);
 </script>
 
 <template>
-    <div :class="[
+    <div
+:class="[
         mode === 'edit' && $style.editMode, 
         mode === 'result' && $style.resultMode, $style.questionContainer,
         (mode === 'result' && question.isCorrect) ? $style.correct : $style.incorrect
@@ -156,7 +157,7 @@ const isDeleteModalOpen = ref(false);
             v-if="mode === 'edit'"
             :class="$style.deleteButton"
             @click="isDeleteModalOpen = true"
-        ></span>
+        />
         <div :class="$style.title">
             <p 
                 :class="[$style.editable]" 
@@ -165,8 +166,8 @@ const isDeleteModalOpen = ref(false);
             >{{ question.question }}</p>
         </div>
         <div v-if="mode === 'play'" :class="$style.questionTypeIndicator">
-            <span v-if="question.type === 'singleChoice'" :class="$style.singleChoiceIcon"></span>
-            <span v-else-if="question.type === 'multipleChoice'" :class="$style.multipleChoiceIcon"></span>
+            <span v-if="question.type === 'singleChoice'" :class="$style.singleChoiceIcon"/>
+            <span v-else-if="question.type === 'multipleChoice'" :class="$style.multipleChoiceIcon"/>
             <p>{{ question.type === 'singleChoice' ? 'Vyber jednu odpověď' : 'Vyber jednu nebo více odpovědí' }}</p>
         </div>
         <ul :key="question.options.length">
@@ -184,34 +185,34 @@ const isDeleteModalOpen = ref(false);
                     <input
                         type="checkbox"
                         :checked="selectedIndices.includes(index)"
-                        @change="selectOption(index)"
                         :class="$style.correctCheckbox"
                         title="Označit jako správnou odpověď"
-                    />
+                        @change="selectOption(index)"
+                    >
                     <span
                         :class="$style.removeOption"
-                        @click="emit('removeQuestionOption', index)"
                         title="Odebrat tuto možnost"
-                    ></span>
+                        @click="emit('removeQuestionOption', index)"
+                    />
                 </div>
                 <Button
                     v-else
                     :button-style="selectedIndices.includes(index) && mode !== 'result' ? 'primary' : 'tertiary'"
-                    @click="selectOption(index)"
                     :class="[
                             $style.editable, 
                             mode === 'result' && question.selectedIndices?.includes(index) && (question.correctIndices?.includes(index) || question.correctIndex === index) && $style.selectedCorrectAnswer,
                             mode === 'result' && question.selectedIndices?.includes(index) && (!question.correctIndices?.includes(index) && question.correctIndex !== index) && $style.selectedIncorrectAnswer,
                             mode === 'result' && !question.selectedIndices?.includes(index) && (question.correctIndices?.includes(index) || question.correctIndex === index) && $style.missedCorrectAnswer
                         ]"
+                    @click="selectOption(index)"
                 >{{ option }}</Button>
             </li>
             <li v-if="mode === 'edit' && question.options.length < 6">
                 <Button
                     button-style="tertiary"
-                    @click="emit('addQuestionOption')"
                     :class="$style.addOptionButton"
-                ></Button>
+                    @click="emit('addQuestionOption')"
+                />
             </li>
         </ul>
     </div>
@@ -219,8 +220,8 @@ const isDeleteModalOpen = ref(false);
     <Modal 
         v-if="mode === 'edit'"
         :enabled="isDeleteModalOpen"
-        @close="isDeleteModalOpen = false"
         can-be-closed-by-clicking-outside
+        @close="isDeleteModalOpen = false"
     >
         <h3>Opravdu si přeješ smazat tuto otázku?</h3>
         <p>Tuto akci nelze vrátit zpět.</p>

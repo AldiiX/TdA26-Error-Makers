@@ -155,7 +155,7 @@ const removeTag = (uuid: string) => {
                         Přidat „{{ tagQuery }}“
                     </li>
 
-                    <hr v-if="filteredTags.length > 0" />
+                    <hr v-if="filteredTags.length > 0" >
 
                     <li
                         v-for="tag in filteredTags"
@@ -245,6 +245,12 @@ const removeTag = (uuid: string) => {
     cursor: pointer;
     display: flex;
     align-items: center;
+    transition-duration: 0.3s;
+
+    &:hover {
+        background: var(--accent-color-primary-darker);
+        transition-duration: 0.3s;
+    }
 
     p {
         margin: 0;

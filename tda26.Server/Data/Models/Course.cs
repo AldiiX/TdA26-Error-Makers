@@ -7,6 +7,7 @@ using tda26.Server.DTOs.Mapping;
 
 namespace tda26.Server.Data.Models;
 
+[JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
 public enum CourseStatus {
     Draft,
     Scheduled,

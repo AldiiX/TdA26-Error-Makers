@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-    import { type Lecturer } from "#shared/types";
+    import type { Lecturer } from "#shared/types";
     import getLecturerDisplayName from "#shared/utils/getLecturerDisplayNameHTML";
     import getBaseUrl from "#shared/utils/getBaseUrl";
     import Avatar from "~/components/Avatar.vue";
@@ -85,18 +85,18 @@
             <p :class="$style.bio">{{ lecturer.bio }}</p>
 
             <div :class="$style.elements">
-                <div :class="[$style.el, 'liquid-glass']" v-if="doesContactExist">
+                <div v-if="doesContactExist" :class="[$style.el, 'liquid-glass']">
                     <h3 :class="[/*'text-gradient'*/]">Kontakt</h3>
 
-                    <div :class="$style.duo" v-if="lecturer.mobileNumbers?.length > 0">
-                        <div :class="$style.icon" style="--ico: url(/icons/phone.svg)"></div>
+                    <div v-if="lecturer.mobileNumbers?.length > 0" :class="$style.duo">
+                        <div :class="$style.icon" style="--ico: url(/icons/phone.svg)"/>
                         <div>
                             <p v-for="phone in lecturer.mobileNumbers">{{ phone }}</p>
                         </div>
                     </div>
 
-                    <div :class="$style.duo" v-if="lecturer.emails?.length > 0">
-                        <div :class="$style.icon" style="--ico: url(/icons/email.svg)"></div>
+                    <div v-if="lecturer.emails?.length > 0" :class="$style.duo">
+                        <div :class="$style.icon" style="--ico: url(/icons/email.svg)"/>
                         <div>
                             <p v-for="email in lecturer.emails">{{ email }}</p>
                         </div>
@@ -107,26 +107,26 @@
                     <h3 :class="[/*'text-gradient'*/ $style.ac2]">Informace</h3>
 
                     <div :class="$style.duo">
-                        <div :class="$style.icon" style="--ico: url(/icons/coin.svg)"></div>
+                        <div :class="$style.icon" style="--ico: url(/icons/coin.svg)"/>
                         <p>{{ lecturer.pricePerHour }} Kč/h</p>
                     </div>
 
                     <div :class="$style.duo">
-                        <div :class="$style.icon" style="--ico: url(/icons/pin.svg)"></div>
+                        <div :class="$style.icon" style="--ico: url(/icons/pin.svg)"/>
                         <p>{{ lecturer.location }}</p>
                     </div>
 
                     <div :class="$style.duo">
-                        <div :class="$style.icon" style="--ico: url(/icons/user_circle.svg)"></div>
+                        <div :class="$style.icon" style="--ico: url(/icons/user_circle.svg)"/>
                         <p>{{ new Date(lecturer.createdAt).toLocaleDateString() }}</p>
                     </div>
                 </div>
 
-                <div :class="[$style.el, 'liquid-glass']" v-if="lecturer.tags?.length > 0">
+                <div v-if="lecturer.tags?.length > 0" :class="[$style.el, 'liquid-glass']">
                     <h3 :class="[/*'text-gradient'*/]">Tagy</h3>
 
                     <div :class="$style.tags">
-                        <p :class="$style.tag" v-for="tag in lecturer.tags">{{ tag }}</p>
+                        <p v-for="tag in lecturer.tags" :class="$style.tag">{{ tag }}</p>
                     </div>
                 </div>
             </div>

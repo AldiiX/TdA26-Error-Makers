@@ -42,8 +42,8 @@ const feedPostStyle = computed(() => ({
                 <Button
                     button-style="secondary"
                     accent-color="secondary"
-                    @click="$emit('delete', feedPost)"
                     :style="{ '--color': 'var(--color-error)' }"
+                    @click="$emit('delete', feedPost)"
                 >Smazat</Button>
             </div>
 

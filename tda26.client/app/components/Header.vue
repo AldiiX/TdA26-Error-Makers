@@ -69,8 +69,8 @@
     <header :class="$style.header">
 
         <div :class="$style.flex">
-            <NuxtLink to="/" custom v-slot="{ navigate, href, isActive, isExactActive }">
-                <div :class="[$style['Header-Logo'], { active: $style.isActive }]" @click="navigate"></div>
+            <NuxtLink v-slot="{ navigate, href, isActive, isExactActive }" to="/" custom>
+                <div :class="[$style['Header-Logo'], { active: $style.isActive }]" @click="navigate"/>
             </NuxtLink>
 
             <div :class="[$style.right, { locked: $style.isTransitioning }]">
@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- neprihlaseny uzivatel -->
-                <div :class="$style.btns" v-if="!loggedAccount">
+                <div v-if="!loggedAccount" :class="$style.btns">
                     <NuxtLink :class="$style.linkBtn" to="/login">
                         <Button text-color="var(--accent-color-primary-text)" button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
@@ -91,7 +91,7 @@
 
                 <!-- prihlaseny uzivatel -->
                 <template v-else>
-                    <div :class="$style.btns" v-if="loggedAccount.type === 'lecturer' || loggedAccount.type === 'admin'">
+                    <div v-if="loggedAccount.type === 'lecturer' || loggedAccount.type === 'admin'" :class="$style.btns">
                         <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>
@@ -120,19 +120,19 @@
                                     </div>
                                 </div>
                                 
-                                <div :class="$style.divider"></div>
+                                <div :class="$style.divider"/>
                                 
                                 <div :class="$style.popoverActions">
-                                    <button :class="$style.actionButton" @click="toggleTheme" v-if="false"> <!-- TODO: dodělat -->
+                                    <button v-if="false" :class="$style.actionButton" @click="toggleTheme"> <!-- TODO: dodělat -->
                                         <div :class="$style.iconWrapper">
-                                            <div :class="[$style.icon, $style.themeIcon]"></div>
+                                            <div :class="[$style.icon, $style.themeIcon]"/>
                                         </div>
                                         <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
                                     </button>
                                     
                                     <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
                                         <div :class="$style.iconWrapper">
-                                            <div :class="[$style.icon, $style.logoutIcon]"></div>
+                                            <div :class="[$style.icon, $style.logoutIcon]"/>
                                         </div>
                                         <p>Odhlásit se</p>
                                     </button>
@@ -143,14 +143,14 @@
                 </template>
 
                 <!-- mobile menu -->
-                <div :class="$style.smallDevice" @click="mobileMenuOpened = true"></div>
+                <div :class="$style.smallDevice" @click="mobileMenuOpened = true"/>
             </div>
 
         </div>
 
         <!-- Menu pro mobily a tablety -->
-        <div class="smallDevice"></div>
-        <div class="Header-Logo-Small" onclick="location.href='/'"></div>
+        <div class="smallDevice"/>
+        <div class="Header-Logo-Small" onclick="location.href='/'"/>
     </header>
 </template>
 

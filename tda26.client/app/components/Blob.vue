@@ -25,7 +25,7 @@
 </script>
 
 <template>
-    <div :class="$style.blobeffect" :style="style"></div>
+    <div :class="$style.blobeffect" :style="style"/>
 </template>
 
 <style module lang="scss">

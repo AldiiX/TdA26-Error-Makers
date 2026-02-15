@@ -94,9 +94,9 @@
             :type="props.type"
             :placeholder="props.placeholder"
             :required="required"
-            @change="onFileChange"
             :accept="props.allowedFileTypes?.join(',')"
-        />
+            @change="onFileChange"
+        >
         <i>{{ fileName }}</i>
     </label>
     <input
@@ -108,7 +108,7 @@
         :value="modelValue"
         :max="isDateType ? props.maxDate ?? undefined : undefined"
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-    />
+    >
 </template>
 
 <style module lang="scss">

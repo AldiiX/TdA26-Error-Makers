@@ -21,7 +21,7 @@
 <!--    <Header/>-->
 
     <section :class="$style.top">
-        <div :class="$style.blob" :style="{ opacity: (theme == 'dark' ? '0.5' : '') }"></div>
+        <div :class="$style.blob" :style="{ opacity: (theme == 'dark' ? '0.5' : '') }"/>
 
         <div :class="$style.center">
             <h1><span>&lt</span>Hello TdA<span>/&gt</span></h1>

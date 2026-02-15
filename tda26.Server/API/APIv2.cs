@@ -1653,6 +1653,156 @@ public class APIv2(
 
     #endregion
 
+    [HttpPost("courses/{uuid:guid}/duplicate")]
+    public async Task<IActionResult> DuplicateCourse([FromRoute] Guid uuid, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        if (acc == null) return Unauthorized();
+
+        var sourceCourse = await db.CoursesMinimalEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+        if (sourceCourse == null) return NotFound(new { error = "Course not found." });
+
+        // if (acc is not Admin && sourceCourse.LecturerUuid != acc.Uuid) return Unauthorized();
+
+        var materials = await db.Materials
+            .AsNoTracking()
+            .Where(m => m.CourseUuid == uuid)
+            .ToListAsync(ct);
+
+        var feedPosts = await db.FeedPosts
+            .AsNoTracking()
+            .Where(fp => fp.CourseUuid == uuid)
+            .ToListAsync(ct);
+
+        var quizzes = await db.QuizzesEf()
+            .AsNoTracking()
+            .Where(q => q.CourseUuid == uuid)
+            .ToListAsync(ct);
+
+        var tagUuids = sourceCourse.Tags.Select(t => t.Uuid).ToList();
+        var tags = tagUuids.Count == 0
+            ? new List<Tag>()
+            : await db.Tags.Where(t => tagUuids.Contains(t.Uuid)).ToListAsync(ct);
+
+        string duplicateName = sourceCourse.Name + " (copy)";
+        if (duplicateName.Length > 128) duplicateName = duplicateName[..128];
+
+        var newCourse = new Course {
+            Name = duplicateName,
+            Description = sourceCourse.Description,
+            ImageUrl = sourceCourse.ImageUrl,
+            LecturerUuid = sourceCourse.LecturerUuid,
+            CategoryUuid = sourceCourse.CategoryUuid,
+            Status = CourseStatus.Draft,
+            ScheduledStart = null,
+            ViewCount = 0,
+            Tags = tags
+        };
+
+        if (!string.IsNullOrEmpty(sourceCourse.ImageUrl) && sourceCourse.ImageUrl.StartsWith("course-images/", StringComparison.Ordinal)) {
+            var imageExtension = Path.GetExtension(sourceCourse.ImageUrl);
+            var targetImageKey = $"course-images/{newCourse.Uuid}{imageExtension}";
+            newCourse.ImageUrl = await materialAccessService.CopyFileAsync(
+                sourceCourse.ImageUrl,
+                targetImageKey,
+                ct
+            );
+        }
+
+        var sourceMaterialsPrefix = $"materials/{uuid}/";
+        var targetMaterialsPrefix = $"materials/{newCourse.Uuid}/";
+        await materialAccessService.CopyCourseMaterialsDirectoryAsync(uuid, newCourse.Uuid, ct);
+
+        foreach (var material in materials) {
+            switch (material) {
+                case UrlMaterial urlMaterial:
+                    newCourse.Materials.Add(new UrlMaterial {
+                        Name = urlMaterial.Name,
+                        Description = urlMaterial.Description,
+                        Type = Material.MaterialType.Url,
+                        CourseUuid = newCourse.Uuid,
+                        Url = urlMaterial.Url,
+                        FaviconUrl = urlMaterial.FaviconUrl
+                    });
+                    break;
+                case FileMaterial fileMaterial:
+                    var newFileUrl = fileMaterial.FileUrl.StartsWith(sourceMaterialsPrefix, StringComparison.Ordinal)
+                        ? targetMaterialsPrefix + fileMaterial.FileUrl[sourceMaterialsPrefix.Length..]
+                        : fileMaterial.FileUrl;
+
+                    newCourse.Materials.Add(new FileMaterial {
+                        Name = fileMaterial.Name,
+                        Description = fileMaterial.Description,
+                        Type = Material.MaterialType.File,
+                        CourseUuid = newCourse.Uuid,
+                        FileUrl = newFileUrl,
+                        MimeType = fileMaterial.MimeType,
+                        SizeBytes = fileMaterial.SizeBytes
+                    });
+                    break;
+            }
+        }
+
+        foreach (var quiz in quizzes) {
+            var newQuiz = new Quiz {
+                Title = quiz.Title,
+                AttemptsCount = 0,
+                CourseUuid = newCourse.Uuid
+            };
+
+            foreach (var question in quiz.Questions) {
+                Question newQuestion = question switch {
+                    SingleChoiceQuestion => new SingleChoiceQuestion(),
+                    MultipleChoiceQuestion => new MultipleChoiceQuestion(),
+                    _ => throw new InvalidOperationException("Unknown question type.")
+                };
+
+                newQuestion.Text = question.Text;
+                newQuestion.Order = question.Order;
+                newQuestion.QuizUuid = newQuiz.Uuid;
+
+                foreach (var option in question.Options) {
+                    newQuestion.Options.Add(new QuestionOption {
+                        Text = option.Text,
+                        Order = option.Order,
+                        IsCorrect = option.IsCorrect,
+                        QuestionUuid = newQuestion.Uuid
+                    });
+                }
+
+                newQuiz.Questions.Add(newQuestion);
+            }
+
+            newCourse.Quizzes.Add(newQuiz);
+        }
+
+        foreach (var post in feedPosts) {
+            newCourse.Feed.Add(new FeedPost {
+                Uuid = Guid.NewGuid(),
+                Type = post.Type,
+                Message = post.Message,
+                CourseUuid = newCourse.Uuid,
+                AccountUuid = post.AccountUuid,
+                Edited = post.Edited,
+                Purpose = post.Purpose,
+                CreatedAt = post.CreatedAt,
+                UpdatedAt = post.UpdatedAt
+            });
+        }
+
+        db.Courses.Add(newCourse);
+        await db.SaveChangesAsync(ct);
+
+        return new CreatedAtActionResult(
+            actionName: nameof(GetCourseById),
+            controllerName: "APIv2",
+            routeValues: new { uuid = newCourse.Uuid },
+            value: newCourse.ToReadDto(true)
+        );
+    }
+
     #endregion
 
 

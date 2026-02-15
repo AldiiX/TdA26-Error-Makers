@@ -19,7 +19,7 @@
 </script>
 
 <template>
-    <div :class="$style.one"></div>
+    <div :class="$style.one"/>
 </template>
 
 <style module lang="scss">

@@ -1,6 +1,6 @@
-import type {DbStatus} from "#shared/utils/statusMapper";
-
 export type WebTheme = "dark" | "light";
+
+export type CourseStatus = "draft" | "scheduled" | "live" | "paused" | "archived";
 
 export interface Course {
     uuid: string;
@@ -8,7 +8,7 @@ export interface Course {
     description: string;
     createdAt: string;
     updatedAt: string;
-    status: DbStatus
+    status: CourseStatus;
     //lecturerUuid: string;
     lecturer: Lecturer | null;
     account: Account | null;
@@ -20,7 +20,6 @@ export interface Course {
     viewCount: number,
     imageUrl: string | null,
     imageUrlOrDefault: string,
-    image: string | null,
     ratingScore: number,
     category: {
         uuid: string,

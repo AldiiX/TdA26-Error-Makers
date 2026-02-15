@@ -24,7 +24,7 @@ const goNext = () => goToPage(props.page + 1);
     <div :class="$style.paginationContainer">
 
         <div :class="$style.arrowWrapper">
-            <div :class="[$style.arrow, $style.leftArrow]" @click="goPrev"></div>
+            <div :class="[$style.arrow, $style.leftArrow]" @click="goPrev"/>
         </div>
 
         <template v-for="(p, idx) in props.visiblePages" :key="idx">
@@ -42,7 +42,7 @@ const goNext = () => goToPage(props.page + 1);
         </template>
 
         <div :class="$style.arrowWrapper">
-            <div :class="[$style.arrow, $style.rightArrow]" @click="goNext"></div>
+            <div :class="[$style.arrow, $style.rightArrow]" @click="goNext"/>
         </div>
         
     </div>

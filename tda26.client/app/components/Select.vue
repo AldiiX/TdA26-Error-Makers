@@ -79,29 +79,29 @@ onUnmounted(() => {
 
 <template>
     <div ref="selectRef" :class="$style.select">
-        <div :class="$style.selectTrigger" @click="toggleDropdown" :data-open="isOpen">
+        <div :class="$style.selectTrigger" :data-open="isOpen" @click="toggleDropdown">
             <p :class="[$style.selectText, { [$style.placeholder]: !selectedOption }]">
                 {{ displayText }}
             </p>
-            <div :class="[$style.arrow, { [$style.open]: isOpen }]"></div>
+            <div :class="[$style.arrow, { [$style.open]: isOpen }]"/>
             <div
                 v-if="selectedOption"
                 :class="$style.clearButton"
-                @click.stop="clearSelection"
                 title="Vymazat výběr"
-            ></div>
+                @click.stop="clearSelection"
+            />
         </div>
 
         <transition name="dropdown">
             <div v-if="isOpen" :class="[$style.dropdown, props.dropdownClass]">
                 <div :class="$style.searchBar">
-                    <div :class="$style.searchIcon"></div>
+                    <div :class="$style.searchIcon"/>
                     <input
+                        v-model="searchQuery"
                         type="text"
                         :placeholder="searchPlaceholder ?? 'Hledat...'"
-                        v-model="searchQuery"
                         @click.stop
-                    />
+                    >
                 </div>
 
                 <div :class="$style.optionsList">

@@ -42,7 +42,7 @@
     <CircleBlurBlob bottom="0vw" left="-5vw" blur="12vw" size="15vw" color="var(--accent-color-primary)" />
 
     <section :class="$style.top">
-        <div :class="$style.blob"></div>
+        <div :class="$style.blob"/>
 
         <div :class="$style.center">
             <div :class="$style.left">
@@ -65,13 +65,13 @@
                 </div>
 
                 <div :class="$style.inputWrapper">
-                    <Input :class="$style.input" placeholder="Najdi kurz podle názvu nebo popisu..." v-model="searchQuery" @keyup.enter="submitSearchQuery" />
-                    <div :class="$style.submit" @click="submitSearchQuery"></div>
+                    <Input v-model="searchQuery" :class="$style.input" placeholder="Najdi kurz podle názvu nebo popisu..." @keyup.enter="submitSearchQuery" />
+                    <div :class="$style.submit" @click="submitSearchQuery"/>
                 </div>
             </div>
 
             <div :class="$style.right">
-                <div :class="$style.img"></div>
+                <div :class="$style.img"/>
             </div>
         </div>
     </section>
