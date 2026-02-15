@@ -1,14 +1,15 @@
 ﻿<script setup lang="ts">
-import {type DbStatus, statusToText} from "#shared/utils/statusMapper";
+import { statusToText } from "#shared/utils/statusMapper";
+import type {CourseStatus} from "#shared/types";
 
 const props = defineProps<{
-    status: DbStatus,
+    status: CourseStatus,
 }>();
 </script>
 
 <template>
-    <div :class="[$style.statusIcon, props.status === 0 ? $style.draft : props.status === 1 ? $style.scheduled : props.status === 2 ? $style.live : props.status === 3 ? $style.paused : $style.archived]">
-        <div></div>
+    <div :class="[$style.statusIcon, props.status === 'draft' ? $style.draft : props.status === 'scheduled' ? $style.scheduled : props.status === 'live' ? $style.live : props.status === 'paused' ? $style.paused : $style.archived]">
+        <div/>
         <p>{{ statusToText(props.status) }}</p>
     </div>
 </template>

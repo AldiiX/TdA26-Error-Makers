@@ -61,7 +61,7 @@ const emit = defineEmits<{ (e: "click"): void }>();
             :style="containerStyles"
             @click="emit('click')"
     >
-        <img v-if="src && AVATAR_ENABLED" :src="src" alt="avatar" />
+        <img v-if="src && AVATAR_ENABLED" :src="src" alt="avatar" >
         <p v-else-if="isClient" :style="letterStyle">{{ letter }}</p>
     </div>
 </template>

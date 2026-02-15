@@ -66,16 +66,16 @@ const generateRandomNbspNumber = ( min: number, max: number ): string => {
 <template>
     <NuxtLink :to="profileUrl" :class="[$style.vizitka, 'liquid-glass']" :style="style">
         <Avatar v-if="lecturer" :class="$style.avatar" :src="lecturer.pictureUrl" :alt="displayName" :size="140" :name="lecturer.firstName + ' ' + lecturer.lastName" />
-        <div v-else :class="[$style.skeleton, $style.avatarloading]"></div>
+        <div v-else :class="[$style.skeleton, $style.avatarloading]"/>
 
         <div :class="$style.description">
-            <h1 :class="[$style.title, 'text-gradient']" v-if="lecturer">
-                <span :class="[$style.name, nameTextClass]" v-html="displayName"></span>
+            <h1 v-if="lecturer" :class="[$style.title, 'text-gradient']">
+                <span :class="[$style.name, nameTextClass]" v-html="displayName"/>
             </h1>
 
-            <div :class="[$style.skeleton]" style="width: 60%; height: 43px; border-radius: 12px" v-else></div>
+            <div v-else :class="[$style.skeleton]" style="width: 60%; height: 43px; border-radius: 12px"/>
 
-            <div v-if="!lecturer" :class="[$style.skeleton]" style="width: 80%; height: 18px; margin-top: 8px; border-radius: 12px"></div>
+            <div v-if="!lecturer" :class="[$style.skeleton]" style="width: 80%; height: 18px; margin-top: 8px; border-radius: 12px"/>
             <p v-else-if="(lecturer as any).claim" :class="$style.claim">{{ (lecturer as any).claim }}</p>
 
             <div style="display: grid; gap: 4px; margin-top: 16px" >

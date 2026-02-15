@@ -68,7 +68,7 @@ async function submitLoginForm(event: Event) {
 </script>
 
 <template>
-    <form :class="$style.form" @submit.prevent="submitLoginForm" aria-describedby="form-error" :aria-busy="isLoading">
+    <form :class="$style.form" aria-describedby="form-error" :aria-busy="isLoading" @submit.prevent="submitLoginForm">
         <div :class="$style.group">
             <label :class="$style.label" for="login-username">Uživatelské jméno</label>
             <Input
@@ -87,8 +87,8 @@ async function submitLoginForm(event: Event) {
             <label :class="$style.label" for="login-password">Heslo</label>
             <div :class="$style.passwordRow">
                 <Input
-                    v-model="password"
                     id="login-password"
+                    v-model="password"
                     style="width: 100%"
                     placeholder="••••••••"
                     aria-describedby="password-help"
@@ -100,10 +100,10 @@ async function submitLoginForm(event: Event) {
                 <button
                     :class="$style.toggle"
                     type="button"
-                    @click="togglePassword"
                     :aria-pressed="showPassword"
                     aria-controls="login-password"
                     aria-label="Zobrazit nebo skrýt heslo"
+                    @click="togglePassword"
                 >
                     {{ showPassword ? 'Skrýt' : 'Zobrazit' }}
                 </button>
@@ -114,7 +114,7 @@ async function submitLoginForm(event: Event) {
             Přihlásit se
         </ButtonComponent>
 
-        <p v-if="errorMsg" :class="$style.error" id="form-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
+        <p v-if="errorMsg" id="form-error" :class="$style.error" role="alert" aria-live="polite">{{ errorMsg }}</p>
     </form>
 </template>
 

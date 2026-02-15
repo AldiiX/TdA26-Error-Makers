@@ -86,7 +86,7 @@ const $style = useCssModule();
             @mouseenter="handleMouseEnter"
             @mouseleave="handleMouseLeave"
         >
-            <slot name="trigger"></slot>
+            <slot name="trigger"/>
         </div>
         
         <Transition name="popover-fade">
@@ -97,7 +97,7 @@ const $style = useCssModule();
                 @mouseenter="handleMouseEnter"
                 @mouseleave="handleMouseLeave"
             >
-                <slot name="content"></slot>
+                <slot name="content"/>
             </div>
         </Transition>
     </div>

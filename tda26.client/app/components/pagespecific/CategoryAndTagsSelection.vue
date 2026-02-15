@@ -155,7 +155,7 @@ const removeTag = (uuid: string) => {
                         Přidat „{{ tagQuery }}“
                     </li>
 
-                    <hr v-if="filteredTags.length > 0" />
+                    <hr v-if="filteredTags.length > 0" >
 
                     <li
                         v-for="tag in filteredTags"

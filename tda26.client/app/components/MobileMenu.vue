@@ -57,17 +57,17 @@ watch(() => useRoute().path, (newPath) => {
 <template>
     <ClientOnly>
         <Transition name="mobile-menu-anim">
-            <div :class="$style.mobileMenu" v-if="mobileMenuOpened">
-                <div :class="$style.close" @click="mobileMenuOpened = false"></div>
+            <div v-if="mobileMenuOpened" :class="$style.mobileMenu">
+                <div :class="$style.close" @click="mobileMenuOpened = false"/>
 
                 <div :class="$style.content">
-                    <div :class="$style.logo"></div>
+                    <div :class="$style.logo"/>
 
                     
                     
                     <!-- Menu -->
                     <nav>
-                        <Menu @itemClick="mobileMenuOpened = false" :link-class="$style.link" />
+                        <Menu :link-class="$style.link" @item-click="mobileMenuOpened = false" />
                         <NuxtLink
                             v-if="loggedAccount"
                             to="/dashboard"
@@ -103,7 +103,7 @@ watch(() => useRoute().path, (newPath) => {
 <!--                                </button>-->
 
                                 <button :class="[$style.actionButton, $style.logout]" @click="logout">
-                                    <div :class="[$style.icon, $style.logoutIcon]"></div>
+                                    <div :class="[$style.icon, $style.logoutIcon]"/>
                                     <span>Odhlásit se</span>
                                 </button>
                             </div>

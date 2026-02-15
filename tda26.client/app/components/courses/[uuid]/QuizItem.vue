@@ -36,7 +36,7 @@ const getHostname = (url?: string) => {
                 <p>{{ new Date(quiz.createdAt).toLocaleDateString() }}</p>
                 </div>
             </div>
-            <span :class="$style.divider"></span>
+            <span :class="$style.divider"/>
             <div :class="$style.description">
                 <p>{{ quiz.attemptsCount }} dokončení</p>
             </div>
@@ -47,7 +47,7 @@ const getHostname = (url?: string) => {
             <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
                 <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>
-            <Button button-style="secondary" accent-color="secondary" @click="emit('delete', quiz)" style="width: 100%">Smazat</Button>
+            <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
         </div>
     </div>
 </template>

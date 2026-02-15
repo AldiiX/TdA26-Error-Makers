@@ -58,25 +58,25 @@ const fallbackIconUrl = computed(() => {
 
 <template>
     <NuxtLink
+        :key="`${courseRef.uuid}|${displayedImageUrl ?? ''}`"
         :to="`/courses/${courseRef.uuid}`"
         :class="[$style.imageContainer, props.class]"
-        :key="`${courseRef.uuid}|${displayedImageUrl ?? ''}`"
     >
         <div
             v-if="displayedImageUrl"
             :class="$style.image"
             :style="imageStyle"
-        ></div>
+        />
 
         <template v-else>
-            <div :class="$style.blob1"></div>
-            <div :class="$style.blob2"></div>
-            <div :class="$style.blob3"></div>
-            <div :class="$style.blob4"></div>
-            <div :class="$style.blob5"></div>
+            <div :class="$style.blob1"/>
+            <div :class="$style.blob2"/>
+            <div :class="$style.blob3"/>
+            <div :class="$style.blob4"/>
+            <div :class="$style.blob5"/>
 
             <div :class="$style.circle">
-                <div :class="$style.icon" :style="{ maskImage: `url(${fallbackIconUrl})` }"></div>
+                <div :class="$style.icon" :style="{ maskImage: `url(${fallbackIconUrl})` }"/>
             </div>
         </template>
     </NuxtLink>

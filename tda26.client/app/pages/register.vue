@@ -122,7 +122,7 @@ async function submitRegisterForm(event: Event) {
                 <p :class="$style.subtitle">Think different Academy</p>
             </header>
 
-            <form :class="[$style.form]" @submit.prevent="submitRegisterForm" aria-describedby="form-error" :aria-busy="isLoading">
+            <form :class="[$style.form]" aria-describedby="form-error" :aria-busy="isLoading" @submit.prevent="submitRegisterForm">
                 <div :class="$style.group">
                     <label :class="$style.label" for="username">Uživatelské jméno</label>
                     <Input
@@ -140,8 +140,8 @@ async function submitRegisterForm(event: Event) {
                 <div :class="$style.group">
                     <label :class="$style.label" for="email">E-mailová adresa</label>
                     <Input
-                        v-model="email"
                         id="email"
+                        v-model="email"
                         style="width: 100%"
                         name="email"
                         type="text"
@@ -168,10 +168,10 @@ async function submitRegisterForm(event: Event) {
                         <button
                             :class="$style.toggle"
                             type="button"
-                            @click="togglePassword"
                             :aria-pressed="showPassword"
                             aria-controls="password"
                             aria-label="Zobrazit nebo skrýt heslo"
+                            @click="togglePassword"
                         >
                             {{ showPassword ? 'Skrýt' : 'Zobrazit' }}
                         </button>
@@ -192,10 +192,10 @@ async function submitRegisterForm(event: Event) {
                         <button
                             :class="$style.toggle"
                             type="button"
-                            @click="togglePasswordApprove"
                             :aria-pressed="showPasswordApprove"
                             aria-controls="password"
                             aria-label="Zobrazit nebo skrýt heslo"
+                            @click="togglePasswordApprove"
                         >
                             {{ showPasswordApprove ? 'Skrýt' : 'Zobrazit' }}
                         </button>

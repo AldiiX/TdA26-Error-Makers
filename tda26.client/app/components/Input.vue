@@ -89,9 +89,9 @@
             :type="props.type"
             :placeholder="props.placeholder"
             :required="required"
-            @change="onFileChange"
             :accept="props.allowedFileTypes?.join(',')"
-        />
+            @change="onFileChange"
+        >
         <i>{{ fileName }}</i>
     </label>
     <input
@@ -102,7 +102,7 @@
         :required="required"
         :value="modelValue"
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
-    />
+    >
 </template>
 
 <style module lang="scss">

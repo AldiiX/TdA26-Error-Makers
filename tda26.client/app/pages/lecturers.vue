@@ -89,7 +89,7 @@
 <template>
     <!-- blobíci -->
     <Teleport to="#teleports">
-        <div :class="$style.blobeffect"></div>
+        <div :class="$style.blobeffect"/>
         <Blob
             top="60vh"
             right="2vw"
@@ -118,7 +118,7 @@
                 <TypeWriter
                     text="Podívej se na naše úžasné lektory, kteří tě provedou světem kurzů. Každý z nich přináší jedinečný přístup k výuce, který ti pomůže dosáhnout tvých cílů."
                     :class="$style.podnapis"
-                    :startDelayMs="300"
+                    :start-delay-ms="300"
                 />
             </SmoothSizeWrapper>
         </ClientOnly>
@@ -129,10 +129,10 @@
 
         <div :class="$style.list">
             <!-- lectureri plně načteni -->
-            <LecturerCard v-if="lecturers && !lecturersFetchPending && !lecturersFetchError" v-for="l in lecturers" :lecturer="l" :class="$style.card" />
+            <LecturerCard v-for="l in lecturers" v-if="lecturers && !lecturersFetchPending && !lecturersFetchError" :lecturer="l" :class="$style.card" />
 
             <!-- načítání lektorů -->
-            <LecturerCard v-else-if="lecturersFetchPending" v-for="_ in 6" :lecturer="null" :class="$style.card" />
+            <LecturerCard v-for="_ in 6" v-else-if="lecturersFetchPending" :lecturer="null" :class="$style.card" />
 
             <!-- chyba pri nacitani lektoru -->
             <div v-if="lecturersFetchError">

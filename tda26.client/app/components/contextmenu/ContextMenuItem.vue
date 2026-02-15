@@ -26,7 +26,7 @@ function onClick() {
                 :style="{
                     '--icon-path': `url(${item.iconPath})`
                 }"
-            ></span>
+            />
             {{ item.text }}
         </p>
     </div>

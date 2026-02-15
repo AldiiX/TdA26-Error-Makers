@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { NuxtPage, Head, Title, Meta, Html, Link } from '#components'
+import { NuxtPage, Head, Title, Meta, Html, Link, NuxtLink, ClientOnly, NuxtLayout  } from '#components'
 import { computed, onMounted, ref } from 'vue'
 import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
-import { NuxtLink, ClientOnly, NuxtLayout } from '#components';
+
 import type {WebTheme} from "#shared/types";
 import MobileMenu from "~/components/MobileMenu.vue";
 import LoadingScreen from "~/components/LoadingScreen.vue";

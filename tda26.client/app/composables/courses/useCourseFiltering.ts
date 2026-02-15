@@ -1,6 +1,6 @@
 ﻿import { computed, ref } from 'vue'
-import type { Course } from '#shared/types'
-import type { Tag } from '#shared/types'
+import type { Course, Tag  } from '#shared/types'
+
 
 
 export function useCourseFiltering(

@@ -28,7 +28,7 @@ const getHostname = (url?: string) => {
     <template v-if="material.type === 'file'">
         <div :class="$style.material">
             <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
-                <div :class="$style.fileIcon"></div>
+                <div :class="$style.fileIcon"/>
 
                 <div :class="$style.fileInfo">
                     <p :title="material.name">{{ material.name }}</p>
@@ -40,8 +40,8 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" @click="emit('edit', material)" style="width: 100%">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" @click="emit('delete', material)" style="width: 100%">Smazat</Button>
+                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
+                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
             </div>
         </div>
     </template>
@@ -51,7 +51,7 @@ const getHostname = (url?: string) => {
         <div :class="$style.material">
             <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer">
                 <div :class="$style.favicon">
-                    <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" />
+                    <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" >
                 </div>
 
                 <div :class="$style.fileInfo">
@@ -64,8 +64,8 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" @click="emit('edit', material)" style="width: 100%">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" @click="emit('delete', material)" style="width: 100%">Smazat</Button>
+                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
+                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
             </div>
         </div>
     </template>

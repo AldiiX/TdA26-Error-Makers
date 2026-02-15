@@ -231,9 +231,9 @@ const deleteCourse = async () => {
                 <div :class="$style.coursesList">
                     <CourseCard
                         v-for="course in paginatedCourses"
+                        :key="course.uuid"
                         edit-mode
                         :course="course"
-                        :key="course.uuid"
                         @delete="openDelete(course)"
                     />
                 </div>
@@ -254,9 +254,9 @@ const deleteCourse = async () => {
         <!-- CREATE -->
         <Modal
             :enabled="enabledModal === 'createCourse'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            :modal-style="{ maxWidth: '800px' }"
+            @close="enabledModal = null"
         >
             <h3>Vytvořit nový kurz</h3>
             <CourseForm
@@ -268,9 +268,9 @@ const deleteCourse = async () => {
         <!-- EDIT -->
         <Modal
             :enabled="enabledModal === 'updateCourse'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            :modal-style="{ maxWidth: '800px' }"
+            @close="enabledModal = null"
         >
             <h3>Upravit kurz</h3>
             <CourseForm
@@ -283,7 +283,6 @@ const deleteCourse = async () => {
         <!-- DELETE -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteCourse'"
-            @close="enabledModal = null"
             :can-be-closed-by-clicking-outside="true"
             :title="`Potvrzení akce`"
             :description="`Opravdu si přeješ smazat kurz ${selectedDeleteCourse?.name ?? ''}? Tuto akci nelze vrátit zpět.`"
@@ -291,6 +290,7 @@ const deleteCourse = async () => {
             :no-action="() => enabledModal = null"
             :yes-text="`Smazat kurz`"
             :no-text="`Zrušit`"
+            @close="enabledModal = null"
         />
     </Teleport>
 </template>

@@ -68,22 +68,20 @@ function reloadPage() {
 
     <main :class="$style.main">
         <div :class="$style.center">
-            <div :class="$style.errorCode">
-                
-            </div>
+            <div :class="$style.errorCode"/>
             <div :class="$style.codeContainer"> 
                 <p :class="$style.firstNumber">{{ splitNumber[0] ?? '' }}</p>
 
 
-                <p :class="$style.firstNumber" v-if="splitNumber[1] !== '0'">{{ splitNumber[1] }}</p>
-                <div :class="$style.icon" v-else></div>
+                <p v-if="splitNumber[1] !== '0'" :class="$style.firstNumber">{{ splitNumber[1] }}</p>
+                <div v-else :class="$style.icon"/>
 
                 <p :class="$style.thirdNumber"> {{ splitNumber[2] ?? '' }}</p>
             </div>
             <p :class="$style.desc">{{ message }}</p>
             <div :class="$style.buttons">
-                <Button :class="$style.btn" @click="goBack" button-style="primary" style="display: grid; font-size: 22px;" >Zpět</Button>
-                <Button :class="$style.btn" @click="goHome" button-style="secondary" style="display: grid; font-size: 22px;" >Domů</Button>
+                <Button :class="$style.btn" button-style="primary" style="display: grid; font-size: 22px;" @click="goBack" >Zpět</Button>
+                <Button :class="$style.btn" button-style="secondary" style="display: grid; font-size: 22px;" @click="goHome" >Domů</Button>
             </div>
         </div>
     </main>

@@ -15,7 +15,7 @@ function stablePrefixLetter(input: string): string {
 }
 
 export default defineNuxtConfig({
-    modules: ['notivue/nuxt'],
+    modules: ['notivue/nuxt'/*, '@nuxt/eslint'*/],
 
     css: [
         '@/assets/global.scss',

@@ -1,23 +1,23 @@
-export type DbStatus = 0 | 1 | 2 | 3 | 4;
+import type {CourseStatus} from "#shared/types";
 
-const STATUS_TEXT_BY_CODE: Record<DbStatus, string> = {
-    0: "Návrh",
-    1: "Naplánováno",
-    2: "Probíhá",
-    3: "Pauza",
-    4: "Archivováno",
+const STATUS_TEXT_BY_CODE: Record<CourseStatus, string> = {
+    "draft": "Návrh",
+    "scheduled": "Naplánováno",
+    "live": "Probíhá",
+    "paused": "Pauza",
+    "archived": "Archivováno",
 };
 
-export function statusToText(status: DbStatus): string {
+export function statusToText(status: CourseStatus): string {
     return STATUS_TEXT_BY_CODE[status];
 }
 
-export function textToStatus(text: string): DbStatus | null {
+export function textToStatus(text: string): CourseStatus | null {
     const normalized = text.trim().toLowerCase();
 
     for (const [status, label] of Object.entries(STATUS_TEXT_BY_CODE)) {
         if (label.toLowerCase() === normalized) {
-            return Number(status) as DbStatus;
+            return status as CourseStatus;
         }
     }
 

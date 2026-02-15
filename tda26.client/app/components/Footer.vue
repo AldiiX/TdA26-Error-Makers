@@ -8,7 +8,7 @@
         <div :class="$style.divider">
             <div :class="$style.top">
                 <div :class="$style.left">
-                    <div :class="$style.logo"></div>
+                    <div :class="$style.logo"/>
                     <h1 :class="[$style.mobileTitle, `text-gradient`]">Think different Academy</h1>
                 </div>
                 <div :class="$style.right">

@@ -53,7 +53,7 @@ onMounted(() => {
 
             <div :class="$style.loaderContainer">
                 <div :class="$style.iconWrapper">
-                    <div :class="$style.icon"></div>
+                    <div :class="$style.icon"/>
                 </div>
                 <h1 :class="$style.loadingTitle" :style="{ color: titleColor }">Think Different Academy se načítá</h1>
                 <p :class="$style.loadingText" :style="{ color: textColor }">... připrav se na úžasné vzdělávací zážitky! ...</p>

@@ -92,7 +92,7 @@ const handleWheel = (event: WheelEvent) => {
 
     // Find the closest scrollable parent element within the modal
     let scrollableElement: HTMLElement | null = null;
-    let currentNode: Node | null = target;
+    const currentNode: Node | null = target;
     
     // Start from the target element, or its parent if target is a text node
     let currentElement: HTMLElement | null = currentNode instanceof HTMLElement 
@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
         <div
             :class="$style.blurdiv"
             @click="props.canBeClosedByClickingOutside ? handleClose() : undefined"
-        ></div>
+        />
 
         <div
             ref="modalContentRef"
@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
                 v-if="props.showCloseButton"
                 :class="[$style.closebutton, props.closeButtonClassName]"
                 @click="handleClose"
-            ></div>
+            />
 
             <slot />
         </div>
