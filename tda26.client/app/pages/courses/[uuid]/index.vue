@@ -66,9 +66,11 @@ definePageMeta({
 
                 const isAdmin = loggedAccount.value?.type === "admin";
                 const isAuthor = loggedAccount.value?.uuid === course.account?.uuid;
-
+                
+                
+                
                 if (!isAdmin && !isAuthor) {
-                    if (course.status === 0 || course.status === 1) {
+                    if (course.status === 0 || course.status === 1 || course.status === 4) {
                         return navigateTo("/courses");
                     }
                 }
