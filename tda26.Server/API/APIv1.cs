@@ -17,7 +17,8 @@ public class APIv1(
     IMaterialAccessService materialAccessService,
     IAuthService auth,
     AppDbContext db,
-    IFeedStreamBroker fsb
+    IFeedStreamBroker fsb,
+    IStreamBroker sb
 ) : Controller {
 
     [HttpGet]
@@ -58,9 +59,9 @@ public class APIv1(
     }
 
     [HttpPut("courses/{uuid:guid}")]
-    public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body) {
+    public async Task<IActionResult> EditCourse([FromRoute] Guid uuid, [FromBody] UpdateCourseRequest body, CancellationToken ct = default) {
         var course = await db.CoursesFullEf()
-            .FirstOrDefaultAsync(c => c.Uuid == uuid);
+            .FirstOrDefaultAsync(c => c.Uuid == uuid, cancellationToken: ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
         }
@@ -73,12 +74,19 @@ public class APIv1(
             course.Description = body.Description;
         }
 
+        if (body.ScheduledStart.HasValue) {
+            course.ScheduledStart = body.ScheduledStart.Value;
+        }
+
         var entry = db.Entry(course);
         if (entry.State == EntityState.Detached) {
             db.Courses.Update(course);
         }
-        await db.SaveChangesAsync();
 
+        // zmeneni statusu na live pokud je naplanovany start v minulosti
+        var scheduledStatusChangedToLive = await course.CheckSchedulingAsync(sb, ct);
+
+        await db.SaveChangesAsync(ct);
         return Ok(course.ToReadDto());
     }
 

@@ -9,4 +9,5 @@ export type CourseDetailModal =
     | "updateFeedPost"
     | "loginRequired"
     | "deleteCourse"
+    | "schedulePublication"
     | null;
