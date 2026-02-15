@@ -1,8 +1,7 @@
 import { computed, ref, watch, type Ref } from "vue";
-import type { Account, Course, CourseCategory } from "#shared/types";
+import type {Account, Course, CourseCategory, CourseStatus} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import { push } from "notivue";
-import type { DbStatus } from "#shared/utils/statusMapper";
 
 const normalizeTags = (tags?: string[]) =>
     [...(tags ?? [])].sort();
@@ -19,18 +18,16 @@ export function useCourseEdit(params: {
     isActionInProgress: Ref<boolean>;
 }) {
 
-    const statusOptions: DbStatus[] = [0, 1, 2, 3, 4];
+    const statusOptions: CourseStatus[] = ["draft", "scheduled", "live", "paused", "archived"];
 
-    const editedStatus = ref<DbStatus>(params.courseSmall.value.status);
+    const editedStatus = ref<CourseStatus>(params.courseSmall.value.status);
 
-    const displayedStatus = computed<DbStatus>(() => params.course.value?.status ?? params.courseSmall.value.status);
+    const displayedStatus = computed<CourseStatus>(() => params.course.value?.status ?? params.courseSmall.value.status);
 
     const editedStatusModel = computed<string>({
         get: () => String(editedStatus.value),
         set: (value) => {
-            const parsed = Number(value);
-            if (Number.isNaN(parsed)) return;
-            editedStatus.value = parsed as DbStatus;
+            editedStatus.value = value as CourseStatus;
         }
     });
 

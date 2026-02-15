@@ -67,14 +67,10 @@ definePageMeta({
                 const isAdmin = loggedAccount.value?.type === "admin";
                 const isAuthor = loggedAccount.value?.uuid === course.account?.uuid;
                 
-                
-                
-                if (!isAdmin && !isAuthor) {
-                    if (course.status === 0 || course.status === 1 || course.status === 4) {
-                        return navigateTo("/courses");
-                    }
+                // pokud se jedna o draft/scheduled/archived kurz a uzivatel neni admin ani autor, presmeruje na /courses
+                if (["draft", "scheduled", "archived"].includes(course.status) && !(isAdmin || isAuthor)) {
+                    return navigateTo("/courses");
                 }
-
             } catch (e) {
                 console.error("Error loading small course:", e);
                 return navigateTo("/courses");
@@ -1294,31 +1290,31 @@ ul {
         margin: 0;
 
         // Draft
-        &[data-status="0"] {
+        &[data-status="draft"] {
             color: var(--status-draft-text);
             background: var(--status-draft-bg);
         }
 
         // Scheduled
-        &[data-status="1"] {
+        &[data-status="scheduled"] {
             color: var(--status-scheduled-text);
             background: var(--status-scheduled-bg);
         }
 
         // Live
-        &[data-status="2"] {
+        &[data-status="live"] {
             color: var(--status-live-text);
             background: var(--status-live-bg);
         }
 
         // Paused
-        &[data-status="3"] {
+        &[data-status="paused"] {
             color: var(--status-paused-text);
             background: var(--status-paused-bg);
         }
 
         // Archived
-        &[data-status="4"] {
+        &[data-status="archived"] {
             color: var(--status-archived-text);
             background: var(--status-archived-bg);
         }
