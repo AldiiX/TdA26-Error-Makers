@@ -34,6 +34,8 @@ const animationState = ref<AnimationState>("closed");
 const modalContentRef = ref<HTMLDivElement | null>(null);
 let animationTimeout: ReturnType<typeof setTimeout> | null = null;
 
+const enableModal = ref <"opened">
+
 // Scroll tolerance in pixels for floating point comparison in scroll position calculations
 const SCROLL_TOLERANCE = 1;
 

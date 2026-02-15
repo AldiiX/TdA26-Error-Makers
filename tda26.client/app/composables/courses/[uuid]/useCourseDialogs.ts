@@ -1,9 +1,11 @@
 import { ref, watch } from "vue";
 import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
-export function useCourseDialogs() {
-    const enabledModal = ref<CourseDetailModal>(null);
 
+export function useCourseDialogs() {
+
+    const enabledModal =  useState <CourseDetailModal>("useCoursesDialogs__enabledModal", () => null);
+    
     const authTab = ref<"login" | "register">("login");
 
     const updateError = ref<string | null>(null);

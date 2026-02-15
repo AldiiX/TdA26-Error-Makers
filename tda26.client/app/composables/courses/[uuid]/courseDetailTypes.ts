@@ -8,5 +8,6 @@ export type CourseDetailModal =
     | "deleteFeedPost"
     | "updateFeedPost"
     | "loginRequired"
+    | "quizResults"
     | "deleteCourse"
     | null;

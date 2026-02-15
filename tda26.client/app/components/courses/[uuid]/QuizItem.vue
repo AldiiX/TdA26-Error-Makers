@@ -2,12 +2,21 @@
 import type {Material, Quiz} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
+import Modal from "~/components/Modal.vue";
+import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
+// import ApexCharts from "apexcharts";
 
 const props = defineProps<{
     quiz: Quiz,
     course: { uuid: string },
     editMode?: boolean
 }>();
+
+const { enabledModal } = useCourseDialogs();
+
+function openResults() {
+    enabledModal.value = "quizResults";
+}
 
 const emit = defineEmits<{
     (e: "edit", quiz: Quiz): void;
@@ -21,6 +30,8 @@ const getHostname = (url?: string) => {
         return ''
     }
 }
+
+
 </script>
 
 <template>
@@ -44,12 +55,26 @@ const getHostname = (url?: string) => {
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
+            <Button @click="openResults">Výsledky</Button>
             <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
                 <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>
             <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
         </div>
     </div>
+    
+    <Teleport to="#teleports">
+        <Modal
+            :enabled="enabledModal === 'quizResults'"
+            can-be-closed-by-clicking-outside
+            :modal-style="{ maxWidth: '1080px' }"
+            @close="enabledModal = null"
+        >
+            <h3>Výsledky kvízu</h3>
+        </Modal>
+
+    </Teleport>
+    
 </template>
 
 <style module lang="scss">
