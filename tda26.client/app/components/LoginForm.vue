@@ -52,6 +52,12 @@ async function submitLoginForm(event: Event) {
             duration: 1200
         });
 
+        clearNuxtState([
+            "allCourses",
+            "hasFetchedAllCourses",
+            "myCoursesCache",
+            "hasFetchedAllMyCourses",
+        ]);
         emit("loginSuccess", res);
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";

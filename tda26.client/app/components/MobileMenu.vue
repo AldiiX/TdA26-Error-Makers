@@ -36,6 +36,12 @@ async function logout() {
         console.error('Logout error:', err);
     } finally {
         navigateTo('/');
+        clearNuxtState([
+            "allCourses",
+            "hasFetchedAllCourses",
+            "myCoursesCache",
+            "hasFetchedAllMyCourses",
+        ]);
         loggedAccount.value = null;
     }
 }

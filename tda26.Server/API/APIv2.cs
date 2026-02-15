@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Linq.Expressions;
+using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -256,12 +257,20 @@ public class APIv2(
     
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        var accUuid = acc?.Uuid;
+        var isAdmin = acc is Admin;
         var isLimited = limit > 0;
 
         var courses = await db.CoursesMinimalEf()
-            .Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused)
+            .Where(c =>
+                (accUuid != null && c.LecturerUuid != null && c.LecturerUuid == accUuid)
+                ||
+                isAdmin
+                ||
+                (c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused))
             .OrderByDescending(c => c.CreatedAt)
-            .Take(isLimited ? (int) limit : int.MaxValue)
+            .Take(isLimited ? (int)limit : int.MaxValue)
             .AsNoTracking()
             .AsSplitQuery()
             .ToListAsync(ct);

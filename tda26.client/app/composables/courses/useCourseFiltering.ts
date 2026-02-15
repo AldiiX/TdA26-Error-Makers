@@ -1,5 +1,5 @@
 ﻿import { computed, ref } from 'vue'
-import type { Course, Tag  } from '#shared/types'
+import type {Course, CourseStatus, Tag} from '#shared/types'
 
 
 
@@ -7,10 +7,11 @@ export function useCourseFiltering(
     courses: Ref<Course[] | null>,
     searchQuery: Ref<string>
 ) {
+
     const activeCategory = ref<string | null>(null)
     const activeTags = ref<string[]>([])
     const activeAuthor = ref<string | null>(null)
-    const activeStatus = ref<string | null>(null)
+    const activeStatus = ref<CourseStatus | null>(null)
     const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
 
     const normalizeText = (str: string | null | undefined): string =>
@@ -104,7 +105,7 @@ export function useCourseFiltering(
 
         // Stav
         if (activeStatus.value !== null) {
-            list = list.filter(c => c.course.status === Number(activeStatus.value))
+            list = list.filter(c => c.course.status === activeStatus.value)
         }
 
         // Vyhledávání
