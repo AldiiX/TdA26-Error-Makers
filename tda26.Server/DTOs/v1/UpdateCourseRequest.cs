@@ -7,4 +7,6 @@ public class UpdateCourseRequest {
     [MaxLength(1048)] public string Description { get; set; } = string.Empty;
     public Guid? CategoryUuid { get; set; }
     public List<Guid>? TagsUuid { get; set; }
+    
+    public DateTime? ScheduledStart { get; set; }
 }
