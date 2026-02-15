@@ -54,9 +54,9 @@ const handleNoClick = () => {
             :modal-class-name="$style['modal-content']"
             @close="handleClose"
     >
-        <div :class="$style.closebutton" @click="handleClose"></div>
+        <div :class="$style.closebutton" @click="handleClose"/>
 
-        <div :class="$style.icon"></div>
+        <div :class="$style.icon"/>
 
         <h1>{{ title }}</h1>
 

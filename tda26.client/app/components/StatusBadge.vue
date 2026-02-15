@@ -9,7 +9,7 @@ const props = defineProps<{
 
 <template>
     <div :class="[$style.statusIcon, props.status === 'draft' ? $style.draft : props.status === 'scheduled' ? $style.scheduled : props.status === 'live' ? $style.live : props.status === 'paused' ? $style.paused : $style.archived]">
-        <div></div>
+        <div/>
         <p>{{ statusToText(props.status) }}</p>
     </div>
 </template>

@@ -68,12 +68,12 @@ onBeforeUnmount(() => {
     <teleport to="body">
         <Transition name="context-menu-fade">
             <div 
+                v-if="visible"
+                ref="menuRef"
                 :class="[$style.contextMenu, 'liquid-glass']"
                 :style="{ top: `${y}px`, left: `${x}px` }"
-                ref="menuRef"
-                v-if="visible"
             >
-                <div :class="$style.zone" ref="zoneRef"></div>
+                <div ref="zoneRef" :class="$style.zone"/>
 
                 <template v-for="(item, index) in items" :key="index">
                     <ContextMenuItem
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
                         />
                     </a>
     
-                    <hr v-if="index !== items.length - 1"/>
+                    <hr v-if="index !== items.length - 1">
                 </template>
             </div>
         </Transition>

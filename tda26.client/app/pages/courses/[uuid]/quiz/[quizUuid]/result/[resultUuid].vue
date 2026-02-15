@@ -77,7 +77,7 @@ const setQuestionIndex = (i: number) => {
         <Title>Výsledek kvízu • Think different Academy</Title>
     </Head>
 
-    <div :class="$style.container" v-if="result">
+    <div v-if="result" :class="$style.container">
         <div :class="$style.scoreSection">
             <h1>Výsledek kvízu {{ result.quiz.title }}</h1>
             <p>Skóre: {{ result.score }} / {{ result.quiz.questions.length }} ({{ ((result.score / result.quiz.questions.length) * 100).toFixed(0) }}%)</p>
@@ -102,12 +102,12 @@ const setQuestionIndex = (i: number) => {
 
         <div :class="$style.controls">
             <Button
-                @click="incrementQuestionIndex(-1)"
                 :disabled="kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === 0"
+                @click="incrementQuestionIndex(-1)"
             >Předchozí</Button>
             <Button
-                @click="incrementQuestionIndex(1)"
                 :disabled="kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === result.quiz.questions.length - 1"
+                @click="incrementQuestionIndex(1)"
             >Další</Button>
         </div>
     </div>

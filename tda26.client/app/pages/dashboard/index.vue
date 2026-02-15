@@ -6,9 +6,9 @@ import { NuxtLink } from "#components";
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
-import {computed, ref} from "vue";
+import {computed, ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
-import { onMounted, onUnmounted, nextTick, watch } from "vue";
+
 import { useSeo } from "~/composables/useSeo";
 import { push } from "notivue"
 
@@ -153,8 +153,8 @@ const deleteCourse = async () => {
         <p :class="$style.podnapis">Vítej zpět, <strong>{{ loggedAccount?.fullNameWithoutTitles }}</strong>! Zde najdeš přehled svých kurzů a můžeš spravovat svůj obsah.</p>
 
         <div :class="$style.actionButtons">
-            <div @click="enabledModal = 'createCourse'" :class="$style.createCourse">
-                <Button button-style="primary" accent-color="primary"><span :class="$style.icon"></span><p>Vytvořit nový kurz</p></Button>
+            <div :class="$style.createCourse" @click="enabledModal = 'createCourse'">
+                <Button button-style="primary" accent-color="primary"><span :class="$style.icon"/><p>Vytvořit nový kurz</p></Button>
             </div>
         </div>
 
@@ -188,25 +188,25 @@ const deleteCourse = async () => {
         <!-- CREATE -->
         <Modal 
             :enabled="enabledModal === 'createCourse'" 
-            @close="enabledModal = null" 
-            can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            can-be-closed-by-clicking-outside 
+            :modal-style="{ maxWidth: '800px' }"
             :class="$style.createCourseModal"
+            @close="enabledModal = null"
         >
             <h3>Vytvořit nový kurz</h3>
             <CourseForm
                 mode="create"
-                @finished="() => { enabledModal = null; refreshCourses(); }"
                 :categories="categories || []"
+                @finished="() => { enabledModal = null; refreshCourses(); }"
             />
         </Modal>
 
         <!-- DELETE -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteCourse'"
-            @close="enabledModal = null"
             :yes-action="deleteCourse"
             :description="`Opravdu si přeješ smazat kurz „${ selectedDeleteCourse?.name }”?`"
+            @close="enabledModal = null"
         />
     </Teleport>
 </template>

@@ -148,25 +148,25 @@ const resetTags = () => {
 </script>
 
 <template>
-    <form @submit.prevent="submitForm" :class="$style.courseForm">
+    <form :class="$style.courseForm" @submit.prevent="submitForm">
         <div :class="$style.formGroup">
             <label>Název *</label>
-            <Input type="text" v-model="form.name" maxlength="128" :disabled="isInProgress" required />
+            <Input v-model="form.name" type="text" maxlength="128" :disabled="isInProgress" required />
         </div>
 
         <div :class="$style.formGroup">
             <label>Popis *</label>
-            <Input type="textarea" v-model="form.description" rows="4" maxlength="1048" :disabled="isInProgress" required />
+            <Input v-model="form.description" type="textarea" rows="4" maxlength="1048" :disabled="isInProgress" required />
         </div>
 
         <div :class="$style.formGroup">
             <label>Kategorie *</label>
             <Input 
-                type="select" 
-                v-model="form.categoryUuid"
+                v-model="form.categoryUuid" 
+                type="select"
                 :disabled="isInProgress"
-                @input="resetTags"
-                required>
+                required
+                @input="resetTags">
                 <option v-for="cat in props.categories" :key="cat.uuid" :value="cat.uuid">{{ cat.label }}</option>
             </Input>
         </div>
@@ -183,12 +183,13 @@ const resetTags = () => {
         <div :class="$style.materials">
             <div :class="$style.header">
                 <label>Materiály</label>
-                <button type="button" @click="addMaterial" :class="$style.add" :disabled="isInProgress">Přidat</button>
+                <button type="button" :class="$style.add" :disabled="isInProgress" @click="addMaterial">Přidat</button>
             </div>
 
             <div v-for="(m, i) in form.materials" :key="i" :class="[$style.materialGroup]">
-                <MaterialFormItem :model-value="m" :index="i"
-                                  @update:modelValue="(val) => updateMaterial(i, val)"
+                <MaterialFormItem
+:model-value="m" :index="i"
+                                  @update:model-value="(val) => updateMaterial(i, val)"
                                   @remove="() => removeMaterial(i)"
                                   @file-selected="handleFileChange" />
             </div>
@@ -198,7 +199,7 @@ const resetTags = () => {
         <p v-if="loading">Probíhá ukládání...</p>
 
         <div :class="$style.formButtons">
-            <Button button-style="tertiary" type="button" @click="emit('finished')" :disabled="loading || isInProgress">
+            <Button button-style="tertiary" type="button" :disabled="loading || isInProgress" @click="emit('finished')">
                 Zrušit
             </Button>
             <Button button-style="primary" type="submit" :disabled="loading || isInProgress">

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {
-    type Account,
-    type Course,
-    type CourseCategory, type Quiz
+import type {
+    Account,
+    Course,
+    CourseCategory, Quiz
 } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
@@ -193,8 +193,8 @@ function handleAuthSuccess() {
                     <Input
                         v-if="isEditMode && course"
                         :key="course?.tags?.length"
-                        type="select"
                         v-model="editedCategoryUuid"
+                        type="select"
                         :class="$style.editableInput"
                     >
                         <option
@@ -208,7 +208,7 @@ function handleAuthSuccess() {
 
                     <p v-else-if="courseSmall.category" :class="$style.category">{{ courseSmall.category.label }}</p>
 
-                    <template :class="$style.tags" v-if="isEditMode && course">
+                    <template v-if="isEditMode && course" :class="$style.tags">
                         <CategoryAndTagsSelection
                             v-if="editedCategoryUuid && isEditMode"
                             :key="editedCategoryUuid"
@@ -236,11 +236,11 @@ function handleAuthSuccess() {
 
                 <Input
                     v-if="isEditMode"
-                    type="select"
+                    :key="editedStatusModel"
                     v-model="editedStatusModel"
+                    type="select"
                     :class="[$style.status, $style.statusSelect]"
                     :data-status="editedStatus"
-                    :key="editedStatusModel"
                 >
                     <option
                         v-for="status in statusOptions"
@@ -256,15 +256,15 @@ function handleAuthSuccess() {
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
-                        <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :number-class="$style.item" />
                         <p :class="$style.title">Zhlédnutí</p>
                     </div>
                     <div :class="$style.el">
-                        <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
+                        <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :number-class="$style.item" />
                         <p :class="$style.title">Materiály</p>
                     </div>
                     <div :class="$style.el">
-                        <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
+                        <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :number-class="$style.item" /> <!-- TODO: dodělat recenze -->
                         <p :class="$style.title">Kvízy</p>
                     </div>
                 </div>
@@ -278,18 +278,18 @@ function handleAuthSuccess() {
                     <div :class="$style.rating">
                         <!-- like a dislike button -->
                         <div :class="[$style.duo, { [$style.active]: isThisCourseLikedDesign  }]" @click="addRating('like')">
-                            <div :class="$style.icon"></div>
+                            <div :class="$style.icon"/>
                             <p>{{ optimisticLikeCount }}</p>
                         </div>
 
                         <div :class="[$style.duo, { [$style.active]: isThisCourseDislikedDesign }]" @click="addRating('dislike')">
-                            <div :class="$style.icon" style="rotate: 180deg"></div>
+                            <div :class="$style.icon" style="rotate: 180deg"/>
                             <p>Nelíbí se</p>
                         </div>
                     </div>
                 </div>
 
-                <div :class="$style.courseActions" v-if="ownsCourse && !isEditMode">
+                <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
                     <Button
                         button-style="primary"
                         accent-color="secondary"
@@ -319,10 +319,10 @@ function handleAuthSuccess() {
                 </ul>
             </nav>
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper :changeWidth="false">
+                <SmoothSizeWrapper :change-width="false">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="openCreateMaterialModal" :class="$style.addMaterialButton">
+                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="openCreateMaterialModal">
                                 Přidat nový materiál
                             </Button>
 
@@ -341,7 +341,7 @@ function handleAuthSuccess() {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" @click="enabledModal = 'createQuiz'" :class="$style.addMaterialButton">
+                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="enabledModal = 'createQuiz'">
                                 Přidat nový kvíz
                             </Button>
 
@@ -364,8 +364,8 @@ function handleAuthSuccess() {
                                     v-if="ownsCourse"
                                     button-style="primary"
                                     accent-color="primary"
-                                    @click="openCreateFeedPost"
                                     :class="$style.addFeedPost"
+                                    @click="openCreateFeedPost"
                                 >
                                     Přidat příspěvek
                                 </Button>
@@ -408,7 +408,7 @@ function handleAuthSuccess() {
                                     <p v-else-if ="feedError" >Nepodařilo se načíst aktivitu kurzu. Zkuste to prosím znovu.</p>
                                 </li>
 
-                                <li v-if="feedData" v-for=" feedPost in feedPosts" :key="feedPost.uuid">
+                                <li v-for=" feedPost in feedPosts" v-if="feedData" :key="feedPost.uuid">
                                     <div :class="$style.feedPostWrapper">
                                         <div
                                             :class="$style.feedPostLeft"
@@ -493,13 +493,13 @@ function handleAuthSuccess() {
 
     <Teleport to="#teleports">
         <!-- Edit controls -->
-        <div :class="$style.editControls" v-if="isEditMode">
+        <div v-if="isEditMode" :class="$style.editControls">
             <div :class="$style.top">
                 <Button
                     button-style="secondary"
                     :style="{ '--color': 'var(--color-error)' }"
-                    @click="openDeleteCourseModal"
                     :disabled="isActionInProgress"
+                    @click="openDeleteCourseModal"
                 >
                     Smazat kurz
                 </Button>
@@ -521,9 +521,9 @@ function handleAuthSuccess() {
                     Uložit a ukončit úpravy
                 </Button>
                 <Button
-                    buttonStyle="tertiary"
-                    @click="editBackClick"
+                    button-style="tertiary"
                     :disabled="isActionInProgress"
+                    @click="editBackClick"
                 >
                     Ukončit úpravy
                 </Button>
@@ -537,26 +537,26 @@ function handleAuthSuccess() {
         <!-- CREATE -->
         <Modal
             :enabled="enabledModal === 'createMaterial'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            :modal-style="{ maxWidth: '800px' }"
             :class="$style.createMaterialModal"
+            @close="enabledModal = null"
         >
             <h3>Vytvoření nového materiálu</h3>
             <MaterialFormItem
                 v-model="editingMaterial"
                 :index="0"
-                :showRemoveButton="false"
+                :show-remove-button="false"
                 @file-selected="(_, file) => editingMaterial.file = file"
             />
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                <Button button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
-                    @click="handleMaterialCreate"
                     :disabled="isActionInProgress"
+                    @click="handleMaterialCreate"
                 >
                     Vytvořit materiál
                 </Button>
@@ -567,10 +567,10 @@ function handleAuthSuccess() {
         <!-- UPDATE -->
         <Modal
             :enabled="enabledModal === 'updateMaterial'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            :modal-style="{ maxWidth: '800px' }"
             :class="$style.updateMaterialModal"
+            @close="enabledModal = null"
         >
             <h3>Úprava materiálu</h3>
 
@@ -578,19 +578,19 @@ function handleAuthSuccess() {
                 v-if="editingMaterial"
                 v-model="editingMaterial"
                 :index="0"
-                :showRemoveButton="false"
+                :show-remove-button="false"
                 @file-selected="(_, file) => editingMaterial.file = file"
             />
 
 
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                <Button button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
 
                 <Button
                     button-style="primary"
                     accent-color="secondary"
-                    @click="handleMaterialUpdate"
                     :disabled="isActionInProgress"
+                    @click="handleMaterialUpdate"
                 >
                     Uložit změny
                 </Button>
@@ -602,21 +602,21 @@ function handleAuthSuccess() {
         <!-- DELETE MATERIAL -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteMaterial'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
             title="Potvrzení akce"
             description="Opravdu chceš smazat tento materiál? Tuto akci nelze vrátit zpět."
             :yes-action="handleMaterialDelete"
+            @close="enabledModal = null"
         >
             <h3>Opravdu si přeješ smazat materiál <i class="text-gradient">{{ selectedMaterial?.name }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                <Button button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
-                    @click="handleMaterialDelete"
                     :disabled="isActionInProgress"
+                    @click="handleMaterialDelete"
                 >
                     Smazat materiál
                 </Button>
@@ -627,21 +627,21 @@ function handleAuthSuccess() {
         <!-- DELETE QUIZ -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteQuiz'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
             title="Potvrzení akce"
             description="Opravdu chceš smazat tento kvíz? Tuto akci nelze vrátit zpět."
-            :yesAction="handleQuizDelete"
+            :yes-action="handleQuizDelete"
+            @close="enabledModal = null"
         >
             <h3>Opravdu si přeješ smazat kvíz <i class="text-gradient">{{ selectedQuiz?.title }}</i>?</h3>
             <p>Tuto akci nelze vrátit zpět.</p>
             <div :class="$style.modalButtons">
-                <Button button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                <Button button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
                 <Button
                     button-style="primary"
                     accent-color="secondary"
-                    @click="handleQuizDelete"
                     :disabled="isActionInProgress"
+                    @click="handleQuizDelete"
                 >
                     Smazat kvíz
                 </Button>
@@ -652,10 +652,10 @@ function handleAuthSuccess() {
         <!-- CREATE QUIZ -->
         <Modal
             :enabled="enabledModal === 'createQuiz'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '800px' }"
+            :modal-style="{ maxWidth: '800px' }"
             :class-name="$style.createQuizModal"
+            @close="enabledModal = null"
         >
             <h3>Vytvoření nového kvízu</h3>
             <form
@@ -671,7 +671,7 @@ function handleAuthSuccess() {
                 />
 
                 <div :class="$style.modalButtons">
-                    <Button type="reset" button-style="tertiary" @click="enabledModal = null" :disabled="isActionInProgress">Zrušit</Button>
+                    <Button type="reset" button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
 
                     <Button
                         button-style="primary"
@@ -689,9 +689,9 @@ function handleAuthSuccess() {
         <!-- LOGIN REQUIRED MODAL -->
         <Modal
             :enabled="enabledModal === 'loginRequired'"
-            @close="enabledModal = null"
             can-be-closed-by-clicking-outside
-            :modalStyle="{ maxWidth: '500px' }"
+            :modal-style="{ maxWidth: '500px' }"
+            @close="enabledModal = null"
         >
             <SmoothSizeWrapper>
                 <div :class="$style.authModalHeader">
@@ -700,16 +700,16 @@ function handleAuthSuccess() {
                     <div :class="$style.authTabs">
                         <button
                             :class="[$style.authTab, { [$style.active]: authTab === 'login' }]"
-                            @click="authTab = 'login'"
                             type="button"
+                            @click="authTab = 'login'"
                         >
                             Přihlášení
                         </button>
 
                         <button
                             :class="[$style.authTab, { [$style.active]: authTab === 'register' }]"
-                            @click="authTab = 'register'"
                             type="button"
+                            @click="authTab = 'register'"
                         >
                             Registrace
                         </button>
@@ -745,8 +745,8 @@ function handleAuthSuccess() {
         <!-- CREATE FEED POST -->
         <Modal
             :enabled="enabledModal === 'createFeedPost'"
+            :modal-style="{ maxWidth: '600px' }"
             @close="enabledModal = null"
-            :modalStyle="{ maxWidth: '600px' }"
         >
             <h3>Nový příspěvek do aktivity</h3>
 
@@ -772,8 +772,8 @@ function handleAuthSuccess() {
                     <Button
                         button-style="tertiary"
                         type="button"
-                        @click="enabledModal = null"
                         :disabled="isActionInProgress"
+                        @click="enabledModal = null"
                     >
                         Zrušit
                     </Button>
@@ -797,9 +797,9 @@ function handleAuthSuccess() {
         <!-- UPDATE FEED POST -->
         <Modal
             :enabled="enabledModal === 'updateFeedPost'"
+            :modal-style="{ maxWidth: '600px' }"
+            :class-name="$style.updateFeedPostModal"
             @close="enabledModal = null"
-            :modalStyle="{ maxWidth: '600px' }"
-            :className="$style.updateFeedPostModal"
         >
             <h3>Úprava příspěvku</h3>
 
@@ -818,8 +818,8 @@ function handleAuthSuccess() {
                 <Button
                     button-style="primary"
                     accent-color="secondary"
-                    @click="handleFeedPostUpdate"
                     :disabled="isActionInProgress"
+                    @click="handleFeedPostUpdate"
                 >
                     Uložit změny
                 </Button>
@@ -831,10 +831,10 @@ function handleAuthSuccess() {
         <!-- DELETE FEED POST -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteFeedPost'"
-            @close="enabledModal = null"
             title="Smazání příspěvku"
             description="Opravdu chceš smazat tento příspěvek? Tuto akci nelze vrátit."
-            :yesAction="handleFeedPostDelete"
+            :yes-action="handleFeedPostDelete"
+            @close="enabledModal = null"
         >
             <p>
                 Opravdu chceš smazat tento příspěvek?
@@ -844,13 +844,13 @@ function handleAuthSuccess() {
         <!-- DELETE COURSE -->
         <ModalDestructive
             :enabled="enabledModal === 'deleteCourse'"
-            @close="!isActionInProgress ? enabledModal = null : null"
             title="Smazání kurzu"
             :description="`Opravdu chceš smazat kurz ${courseSmall?.name ?? ''}? Tato akce je nevratná.`"
-            :yesAction="handleCourseDelete"
-            :yesText="'Smazat kurz'"
-            :noText="'Zrušit'"
-            :canBeClosedByClickingOutside="!isActionInProgress"
+            :yes-action="handleCourseDelete"
+            :yes-text="'Smazat kurz'"
+            :no-text="'Zrušit'"
+            :can-be-closed-by-clicking-outside="!isActionInProgress"
+            @close="!isActionInProgress ? enabledModal = null : null"
         >
             <p style="margin-top: 16px; color: var(--text-color-secondary);">
                 Budou smazány všechny materiály, kvízy, hodnocení a další data spojená s tímto kurzem.

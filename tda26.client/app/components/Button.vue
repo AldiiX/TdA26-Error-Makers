@@ -30,7 +30,6 @@
 
 <template>
     <button
-            @click="disabled ? null : $emit('click', $event)"
             :disabled="disabled"
             :class="[$style.button, $style['style_' + buttonStyle], { [$style.loading]: loading }]"
             :style="{
@@ -38,7 +37,8 @@
                 '--bg': accentColor === 'gradient' ? 'linear-gradient(60deg, var(--accent-color-primary), var(--accent-color-secondary-theme))' : background ?? accentColor,
                 '--txc': (textColor) ?? (accentColor === 'primary' ? 'var(--accent-color-primary-text)' : accentColor === 'secondary' || accentColor === 'gradient' ? 'var(--accent-color-secondary-theme-text)' : 'inherit'),
                 ...style
-            }">
+            }"
+            @click="disabled ? null : $emit('click', $event)">
 
         <template v-if="!loading">
             <slot />

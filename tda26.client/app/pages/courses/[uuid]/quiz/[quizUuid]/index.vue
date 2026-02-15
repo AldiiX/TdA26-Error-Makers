@@ -135,7 +135,7 @@ const setQuestionIndex = (i: number) => {
         <Title>Kvíz • Think different Academy</Title>
     </Head>
 
-    <div :class="[$style.quizContainer]" v-if="quiz">
+    <div v-if="quiz" :class="[$style.quizContainer]">
         <ul :class="$style.questionProgress">
             <li
                 v-for="(_, i) in quiz.questions"
@@ -148,7 +148,6 @@ const setQuestionIndex = (i: number) => {
         <QuizQuestionCard
             v-if="quiz && currentQuestion && uuid && quiz.questions.length > 0"
             :question="currentQuestion"
-            @update:selectedOption="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
             :selected-option="
               savedResponses[
                 kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
@@ -162,12 +161,13 @@ const setQuestionIndex = (i: number) => {
                     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex
                   ]?.selectedIndices ?? []
             "
+            @update:selected-option="updateSelectedIndices(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
         />
 
-        <div :class="$style.controls" v-if="quiz.questions.length > 0">
+        <div v-if="quiz.questions.length > 0" :class="$style.controls">
             <Button
-                @click="incrementQuestionIndex(-1)"
                 :disabled="kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex === 0"
+                @click="incrementQuestionIndex(-1)"
             >Předchozí</Button>
             <Button
                 @click="incrementQuestionIndex(1)"

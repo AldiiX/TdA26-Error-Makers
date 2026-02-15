@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { Course } from "#shared/types";
+import type { Course, Account  } from "#shared/types";
 import Button from "~/components/Button.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
-import type { Account } from "#shared/types";
+
 import { NuxtLink } from "#components";
 import Avatar from "~/components/Avatar.vue";
 import StatusBadge from "~/components/StatusBadge.vue";
@@ -184,30 +184,30 @@ const contextMenuItems = computed(() => {
     <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
         <div :class="$style.top">
             <div v-if="isUploading || isDuplicating" :class="$style.uploadOverlay">
-                <div :class="$style.spinner"></div>
+                <div :class="$style.spinner"/>
                 <p>{{ isDuplicating ? duplicateStatusText : uploadStatusText }}</p>
             </div>
 
             <StatusBadge :class="$style.statusIcon" :status="course.status"/>
 
             <div
-                :class="$style.editOverlay"
                 v-if="editMode"
+                :class="$style.editOverlay"
             >
                 <div
                     :class="$style.bgButton"
                 >
                     <span
-                        @click="openContextMenu"
                         :class="[$style.contextMenuButton]"
-                    ></span>
+                        @click="openContextMenu"
+                    />
                     <ContextMenu
                          :items="contextMenuItems"
 
-                         @close="isContextMenuOpen = false"
                          :visible="isContextMenuOpen"
                          :x="menuX"
                          :y="menuY"
+                         @close="isContextMenuOpen = false"
                     />
                 </div>
             </div>
@@ -248,8 +248,7 @@ const contextMenuItems = computed(() => {
                                 $style.star,
                                 course.ratingScore >= n * 2 ? $style.full : course.ratingScore === n * 2 - 1 ? $style.half : null
                             ]"
-                        >
-                        </div>
+                        />
                     </div>
                 </div>
 
@@ -262,11 +261,11 @@ const contextMenuItems = computed(() => {
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"></div>
+                        <div style="mask-image: url(/icons/thumbs_up_filled.svg)"/>
                         <p>{{ course.likeCount }}</p>
                     </div>
                     <div :class="$style.info">
-                        <div style="mask-image: url(/icons/views.svg)"></div>
+                        <div style="mask-image: url(/icons/views.svg)"/>
                         <p>{{ course.viewCount }}</p>
                     </div>
                 </div>
@@ -283,16 +282,16 @@ const contextMenuItems = computed(() => {
                         <Button
                                 button-style="primary"
                                 accent-color="secondary"
-                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                                 style="width: 100%"
+                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
                         >
                             Upravit
                         </Button>
                         <Button
                                 button-style="secondary"
                                 accent-color="secondary"
-                                @click="emit('delete')"
                                 style="width: 100%"
+                                @click="emit('delete')"
                         >
                             Smazat
                         </Button>

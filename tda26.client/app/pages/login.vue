@@ -101,7 +101,7 @@ async function submitLoginForm(event: Event) {
                 <p :class="$style.subtitle">Think different Academy</p>
             </header>
 
-            <form :class="[$style.form]" @submit.prevent="submitLoginForm" aria-describedby="form-error" :aria-busy="isLoading">
+            <form :class="[$style.form]" aria-describedby="form-error" :aria-busy="isLoading" @submit.prevent="submitLoginForm">
                 <div :class="$style.group">
                     <label :class="$style.label" for="username">Uživatelské jméno</label>
                     <Input
@@ -132,10 +132,10 @@ async function submitLoginForm(event: Event) {
                         <button
                                 :class="$style.toggle"
                                 type="button"
-                                @click="togglePassword"
                                 :aria-pressed="showPassword"
                                 aria-controls="password"
                                 aria-label="Zobrazit nebo skrýt heslo"
+                                @click="togglePassword"
                         >
                             {{ showPassword ? 'Skrýt' : 'Zobrazit' }}
                         </button>
@@ -147,7 +147,7 @@ async function submitLoginForm(event: Event) {
                     Přihlásit se
                 </ButtonComponent>
 
-                <p v-if="errorMsg" :class="$style.error" id="form-error" role="alert" aria-live="polite">{{ errorMsg }}</p>
+                <p v-if="errorMsg" id="form-error" :class="$style.error" role="alert" aria-live="polite">{{ errorMsg }}</p>
 
                 <div :class="$style.actions">
 <!--                    <a href="/forgot-password">Zapomněl jsi heslo?</a>-->

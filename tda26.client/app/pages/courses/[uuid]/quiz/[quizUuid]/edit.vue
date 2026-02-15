@@ -310,7 +310,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         <Title>Úprava kvízu • Think different Academy</Title>
     </Head>
 
-    <div :class="[$style.editMode, $style.quizContainer]" v-if="quiz">
+    <div v-if="quiz" :class="[$style.editMode, $style.quizContainer]">
         <ul :class="$style.questionProgress">
             <li
                 v-for="(q, i) in quiz.questions"
@@ -334,7 +334,7 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
                 {{ i + 1 }}
             </li>
 
-            <li :class="$style.add" @click="addQuestion"></li>
+            <li :class="$style.add" @click="addQuestion"/>
         </ul>
         <p
             :class="$style.editable"
@@ -343,13 +343,13 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
         >{{ quiz.title }}</p>
         <QuizQuestionCard
             v-if="quiz && quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex] && uuid"
-            :question="quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]!"
             :key="questionRenderKey"
+            :question="quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex]!"
             mode="edit"
             @update:question="updateQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
-            @deleteQuestion="deleteQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
-            @addQuestionOption="addQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
-            @removeQuestionOption="removeQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
+            @delete-question="deleteQuestion(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
+            @add-question-option="addQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex)"
+            @remove-question-option="removeQuestionOption(kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex, $event)"
         />
         
 <!--        <div :class="$style.controls">-->
@@ -358,8 +358,8 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 <!--        </div>-->
         
         <div :class="$style.buttonGroup">
-            <Button @click="saveQuiz" :disabled="!canSave || isActionInProgress" button-style="secondary">Uložit</Button>
-            <Button @click="saveAndExit" :disabled="!canSave || isActionInProgress" button-style="primary">Uložit a odejít</Button>
+            <Button :disabled="!canSave || isActionInProgress" button-style="secondary" @click="saveQuiz">Uložit</Button>
+            <Button :disabled="!canSave || isActionInProgress" button-style="primary" @click="saveAndExit">Uložit a odejít</Button>
         </div>
     </div>
 </template>

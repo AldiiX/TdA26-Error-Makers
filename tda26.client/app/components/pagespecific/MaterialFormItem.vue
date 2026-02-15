@@ -33,36 +33,36 @@ function onFileChange(event: Event) {
 <template>
     <div :class="$style.item">
         <div :class="$style.headInputs">
-            <Input type="text" placeholder="Název materiálu *" v-model="m.name" maxlength="128" required/>
+            <Input v-model="m.name" type="text" placeholder="Název materiálu *" maxlength="128" required/>
 
-            <Input type="select" v-model="m.type">
+            <Input v-model="m.type" type="select">
                 <option value="url">URL</option>
                 <option value="file">Soubor</option>
             </Input>
         </div>
 
         <template v-if="m.type === 'url'">
-            <Input type="text" placeholder="Odkaz *" v-model="m.url" maxlength="256" required />
+            <Input v-model="m.url" type="text" placeholder="Odkaz *" maxlength="256" required />
         </template>
 
         <template v-else>
             <Input
                 type="file"
-                @change="onFileChange"
-                :allowedFileTypes="[
+                :allowed-file-types="[
                     'application/pdf',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'text/plain',
                     'image/png','image/jpeg','image/gif',
                     'video/mp4','audio/mpeg'
                 ]"
+                @change="onFileChange"
             />
         </template>
 
         <Input
+            v-model="m.description"
             type="textarea"
             placeholder="Popis"
-            v-model="m.description"
             rows="4"
             maxlength="1048"
             style="resize: none"

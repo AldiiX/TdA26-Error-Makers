@@ -145,7 +145,7 @@
                 </p>
             </div>
 
-            <div :class="$style.right" v-if="false">
+            <div v-if="false" :class="$style.right">
                 <div :class="$style.coursesInfo">
                     <div :class="$style.row">
                         <NumberExponential
@@ -173,27 +173,27 @@
                         <p>Filtry</p>
 
                         <transition name="fade">
-                            <div :class="[$style.resetbutton, { [$style.fadeout]: filterButtonClicked } ]" v-show="isAnyFilterActive" @click="resetAllFilters" :title="'Resetovat filtry'"></div>
+                            <div v-show="isAnyFilterActive" :class="[$style.resetbutton, { [$style.fadeout]: filterButtonClicked } ]" :title="'Resetovat filtry'" @click="resetAllFilters"/>
                         </transition>
                     </div>
 
                     <div :class="[$style.searchBar]">
-                        <div :class="$style.searchIcon"></div>
+                        <div :class="$style.searchIcon"/>
                         <input
+                                v-model="searchQuery"
                                 type="text"
                                 placeholder="Hledat kurz..."
-                                v-model="searchQuery"
-                        />
+                        >
                     </div>
 
                     <div :class="[$style.cont, $style.author]">
                         <p>Autor</p>
                         <SelectLecturer
-                                :options="authorOptions"
                                 v-model="activeAuthor"
+                                :options="authorOptions"
                                 placeholder="Všichni autoři"
                                 search-placeholder="Hledat autora..."
-                                :dropdownClass="$style.sdd"
+                                :dropdown-class="$style.sdd"
                                 special-render="withAvatar"
                                 :class="$style.selection"
                         />
@@ -202,17 +202,17 @@
                     <div :class="$style.state">
                         <p>Stav</p>
                         <Select
-                                :options="stateOptions"
                                 v-model="activeStatus"
+                                :options="stateOptions"
                                 placeholder="Všechny stavy"
                                 search-placeholder="Hledat stav..."
                                 :class="$style.selection"
-                                :dropdownClass="$style.sdd"
+                                :dropdown-class="$style.sdd"
                         />
                     </div>
 
                     <SmoothSizeWrapper style="width: 100%; overflow: hidden;">
-                        <div :class="[$style.categories, $style.cont]" v-if="allCategories && allCategories?.length > 0">
+                        <div v-if="allCategories && allCategories?.length > 0" :class="[$style.categories, $style.cont]">
                             <p>Kategorie</p>
 
                             <div :class="$style.list">
@@ -228,7 +228,7 @@
                             </div>
                         </div>
 
-                        <div :class="[$style.tags, $style.cont]" v-if="activeCategory !== null && categoryTags?.length > 0">
+                        <div v-if="activeCategory !== null && categoryTags?.length > 0" :class="[$style.tags, $style.cont]">
                             <p>Tagy</p>
 
                             <div :class="$style.sortOptions">
@@ -274,13 +274,13 @@
 
                 <div :class="$style.courses">
                     <div :class="$style.coursesWrapper">
-                        <div :class="$style.loading" v-if="courses === null"></div>
+                        <div v-if="courses === null" :class="$style.loading"/>
 
-                        <div :class="$style.coursesList" v-else-if="paginatedCourses.length > 0">
+                        <div v-else-if="paginatedCourses.length > 0" :class="$style.coursesList">
                             <CourseCard
                                     v-for="(course, i) in paginatedCourses"
-                                    :course="course"
                                     :key="course.uuid"
+                                    :course="course"
                                     :reveal-delay-ms="i * 200"
                             />
                         </div>

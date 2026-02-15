@@ -85,7 +85,7 @@
                     :class="$style.teamCard"
                 >
                     <div :class="$style.avatarWrapper">
-                        <img :src="member.avatar" :alt="member.name" :class="$style.avatar" />
+                        <img :src="member.avatar" :alt="member.name" :class="$style.avatar" >
                     </div>
                     <h3 :class="$style.memberName">{{ member.name }}</h3>
                     <p :class="$style.memberRole">{{ member.role }}</p>
