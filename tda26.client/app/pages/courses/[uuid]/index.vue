@@ -4,6 +4,7 @@ import {
     type Course,
     type CourseCategory, type Quiz
 } from "#shared/types";
+import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
@@ -33,6 +34,7 @@ import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
+
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -232,15 +234,15 @@ function handleAuthSuccess() {
                 <div :class="$style.fields">
                     <div :class="$style.el">
                         <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
-                        <p :class="$style.title">Zhlédnutí</p>
+                        <p :class="$style.title">{{ formatCzechCount(courseSmall?.viewCount ?? 0, {one: "Zhlédnutí", few: "Zhlédnutí", many: "Zhlédnutí"} ) }}</p>
                     </div>
                     <div :class="$style.el">
                         <NumberExponential :value="course?.materials?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
-                        <p :class="$style.title">Materiály</p>
+                        <p :class="$style.title">{{ formatCzechCount(course?.materials?.length ?? 0,  { one: "Materiál", few: "Materiály", many: "Materiálů" } ) }}</p>
                     </div>
                     <div :class="$style.el">
                         <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
-                        <p :class="$style.title">Kvízy</p>
+                        <p :class="$style.title">{{ formatCzechCount(course?.quizzes?.length ?? 0, {one: "Kvíz", few: "Kvízy", many: "Kvízů"} ) }}</p>
                     </div>
                 </div>
 
