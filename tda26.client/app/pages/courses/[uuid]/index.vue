@@ -242,7 +242,7 @@ function handleAuthSuccess() {
                     </div>
                     <div :class="$style.el">
                         <NumberExponential :value="course?.quizzes?.length ?? 0" :container-class="$style.nexp" :numberClass="$style.item" /> <!-- TODO: dodělat recenze -->
-                        <p :class="$style.title">{{ formatCzechCount(course?.quizzes?.length ?? 0, {one: "Kviz", few: "Kvizy", many: "Kvizů"} ) }}</p>
+                        <p :class="$style.title">{{ formatCzechCount(course?.quizzes?.length ?? 0, {one: "Kvíz", few: "Kvízy", many: "Kvízů"} ) }}</p>
                     </div>
                 </div>
 
