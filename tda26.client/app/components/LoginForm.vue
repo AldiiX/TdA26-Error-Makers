@@ -4,6 +4,7 @@ import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import type {Account} from "#shared/types";
 import { push } from "notivue";
+import {useCourses} from "~/composables/courses/useCourses";
 
 const emit = defineEmits<{
     (e: "loginSuccess", account: Account): void;
@@ -14,6 +15,7 @@ const showPassword = ref(false);
 const password = ref("");
 const isLoading = ref(false);
 const errorMsg = ref<string | null>(null);
+const { invalidateCoursesState } = useCourses();
 
 // handlers
 function togglePassword() {
@@ -52,12 +54,6 @@ async function submitLoginForm(event: Event) {
             duration: 1200
         });
 
-        clearNuxtState([
-            "allCourses",
-            "hasFetchedAllCourses",
-            "myCoursesCache",
-            "hasFetchedAllMyCourses",
-        ]);
         emit("loginSuccess", res);
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
@@ -68,6 +64,7 @@ async function submitLoginForm(event: Event) {
             duration: 6000
         });
     } finally {
+        invalidateCoursesState();
         isLoading.value = false;
     }
 }

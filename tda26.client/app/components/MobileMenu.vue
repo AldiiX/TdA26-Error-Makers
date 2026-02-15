@@ -6,8 +6,10 @@ import {NuxtLink, ClientOnly} from "#components";
 import Menu from "~/components/Menu.vue";
 import type {Account, Lecturer, WebTheme} from "#shared/types";
 import Avatar from "~/components/Avatar.vue";
+import useAuth from "~/composables/useAuth";
 
 
+const { logout } = useAuth();
 const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
 const currentPage = ref<string>("/");
@@ -23,27 +25,6 @@ function toggleTheme() {
     const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
     theme.value = newTheme;
     themeCookie.value = newTheme;
-}
-
-async function logout() {
-    navigateTo('/');
-
-    try {
-        await $fetch('/api/v2/auth/logout', {
-            method: 'POST'
-        });
-    } catch (err) {
-        console.error('Logout error:', err);
-    } finally {
-        navigateTo('/');
-        clearNuxtState([
-            "allCourses",
-            "hasFetchedAllCourses",
-            "myCoursesCache",
-            "hasFetchedAllMyCourses",
-        ]);
-        loggedAccount.value = null;
-    }
 }
 
 watch(() => useRoute().path, (newPath) => {
