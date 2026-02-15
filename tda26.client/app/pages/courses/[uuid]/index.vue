@@ -50,6 +50,33 @@ definePageMeta({
             if (to.path.startsWith("/course/")) {
                 return navigateTo(`/courses/${uuid}`);
             }
+
+            try {
+                const course = await $fetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+                    query: { full: false },
+                });
+
+                if (!course) {
+                    return navigateTo("/courses");
+                }
+                const courseSmallState = useState<Course | null>(`course-small-${uuid}`, () => null);
+                courseSmallState.value = course;
+
+                const loggedAccount = useState<Account | null>("loggedAccount");
+
+                const isAdmin = loggedAccount.value?.type === "admin";
+                const isAuthor = loggedAccount.value?.uuid === course.account?.uuid;
+
+                if (!isAdmin && !isAuthor) {
+                    if (course.status === 0 || course.status === 1) {
+                        return navigateTo("/courses");
+                    }
+                }
+
+            } catch (e) {
+                console.error("Error loading small course:", e);
+                return navigateTo("/courses");
+            }
         })
     ]
 });
@@ -65,14 +92,14 @@ const isActionInProgress = ref(false);
 const {enabledModal, authTab, updateError, deleteError, feedPostError} = useCourseDialogs();
 
 // server small fetch
-const { data: _courseSmall, error: courseSmallError } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
-    query: { full: false },
-    server: true,
-    key: `course-${uuid}-small`,
-});
+const courseSmallState = useState<Course | null>(`course-small-${uuid}`);
 
-if (courseSmallError.value || !_courseSmall.value) {
-    console.error("Error loading small course:", courseSmallError.value);
+const _courseSmall = ref<Course | null>(courseSmallState.value);
+const courseSmallError = ref<Error | null>(null);
+
+if (!_courseSmall.value) {
+    console.error("Error loading small course: missing state from middleware");
+    courseSmallError.value = new Error("Course not loaded");
     await navigateTo("/courses");
 }
 
