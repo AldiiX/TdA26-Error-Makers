@@ -12,7 +12,7 @@
     import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
     import { statusToText } from "#shared/utils/statusMapper";
 
-    import { useCourses } from '~/composables/courses/useCourses'
+    import { useCourses } from '~/composables/useCourses'
     import { useSearchQuery } from '~/composables/courses/useSearchQuery'
     import { useCourseFiltering } from '~/composables/courses/useCourseFiltering'
     import { usePagination } from '~/composables/courses/usePagination'
@@ -29,7 +29,7 @@
         keywords: "online kurzy, katalog kurzů, vzdělávací programy, e-learning kurzy, výuka online"
     });
 
-    const { courses } = useCourses();
+    const { allCourses: courses } = useCourses();
     const { searchQuery, debouncedQuery } = useSearchQuery();
     const { loggedAccount } = useAuth();
 

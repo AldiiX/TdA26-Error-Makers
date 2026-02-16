@@ -165,6 +165,14 @@ const contextMenuItems = computed(() => {
         },
     ];
 });
+
+const cutDescription = computed(() => {
+    const maxLength = 100;
+    if (props.course.description.length > maxLength) {
+        return props.course.description.slice(0, maxLength) + "...";
+    }
+    return props.course.description;
+});
 </script>
 
 <template>
@@ -241,10 +249,12 @@ const contextMenuItems = computed(() => {
                 </div>
 
 
-                <div :class="$style.date">
+                <div :class="$style.date" v-if="false">
                     <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
                     <p :class="$style.lastUpdate">Poslední úprava {{ timeAgoString(course.updatedAt) }}</p>
                 </div>
+
+                <p :class="$style.desc" :title="course.description">{{ cutDescription }}</p>
             </div>
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
@@ -572,6 +582,12 @@ const contextMenuItems = computed(() => {
                     color: var(--text-color-secondary);
                     margin: 2px 0;
                 }
+            }
+
+            .desc {
+                margin: 0;
+                opacity: 0.5;
+                margin-bottom: 12px;
             }
         }
 
