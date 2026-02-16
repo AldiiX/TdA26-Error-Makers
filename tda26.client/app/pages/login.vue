@@ -21,8 +21,19 @@ useSeo({
 
 const route = useRoute();
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+
+// Helper function to safely validate redirect URLs
+const getSafeRedirectUrl = (redirect: string | undefined): string => {
+    if (!redirect || typeof redirect !== 'string') return '/';
+    // Only allow relative URLs (starting with /) to prevent open redirect
+    if (!redirect.startsWith('/')) return '/';
+    // Prevent protocol-relative URLs like //evil.com
+    if (redirect.startsWith('//')) return '/';
+    return redirect;
+};
+
 if (loggedAccount.value) {
-    const redirectTo = (route.query.redirect as string) || "/";
+    const redirectTo = getSafeRedirectUrl(route.query.redirect as string);
     navigateTo(redirectTo);
 }
 
@@ -72,7 +83,7 @@ async function submitLoginForm(event: Event) {
             duration: 1200
         });
 
-        const redirectTo = (route.query.redirect as string) || "/";
+        const redirectTo = getSafeRedirectUrl(route.query.redirect as string);
         await navigateTo(redirectTo);
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
