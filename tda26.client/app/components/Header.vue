@@ -86,7 +86,7 @@
                 <template v-else>
                     <div v-if="loggedAccount.type === 'lecturer' || loggedAccount.type === 'admin'" :class="$style.btns">
                         <NuxtLink :class="$style.linkBtn" to="/dashboard">
-                            <Button button-style="primary" href="/dashboard">Dashboard</Button>
+                            <Button button-style="primary">Dashboard</Button>
                         </NuxtLink>
                     </div>
 

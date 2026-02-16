@@ -6,25 +6,29 @@ export function getSafeRedirectUrl(redirect: string | undefined, defaultUrl: str
     if (!redirect || typeof redirect !== 'string') return defaultUrl;
     
     try {
-        // Try parsing with current origin to validate it's a valid relative URL
-        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-        const url = new URL(redirect, currentOrigin);
-        
-        // Only allow same origin URLs
-        if (url.origin !== currentOrigin) {
-            return defaultUrl;
+        // Only validate on client-side where window is available
+        if (typeof window !== 'undefined') {
+            const currentOrigin = window.location.origin;
+            const url = new URL(redirect, currentOrigin);
+            
+            // Only allow same origin URLs
+            if (url.origin !== currentOrigin) {
+                return defaultUrl;
+            }
+            
+            // Return just the pathname + search + hash (no origin)
+            return url.pathname + url.search + url.hash;
         }
-        
-        // Return just the pathname + search + hash (no origin)
-        return url.pathname + url.search + url.hash;
     } catch {
-        // If URL parsing fails, it's not a valid URL
-        // Only accept if it starts with / and is not protocol-relative
-        if (redirect.startsWith('/') && !redirect.startsWith('//')) {
-            return redirect;
-        }
-        return defaultUrl;
+        // If URL parsing fails, fall through to simple validation
     }
+    
+    // Server-side or parsing failed: use simple validation
+    // Only accept if it starts with / and is not protocol-relative
+    if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+        return redirect;
+    }
+    return defaultUrl;
 }
 
 /**
