@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
-import type {Material, Quiz} from "#shared/types";
+import type {Quiz, QuizResultsSummary} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
-// import ApexCharts from "apexcharts";
+import toClockTime from "~/utils/toClockTime";
+import { Chart } from 'chart.js/auto';
 
 const props = defineProps<{
     quiz: Quiz,
@@ -23,15 +24,81 @@ const emit = defineEmits<{
     (e: "delete", quiz: Quiz): void;
 }>();
 
-const getHostname = (url?: string) => {
-    try {
-        return url ? new URL(url).hostname : ''
-    } catch {
-        return ''
-    }
-}
+const quizResultsSummary = ref<QuizResultsSummary | null>(null);
+const scoreDistributionChartElement = ref<HTMLCanvasElement | null>(null);
+const timeDistributionChartElement = ref<HTMLCanvasElement | null>(null);
 
+onMounted(() => {
+    fetch(`/api/v2/courses/${props.course.uuid}/quizzes/${props.quiz.uuid}/results-summary`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch quiz results summary");
+            return res.json();
+        })
+        .then(data => {
+            quizResultsSummary.value = data;
+        })
+        .catch(err => {
+            console.error("Error fetching quiz results summary:", err);
+        });
+});
 
+watch(scoreDistributionChartElement, (element) => {
+    if (!element || !(element instanceof HTMLCanvasElement)) return;
+    
+    const data = (quizResultsSummary.value?.scoreDistribution
+        .filter(item => item.count > 0)
+        .map(item => ({
+            label: item.label,
+            count: item.count
+        })) || []);
+
+    console.log("Score distribution data for chart:", data);
+
+    new Chart(
+        element,
+        {
+            type: 'pie',
+            data: {
+                labels: data.map(row => row.label),
+                datasets: [
+                    {
+                        label: 'Počet pokusů',
+                        data: data.map(row => row.count)
+                    }
+                ]
+            }
+        }
+    );
+});
+
+watch(timeDistributionChartElement, (element) => {
+    if (!element || !(element instanceof HTMLCanvasElement) || quizResultsSummary.value?.timeDistribution === undefined) return;
+    
+    const data = (quizResultsSummary.value.timeDistribution
+        .filter(item => item.count > 0)
+        .map(item => ({
+            label: item.label,
+            count: item.count
+        })) || []);
+
+    console.log("Score distribution data for chart:", data);
+
+    new Chart(
+        element,
+        {
+            type: 'pie',
+            data: {
+                labels: data.map(row => row.label),
+                datasets: [
+                    {
+                        label: 'Počet pokusů',
+                        data: data.map(row => row.count)
+                    }
+                ]
+            }
+        }
+    );
+});
 </script>
 
 <template>
@@ -61,16 +128,35 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
         </div>
+
     </div>
     
     <Teleport to="#teleports">
         <Modal
+            v-if="quizResultsSummary"
             :enabled="enabledModal === 'quizResults'"
             can-be-closed-by-clicking-outside
             :modal-style="{ maxWidth: '1080px' }"
             @close="enabledModal = null"
         >
-            <h3>Výsledky kvízu</h3>
+            <div :class="$style.quizResultsModal">
+                <h3>Výsledky kvízu</h3>
+                <div :class="$style.info">
+                    <p>Průměrný strávený čas: {{ toClockTime(quizResultsSummary.averageTimeSpent) }}</p>
+                    <p>Průměrné skóre: {{ Math.round(quizResultsSummary.averageScore * 100) / 100 }} ({{ Math.round(quizResultsSummary.averageScorePercentage) }}%)</p>
+                </div>
+
+                <div :class="$style.charts">
+                    <div :class="$style.scoreDistribution">
+                        <h4>Distribuce skóre</h4>
+                        <canvas ref="scoreDistributionChartElement"></canvas>
+                    </div>
+                    <div :class="$style.timeDistribution">
+                        <h4>Distribuce času</h4>
+                        <canvas ref="timeDistributionChartElement"></canvas>
+                    </div>
+                </div>
+            </div>
         </Modal>
 
     </Teleport>
@@ -168,6 +254,47 @@ const getHostname = (url?: string) => {
         display: flex;
         gap: 8px;
         padding: 12px 16px;
+    }
+}
+
+.quizResultsModal {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    
+    >h3 {
+        margin-bottom: 12px !important;
+    }
+    
+    >.info {
+        display: flex;
+        gap: 12px;
+        flex-direction: column;
+        
+        p {
+            margin: 0;
+        }
+    }
+    
+    .charts {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        
+        >div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 300px;
+            max-height: 300px;
+            
+            h4 {
+                margin: 0;
+                font-size: 24px;
+                text-align: center;
+            }
+        }
     }
 }
 </style>

@@ -90,6 +90,7 @@ const endQuiz = async () => {
         method: 'POST',
         body: {
             answers,
+            totalTimeSeconds: totalTimeSeconds
         }
     });
     
@@ -128,6 +129,17 @@ const setQuestionIndex = (i: number) => {
     //         ]?.selectedIndices ?? [])
 };
 
+let totalTimeSeconds = 0;
+
+onMounted(() => {
+    const interval = setInterval(() => {
+        totalTimeSeconds++;
+    }, 1000);
+
+    onUnmounted(() => {
+        clearInterval(interval);
+    });
+});
 </script>
 
 <template>

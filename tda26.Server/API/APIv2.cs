@@ -1552,6 +1552,8 @@ public class APIv2(
         var quizResult = new QuizResult {
             QuizUuid = quiz.Uuid,
             Score = correctAnswers,
+            TotalQuestions =  totalQuestions,
+            TotalTimeSeconds = body.TotalTimeSeconds,
             CompletedAt = DateTime.UtcNow,
             Answers = body.Answers.Select(a => {
                 var answer = new QuizAnswer {
@@ -1683,6 +1685,94 @@ public class APIv2(
             completedAt = quizResult.CompletedAt
         });
     }
+
+    [HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/results-summary")]
+    public async Task<IActionResult> GetQuizResultsSummary(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid
+    ) {
+        var course = await db.Courses
+            .Where(c => c.Uuid == courseUuid)
+            .FirstOrDefaultAsync();
+
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.QuizzesEf()
+            .Where(q => q.CourseUuid == courseUuid && q.Uuid == quizUuid)
+            .FirstOrDefaultAsync();
+
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found in the specified course." });
+
+        var results = await db.QuizResultsEf()
+            .Where(r => r.QuizUuid == quiz.Uuid)
+            .Select(r => new {
+                r.Score,
+                r.TotalTimeSeconds
+            })
+            .ToListAsync();
+
+        var totalAttempts = results.Count;
+
+        var averageScore = totalAttempts > 0
+            ? results.Where(r => r.Score > 0).Average(r => r.Score)
+            : 0;
+
+        var averageTimeSpent = totalAttempts > 0
+            ? results.Where(r => r.TotalTimeSeconds > 0).Average(r => r.TotalTimeSeconds)
+            : 0;
+
+        var averageScorePercentage =
+            quiz.Questions.Count > 0
+                ? averageScore / quiz.Questions.Count * 100
+                : 0;
+
+        // Score distribution (percent)
+        var scoreBuckets = new[] {
+            (Min: 0, Max: 20),
+            (Min: 20, Max: 40),
+            (Min: 40, Max: 60),
+            (Min: 60, Max: 80),
+            (Min: 80, Max: 100)
+        };
+
+        var scoreDistribution = scoreBuckets.Select(b => new {
+            label = $"{b.Min}–{b.Max}%",
+            count = results.Count(r =>
+                quiz.Questions.Count > 0 &&
+                (r.Score / (double)quiz.Questions.Count * 100) >= b.Min &&
+                (r.Score / (double)quiz.Questions.Count * 100) < b.Max
+            )
+        }).ToList();
+
+        // Time distribution (minutes)
+        var timeBuckets = new[] {
+            (Label: "0–1 min", Min: 0, Max: 60),
+            (Label: "1–3 min", Min: 60, Max: 180),
+            (Label: "3–5 min", Min: 180, Max: 300),
+            (Label: "5–10 min", Min: 300, Max: 600),
+            (Label: "10+ min", Min: 600, Max: int.MaxValue)
+        };
+
+        var timeDistribution = timeBuckets.Select(b => new {
+            label = b.Label,
+            count = results.Count(r =>
+                r.TotalTimeSeconds >= b.Min &&
+                r.TotalTimeSeconds < b.Max
+            )
+        }).ToList();
+
+        return Ok(new {
+            totalAttempts,
+            averageScore,
+            averageTimeSpent,
+            averageScorePercentage,
+            scoreDistribution,
+            timeDistribution
+        });
+    }
+
 
     #endregion
 

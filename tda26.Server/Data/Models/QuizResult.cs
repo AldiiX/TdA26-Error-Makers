@@ -14,6 +14,8 @@ public class QuizResult {
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
 
     public int Score { get; set; }
+    public int TotalQuestions { get; set; }
+    public int TotalTimeSeconds { get; set; }
 
     public ICollection<QuizAnswer> Answers { get; set; } = new List<QuizAnswer>();
 }
