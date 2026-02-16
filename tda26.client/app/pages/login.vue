@@ -23,9 +23,10 @@ useSeo({
 const route = useRoute();
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
 
+// Redirect if already logged in
 if (loggedAccount.value) {
     const redirectTo = getSafeRedirectUrl(route.query.redirect as string);
-    navigateTo(redirectTo);
+    await navigateTo(redirectTo);
 }
 
 // state

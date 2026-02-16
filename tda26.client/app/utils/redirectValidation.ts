@@ -33,7 +33,7 @@ export function getSafeRedirectUrl(redirect: string | undefined, defaultUrl: str
 
 /**
  * Gets a safe redirect URL for logout - avoids protected routes
- * For logout, we default to home instead of the current page
+ * For logout, we default to home instead of the current page for protected routes
  */
 export function getSafeLogoutRedirectUrl(currentPath: string): string {
     // List of paths that should redirect to home after logout
@@ -47,6 +47,6 @@ export function getSafeLogoutRedirectUrl(currentPath: string): string {
         return '/';
     }
     
-    // Otherwise stay on current page
-    return getSafeRedirectUrl(currentPath, '/');
+    // Otherwise return the current path (it's already a valid relative path)
+    return currentPath;
 }

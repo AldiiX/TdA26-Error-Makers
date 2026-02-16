@@ -8,7 +8,7 @@ export default function(){
     const route = useRoute();
 
     async function logout() {
-        // Save current URL before logout
+        // Capture current path for post-logout redirect
         const currentPath = route.fullPath;
 
         try {
