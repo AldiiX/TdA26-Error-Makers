@@ -12,12 +12,15 @@ import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageC
 import { useState } from "#app";
 import {useContextMenu} from "~/composables/useContextMenu";
 
-const props = defineProps<{
-    course: Course,
-    editMode?: boolean,
-    /** delay reveal animace v ms */
-    revealDelayMs?: number
-}>();
+const props = withDefaults(defineProps<{
+    course: Course;
+    editMode?: boolean;
+    openable?: boolean;
+    revealDelayMs?: number;
+}>(), {
+    editMode: false,
+    openable: true,
+});
 
 const emit = defineEmits<{
     (e: "delete"): void;
@@ -165,7 +168,7 @@ const contextMenuItems = computed(() => {
 </script>
 
 <template>
-    <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
+    <div :class="[$style.container, editMode && $style.editMode, openable && $style.openable]" :style="revealStyle">
         <div :class="$style.top">
             <div v-if="isUploading || isDuplicating" :class="$style.uploadOverlay">
                 <div :class="$style.spinner"/>
@@ -199,6 +202,7 @@ const contextMenuItems = computed(() => {
             <CourseCardImageContainer
                 :course="course"
                 :image-url-override="imageUrlOverride"
+                :style="{ pointerEvents: openable ? 'all' : 'none' }"
             />
         </div>
         <div :class="$style.bottom">
@@ -255,31 +259,34 @@ const contextMenuItems = computed(() => {
                 </div>
 
                 <div :class="$style.actionContainer">
-                    <div v-if="!editMode" :class="$style.userButtons">
-                        <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
-                            <Button button-style="primary" accent-color="secondary" style="width: 100%">
-                                Zobrazit kurz
-                            </Button>
-                        </NuxtLink>
-                    </div>
-                    <div v-else :class="$style.lecturerButtons">
-                        <Button
+                    <template v-if="openable || editMode">
+                        <div v-if="!editMode" :class="$style.userButtons">
+                            <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
+                                <Button button-style="primary" accent-color="secondary" style="width: 100%">
+                                    Zobrazit kurz
+                                </Button>
+                            </NuxtLink>
+                        </div>
+
+                        <div v-else-if="editMode" :class="$style.lecturerButtons">
+                            <Button
                                 button-style="primary"
                                 accent-color="secondary"
                                 style="width: 100%"
                                 @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
-                        >
-                            Upravit
-                        </Button>
-                        <Button
+                            >
+                                Upravit
+                            </Button>
+                            <Button
                                 button-style="secondary"
                                 accent-color="secondary"
                                 style="width: 100%"
                                 @click="emit('delete')"
-                        >
-                            Smazat
-                        </Button>
-                    </div>
+                            >
+                                Smazat
+                            </Button>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
@@ -573,6 +580,7 @@ const contextMenuItems = computed(() => {
             justify-content: space-between;
             align-items: end;
             width: 100%;
+            min-height: 48px;
 
             .anotherInfo {
                 display: flex;
