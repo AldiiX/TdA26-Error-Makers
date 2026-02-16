@@ -1,4 +1,4 @@
-﻿import {useCourses} from "~/composables/courses/useCourses";
+﻿import {useCourses} from "~/composables/useCourses";
 import type {Account} from "#shared/types";
 
 export default function(){

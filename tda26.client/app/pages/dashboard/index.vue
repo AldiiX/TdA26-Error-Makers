@@ -36,34 +36,23 @@ const isActionInProgress = ref(false);
 
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
-
-// Cache for courses using useState
-const coursesCache = useState<Course[] | null>('dashboardCoursesCache', () => null);
-
-// Non-blocking lazy fetch
-const { data: _courses, pending: coursesPending } = useFetch<Course[]>(getBaseUrl() + '/api/v2/me/courses?limit=6', {
-    server: false,
-    lazy: true
-});
-
-// Update cache when data is fetched
-watch(_courses, (newCourses) => {
-    if (newCourses) {
-        coursesCache.value = newCourses;
-    }
-});
-
-const courses = computed<Course[]>(() => {
-    // Prefer fresh data from fetch, fallback to cache if fetch hasn't completed yet
-    return [...(_courses.value ?? coursesCache.value ?? [])];
-});
-
 const courseList = ref<HTMLElement | null>(null);
 
 const { data: categories } = await useFetch<CourseCategory[]>(
     getBaseUrl() + "/api/v2/course-categories",
     { server: false }
 );
+
+// courses
+const { myCourses, myCoursesPending: coursesPending, myCoursesError, refreshMyCourses } = useCourses()
+
+const courses = computed<Course[]>(() => {
+    return (myCourses.value ?? []).slice(0, 6)
+})
+
+const refreshCourses = async () => {
+    await refreshMyCourses()
+}
 
 const scroll = (direction: -1 | 1) => {
     const el = courseList.value;
@@ -94,14 +83,6 @@ onUnmounted(() => {
 watch(courses, () => {
     nextTick(() => updateScroll());
 });
-
-const refreshCourses = async () => {
-    try {
-        const refreshed = await $fetch<Course[]>(getBaseUrl() + "/api/v2/me/courses?limit=4");
-        _courses.value = refreshed;
-        coursesCache.value = refreshed;
-    } catch {}
-};
 
 const selectedDeleteCourse = ref<Course | null>(null);
 
