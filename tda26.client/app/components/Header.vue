@@ -18,8 +18,14 @@
     });
 
     const { logout } = useAuth();
+    const route = useRoute();
     const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
     const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
+
+    const loginUrl = computed(() => {
+        const currentPath = route.fullPath;
+        return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`;
+    });
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -67,8 +73,8 @@
 
                 <!-- neprihlaseny uzivatel -->
                 <div v-if="!loggedAccount" :class="$style.btns">
-                    <NuxtLink :class="$style.linkBtn" to="/login">
-                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" href="/login" accent-color="primary">Přihlásit se</Button>
+                    <NuxtLink :class="$style.linkBtn" :to="loginUrl">
+                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" :href="loginUrl" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
 
                     <NuxtLink :class="$style.linkBtn" to="/register">

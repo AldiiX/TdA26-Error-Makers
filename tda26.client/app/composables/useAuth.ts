@@ -4,9 +4,11 @@ import type {Account} from "#shared/types";
 export default function(){
     const { invalidateCoursesState } = useCourses();
     const loggedAccount = useState<Account | null>('loggedAccount', () => null);
+    const route = useRoute();
 
     async function logout() {
-        navigateTo('/');
+        // Save current URL before logout
+        const currentPath = route.fullPath;
 
         try {
             await $fetch('/api/v2/auth/logout', {
@@ -15,9 +17,10 @@ export default function(){
         } catch (err) {
             console.error('Logout error:', err);
         } finally {
-            navigateTo('/');
             loggedAccount.value = null;
             invalidateCoursesState();
+            // Redirect back to the original URL
+            navigateTo(currentPath);
         }
     }
 

@@ -19,9 +19,11 @@ useSeo({
     noindex: true // Login pages shouldn't be indexed
 });
 
+const route = useRoute();
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
 if (loggedAccount.value) {
-    navigateTo("/");
+    const redirectTo = (route.query.redirect as string) || "/";
+    navigateTo(redirectTo);
 }
 
 // state
@@ -70,7 +72,8 @@ async function submitLoginForm(event: Event) {
             duration: 1200
         });
 
-        await navigateTo("/");
+        const redirectTo = (route.query.redirect as string) || "/";
+        await navigateTo(redirectTo);
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
 

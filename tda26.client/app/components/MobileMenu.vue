@@ -10,10 +10,16 @@ import useAuth from "~/composables/useAuth";
 
 
 const { logout } = useAuth();
+const route = useRoute();
 const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
 const currentPage = ref<string>("/");
 const theme = useState<WebTheme>('theme', () => 'light');
+
+const loginUrl = computed(() => {
+    const currentPath = route.fullPath;
+    return currentPath === '/login' ? '/login' : `/login?redirect=${encodeURIComponent(currentPath)}`;
+});
 
 const themeCookie = useCookie<WebTheme>('theme', {
     default: () => 'light',
@@ -103,7 +109,7 @@ watch(() => useRoute().path, (newPath) => {
                                 <p class="hint">Nemáš účet? Vytvoř si ho</p>
 
                                 <div :class="$style.authButtons">
-                                    <NuxtLink to="/login" @click="mobileMenuOpened = false">
+                                    <NuxtLink :to="loginUrl" @click="mobileMenuOpened = false">
                                         <Button :class="$style.btn" button-style="primary">Přihlásit se</Button>
                                     </NuxtLink>
 
