@@ -6,6 +6,7 @@
     import type {Account, Lecturer, WebTheme} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
     import Popover from "~/components/Popover.vue";
+    import useAuth from "~/composables/useAuth";
     
     const $style = useCssModule();
     
@@ -16,6 +17,7 @@
         path: '/'
     });
 
+    const { logout } = useAuth();
     const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
     const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 
@@ -34,21 +36,6 @@
         const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
         theme.value = newTheme;
         themeCookie.value = newTheme;
-    }
-
-    async function logout() {
-        navigateTo('/');
-        
-        try {
-            await $fetch('/api/v2/auth/logout', {
-                method: 'POST'
-            });
-        } catch (err) {
-            console.error('Logout error:', err);
-        } finally {
-            navigateTo('/');
-            loggedAccount.value = null;
-        }
     }
 
     onMounted(() => {

@@ -42,9 +42,19 @@ export function useCourses() {
 
     watch(() => courses.value?.length, fetchAllCoursesIfNeeded, { immediate: true })
 
+    function invalidateCoursesState() {
+        // vymaze cached useState pro dane klice
+        clearNuxtState(['allCourses', 'hasFetchedAllCourses']);
+
+        courses.value = null;
+        hasFetchedAllCourses.value = false;
+        fullFetchRunning.value = false;
+    }
+
     return {
         courses,
         pending,
-        error
+        error,
+        invalidateCoursesState,
     }
 }

@@ -34,6 +34,8 @@ import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
+import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
+import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
 
 
 definePageMeta({
@@ -152,6 +154,9 @@ const selectItem = (item: string) => {
     selectedItem.value = item;
 };
 
+// publication schedule
+const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ editedStatus, enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+
 // materiály
 const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
 
@@ -163,6 +168,9 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 
 // delete course
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
+
+// obecne sse
+const { } = useCourseSSE({ course: courseSmall, editMode: isEditMode });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -533,6 +541,64 @@ function handleAuthSuccess() {
         </div>
 
 
+
+
+
+        <!-- SCHEDULE PUBLICATION -->
+        <Modal
+            :enabled="enabledModal === 'schedulePublication'"
+            @close="cancelPublicationSchedule"
+            can-be-closed-by-clicking-outside
+            title="Naplánovat publikaci"
+            :modalStyle="{ maxWidth: '800px' }"
+            :class="$style.schedulePublicationModal"
+        >
+            <div :class="$style.modalContent">
+
+                <label>Čas publikace</label>
+
+                <div v-if="formattedPublishTime" :class="$style.scheduledInfo">
+                    <p>Publikace proběhne:</p>
+                    <p>{{ formattedPublishTime }}</p>
+                </div>
+
+                <Input type="select" v-model="selectedTimeOption">
+                    <option
+                        v-for="option in timeOptions"
+                        :key="option.label"
+                        :value="option.values"
+                    >
+                        {{ option.label }}
+                    </option>
+                </Input>
+
+                <div v-if="selectedTimeOption === 'custom'" :class="$style.customDateWrapper">
+                    <Input
+                        type="datetime-local"
+                        v-model="customDateTime"
+                        :maxDate="maxCustomDatetime"
+                        :minDate="minCustomDatetime"
+                    >
+                    </Input>
+                </div>
+
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" @click="cancelPublicationSchedule">
+                        Zrušit
+                    </Button>
+
+                    <Button
+                        button-style="primary"
+                        accent-color="secondary"
+                        :disabled="!finalDateTime"
+                        @click="confirmPublicationSchedule"
+                    >
+                        Naplánovat
+                    </Button>
+                </div>
+
+            </div>
+        </Modal>
 
 
 
@@ -918,6 +984,7 @@ function handleAuthSuccess() {
     >.right {
         width: 30%;
         max-width: 600px;
+        min-width: 400px;
         border-radius: 24px;
         box-shadow: inset 0 0 48px rgb(from var(--background-color-secondary) r g b/.6),0 0 8px #0000000a;
         margin-top: 64px;
@@ -1054,6 +1121,35 @@ function handleAuthSuccess() {
             button {
                 flex: 1;
                 min-width: 140px;
+            }
+        }
+    }
+}
+
+
+.schedulePublicationModal {
+    .modalContent {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+
+        .customDateWrapper {
+            display: flex;
+            gap: 16px;
+
+            input {
+                flex: 1;
+            }
+        }
+
+        .modalButtons {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+            justify-content: flex-end;
+
+            button {
+                width: 164px;
             }
         }
     }
@@ -1801,41 +1897,26 @@ ul {
     opacity: 1;
 }
 
-/* Mobile */
-@media screen and (max-width: app.$mobileBreakpoint) {
-    .course {
-        >.info {
-            >.brief {
-                .fields {
-                    flex-direction: column;
-                    gap: 8px;
+// laptop
+@media screen and (max-width: app.$laptopBreakpoint) {
+    .basic {
+        flex-direction: column;
 
-                    >.el {
-                        border-right: none !important;
-                        padding: 0 !important;
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
+        .left {
+            >p {
+                text-align: justify;
+            }
+        }
 
-                        >p {
-                            margin: 0 !important;
-                            padding: 0;
-                        }
+        .right {
+            width: 100%;
+            max-width: none;
+            margin-top: -32px;
+            margin-bottom: 16px;
 
-                        &:last-child {
-                            border-bottom: none !important;
-                            padding-bottom: 0 !important;
-                        }
-                    }
-                }
-
-                .otherinfo {
-                    .authorAndRating {
-                        .rating {
-                            width: 100%;
-                        }
-                    }
-                }
+            .image {
+                max-width: 380px;
+                min-width: unset;
             }
         }
     }
@@ -1843,6 +1924,16 @@ ul {
 
 /* Tablet */
 @media screen and (max-width: app.$tabletBreakpoint) {
+    .basic {
+        .right {}
+
+        .left {
+            .title {
+                font-size: 64px;
+            }
+        }
+    }
+
     .section {
         margin-top: -50px;
     }
@@ -1879,6 +1970,53 @@ ul {
 
 /* Mobile */
 @media screen and (max-width: app.$mobileBreakpoint) {
+    .basic {
+        .right {}
+
+        .left {
+            .title {
+                font-size: clamp(40px,8vw,64px);
+            }
+        }
+    }
+
+    .course {
+        >.info {
+            >.brief {
+                .fields {
+                    flex-direction: column;
+                    gap: 8px;
+
+                    >.el {
+                        border-right: none !important;
+                        padding: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+
+                        >p {
+                            margin: 0 !important;
+                            padding: 0;
+                        }
+
+                        &:last-child {
+                            border-bottom: none !important;
+                            padding-bottom: 0 !important;
+                        }
+                    }
+                }
+
+                .otherinfo {
+                    .authorAndRating {
+                        .rating {
+                            width: 100%;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     .feedPostWrapper {
         .feedPostLeft {
             padding: 0 !important;

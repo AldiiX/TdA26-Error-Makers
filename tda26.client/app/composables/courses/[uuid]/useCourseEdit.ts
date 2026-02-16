@@ -128,6 +128,12 @@ export function useCourseEdit(params: {
 
         params.isActionInProgress.value = true;
 
+        const toast = push.promise({
+            title: "Ukládám změny...",
+            message: "Probíhá ukládání změn kurzu.",
+            duration: Infinity
+        });
+
         try {
             const updatedCourse = await $fetch<Course>(
                 getBaseUrl() + `/api/v2/courses/${params.course.value.uuid}`,
@@ -163,16 +169,15 @@ export function useCourseEdit(params: {
 
             clearCourseCaches();
 
-            push.success({
+            toast.resolve({
                 title: "Změny uloženy",
                 message: "Změny kurzu byly úspěšně uloženy.",
                 duration: 4000
             });
-
         } catch (err) {
             console.error(err);
 
-            push.error({
+            toast.reject({
                 title: "Chyba při ukládání",
                 message: "Nepodařilo se uložit změny kurzu.",
                 duration: 4000

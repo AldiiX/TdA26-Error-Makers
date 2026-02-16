@@ -10,7 +10,8 @@
     import Select from '~/components/Select.vue'
     import SelectLecturer from "~/components/pagespecific/SelectLecturer.vue";
     import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
-    
+    import { statusToText } from "#shared/utils/statusMapper";
+
     import { useCourses } from '~/composables/courses/useCourses'
     import { useSearchQuery } from '~/composables/courses/useSearchQuery'
     import { useCourseFiltering } from '~/composables/courses/useCourseFiltering'
@@ -27,8 +28,8 @@
         keywords: "online kurzy, katalog kurzů, vzdělávací programy, e-learning kurzy, výuka online"
     });
 
-    const { courses } = useCourses()
-    const { searchQuery, debouncedQuery } = useSearchQuery()
+    const { courses } = useCourses();
+    const { searchQuery, debouncedQuery } = useSearchQuery();
 
     const {
         filteredCourses,
@@ -95,11 +96,11 @@
     })
     
     const stateOptions = [
-        { value: '0', label: 'Koncept' },
-        { value: '1', label: 'Naplánovaný' },
-        { value: '2', label: 'Aktivní' },
-        { value: '3', label: 'Pozastavený' },
-        { value: '4', label: 'Archivovaný' }
+        { value: 'draft', label: statusToText('draft') },
+        { value: 'scheduled', label: statusToText("scheduled") },
+        { value: 'live', label: statusToText('live') },
+        { value: 'paused', label: statusToText('paused') },
+        { value: 'archived', label: statusToText('archived') }
     ]
     const isAnyFilterActive = computed<boolean>(() => {
         return (activeCategory.value !== null || activeTags.value.length > 0 || activeAuthor.value !== null || debouncedQuery.value.trim() !== '') || activeStatus.value !== null || false
@@ -199,7 +200,7 @@
                         />
                     </div>
                     
-                    <div :class="$style.state">
+                    <div :class="[$style.state, $style.cont]">
                         <p>Stav</p>
                         <Select
                                 v-model="activeStatus"

@@ -1,16 +1,18 @@
 ﻿import { computed, ref } from 'vue'
-import type { Course, Tag  } from '#shared/types'
+import type {Course, CourseStatus, Tag} from '#shared/types'
 
+const MAX_DISPLAYED_TAGS_PER_CATEGORY = 15;
 
 
 export function useCourseFiltering(
     courses: Ref<Course[] | null>,
     searchQuery: Ref<string>
 ) {
+
     const activeCategory = ref<string | null>(null)
     const activeTags = ref<string[]>([])
     const activeAuthor = ref<string | null>(null)
-    const activeStatus = ref<string | null>(null)
+    const activeStatus = ref<CourseStatus | null>(null)
     const sort = ref<'new' | 'old' | 'byViews' | 'byLikes'>('new')
 
     const normalizeText = (str: string | null | undefined): string =>
@@ -25,27 +27,45 @@ export function useCourseFiltering(
     // Kategorie a tagy
     // -----------------------------
     const categoryIndex = computed(() => {
-        const map = new Map<string, { tags: Map<string, Tag> }>()
+        const map = new Map<string, { tags: Map<string, { tag: Tag; count: number }> }>()
+
         for (const course of courses.value ?? []) {
             const label = course.category?.label
             if (!label) continue
 
             if (!map.has(label)) map.set(label, { tags: new Map() })
 
+            const tagsMap = map.get(label)!.tags
+
             for (const tag of course.tags ?? []) {
-                map.get(label)!.tags.set(tag.uuid, tag)
+                const existing = tagsMap.get(tag.uuid)
+                if (existing) {
+                    existing.count += 1
+                } else {
+                    tagsMap.set(tag.uuid, { tag, count: 1 })
+                }
             }
         }
+
         return map
     })
 
     const categoryTags = computed(() => {
         if (!activeCategory.value) return []
-        const tags = categoryIndex.value.get(activeCategory.value)?.tags
-        if (!tags) return []
-        return Array.from(tags.values()).sort((a, b) =>
-            a.displayName.localeCompare(b.displayName)
-        )
+
+        const tagsMap = categoryIndex.value.get(activeCategory.value)?.tags
+        if (!tagsMap) return []
+
+        // seradi podle pouziti (desc), pri shode podle jmena (asc)
+        return Array.from(tagsMap.values())
+            .sort((a, b) => {
+                const diff = b.count - a.count
+                if (diff !== 0) return diff
+                return a.tag.displayName.localeCompare(b.tag.displayName)
+            })
+            .slice(0, MAX_DISPLAYED_TAGS_PER_CATEGORY)
+            .map(x => x.tag)
+            .sort((a, b) => a.displayName.localeCompare(b.displayName))
     })
 
     function toggleTag(uuid: string) {
@@ -104,7 +124,7 @@ export function useCourseFiltering(
 
         // Stav
         if (activeStatus.value !== null) {
-            list = list.filter(c => c.course.status === Number(activeStatus.value))
+            list = list.filter(c => c.course.status === activeStatus.value)
         }
 
         // Vyhledávání

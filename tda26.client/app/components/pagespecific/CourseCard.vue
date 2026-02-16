@@ -10,6 +10,7 @@ import StatusBadge from "~/components/StatusBadge.vue";
 import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import { useState } from "#app";
+import {useContextMenu} from "~/composables/useContextMenu";
 
 const props = defineProps<{
     course: Course,
@@ -119,24 +120,7 @@ const resetBgImage = async () => {
     }
 }
 
-const isContextMenuOpen = ref(false);
-const menuX = ref(0)
-const menuY = ref(0)
-
-function openContextMenu(e: MouseEvent) {
-    e.preventDefault()
-
-    if(isContextMenuOpen.value === true) {
-        isContextMenuOpen.value = false;
-        return;
-    }
-
-    menuX.value = e.clientX;
-    menuY.value = e.clientY;
-
-
-    isContextMenuOpen.value = true;
-}
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
 
 async function duplicateCourse() {
     if (isUploading.value || isDuplicating.value) return;
@@ -205,9 +189,9 @@ const contextMenuItems = computed(() => {
                          :items="contextMenuItems"
 
                          :visible="isContextMenuOpen"
-                         :x="menuX"
-                         :y="menuY"
-                         @close="isContextMenuOpen = false"
+                         :x="contextMenuPosition.x"
+                         :y="contextMenuPosition.y"
+                         @close="closeContextMenu"
                     />
                 </div>
             </div>

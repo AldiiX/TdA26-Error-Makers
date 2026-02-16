@@ -19,7 +19,7 @@ export interface Course {
     likeCount: number,
     viewCount: number,
     imageUrl: string | null,
-    imageUrlOrDefault: string,
+    categoryImageUrl: string,
     ratingScore: number,
     category: {
         uuid: string,
@@ -175,3 +175,8 @@ export interface CourseCategory {
     uuid: string;
     label: string;
 }
+
+export type TimeOption = {
+    label: string;
+    values: number | "custom";
+};

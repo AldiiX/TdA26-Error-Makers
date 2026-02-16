@@ -21,6 +21,7 @@ public static class CourseMapper
             CreatedAt = course.CreatedAt,
             UpdatedAt = course.UpdatedAt,
             Status = course.Status,
+            ScheduledStart = course.ScheduledStart,
             ImageUrl = course.ImageUrl != null && course.ImageUrl.StartsWith("course-images/")
                 ? $"/api/v2/courses/{course.Uuid}/image"
                 : null,
@@ -28,7 +29,7 @@ public static class CourseMapper
             Account = course.Account,
             ViewCount = course.ViewCount,
             LikeCount = course.LikeCount,
-            ImageUrlOrDefault = course.ImageUrlOrDefault,
+            CategoryImageUrl = course.CategoryImageUrl,
             Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
             Quizzes = course.Quizzes.Select(q => q.ToReadDto(extended)).ToList(),
             Feed = course.Feed,

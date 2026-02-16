@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Linq.Expressions;
+using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,9 @@ public class APIv2(
     IAuthService auth,
     IMaterialAccessService materialAccessService,
     AppDbContext db,
-    IFeedStreamBroker fsb
+    IFeedStreamBroker fsb,
+    IStreamBroker sb,
+    ILogger<APIv2> logger
 ) : Controller
 {
 
@@ -254,12 +257,20 @@ public class APIv2(
     
     [HttpGet("courses")]
     public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        var accUuid = acc?.Uuid;
+        var isAdmin = acc is Admin;
         var isLimited = limit > 0;
 
         var courses = await db.CoursesMinimalEf()
-            .Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused)
+            .Where(c =>
+                (accUuid != null && c.LecturerUuid != null && c.LecturerUuid == accUuid)
+                ||
+                isAdmin
+                ||
+                (c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused))
             .OrderByDescending(c => c.CreatedAt)
-            .Take(isLimited ? (int) limit : int.MaxValue)
+            .Take(isLimited ? (int)limit : int.MaxValue)
             .AsNoTracking()
             .AsSplitQuery()
             .ToListAsync(ct);
@@ -435,7 +446,28 @@ public class APIv2(
         if(existingCourse.Account != null) existingCourse.Account.Ratings = [];
         existingCourse.Name = body.Name;
         existingCourse.Description = body.Description;
-        existingCourse.Status = body.Status;
+
+        // zmeneni statusu na live pokud je naplanovany start v minulosti
+        var scheduledStatusChangedToLive = false;
+        if (body.Status == CourseStatus.Scheduled) {
+            existingCourse.Status = CourseStatus.Scheduled;
+            scheduledStatusChangedToLive = await existingCourse.CheckSchedulingAsync(sb, ct);
+        }
+
+        // pokud se zmenil status (v requestu zmeneno a nebylo to nasledkem scheduled checku), tak se publishne do streamu zprava
+        if(!scheduledStatusChangedToLive && body.Status != existingCourse.Status) {
+            existingCourse.Status = body.Status;
+
+            logger.LogTrace("Course {CourseUuid} status changed to {Status}, publishing to stream", existingCourse.Uuid, body.Status);
+
+            await sb.PublishAsync(
+                existingCourse.Uuid,
+                new StreamMessage("status_changed", new { status = body.Status.ToString().ToLower() }),
+                ct
+            );
+        }
+
+
         
         // Category
         if (body.CategoryUuid.HasValue) {
@@ -469,6 +501,7 @@ public class APIv2(
         if (entry.State == EntityState.Detached) {
             db.Courses.Update(existingCourse);
         }
+
         await db.SaveChangesAsync(ct);
 
         return Ok(existingCourse);
@@ -646,6 +679,7 @@ public class APIv2(
         var resizedImage = await ResizeImageAsync(body.Image, 500, ct);
         var imageUrl = await materialAccessService.UploadCourseImageAsync(existingCourse.Uuid, resizedImage, ct);
         existingCourse.ImageUrl = imageUrl;
+        existingCourse.UpdatedAt = DateTime.UtcNow;
 
         var entry = db.Entry(existingCourse);
         if (entry.State == EntityState.Detached) {
@@ -695,6 +729,7 @@ public class APIv2(
 
         await materialAccessService.DeleteFileMaterialAsync(existingCourse.ImageUrl, ct);
         existingCourse.ImageUrl = null;
+        existingCourse.UpdatedAt = DateTime.UtcNow;
 
         var entry = db.Entry(existingCourse);
         if (entry.State == EntityState.Detached) {

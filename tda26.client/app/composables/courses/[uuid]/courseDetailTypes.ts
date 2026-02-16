@@ -10,4 +10,5 @@ export type CourseDetailModal =
     | "loginRequired"
     | "quizResults"
     | "deleteCourse"
+    | "schedulePublication"
     | null;
