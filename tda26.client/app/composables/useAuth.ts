@@ -1,5 +1,6 @@
 ﻿import {useCourses} from "~/composables/useCourses";
 import type {Account} from "#shared/types";
+import {getSafeLogoutRedirectUrl} from "~/utils/redirectValidation";
 
 export default function(){
     const { invalidateCoursesState } = useCourses();
@@ -19,8 +20,9 @@ export default function(){
         } finally {
             loggedAccount.value = null;
             invalidateCoursesState();
-            // Redirect back to the original URL
-            navigateTo(currentPath);
+            // Redirect to safe URL (avoids protected routes)
+            const redirectTo = getSafeLogoutRedirectUrl(currentPath);
+            navigateTo(redirectTo);
         }
     }
 

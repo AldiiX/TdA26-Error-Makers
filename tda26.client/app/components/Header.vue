@@ -74,11 +74,11 @@
                 <!-- neprihlaseny uzivatel -->
                 <div v-if="!loggedAccount" :class="$style.btns">
                     <NuxtLink :class="$style.linkBtn" :to="loginUrl">
-                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" :href="loginUrl" accent-color="primary">Přihlásit se</Button>
+                        <Button text-color="var(--accent-color-primary-text)" button-style="primary" accent-color="primary">Přihlásit se</Button>
                     </NuxtLink>
 
                     <NuxtLink :class="$style.linkBtn" to="/register">
-                        <Button text-color="var(--accent-color-secondary-theme-text)" button-style="primary" href="/register" accent-color="secondary">Registrovat se</Button>
+                        <Button text-color="var(--accent-color-secondary-theme-text)" button-style="primary" accent-color="secondary">Registrovat se</Button>
                     </NuxtLink>
                 </div>
 

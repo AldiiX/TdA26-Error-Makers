@@ -6,6 +6,7 @@ import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import type {Account} from "#shared/types";
 import { push } from "notivue";
+import {getSafeRedirectUrl} from "~/utils/redirectValidation";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -21,16 +22,6 @@ useSeo({
 
 const route = useRoute();
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-
-// Helper function to safely validate redirect URLs
-const getSafeRedirectUrl = (redirect: string | undefined): string => {
-    if (!redirect || typeof redirect !== 'string') return '/';
-    // Only allow relative URLs (starting with /) to prevent open redirect
-    if (!redirect.startsWith('/')) return '/';
-    // Prevent protocol-relative URLs like //evil.com
-    if (redirect.startsWith('//')) return '/';
-    return redirect;
-};
 
 if (loggedAccount.value) {
     const redirectTo = getSafeRedirectUrl(route.query.redirect as string);
