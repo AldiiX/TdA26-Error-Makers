@@ -17,7 +17,8 @@ public static class MaterialMapper
                 Url = url.Url,
                 FaviconUrl = url.FaviconUrl,
                 CreatedAt = url.CreatedAt,
-                UpdatedAt = url.UpdatedAt
+                UpdatedAt = url.UpdatedAt,
+                IsVisible = url.IsVisible,
             },
 
             FileMaterial file => new ReadFileMaterialResponse
@@ -30,7 +31,8 @@ public static class MaterialMapper
                 MimeType = file.MimeType,
                 SizeBytes = file.SizeBytes,
                 CreatedAt = file.CreatedAt,
-                UpdatedAt = file.UpdatedAt
+                UpdatedAt = file.UpdatedAt,
+                IsVisible = file.IsVisible,
             },
 
             _ => throw new InvalidOperationException($"Unknown material type: {material.GetType().Name}")

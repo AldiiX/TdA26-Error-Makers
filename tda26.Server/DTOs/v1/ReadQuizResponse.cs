@@ -9,4 +9,6 @@ public class ReadQuizResponse
     public DateTimeOffset? CreatedAt { get; set; }
 
     public List<object> Questions { get; set; } = new();
+    
+    public bool IsVisible { get; set; }
 }

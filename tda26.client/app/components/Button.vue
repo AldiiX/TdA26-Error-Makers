@@ -1,7 +1,4 @@
-﻿<!--suppress HtmlUnknownTarget -->
-<script setup lang="ts">
-    import { NuxtLink } from '#components';
-
+﻿<script setup lang="ts">
     const slot = useSlots();
 
     type ButtonStyle = "primary" | "secondary" | "tertiary";
@@ -39,14 +36,15 @@
                 ...style
             }"
             @click="disabled ? null : $emit('click', $event)">
-
-        <template v-if="!loading">
-            <slot />
-        </template>
-
-        <template v-else>
-            Načítání...
-        </template>
+            <span :class="$style.slot"><slot/></span>
+            
+            <span
+                v-if="loading"
+                key='spinner'
+                :class="$style.spinnerWrapper"
+            >
+                <span :class="$style.spinner"></span>
+            </span>
     </button>
 </template>
 
@@ -63,11 +61,7 @@
         user-select: none;
         text-decoration: none;
         text-align: center;
-
-        &:is(.loading) {
-            pointer-events: none;
-            opacity: 0.7;
-        }
+        position: relative;
 
         &:disabled {
             cursor: not-allowed;
@@ -98,6 +92,55 @@
             background-color: transparent;
             color: var(--color);
             border: 2px solid var(--color);
+        }
+        
+        .spinnerWrapper {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+
+            .invisible {
+                opacity: 0;
+            }
+
+            .spinner {
+                position: absolute;
+                height: 24px;
+                width: 24px;
+                border: 3px solid currentColor;
+                border-top-color: transparent;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+
+                @keyframes spin {
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+            }
+        }
+        
+        .slot {
+            transition: opacity 0.2s;
+        }
+        
+        &:is(.loading) {
+            pointer-events: none;
+
+            .slot {
+                opacity: 0;
+            }
+
+            .spinnerWrapper {
+                opacity: 1;
+            }
         }
     }
 </style>

@@ -1,25 +1,24 @@
 ﻿<script setup lang="ts">
-import type {Material, Quiz} from "#shared/types";
+import type {Quiz} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
+import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 
 const props = defineProps<{
     quiz: Quiz,
     course: { uuid: string },
-    editMode?: boolean
+    editMode?: boolean,
+    isVisibilityToggleLoading?: boolean,
 }>();
 
 const emit = defineEmits<{
     (e: "edit", quiz: Quiz): void;
     (e: "delete", quiz: Quiz): void;
+    (e: "toggleVisibility", quiz: Quiz): void;
 }>();
 
-const getHostname = (url?: string) => {
-    try {
-        return url ? new URL(url).hostname : ''
-    } catch {
-        return ''
-    }
+function toggleVisibility(): void {
+    emit('toggleVisibility', props.quiz);
 }
 </script>
 
@@ -44,6 +43,7 @@ const getHostname = (url?: string) => {
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
+            <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
             <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
                 <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>

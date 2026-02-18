@@ -2,12 +2,14 @@
 import type {
     Account,
     Course,
-    CourseCategory, Quiz
+    CourseCategory,
+    Material,
+    Quiz
 } from "#shared/types";
 import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
-import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+import MaterialItem from "~/components/courses/[uuid]/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
@@ -33,6 +35,7 @@ import { useCourseRating } from "~/composables/courses/[uuid]/useCourseRating";
 import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
+import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisibility";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
@@ -162,6 +165,31 @@ const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMat
 
 // kvízy
 const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError });
+
+// visibility toggling
+const moduleLoadingStates = ref<Record<string, boolean>>({});
+
+const handleMaterialVisibilityToggle = async (material: Material) => {
+    moduleLoadingStates.value[material.uuid] = true;
+    try {
+        const moduleRef = ref(material);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!material.isVisible);
+    } finally {
+        moduleLoadingStates.value[material.uuid] = false;
+    }
+};
+
+const handleQuizVisibilityToggle = async (quiz: Quiz) => {
+    moduleLoadingStates.value[quiz.uuid] = true;
+    try {
+        const moduleRef = ref(quiz);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!quiz.isVisible);
+    } finally {
+        moduleLoadingStates.value[quiz.uuid] = false;
+    }
+};
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
@@ -344,8 +372,10 @@ function handleAuthSuccess() {
                                         :material="material"
                                         :course="course"
                                         :edit-mode="ownsCourse"
+                                        :is-visibility-toggle-loading="moduleLoadingStates[material.uuid] || false"
                                         @edit="openUpdateMaterialModal"
                                         @delete="openDeleteMaterialModal"
+                                        @toggle-visibility="handleMaterialVisibilityToggle"
                                     />
                                 </li>
                             </ul>
@@ -363,7 +393,9 @@ function handleAuthSuccess() {
                                         :quiz="quiz"
                                         :course="course"
                                         :edit-mode="ownsCourse"
+                                        :is-visibility-toggle-loading="moduleLoadingStates[quiz.uuid] || false"
                                         @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                        @toggle-visibility="handleQuizVisibilityToggle"
                                     />
                                 </li>
                             </ul>
