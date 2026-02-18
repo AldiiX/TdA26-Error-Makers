@@ -135,7 +135,7 @@ const deleteCourse = async () => {
 
         <div :class="$style.actionButtons">
             <div :class="$style.createCourse" @click="enabledModal = 'createCourse'">
-                <Button button-style="primary" accent-color="primary"><span :class="$style.icon"/><p>Vytvořit nový kurz</p></Button>
+                <Button button-style="primary" accent-color="primary"><div><span :class="$style.icon"/><p>Vytvořit nový kurz</p></div></Button>
             </div>
         </div>
 
@@ -220,6 +220,12 @@ const deleteCourse = async () => {
 
     .createCourse {
         text-decoration: none;
+        
+        div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         
         .icon {
             display: inline-block;
@@ -339,6 +345,10 @@ const deleteCourse = async () => {
     &.active {
         opacity: 1;
         pointer-events: auto;
+    }
+    
+    span {
+        line-height: 0;
     }
 }
 

@@ -2,16 +2,19 @@
 import type {Material} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
+import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 
 const props = defineProps<{
     material: Material,
     course: { uuid: string },
-    editMode?: boolean
+    editMode?: boolean,
+    isVisibilityToggleLoading?: boolean,
 }>();
 
 const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
+    (e: "toggleVisibility", material: Material): void;
 }>();
 
 const getHostname = (url?: string) => {
@@ -20,6 +23,10 @@ const getHostname = (url?: string) => {
     } catch {
         return ''
     }
+}
+
+function toggleVisibility(): void {
+    emit('toggleVisibility', props.material);
 }
 </script>
 
@@ -40,6 +47,7 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
                 <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
                 <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
             </div>
@@ -64,6 +72,7 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
                 <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
                 <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
             </div>

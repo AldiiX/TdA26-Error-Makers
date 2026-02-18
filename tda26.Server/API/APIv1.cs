@@ -650,6 +650,9 @@ public class APIv1(
 
         quiz.Title = body.Title;
         quiz.AttemptsCount = body.AttemptsCount;
+        
+        if (body.IsVisible.HasValue)
+            quiz.IsVisible = body.IsVisible.Value;
 
         var existingQuestions = quiz.Questions.ToList();
 

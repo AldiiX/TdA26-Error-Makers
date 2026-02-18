@@ -13,4 +13,5 @@ public class ReadMaterialResponse {
     [Required] public required string Type { get; set; }
     public required DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
     public required DateTimeOffset UpdatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsVisible { get; set; }
 }

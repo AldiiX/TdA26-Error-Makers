@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace tda26.Server.Data.Models;
 
 [Table("Quizzes")]
-public class Quiz : Auditable {
+public class Quiz : Auditable, IModule {
 
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
@@ -21,4 +21,6 @@ public class Quiz : Auditable {
     public Course Course { get; set; } = null!;
     
     public ICollection<Question> Questions { get; set; } = new List<Question>();
+    
+    public bool IsVisible { get; set; } = false;
 }

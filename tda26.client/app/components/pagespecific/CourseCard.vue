@@ -588,6 +588,7 @@ const cutDescription = computed(() => {
                 margin: 0;
                 opacity: 0.5;
                 margin-bottom: 12px;
+                height: 41px;
             }
         }
 

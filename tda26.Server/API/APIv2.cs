@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+﻿﻿using System.Linq.Expressions;
 using System.Net;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
@@ -396,12 +396,22 @@ public class APIv2(
         CancellationToken ct = default
     ) {
         Course? course;
+        
+        var acc = await auth.ReAuthAsync(ct);
 
         if (full) {
             course = await db.CoursesFullEf()
                 .FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
             if (course == null) return NotFound(new { error = "Course not found." });
+            
+            bool ownsCourse = acc != null && course.LecturerUuid != null && course.LecturerUuid == acc.Uuid;
+            
+            // Hide non-visible modules for users who do not own the course
+            if (!ownsCourse) {
+                course.Materials = course.Materials.Where(m => m.IsVisible).ToList();
+                course.Quizzes = course.Quizzes.Where(q => q.IsVisible).ToList();
+            }
 
             /*course.Account = await db.Lecturers
                 .FirstOrDefaultAsync(l => l.Uuid == course.LecturerUuid, ct);
@@ -418,6 +428,12 @@ public class APIv2(
             course.Materials = [];
             course.Quizzes = [];
             course.Feed = [];
+        }
+            
+        // If the course is not live, scheduled, or paused, only the owner or an admin can view it
+        if (course.Status != CourseStatus.Live && course.Status != CourseStatus.Scheduled && course.Status != CourseStatus.Paused) {
+            if (acc == null) return Unauthorized();
+            if (course.LecturerUuid != acc.Uuid) return Forbid();
         }
         
         if(course.Account != null) course.Account.Ratings = [];
@@ -1366,6 +1382,9 @@ public class APIv2(
                     urlMaterial.FaviconUrl = $"https://www.google.com/s2/favicons?domain={new Uri(body.Url).Host}&sz=64";
                 }
 
+                if (body.IsVisible.HasValue)
+                    urlMaterial.IsVisible = body.IsVisible.Value;
+
                 urlMaterial.UpdatedAt = DateTime.UtcNow;
                 db.Materials.Update(urlMaterial);
                 await db.SaveChangesAsync(ct);
@@ -1397,6 +1416,9 @@ public class APIv2(
 
                 if (!string.IsNullOrEmpty(body.Description))
                     fileMaterial.Description = body.Description;
+
+                if (body.IsVisible.HasValue)
+                    fileMaterial.IsVisible = body.IsVisible.Value;
 
                 fileMaterial.UpdatedAt = DateTime.UtcNow;
                 db.Materials.Update(fileMaterial);
@@ -1443,6 +1465,9 @@ public class APIv2(
 
         if (!string.IsNullOrEmpty(body.Description))
             fileMaterial.Description = body.Description;
+
+        if (body.IsVisible.HasValue)
+            fileMaterial.IsVisible = body.IsVisible.Value;
 
         if (body.File != null && body.File.Length > 0) {
             if (!body.File.IsAllowedMimeType()) return BadRequest(new { error = "Unsupported file type." });

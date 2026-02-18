@@ -14,6 +14,7 @@ public static class QuizMapper {
                 Questions = quiz.Questions
                     .Select(q => (object)q.ToReadDto())
                     .ToList(),
+                IsVisible = quiz.IsVisible,
             };
         }
         
@@ -24,6 +25,7 @@ public static class QuizMapper {
             Questions = quiz.Questions
                 .Select(q => (object)q.ToReadDto())
                 .ToList(),
+            IsVisible = quiz.IsVisible,
         };
     }
 }
