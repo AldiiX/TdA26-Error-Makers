@@ -1,0 +1,40 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace tda26.Server.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddIsVisibleToModules : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<bool>(
+                name: "IsVisible",
+                table: "Quizzes",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "IsVisible",
+                table: "Materials",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "IsVisible",
+                table: "Quizzes");
+
+            migrationBuilder.DropColumn(
+                name: "IsVisible",
+                table: "Materials");
+        }
+    }
+}
