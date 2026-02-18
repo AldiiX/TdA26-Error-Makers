@@ -5,7 +5,7 @@
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIsVisibleToModules : Migration
+    public partial class AddModules : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260218091317_AddIsVisibleToModules")]
-    partial class AddIsVisibleToModules
+    [Migration("20260218203547_AddModules")]
+    partial class AddModules
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
