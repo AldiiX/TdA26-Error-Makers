@@ -36,7 +36,7 @@ const form = ref<CourseFormModel>({
 // LOAD EXISTING DATA WHEN EDITING
 if (props.mode === "edit" && props.courseId) {
     const { data } = await useFetch<Course>(
-        getBaseUrl() + `/api/v2/courses/${props.courseId}?full=true`,
+        getBaseUrl() + `/api/v1/courses/${props.courseId}?full=true`,
         { server: false }
     );
 
@@ -116,14 +116,14 @@ const submitForm = async () => {
         });
 
         if (props.mode === "create") {
-            await $fetch(getBaseUrl() + "/api/v2/courses", { method: "POST", body: fd });
+            await $fetch(getBaseUrl() + "/api/v1/courses", { method: "POST", body: fd });
             push.success({
                 title: "Kurz vytvořen",
                 message: "Kurz byl úspěšně vytvořen.",
                 duration: 4000
             });
         } else {
-            await $fetch(getBaseUrl() + `/api/v2/courses/${props.courseId}`, { method: "PUT", body: fd });
+            await $fetch(getBaseUrl() + `/api/v1/courses/${props.courseId}`, { method: "PUT", body: fd });
             push.success({
                 title: "Kurz upraven",
                 message: "Kurz byl úspěšně upraven.",

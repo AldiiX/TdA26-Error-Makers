@@ -59,8 +59,11 @@ definePageMeta({
             }
 
             try {
-                const course = await $fetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+                const course = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
                     query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
                 });
 
                 if (!course) {
@@ -118,7 +121,7 @@ if (isEditMode) {
 }
 
 // client full fetch
-const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v1/courses/${uuid}`, {
     query: { full: true },
     server: false,
     key: `course-${uuid}-full`,
@@ -133,7 +136,7 @@ const originalCourse = ref<Course | null>(null);
 
 // categories jsou server-renderovane, aby select mel data hned
 const { data: categories } = await useFetch<CourseCategory[]>(
-    getBaseUrl() + "/api/v2/course-categories",
+    getBaseUrl() + "/api/v1/course-categories",
     { server: true }
 );
 

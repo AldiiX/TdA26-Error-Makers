@@ -39,7 +39,7 @@ const editingCourseId = ref<string | null>(null);
 const courseList = ref<HTMLElement | null>(null);
 
 const { data: categories } = await useFetch<CourseCategory[]>(
-    getBaseUrl() + "/api/v2/course-categories",
+    getBaseUrl() + "/api/v1/course-categories",
     { server: false }
 );
 
@@ -97,7 +97,7 @@ const deleteCourse = async () => {
     isActionInProgress.value = true;
 
     try {
-        await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
+        await $fetch(getBaseUrl() + `/api/v1/courses/${selectedDeleteCourse.value.uuid}`, {
             method: "DELETE"
         });
 

@@ -26,7 +26,7 @@ export function useModuleVisibility(params: {
 
             if (isMaterial(module)) {
                 // Update material visibility
-                const url = getBaseUrl() + `/api/v2/courses/${params.courseUuid}/materials/${module.uuid}`;
+                const url = getBaseUrl() + `/api/v1/courses/${params.courseUuid}/materials/${module.uuid}`;
                 
                 if (module.type === 'url') {
                     const updatedMaterial = await $fetch<Material>(url, {

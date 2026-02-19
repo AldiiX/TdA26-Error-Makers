@@ -10,7 +10,7 @@ namespace tda26.Server.Data.Models;
 
 
 [Table(name: "FeedPosts")]
-public class FeedPost : Auditable {
+public sealed class FeedPost : Auditable {
 
     public const ushort MESSAGE_MAX_LENGTH = 2048;
 

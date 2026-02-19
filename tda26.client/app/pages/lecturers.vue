@@ -43,7 +43,7 @@
 
         fullFetchRunning.value = true
         try {
-            const allLecturers = await $fetch<Lecturer[]>('/api/v2/lecturers', {
+            const allLecturers = await $fetch<Lecturer[]>('/api/v1/lecturers', {
                 baseURL: getBaseUrl()
             })
 
@@ -57,7 +57,7 @@
         }
     }
 
-    const { pending: lecturersFetchPending, error: lecturersFetchError } = useLazyFetch<Lecturer[]>(`/api/v2/lecturers?limit=${FIRST_FETCH_LIMIT}`, {
+    const { pending: lecturersFetchPending, error: lecturersFetchError } = useLazyFetch<Lecturer[]>(`/api/v1/lecturers?limit=${FIRST_FETCH_LIMIT}`, {
         baseURL: getBaseUrl(),
         key: `allLecturers:limit:${FIRST_FETCH_LIMIT}`,
         server: false,

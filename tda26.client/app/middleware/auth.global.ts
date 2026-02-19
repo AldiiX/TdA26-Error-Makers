@@ -9,7 +9,7 @@ export default defineNuxtRouteMiddleware(async () => {
         let account: Account | null = null;
 
         try {
-            account = await $fetch<Account>(getBaseUrl() + '/api/v2/me', {
+            account = await $fetch<Account>(getBaseUrl() + '/api/v1/me', {
                 method: 'GET',
                 headers: {
                     'Cookie': useRequestHeaders(['cookie']).cookie || ''

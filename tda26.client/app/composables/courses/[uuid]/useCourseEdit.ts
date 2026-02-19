@@ -136,7 +136,7 @@ export function useCourseEdit(params: {
 
         try {
             const updatedCourse = await $fetch<Course>(
-                getBaseUrl() + `/api/v2/courses/${params.course.value.uuid}`,
+                getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },

@@ -1,4 +1,4 @@
-﻿﻿namespace tda26.Server.DTOs.v1;
+namespace tda26.Server.DTOs.v1;
 
 public class CreateUpdateQuizRequest {
     public Guid? Uuid { get; set; }

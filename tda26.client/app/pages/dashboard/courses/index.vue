@@ -120,7 +120,7 @@ const deleteCourse = async () => {
     if (!selectedDeleteCourse.value) return;
 
     try {
-        await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
+        await $fetch(getBaseUrl() + `/api/v1/courses/${selectedDeleteCourse.value.uuid}`, {
             method: "DELETE"
         });
 

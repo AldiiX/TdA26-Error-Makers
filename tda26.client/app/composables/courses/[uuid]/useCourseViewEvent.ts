@@ -19,7 +19,7 @@ export function useCourseViewEvent(uuid: string) {
                 { action: "submit" }
             );
 
-            await fetch(`/api/v2/courses/${uuid}/view`, {
+            await fetch(`/api/v1/courses/${uuid}/view`, {
                 method: "POST",
                 body: JSON.stringify({ token: captchaToken }),
                 headers: {
