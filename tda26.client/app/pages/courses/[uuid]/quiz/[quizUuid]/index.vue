@@ -86,7 +86,7 @@ const endQuiz = async () => {
         })
         .filter((entry): entry is AnswerSubmission => entry !== null);
 
-    const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/submit`, {
+    const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}/submit`, {
         method: 'POST',
         body: {
             answers,

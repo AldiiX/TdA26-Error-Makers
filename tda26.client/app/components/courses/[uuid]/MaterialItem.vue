@@ -34,7 +34,7 @@ function toggleVisibility(): void {
     <!-- FILE MATERIAL -->
     <template v-if="material.type === 'file'">
         <div :class="$style.material">
-            <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
                 <div :class="$style.fileIcon"/>
 
                 <div :class="$style.fileInfo">

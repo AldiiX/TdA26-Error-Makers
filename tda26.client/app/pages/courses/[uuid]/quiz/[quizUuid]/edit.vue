@@ -19,7 +19,7 @@ const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Qu
     key: `course-${uuid}-quiz-${quizUuid}`,
 });
 
-const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
     query: { full: false },
     server: true,
     key: `course-${uuid}-small`,

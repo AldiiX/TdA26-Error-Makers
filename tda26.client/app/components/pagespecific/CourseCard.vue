@@ -83,14 +83,14 @@ const editBgImage = () => {
             uploadStatusText.value = "Nahrávám obrázek...";
 
             try {
-                const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+                const response = await fetch(`/api/v1/courses/${props.course.uuid}/image`, {
                     method: 'POST',
                     body: formData
                 });
 
                 if (!response.ok) return;
 
-                const newUrl = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                const newUrl = `/api/v1/courses/${props.course.uuid}/image?t=${Date.now()}`;
                 imageUrlOverride.value = newUrl;
                 // pokud model obsahuje imageUrl, udrzime to i v course objektu
                 (courseReactive.value as any).imageUrl = newUrl;
@@ -110,7 +110,7 @@ const resetBgImage = async () => {
     uploadStatusText.value = "Odstraňuji obrázek...";
 
     try {
-        const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+        const response = await fetch(`/api/v1/courses/${props.course.uuid}/image`, {
             method: 'DELETE'
         });
 
@@ -131,7 +131,7 @@ async function duplicateCourse() {
     isDuplicating.value = true;
 
     try {
-        const newCourse = await $fetch<Course>(`/api/v2/courses/${props.course.uuid}/duplicate`, {
+        const newCourse = await $fetch<Course>(`/api/v1/courses/${props.course.uuid}/duplicate`, {
             method: "POST"
         });
 

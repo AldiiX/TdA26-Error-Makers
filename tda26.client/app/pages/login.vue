@@ -53,7 +53,7 @@ async function submitLoginForm(event: Event) {
 
 
     try {
-        const res = await $fetch<Account | null>("/api/v2/auth/login", {
+        const res = await $fetch<Account | null>("/api/v1/auth/login", {
             method: "POST",
             body: formDataObj
         });

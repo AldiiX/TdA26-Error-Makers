@@ -24,7 +24,7 @@
                 }
 
                 try {
-                    const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v2/lecturers/${uuid}`);
+                    const lecturer = await $fetch<Lecturer>(getBaseUrl() + `/api/v1/lecturers/${uuid}`);
                     const key = `lecturer-${uuid}`;
                     const state = useState<Lecturer | null>(key, () => null);
                     state.value = lecturer;

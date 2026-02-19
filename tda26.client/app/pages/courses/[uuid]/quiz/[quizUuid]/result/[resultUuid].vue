@@ -11,7 +11,7 @@ definePageMeta({
 
 const { uuid, quizUuid, resultUuid } = useRoute().params;
 
-const { data: result, pending: resultPending, error: resultError } = await useFetch<QuizResult>(() => getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/results/${resultUuid}`, {
+const { data: result, pending: resultPending, error: resultError } = await useFetch<QuizResult>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}/results/${resultUuid}`, {
     key: `course-${uuid}-quiz-${quizUuid}`,
 });
 
