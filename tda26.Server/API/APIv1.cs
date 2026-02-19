@@ -429,10 +429,10 @@ public class APIv1(
             course.Feed = [];
         }
             
-        // If the course is not live, scheduled, or paused, only the owner or an admin can view it
-        if (course.Status != CourseStatus.Live && course.Status != CourseStatus.Scheduled && course.Status != CourseStatus.Paused) {
+        // If the course is not archived, paused or a draft, only the owner or an admin can view it
+        if (course.Status == CourseStatus.Archived || course.Status == CourseStatus.Paused || course.Status == CourseStatus.Draft) {
             if (acc == null) return Unauthorized();
-            if (course.LecturerUuid != acc.Uuid) return Forbid();
+            if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
         }
         
         if(course.Account != null) course.Account.Ratings = [];
@@ -1512,6 +1512,288 @@ public class APIv1(
     #endregion
     
     #region course Kvizy
+    
+    [HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
+    public async Task<IActionResult> GetQuizById([FromRoute] Guid courseUuid, [FromRoute] Guid quizUuid) {
+        var course = await db.CoursesMinimalEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.QuizzesEf()
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .FirstOrDefaultAsync();
+
+        if (quiz == null || quiz.CourseUuid != course.Uuid)
+            return NotFound(new { error = "Quiz not found in the specified course." });
+
+        return Ok(quiz.ToReadDto());
+    }
+    
+    [HttpPut("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
+    public async Task<IActionResult> UpdateQuizInCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid,
+        [FromBody] CreateUpdateQuizRequest body)
+    {
+        var course = await db.CoursesMinimalEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.QuizzesEf()
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .FirstOrDefaultAsync();
+        
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found." });
+
+        quiz.Title = body.Title;
+        quiz.AttemptsCount = body.AttemptsCount;
+        
+        if (body.IsVisible.HasValue)
+            quiz.IsVisible = body.IsVisible.Value;
+
+        var existingQuestions = quiz.Questions.ToList();
+
+        var incomingIds = body.Questions
+            .Where(q => q.Uuid.HasValue)
+            .Select(q => q.Uuid!.Value)
+            .ToHashSet();
+        
+        // Delete questions not in incoming list
+        foreach (var existingQuestion in existingQuestions)
+        {
+            if (!incomingIds.Contains(existingQuestion.Uuid))
+            {
+                // Remove options first
+                foreach (var option in existingQuestion.Options.ToList())
+                    db.QuestionOptions.Remove(option);
+                db.Questions.Remove(existingQuestion);
+            }
+        }
+        
+        foreach (var dtoBase in body.Questions)
+        {
+            switch (dtoBase.Type)
+            {
+                case "singleChoice":
+                {
+                    var dto = dtoBase as CreateUpdateSingleChoiceQuestionRequest
+                              ?? throw new InvalidOperationException("Expected singleChoice DTO");
+                    
+                    // CREATE
+                    if (!dto.Uuid.HasValue)
+                    {
+                        
+                        var newQuestion = new SingleChoiceQuestion
+                        {
+                            Text = dto.Question,
+                            Quiz = quiz,
+                            Order = dtoBase.Order
+                        };
+
+                        for (int i = 0; i < dto.Options.Count; i++)
+                        {
+                            var optionText = dto.Options[i];
+                            var option = new QuestionOption
+                            {
+                                Text = optionText,
+                                IsCorrect = i == dto.CorrectIndex,
+                                Question = newQuestion,
+                                Order = i
+                            };
+
+                            newQuestion.Options.Add(option);
+                        }
+
+                        db.Questions.Add(newQuestion);
+                        break;
+                    }
+                    
+                    // UPDATE
+                    var existingQuestion = existingQuestions
+                        .OfType<SingleChoiceQuestion>()
+                        .FirstOrDefault(q => q.Uuid == dto.Uuid.Value);
+                    
+                    if (existingQuestion == null)
+                    {
+                        return BadRequest(new { error = $"Question with UUID {dto.Uuid} not found." });
+                    }
+                    
+                    existingQuestion.Text = dto.Question;
+                    existingQuestion.Order = dtoBase.Order;
+                    
+                    // Clear options
+                    foreach (var option in existingQuestion.Options.ToList())
+                        db.QuestionOptions.Remove(option);
+                    
+                    // Add options
+                    for (int i = 0; i < dto.Options.Count; i++)
+                    {
+                        var optionText = dto.Options[i];
+                        var option = new QuestionOption
+                        {
+                            Text = optionText,
+                            IsCorrect = i == dto.CorrectIndex,
+                            Question = existingQuestion,
+                            Order = i
+                        };
+                        
+                        db.QuestionOptions.Add(option);
+                    }
+
+                    break;
+                }
+
+                case "multipleChoice":
+                {
+                    var dto = dtoBase as CreateUpdateMultipleChoiceQuestionRequest
+                              ?? throw new InvalidOperationException("Expected multipleChoice DTO");
+                    
+                    // CREATE
+                    if (!dto.Uuid.HasValue)
+                    {
+                        
+                        var newQuestion = new MultipleChoiceQuestion
+                        {
+                            Text = dto.Question,
+                            Quiz = quiz,
+                            Order = dtoBase.Order
+                        };
+
+                        for (int i = 0; i < dto.Options.Count; i++)
+                        {
+                            var optionText = dto.Options[i];
+                            var option = new QuestionOption
+                            {
+                                Text = optionText,
+                                IsCorrect = dto.CorrectIndices.Contains(i),
+                                Question = newQuestion,
+                                Order = i
+                            };
+
+                            newQuestion.Options.Add(option);
+                        }
+
+                        db.Questions.Add(newQuestion);
+                        break;
+                    }
+                    
+                    // UPDATE
+                    var existingQuestion = existingQuestions
+                        .OfType<MultipleChoiceQuestion>()
+                        .FirstOrDefault(q => q.Uuid == dto.Uuid.Value);
+                    
+                    if (existingQuestion == null)
+                    {
+                        return BadRequest(new { error = $"Question with UUID {dto.Uuid} not found." });
+                    }
+                    
+                    existingQuestion.Text = dto.Question;
+                    existingQuestion.Order = dtoBase.Order;
+                    
+                    // Clear options
+                    foreach (var option in existingQuestion.Options.ToList())
+                        db.QuestionOptions.Remove(option);
+                    
+                    // Add options
+                    for (int i = 0; i < dto.Options.Count; i++)
+                    {
+                        var optionText = dto.Options[i];
+                        var option = new QuestionOption
+                        {
+                            Text = optionText,
+                            IsCorrect = dto.CorrectIndices.Contains(i),
+                            Question = existingQuestion,
+                            Order = i
+                        };
+                        
+                        db.QuestionOptions.Add(option);
+                    }
+
+                    break;
+                }
+
+                default:
+                    return BadRequest(new { error = $"Unsupported question type: {dtoBase.Type}" });
+            }
+        }
+
+        //odesilani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl upraven kvíz: " + quiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.UpdateQuiz
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
+        return Ok(quiz.ToReadDto());
+    }
+
+    [HttpDelete("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
+    public async Task<IActionResult> DeleteQuizFromCourse(
+        [FromRoute] Guid courseUuid,
+        [FromRoute] Guid quizUuid
+    ) {
+        var course = await db.CoursesMinimalEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+        if (course == null)
+            return NotFound(new { error = "Course not found." });
+
+        var quiz = await db.QuizzesEf()
+            .Where(q => q.CourseUuid == courseUuid)
+            .Where(q => q.Uuid == quizUuid)
+            .FirstOrDefaultAsync();
+        
+        if (quiz == null)
+            return NotFound(new { error = "Quiz not found." });
+        
+        // Remove options and questions
+        foreach (var question in quiz.Questions.ToList()) {
+            foreach (var option in question.Options.ToList()) {
+                db.QuestionOptions.Remove(option);
+            }
+            db.Questions.Remove(question);
+        }
+        
+        db.Quizzes.Remove(quiz);
+        await db.SaveChangesAsync();
+        
+        //odesilani info do sse
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl smazán kvíz: " + quiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.DeleteQuiz
+        };
+        
+        db.FeedPosts.Add(newFeedPost);
+        
+        await db.SaveChangesAsync();
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
+        
+        return NoContent();
+    }
     
     [HttpPost("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/submit")]
     public async Task<IActionResult> SubmitQuiz(
