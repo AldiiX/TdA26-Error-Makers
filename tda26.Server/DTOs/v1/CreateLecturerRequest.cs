@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace tda26.Server.DTOs.v2;
+namespace tda26.Server.DTOs.v1;
 
 public class CreateLecturerRequest {
     [Required] [MaxLength(32)] public string? Username { get; set; } 

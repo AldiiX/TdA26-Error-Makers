@@ -1,6 +1,6 @@
 ﻿using tda26.Server.DTOs.v1;
 
-namespace tda26.Server.DTOs.v2;
+namespace tda26.Server.DTOs.v1;
 
 public class CreateCourseWithMaterialsRequest {
     public CreateCourseRequest Course { get; set; } = null!;
