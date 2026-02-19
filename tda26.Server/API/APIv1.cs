@@ -382,6 +382,20 @@ public class APIv1(
             return Ok(courses);
         }
     }
+    
+    private IActionResult? ValidateRestrictedCourseAccess(Course course, Account? acc)
+    {
+        if (course.Status is CourseStatus.Archived or CourseStatus.Paused or CourseStatus.Draft)
+        {
+            if (acc == null)
+                return Unauthorized();
+
+            if (course.LecturerUuid != acc.Uuid && acc is not Admin)
+                return Forbid();
+        }
+
+        return null;
+    }
 
     [HttpGet("courses/{uuid:guid}")]
     public async Task<IActionResult> GetCourseById(
@@ -424,11 +438,9 @@ public class APIv1(
             course.Feed = [];
         }
             
-        // If the course is not archived, paused or a draft, only the owner or an admin can view it
-        if (course.Status == CourseStatus.Archived || course.Status == CourseStatus.Paused || course.Status == CourseStatus.Draft) {
-            if (acc == null) return Unauthorized();
-            if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
-        }
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
         
         if(course.Account != null) course.Account.Ratings = [];
 
@@ -752,12 +764,23 @@ public class APIv1(
     
     [HttpGet("courses/{uuid:guid}/image")]
     public async Task<IActionResult> GetCourseImage([FromRoute] Guid uuid, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        
         var courseImageData = await db.Courses
             .Where(c => c.Uuid == uuid)
-            .Select(c => new { Exists = true, c.ImageUrl })
+            .Select(c => new { Exists = true, c.ImageUrl, c.LecturerUuid, c.Status })
             .FirstOrDefaultAsync(ct);
         
         if (courseImageData == null) return NotFound(new { error = "Course not found." });
+        
+        var course = new Course {
+            LecturerUuid = courseImageData.LecturerUuid,
+            Status = courseImageData.Status
+        };
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
 
         if (string.IsNullOrEmpty(courseImageData.ImageUrl)) {
             return NotFound(new { error = "Course image not found." });
@@ -872,6 +895,8 @@ public class APIv1(
         [FromBody] CaptchaTokenRequest ctr,
         CancellationToken ct = default
     ) {
+        var acc = await auth.ReAuthAsync(ct);
+        
         // overeni captchy
         using var requestMessage = new HttpRequestMessage(
             HttpMethod.Post,
@@ -900,6 +925,11 @@ public class APIv1(
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
         if (course == null) {
             return NotFound(new { error = "Course not found." });
+        }
+        
+        if (course.Status == CourseStatus.Archived || course.Status == CourseStatus.Paused || course.Status == CourseStatus.Draft) {
+            if (acc == null) return Unauthorized();
+            if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
         }
 
         course.Materials = [];
@@ -1244,16 +1274,29 @@ public class APIv1(
 
     [HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
     public async Task<IActionResult> GetCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
+        var acc = await auth.ReAuthAsync(ct);
+        
         var course = await db.CoursesFullEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+        
         if (course == null)
             return NotFound(new { error = "Course not found." });
 
         var material = course.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+        
         if (material == null)
             return NotFound(new { error = "Material not found." });
+        
+        if (material.IsVisible == false) {
+            if (acc == null) return Unauthorized();
+            if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+        }
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
 
         switch (material) {
             case UrlMaterial urlMaterial:
@@ -1510,12 +1553,19 @@ public class APIv1(
     
     [HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
     public async Task<IActionResult> GetQuizById([FromRoute] Guid courseUuid, [FromRoute] Guid quizUuid) {
+        var acc = await auth.ReAuthAsync();
+        
         var course = await db.CoursesMinimalEf()
             .AsNoTracking()
             .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+        
         if (course == null)
             return NotFound(new { error = "Course not found." });
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
 
         var quiz = await db.QuizzesEf()
             .Where(q => q.CourseUuid == courseUuid)
@@ -1524,7 +1574,12 @@ public class APIv1(
 
         if (quiz == null || quiz.CourseUuid != course.Uuid)
             return NotFound(new { error = "Quiz not found in the specified course." });
-
+        
+        if (quiz.IsVisible == false) {
+            if (acc == null) return Unauthorized();
+            if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+        }
+        
         return Ok(quiz.ToReadDto());
     }
     
@@ -1796,12 +1851,18 @@ public class APIv1(
         [FromRoute] Guid quizUuid,
         [FromBody] CreateQuizSubmissionRequest body
     ) {
+        var acc = await auth.ReAuthAsync();
+        
         var course = await db.Courses
             .Where(c => c.Uuid == courseUuid)
             .FirstOrDefaultAsync();
         
         if (course == null)
             return NotFound(new { error = "Course not found." });
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
 
         var quiz = await db.QuizzesEf()
             .Where(q => q.CourseUuid == courseUuid)
@@ -1906,12 +1967,18 @@ public class APIv1(
         [FromRoute] Guid quizUuid,
         [FromRoute] Guid resultUuid
     ) {
+        var acc = await auth.ReAuthAsync();
+        
         var course = await db.Courses
             .Where(c => c.Uuid == courseUuid)
             .FirstOrDefaultAsync();
         
         if (course == null)
             return NotFound(new { error = "Course not found." });
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
         
         var quiz = await db.QuizzesEf()
             .Where(q => q.CourseUuid == courseUuid)
@@ -2147,11 +2214,31 @@ public class APIv1(
 
     [HttpGet("courses/{courseUuid:guid}/feed")]
     public async Task<IActionResult> GetFeedPostsByCourseId([FromRoute] Guid courseUuid) {
-        var courseExists = await db.Courses
-            .AnyAsync(c => c.Uuid == courseUuid);
-        if (!courseExists) {
+        var acc = await auth.ReAuthAsync();
+        
+        var courseRaw = await db.Courses
+            .AsNoTracking()
+            .Where(c => c.Uuid == courseUuid)
+            .Select(c => new {
+                c.Uuid,
+                c.LecturerUuid,
+                c.Status
+            })
+            .FirstOrDefaultAsync();
+        
+        if (courseRaw == null) {
             return NotFound(new { error = "Course not found." });
         }
+        
+        var course = new Course {
+            Uuid = courseRaw.Uuid,
+            LecturerUuid = courseRaw.LecturerUuid,
+            Status = courseRaw.Status
+        };
+        
+        var accessResult = ValidateRestrictedCourseAccess(course, acc);
+        if (accessResult != null)
+            return accessResult;
 
         var feedPosts = await db.FeedPostsEf()
             .Where(fp => fp.CourseUuid == courseUuid)
