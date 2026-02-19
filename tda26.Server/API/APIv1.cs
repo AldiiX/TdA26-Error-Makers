@@ -262,12 +262,7 @@ public class APIv1(
         var isLimited = limit > 0;
 
         var courses = await db.CoursesMinimalEf()
-            .Where(c =>
-                (accUuid != null && c.LecturerUuid != null && c.LecturerUuid == accUuid)
-                ||
-                isAdmin
-                ||
-                (c.Status == CourseStatus.Live || c.Status == CourseStatus.Scheduled || c.Status == CourseStatus.Paused))
+            .Where(c =>  c.Status == CourseStatus.Live || c.Status == CourseStatus.Paused || c.Status == CourseStatus.Scheduled || isAdmin)
             .OrderByDescending(c => c.CreatedAt)
             .Take(isLimited ? (int)limit : int.MaxValue)
             .AsNoTracking()
@@ -940,7 +935,7 @@ public class APIv1(
         return NoContent();
     }
 
-    [HttpPost("courses")] // tohle se na frontnendu nepouziva, jen pro API konzoli apod.
+    [HttpPost("courses")]
     public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body, CancellationToken ct = default) {
         var acc = await auth.ReAuthAsync(ct);
         if (acc == null) return Unauthorized();
