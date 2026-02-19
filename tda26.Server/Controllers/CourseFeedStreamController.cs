@@ -9,7 +9,7 @@ namespace tda26.Server.Controllers;
 
 [ApiController]
 [Route("api/courses"), Route("api/v1/courses")]
-public class CourseFeedStreamController(
+public sealed class CourseFeedStreamController(
     IFeedStreamBroker fsb,
     AppDbContext db
 ) : ControllerBase {

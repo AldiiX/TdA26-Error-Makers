@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace tda26.Server.Data.Models;
 
 [Table("Categories")]
-public class Category : Auditable {
+public sealed class Category : Auditable {
 	[Key]
 	public Guid Uuid { get; set; } = Guid.NewGuid();
 

@@ -1,5 +1,5 @@
 ﻿namespace tda26.Server.Data.Models;
 
-public class SingleChoiceQuestion : Question {
+public sealed class SingleChoiceQuestion : Question {
     
 }
