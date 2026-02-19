@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace tda26.Server.DTOs.v2;
+namespace tda26.Server.DTOs.v1;
 
 public class AuthRegisterRequest {
     [Required] [MaxLength(64)] public string Username { get; set; } = string.Empty;

@@ -106,7 +106,7 @@ export function useCourseMaterials(params: {
 
         params.isActionInProgress.value = true;
 
-        const url = getBaseUrl() + `/api/v2/courses/${params.course.value.uuid}/materials/${material.uuid}`;
+        const url = getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${material.uuid}`;
 
         try {
             let updatedMaterial: Material;
@@ -177,7 +177,7 @@ export function useCourseMaterials(params: {
         params.isActionInProgress.value = true;
 
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v2/courses/${params.course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
                 method: "DELETE"
             });
 
@@ -204,7 +204,7 @@ export function useCourseMaterials(params: {
             return;
         }
 
-        const url = getBaseUrl() + `/api/v2/courses/${params.course.value.uuid}/materials`;
+        const url = getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials`;
 
         params.isActionInProgress.value = true;
 

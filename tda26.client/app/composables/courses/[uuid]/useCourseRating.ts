@@ -44,7 +44,7 @@ export function useCourseRating(params: {
         if (!params.courseSmall.value || ratingLoading.value) return;
 
         const baseUrl = getBaseUrl();
-        const url = baseUrl + `/api/v2/courses/${params.courseSmall.value.uuid}/rating`;
+        const url = baseUrl + `/api/v1/courses/${params.courseSmall.value.uuid}/rating`;
 
         // uloz predchozi stav pro rollback
         const previousLikedDesign = isThisCourseLikedDesign.value;
@@ -89,9 +89,9 @@ export function useCourseRating(params: {
 
             // refresh vsech dat paralelne
             const [updatedUser, updatedCourseSmall, updatedCourse] = await Promise.all([
-                $fetch<Account>(baseUrl + `/api/v2/me`, { method: "GET", headers: { "Content-Type": "application/json" } }),
-                $fetch<Course>(baseUrl + `/api/v2/courses/${params.courseSmall.value.uuid}`, { method: "GET", headers: { "Content-Type": "application/json" }, query: { full: false } }),
-                $fetch<Course>(baseUrl + `/api/v2/courses/${params.courseSmall.value.uuid}`, { method: "GET", headers: { "Content-Type": "application/json" }, query: { full: true } }),
+                $fetch<Account>(baseUrl + `/api/v1/me`, { method: "GET", headers: { "Content-Type": "application/json" } }),
+                $fetch<Course>(baseUrl + `/api/v1/courses/${params.courseSmall.value.uuid}`, { method: "GET", headers: { "Content-Type": "application/json" }, query: { full: false } }),
+                $fetch<Course>(baseUrl + `/api/v1/courses/${params.courseSmall.value.uuid}`, { method: "GET", headers: { "Content-Type": "application/json" }, query: { full: true } }),
             ]);
 
             params.loggedAccount.value = updatedUser ?? null;

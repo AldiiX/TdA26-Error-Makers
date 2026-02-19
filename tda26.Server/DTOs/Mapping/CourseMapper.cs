@@ -8,7 +8,7 @@ public static class CourseMapper
     public static ReadCourseResponse ToReadDto(this Course course, bool extended = false)
     {
         // Clear circular references to prevent infinite loop during serialization
-        // Following the same pattern as APIv2
+        // Following the same pattern as APIv1
         if (course.Account != null) {
             course.Account.Ratings = [];
         }
@@ -23,7 +23,7 @@ public static class CourseMapper
             Status = course.Status,
             ScheduledStart = course.ScheduledStart,
             ImageUrl = course.ImageUrl != null && course.ImageUrl.StartsWith("course-images/")
-                ? $"/api/v2/courses/{course.Uuid}/image"
+                ? $"/api/v1/courses/{course.Uuid}/image"
                 : null,
             Lecturer = course.Lecturer,
             Account = course.Account,
