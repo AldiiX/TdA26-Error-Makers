@@ -143,7 +143,7 @@ public class APIv1(
 
         return new CreatedAtActionResult(
             actionName: nameof(GetAccount),
-            controllerName: "APIv2",
+            controllerName: "APIv1",
             routeValues: new { uuid = acc.Uuid },
             value: acc
         );
@@ -200,7 +200,7 @@ public class APIv1(
         
         return new CreatedAtActionResult(
             actionName: nameof(GetLecturer),
-            controllerName: "APIv2",
+            controllerName: "APIv1",
             routeValues: new { uuid = newLecturer.Uuid },
             value: newLecturer
         );
@@ -279,7 +279,7 @@ public class APIv1(
             c.Quizzes = [];
             c.Feed = [];
             if(c.Account != null) c.Account.Ratings = [];
-            if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
+            if (c.ImageUrl != null) c.ImageUrl = "/api/v1/courses/" + c.Uuid + "/image";
         }
 
         return Ok(courses);
@@ -323,7 +323,7 @@ public class APIv1(
 
         return new CreatedAtActionResult(
             actionName: nameof(GetCoursesTags),
-            controllerName: "APIv2",
+            controllerName: "APIv1",
             routeValues: new { categoryUuid = body.CategoryUuid },
             value: newTag
         );
@@ -359,7 +359,7 @@ public class APIv1(
                 c.Quizzes = [];
                 c.Feed = [];
                 if(c.Account != null) c.Account.Ratings = [];
-                if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
+                if (c.ImageUrl != null) c.ImageUrl = "/api/v1/courses/" + c.Uuid + "/image";
             }
 
             return Ok(courses);
@@ -381,7 +381,7 @@ public class APIv1(
                 c.Quizzes = [];
                 c.Feed = [];
                 if(c.Account != null) c.Account.Ratings = [];
-                if (c.ImageUrl != null) c.ImageUrl = "/api/v2/courses/" + c.Uuid + "/image";
+                if (c.ImageUrl != null) c.ImageUrl = "/api/v1/courses/" + c.Uuid + "/image";
             }
 
             return Ok(courses);
@@ -992,7 +992,7 @@ public class APIv1(
 
         return new CreatedAtActionResult(
             actionName: nameof(GetCourseById),
-            controllerName: "APIv2",
+            controllerName: "APIv1",
             routeValues: new { uuid = newCourse.Uuid },
             value: newCourse
         );
@@ -1854,7 +1854,7 @@ public class APIv1(
 
         return new CreatedAtActionResult(
             actionName: nameof(GetCourseById),
-            controllerName: "APIv2",
+            controllerName: "APIv1",
             routeValues: new { uuid = newCourse.Uuid },
             value: newCourse.ToReadDto(true)
         );
