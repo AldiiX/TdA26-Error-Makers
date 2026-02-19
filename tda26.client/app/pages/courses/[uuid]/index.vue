@@ -61,6 +61,9 @@ definePageMeta({
             try {
                 const course = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
                     query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
                 });
 
                 if (!course) {
