@@ -12,6 +12,7 @@ import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageC
 import { useState } from "#app";
 import {useContextMenu} from "~/composables/useContextMenu";
 import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import Popover from "~/components/Popover.vue";
 
 const props = withDefaults(defineProps<{
     course: Course;
@@ -149,13 +150,13 @@ const contextMenuItems = computed(() => {
         {
             text: "Změnit obrázek",
             onClick: editBgImage,
-            disabled: isUploading.value,
+            disabled: isUploading.value || course.value.status !== "draft",
             iconPath: "/icons/imageEdit.svg",
         },
         {
             text: "Obnovit výchozí obrázek",
             onClick: resetBgImage,
-            disabled: isUploading.value,
+            disabled: isUploading.value || course.value.status !== "draft",
             iconPath: "/icons/trash.svg",
         },
         {
@@ -277,22 +278,36 @@ const cutDescription = computed(() => {
                         </div>
 
                         <div v-else-if="editMode" :class="$style.lecturerButtons">
-                            <Button
-                                button-style="primary"
-                                accent-color="secondary"
-                                style="width: 100%"
-                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
-                            >
-                                Upravit
-                            </Button>
-                            <Button
-                                button-style="secondary"
-                                accent-color="secondary"
-                                style="width: 100%"
-                                @click="emit('delete')"
-                            >
-                                Smazat
-                            </Button>
+                            <Popover teleport :disabled="course.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        button-style="primary"
+                                        accent-color="secondary"
+                                        style="width: 100%"
+                                        @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
+                                        :disabled="course.status !== 'draft'"
+                                    >
+                                        Upravit
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
+                            <Popover teleport :disabled="course.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        button-style="secondary"
+                                        accent-color="secondary"
+                                        style="width: 100%"
+                                        @click="emit('delete')"
+                                        :disabled="course.status !== 'draft'"
+                                    >
+                                        Smazat
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
                         </div>
                     </template>
                 </div>
@@ -461,6 +476,7 @@ const cutDescription = computed(() => {
         width: 100%;
         flex-grow: 1;
         padding: 16px;
+        overflow: hidden;
 
         .infoContainer {
             display: flex;

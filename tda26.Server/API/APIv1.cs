@@ -453,6 +453,8 @@ public sealed class APIv1(
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
 		existingCourse.Materials = [];
 		existingCourse.Quizzes = [];
 		existingCourse.Feed = [];
@@ -534,6 +536,8 @@ public sealed class APIv1(
 		if (existingCourse == null) return NotFound();
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		existingCourse.Materials = [];
 		existingCourse.Quizzes = [];
@@ -682,6 +686,8 @@ public sealed class APIv1(
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
 		if (body.Image == null || body.Image.Length == 0) {
 			return BadRequest(new { error = "Image file is required." });
 		}
@@ -731,6 +737,8 @@ public sealed class APIv1(
 		if (existingCourse == null) return NotFound();
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		if (string.IsNullOrEmpty(existingCourse.ImageUrl)) {
 			return NotFound(new { error = "Course image not found." });
@@ -813,6 +821,8 @@ public sealed class APIv1(
 		if (existingCourse == null) return NotFound();
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		existingCourse.Materials = [];
 		existingCourse.Quizzes = [];
@@ -1152,6 +1162,8 @@ public sealed class APIv1(
 
 		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
 
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
 		if (body.Type != "url") {
 			return BadRequest(new { error = "Only 'url' material type is supported in this endpoint." });
 		}
@@ -1215,11 +1227,14 @@ public sealed class APIv1(
 			.AsNoTracking()
 			.AsSplitQuery()
 			.FirstOrDefaultAsync(c => c.Uuid == courseId, ct);
+		
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
 		}
 
 		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		if (body.Type != "file") {
 			return BadRequest(new { error = "Only 'file' material type is supported in this endpoint." });
@@ -1366,12 +1381,14 @@ public sealed class APIv1(
 		if (acc == null) return Unauthorized();
 
 		var existingCourse = await db.Courses
-			.Select(c => new { c.Uuid, c.LecturerUuid })
+			.Select(c => new { c.Uuid, c.LecturerUuid, c.Status })
 			.AsNoTracking()
 			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
 		if (existingCourse == null) return NotFound();
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		var material = await db.Materials
 			.FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
@@ -1424,6 +1441,8 @@ public sealed class APIv1(
 		}
 
 		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		var material = await db.Materials
 			.FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
@@ -1515,6 +1534,8 @@ public sealed class APIv1(
 		}
 
 		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		var material = await db.Materials
 			.FirstOrDefaultAsync(m => m.Uuid == materialUuid, ct);
@@ -1621,6 +1642,104 @@ public sealed class APIv1(
 		return Ok(quiz.ToReadDto());
 	}
 
+    [HttpPost("courses/{courseUuid:guid}/quizzes")]
+    public async Task<IActionResult> CreateQuizInCourse([FromRoute] Guid courseUuid, [FromBody] CreateUpdateQuizRequest body, CancellationToken ct = default) {
+        var course = await db.CoursesFullEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+        
+        if (course == null) {
+            return NotFound(new { error = "Course not found." });
+        }
+
+        if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
+        var newQuiz = new Quiz {
+            Title = body.Title,
+            AttemptsCount = body.AttemptsCount,
+            CourseUuid = course.Uuid
+        };
+
+        foreach (var questionDto in body.Questions) {
+            switch (questionDto.Type) {
+                case "singleChoice":
+                    var singleDto = questionDto as CreateUpdateSingleChoiceQuestionRequest
+                                    ?? throw new InvalidOperationException("Expected singleChoice DTO");
+
+                    var singleChoiceQuestion = new SingleChoiceQuestion {
+                        Text = singleDto.Question,
+                        Quiz = newQuiz,
+                        Order = questionDto.Order
+                    };
+
+                    for (int i = 0; i < singleDto.Options.Count; i++) {
+                        var optionText = singleDto.Options[i];
+                        var option = new QuestionOption {
+                            Text = optionText,
+                            IsCorrect = i == singleDto.CorrectIndex,
+                            Question = singleChoiceQuestion,
+                            Order = i
+                        };
+
+                        singleChoiceQuestion.Options.Add(option);
+                    }
+
+                    newQuiz.Questions.Add(singleChoiceQuestion);
+                    break;
+
+                case "multipleChoice":
+                    var multipleDto = questionDto as CreateUpdateMultipleChoiceQuestionRequest
+                                      ?? throw new InvalidOperationException("Expected multipleChoice DTO");
+
+                    var multipleChoiceQuestion = new MultipleChoiceQuestion {
+                        Text = multipleDto.Question,
+                        Quiz = newQuiz,
+                        Order = questionDto.Order
+                    };
+
+                    for (int i = 0; i < multipleDto.Options.Count; i++) {
+                        var optionText = multipleDto.Options[i];
+                        var option = new QuestionOption {
+                            Text = optionText,
+                            IsCorrect = multipleDto.CorrectIndices.Contains(i),
+                            Question = multipleChoiceQuestion,
+                            Order = i
+                        };
+
+                        multipleChoiceQuestion.Options.Add(option);
+                    }
+                    
+                    newQuiz.Questions.Add(multipleChoiceQuestion);
+                    break;
+
+                default:
+                    return BadRequest(new { error = $"Unsupported question type: {questionDto.Type}" });
+            }
+        }
+
+        // ulozeni kvizu do db
+        db.Quizzes.Add(newQuiz);
+
+        // oznameni do sse feedu o novem kvizu
+        var newFeedPost = new FeedPost {
+            Uuid = Guid.NewGuid(),
+            CourseUuid = course.Uuid,
+            Type = FeedPost.FeedPostType.System,
+            Message = "Byl přidán nový kvíz: " + newQuiz.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Purpose = FeedPost.FeedPurpose.CreateQuiz
+        };
+
+        db.FeedPosts.Add(newFeedPost);
+
+        await db.SaveChangesAsync(ct);
+        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
+
+        return Ok(newQuiz.ToReadDto());
+    }
+
 	[HttpPut("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
 	public async Task<IActionResult> UpdateQuizInCourse(
 		[FromRoute] Guid courseUuid,
@@ -1630,9 +1749,12 @@ public sealed class APIv1(
 			.AsNoTracking()
 			.AsSplitQuery()
 			.FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+		
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
 		}
+
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		var quiz = await db.QuizzesEf()
 			.Where(q => q.CourseUuid == courseUuid)
@@ -1827,9 +1949,12 @@ public sealed class APIv1(
 			.AsNoTracking()
 			.AsSplitQuery()
 			.FirstOrDefaultAsync(c => c.Uuid == courseUuid);
+		
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
 		}
+
+		if (course.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
 
 		var quiz = await db.QuizzesEf()
 			.Where(q => q.CourseUuid == courseUuid)

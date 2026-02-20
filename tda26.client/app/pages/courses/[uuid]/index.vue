@@ -43,6 +43,7 @@ import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
 import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import {useContextMenu} from "~/composables/useContextMenu";
 import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
+import Popover from "~/components/Popover.vue";
 
 
 definePageMeta({
@@ -51,6 +52,7 @@ definePageMeta({
     middleware: [
         defineNuxtRouteMiddleware(async (to) => {
             const uuid = to.params.uuid as string;
+            const isEditMode = to.query.edit === "true";
 
             // pokud chybi uuid
             if (!uuid) {
@@ -73,6 +75,14 @@ definePageMeta({
                 if (!course) {
                     return navigateTo("/courses");
                 }
+                
+                if (isEditMode)        {        
+                    // pokud je edit mode, musi byt kurz draft
+                    if (course.status !== "draft") {
+                        return navigateTo(`/courses/${uuid}`);
+                    }
+                }
+                
                 const courseSmallState = useState<Course | null>(`course-small-${uuid}`, () => null);
                 courseSmallState.value = course;
 
@@ -173,6 +183,12 @@ const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMat
 // kvízy
 const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError });
 
+// status kurzu
+const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
+
+// context menu
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
 // visibility toggling
 const moduleLoadingStates = ref<Record<string, boolean>>({});
 
@@ -225,33 +241,22 @@ function handleAuthSuccess() {
     window.location.reload();
 }
 
-const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
-
 const contextMenuItems = computed(() => {
     return [
         {
             text: "Upravit kurz",
             onClick: editClick,
             iconPath: "/icons/pen.svg",
+            disabled: courseSmall.value.status !== "draft",
         },
         {
             text: "Smazat kurz",
             onClick: openDeleteCourseModal,
             iconPath: "/icons/trash.svg",
+            disabled: courseSmall.value.status !== "draft",
         }
     ];
 });
-
-const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
-
-// const updateStatus = (newStatus: CourseStatus) => {
-//     if (!courseSmall.value) return;
-//
-//     // courseSmall.value.status = newStatus as Course["status"];
-//     editedStatusModel.value = newStatus;
-//     saveCourseChanges();
-//    
-// };
 </script>
 
 <template>
@@ -423,9 +428,22 @@ const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = 
                 <SmoothSizeWrapper :change-width="false">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="openCreateMaterialModal">
-                                Přidat nový materiál
-                            </Button>
+                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        v-if="ownsCourse"
+                                        button-style="primary"
+                                        accent-color="primary"
+                                        :class="$style.addMaterialButton"
+                                        @click="openCreateMaterialModal"
+                                        :disabled="courseSmall.status !== 'draft'"
+                                    >
+                                        Přidat nový materiál
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
 
                             <p v-if="coursePending">Načítání materiálů...</p>
                             <p v-else-if="course?.materials === undefined || course?.materials.length == 0">Tento kurz nemá žádné materiály.</p>
@@ -1687,7 +1705,7 @@ ul {
         .materials {
             .addMaterialButton {
                 margin-bottom: 16px;
-
+                width: fit-content;
             }
 
             ul {

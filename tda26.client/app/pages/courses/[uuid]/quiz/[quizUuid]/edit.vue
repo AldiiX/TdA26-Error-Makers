@@ -19,6 +19,24 @@ definePageMeta({
             }
 
             try {
+                const courseSmall = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${courseUuid}`, {
+                    query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
+                });
+                
+                if (!courseSmall) {
+                    return navigateTo("/courses");
+                }
+                
+                if (courseSmall.status !== "draft") {
+                    return navigateTo(`/courses/${courseUuid}`);
+                }
+
+                const courseSmallState = useState<Course | null>(`course-${quizUuid}-small`, () => null);
+                courseSmallState.value = courseSmall;
+                
                 const quiz = await $fetch<Quiz>(`${getBaseUrl()}/api/v1/courses/${courseUuid}/quizzes/${quizUuid}`, {
                     query: { full: true },
                     headers: {
@@ -29,6 +47,7 @@ definePageMeta({
                 if (!quiz) {
                     return navigateTo(`/courses/${courseUuid}`);
                 }
+                
                 const quizState = useState<Quiz | null>(`quiz-${quizUuid}`, () => null);
                 quizState.value = quiz;
             } catch (e) {
@@ -46,11 +65,7 @@ const isActionInProgress = ref(false);
 
 const quiz = useState<Quiz | null>(`quiz-${quizUuid}`);
 
-const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
-    query: { full: false },
-    server: true,
-    key: `course-${uuid}-small`,
-});
+const courseSmall = useState<Course | null>(`course-${quizUuid}-small`);
 
 if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value?.account?.uuid)) {
     // pokud neni vlastnik kurzu, nema pravo editovat

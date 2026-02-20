@@ -1,12 +1,13 @@
 ﻿<script setup lang="ts">
-import type {Material} from "#shared/types";
+import type {Course, Material} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
+import Popover from "~/components/Popover.vue";
 
 const props = defineProps<{
     material: Material,
-    course: { uuid: string },
+    course: Course,
     editMode?: boolean,
     isVisibilityToggleLoading?: boolean,
 }>();
@@ -48,8 +49,32 @@ function toggleVisibility(): void {
             
             <div v-if="editMode" :class="$style.editButtons">
                 <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
-                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('edit', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="secondary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('delete', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Smazat</Button>
+                    </template>
+    
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
             </div>
         </div>
     </template>
@@ -73,8 +98,32 @@ function toggleVisibility(): void {
             
             <div v-if="editMode" :class="$style.editButtons">
                 <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
-                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('edit', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="secondary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('delete', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Smazat</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
             </div>
         </div>
     </template>

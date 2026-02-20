@@ -1,12 +1,13 @@
 ﻿<script setup lang="ts">
-import type {Quiz} from "#shared/types";
+import type {Course, CourseStatus, Quiz} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
+import Popover from "~/components/Popover.vue";
 
 const props = defineProps<{
     quiz: Quiz,
-    course: { uuid: string },
+    course: Course,
     editMode?: boolean,
     isVisibilityToggleLoading?: boolean,
 }>();
@@ -20,6 +21,8 @@ const emit = defineEmits<{
 function toggleVisibility(): void {
     emit('toggleVisibility', props.quiz);
 }
+
+console.log(props.course)
 </script>
 
 <template>
@@ -44,10 +47,36 @@ function toggleVisibility(): void {
         
         <div v-if="editMode" :class="$style.editButtons">
             <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
-            <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
-                <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
-            </NuxtLink>
-            <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
+            <Popover teleport :disabled="course.status === 'draft'">
+                <template #trigger>
+                    <NuxtLink
+                        :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`"
+                        :disabled="course.status === 'draft'"
+                    >
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </NuxtLink>
+                </template>
+
+                <template #content>Kurz musí být návrh</template>
+            </Popover>
+            <Popover teleport :disabled="course.status === 'draft'">
+                <template #trigger>
+                    <Button
+                        button-style="secondary"
+                        accent-color="secondary"
+                        style="width: 100%"
+                        @click="emit('delete', quiz)"
+                        :disabled="course.status !== 'draft'"
+                    >Smazat</Button>
+                </template>
+
+                <template #content>Kurz musí být návrh</template>
+            </Popover>
         </div>
     </div>
 </template>
