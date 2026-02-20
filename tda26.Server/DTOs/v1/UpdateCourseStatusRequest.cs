@@ -3,5 +3,6 @@ using tda26.Server.Data.Models;
 namespace tda26.Server.DTOs.v1;
 
 public class UpdateCourseStatusRequest {
-    public CourseStatus Status { get; set; }
+    public CourseStatus? Status { get; set; }
+    public DateTime? ScheduledStart { get; set; }
 }

@@ -42,6 +42,7 @@ import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
 import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
 import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import {useContextMenu} from "~/composables/useContextMenu";
+import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
 
 
 definePageMeta({
@@ -147,7 +148,7 @@ const { data: categories } = await useFetch<CourseCategory[]>(
 useCourseViewEvent(uuid);
 
 // edit stav + ulozeni
-const {statusOptions, editedStatus, editedStatusModel, displayedStatus, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
+const {statusOptions, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
 
 // upozorneni pri zavirani tab
 useBeforeUnloadUnsavedChanges(isDirty);
@@ -164,7 +165,7 @@ const selectItem = (item: string) => {
 };
 
 // publication schedule
-const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ editedStatus, enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
 
 // materiály
 const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
@@ -241,14 +242,16 @@ const contextMenuItems = computed(() => {
     ];
 });
 
-const updateStatus = (newStatus: CourseStatus) => {
-    if (!courseSmall.value) return;
+const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
 
-    // courseSmall.value.status = newStatus as Course["status"];
-    editedStatusModel.value = newStatus;
-    saveCourseChanges();
-    
-};
+// const updateStatus = (newStatus: CourseStatus) => {
+//     if (!courseSmall.value) return;
+//
+//     // courseSmall.value.status = newStatus as Course["status"];
+//     editedStatusModel.value = newStatus;
+//     saveCourseChanges();
+//    
+// };
 </script>
 
 <template>
@@ -304,25 +307,7 @@ const updateStatus = (newStatus: CourseStatus) => {
             <div :class="['liquid-glass',$style.right]">
                 <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
 
-                <Input
-                    v-if="isEditMode"
-                    :key="editedStatusModel"
-                    v-model="editedStatusModel"
-                    type="select"
-                    :class="[$style.status, $style.statusSelect]"
-                    :data-status="editedStatus"
-                >
-                    <option
-                        v-for="status in statusOptions"
-                        :key="status"
-                        :value="String(status)"
-                        :selected="editedStatusModel === String(status)"
-                    >
-                        {{ statusToText(status) }}
-                    </option>
-                </Input>
-
-                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
+                <p v-if="currentStatus" :class="$style.status" :data-status="currentStatus">{{ statusToText(currentStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -365,19 +350,22 @@ const updateStatus = (newStatus: CourseStatus) => {
                         v-if="courseSmall?.status === 'draft' || courseSmall?.status === 'scheduled' || courseSmall?.status === 'paused'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="updateStatus('draft')"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('live')"
                     >Spustit</Button>
                     <Button
                         v-if="courseSmall?.status === 'live'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="updateStatus('paused')"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('paused')"
                     >Pozastavit</Button>
                     <Button
                         v-if="courseSmall?.status === 'archived'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="updateStatus('draft')"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
                     >Obnovit na návrh</Button>
                     
                     <!-- Secondary button -->
@@ -385,22 +373,22 @@ const updateStatus = (newStatus: CourseStatus) => {
                         v-if="courseSmall?.status === 'draft'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
+                        :loading="isCourseStatusLoading"
                         @click="enabledModal = 'schedulePublication'"
                     >Naplánovat</Button>
                     <Button
                         v-if="courseSmall?.status === 'scheduled'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="updateStatus('draft')"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
                     >Vrátit</Button>
                     <Button
                         v-if="courseSmall?.status === 'live'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="updateStatus('archived')"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('archived')"
                     >Ukončit</Button>
 
                     <div>
