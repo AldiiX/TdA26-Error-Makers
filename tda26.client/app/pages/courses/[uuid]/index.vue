@@ -2,7 +2,7 @@
 import type {
     Account,
     Course,
-    CourseCategory,
+    CourseCategory, CourseStatus,
     Material,
     Quiz
 } from "#shared/types";
@@ -39,6 +39,9 @@ import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisib
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
+import {useContextMenu} from "~/composables/useContextMenu";
 
 
 definePageMeta({
@@ -220,6 +223,32 @@ function handleAuthSuccess() {
     enabledModal.value = null;
     window.location.reload();
 }
+
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Upravit kurz",
+            onClick: editClick,
+            iconPath: "/icons/pen.svg",
+        },
+        {
+            text: "Smazat kurz",
+            onClick: openDeleteCourseModal,
+            iconPath: "/icons/trash.svg",
+        }
+    ];
+});
+
+const updateStatus = (newStatus: CourseStatus) => {
+    if (!courseSmall.value) return;
+
+    // courseSmall.value.status = newStatus as Course["status"];
+    editedStatusModel.value = newStatus;
+    saveCourseChanges();
+    
+};
 </script>
 
 <template>
@@ -331,17 +360,60 @@ function handleAuthSuccess() {
                 </div>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
+                    <!-- Primary button -->
                     <Button
+                        v-if="courseSmall?.status === 'draft' || courseSmall?.status === 'scheduled' || courseSmall?.status === 'paused'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="editClick"
-                    >Upravit kurz</Button>
+                        @click="updateStatus('draft')"
+                    >Spustit</Button>
                     <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        @click="updateStatus('paused')"
+                    >Pozastavit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'archived'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        @click="updateStatus('draft')"
+                    >Obnovit na návrh</Button>
+                    
+                    <!-- Secondary button -->
+                    <Button
+                        v-if="courseSmall?.status === 'draft'"
                         button-style="secondary"
                         accent-color="secondary"
                         :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="openDeleteCourseModal"
-                    >Smazat kurz</Button>
+                        @click="enabledModal = 'schedulePublication'"
+                    >Naplánovat</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'scheduled'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :style="{ /*'--color': 'var(--color-error)'*/ }"
+                        @click="updateStatus('draft')"
+                    >Vrátit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :style="{ /*'--color': 'var(--color-error)'*/ }"
+                        @click="updateStatus('archived')"
+                    >Ukončit</Button>
+
+                    <div>
+                        <ContextMenuButton @open="openContextMenu"/>
+                        <ContextMenu
+                            :items="contextMenuItems"
+
+                            :visible="isContextMenuOpen"
+                            :x="contextMenuPosition.x"
+                            :y="contextMenuPosition.y"
+                            @close="closeContextMenu"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -967,7 +1039,6 @@ function handleAuthSuccess() {
 <style module lang="scss">
 @use "@/assets/variables" as app;
 
-
 .basic {
     display: flex;
     position: relative;
@@ -1152,6 +1223,7 @@ function handleAuthSuccess() {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
 
             button {
                 flex: 1;

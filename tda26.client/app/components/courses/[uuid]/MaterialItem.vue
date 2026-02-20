@@ -107,7 +107,7 @@ function toggleVisibility(): void {
         flex: 1;
         
         .fileIcon {
-            mask-image: url('../../../public/icons/file.svg');
+            mask-image: url('/icons/file.svg');
             mask-size: cover;
             mask-position: center;
             mask-repeat: no-repeat;

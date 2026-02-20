@@ -11,6 +11,7 @@ import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import { useState } from "#app";
 import {useContextMenu} from "~/composables/useContextMenu";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
 
 const props = withDefaults(defineProps<{
     course: Course;
@@ -192,10 +193,7 @@ const cutDescription = computed(() => {
                 <div
                     :class="$style.bgButton"
                 >
-                    <span
-                        :class="[$style.contextMenuButton]"
-                        @click="openContextMenu"
-                    />
+                    <ContextMenuButton @open="openContextMenu" />
                     <ContextMenu
                          :items="contextMenuItems"
 
@@ -386,38 +384,6 @@ const cutDescription = computed(() => {
                 mask-position: center;
                 mask-repeat: no-repeat;
                 mask-image: url("/icons/trash.svg");
-            }
-        }
-        
-        .contextMenuButton {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.3);
-            transition-duration: 0.3s;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.3s;
-            @extend .liquid-glass;
-
-            &::before {
-                content: '';
-                display: block;
-                width: 20px;
-                height: 20px;
-                background-color: black;
-                mask-size: contain;
-                mask-position: center;
-                mask-repeat: no-repeat;
-                mask-image: url("/icons/ellipsis.svg");
-            }
-            
-            &:hover {
-                background-color: rgba(255, 255, 255, 0.7);
-                transition-duration: 0.3s;
             }
         }
     }

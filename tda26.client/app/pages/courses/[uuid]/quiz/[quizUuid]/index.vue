@@ -14,7 +14,12 @@ const { uuid, quizUuid } = useRoute().params;
 
 const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
     key: `course-${uuid}-quiz-${quizUuid}`,
+    headers: {
+        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+    }
 });
+
+console.log("negr")
 
 if (quizError.value) {
     console.error("Error fetching quiz:", quizError.value);
