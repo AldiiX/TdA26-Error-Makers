@@ -119,7 +119,7 @@ const $style = useCssModule();
                         left: teleportPosition.left + 'px',
                     }"
                 >
-                    <slot name="content"/>
+                    <slot name="content" />
                 </div>
             </Transition>
         </Teleport>
@@ -155,6 +155,7 @@ const $style = useCssModule();
 .popoverWrapper {
     position: relative;
     display: inline-block;
+    font-family: "Dosis", sans-serif;
 }
 
 .trigger {
@@ -173,6 +174,7 @@ const $style = useCssModule();
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     border: 1px solid rgb(from var(--background-color-secondary) r g b / 0.6);
     backdrop-filter: blur(8px);
+    font-family: "Dosis", sans-serif;
 
     &.bottom-right {
         top: calc(100% + 16px);
@@ -208,6 +210,8 @@ const $style = useCssModule();
     max-width: min(350px, 95vw);
     text-align: center;
     pointer-events: none;
+    font-family: "Dosis", sans-serif;
+    font-weight: 500;
 }
 </style>
 
