@@ -19,21 +19,92 @@ const emit = defineEmits<{
     (e: 'removeQuestionOption', index: number): void;
 }>();
 
+// Helper function to save and restore cursor position
+const saveCursorPosition = (element: HTMLElement) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    
+    const range = selection.getRangeAt(0);
+    const preSelectionRange = range.cloneRange();
+    preSelectionRange.selectNodeContents(element);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    
+    return preSelectionRange.toString().length;
+};
+
+const restoreCursorPosition = (element: HTMLElement, position: number) => {
+    const selection = window.getSelection();
+    if (!selection) return;
+    
+    const createRange = (node: Node, chars: { count: number }): Range | null => {
+        if (chars.count === 0) {
+            const range = document.createRange();
+            range.setStart(node, 0);
+            range.setEnd(node, 0);
+            return range;
+        }
+        
+        if (node.nodeType === Node.TEXT_NODE) {
+            const textNode = node as Text;
+            if (textNode.length >= chars.count) {
+                const range = document.createRange();
+                range.setStart(textNode, chars.count);
+                range.setEnd(textNode, chars.count);
+                return range;
+            } else {
+                chars.count -= textNode.length;
+            }
+        } else {
+            for (let i = 0; i < node.childNodes.length; i++) {
+                const range = createRange(node.childNodes[i]!, chars);
+                if (range) return range;
+            }
+        }
+        
+        return null;
+    };
+    
+    const range = createRange(element, { count: position });
+    if (range) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+};
+
 const updateQuestionText = (e: Event) => {
-    const text = (e.target as HTMLElement).innerText;
+    const element = e.target as HTMLElement;
+    const text = element.innerText;
+    const cursorPos = saveCursorPosition(element);
+    
     emit('update:question', {
         question: text,
+    });
+    
+    // Restore cursor position after Vue updates the DOM
+    nextTick(() => {
+        if (cursorPos !== null) {
+            restoreCursorPosition(element, cursorPos);
+        }
     });
 };
 
 const updateOptionText = (index: number, e: Event) => {
-    const text = (e.target as HTMLElement).innerText;
-    props.question.options[index] = text;
+    const element = e.target as HTMLElement;
+    const text = element.innerText;
+    const cursorPos = saveCursorPosition(element);
     
+    props.question.options[index] = text;
     const options = props.question.options;
 
     emit('update:question', {
         options,
+    });
+    
+    // Restore cursor position after Vue updates the DOM
+    nextTick(() => {
+        if (cursorPos !== null) {
+            restoreCursorPosition(element, cursorPos);
+        }
     });
 };
 
