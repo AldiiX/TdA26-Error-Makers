@@ -2,7 +2,7 @@
 import type {
     Account,
     Course,
-    CourseCategory,
+    CourseCategory, CourseStatus,
     Material,
     Quiz
 } from "#shared/types";
@@ -39,6 +39,10 @@ import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisib
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
+import {useContextMenu} from "~/composables/useContextMenu";
+import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
 
 
 definePageMeta({
@@ -144,7 +148,7 @@ const { data: categories } = await useFetch<CourseCategory[]>(
 useCourseViewEvent(uuid);
 
 // edit stav + ulozeni
-const {statusOptions, editedStatus, editedStatusModel, displayedStatus, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
+const {statusOptions, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
 
 // upozorneni pri zavirani tab
 useBeforeUnloadUnsavedChanges(isDirty);
@@ -161,7 +165,7 @@ const selectItem = (item: string) => {
 };
 
 // publication schedule
-const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ editedStatus, enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
 
 // materiály
 const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
@@ -220,6 +224,34 @@ function handleAuthSuccess() {
     enabledModal.value = null;
     window.location.reload();
 }
+
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Upravit kurz",
+            onClick: editClick,
+            iconPath: "/icons/pen.svg",
+        },
+        {
+            text: "Smazat kurz",
+            onClick: openDeleteCourseModal,
+            iconPath: "/icons/trash.svg",
+        }
+    ];
+});
+
+const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
+
+// const updateStatus = (newStatus: CourseStatus) => {
+//     if (!courseSmall.value) return;
+//
+//     // courseSmall.value.status = newStatus as Course["status"];
+//     editedStatusModel.value = newStatus;
+//     saveCourseChanges();
+//    
+// };
 </script>
 
 <template>
@@ -275,25 +307,7 @@ function handleAuthSuccess() {
             <div :class="['liquid-glass',$style.right]">
                 <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
 
-                <Input
-                    v-if="isEditMode"
-                    :key="editedStatusModel"
-                    v-model="editedStatusModel"
-                    type="select"
-                    :class="[$style.status, $style.statusSelect]"
-                    :data-status="editedStatus"
-                >
-                    <option
-                        v-for="status in statusOptions"
-                        :key="status"
-                        :value="String(status)"
-                        :selected="editedStatusModel === String(status)"
-                    >
-                        {{ statusToText(status) }}
-                    </option>
-                </Input>
-
-                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
+                <p v-if="currentStatus" :class="$style.status" :data-status="currentStatus">{{ statusToText(currentStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -331,17 +345,63 @@ function handleAuthSuccess() {
                 </div>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
+                    <!-- Primary button -->
                     <Button
+                        v-if="courseSmall?.status === 'draft' || courseSmall?.status === 'scheduled' || courseSmall?.status === 'paused'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="editClick"
-                    >Upravit kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('live')"
+                    >Spustit</Button>
                     <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('paused')"
+                    >Pozastavit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'archived'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Obnovit na návrh</Button>
+                    
+                    <!-- Secondary button -->
+                    <Button
+                        v-if="courseSmall?.status === 'draft'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="openDeleteCourseModal"
-                    >Smazat kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="enabledModal = 'schedulePublication'"
+                    >Naplánovat</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'scheduled'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Vrátit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('archived')"
+                    >Ukončit</Button>
+
+                    <div>
+                        <ContextMenuButton @open="openContextMenu"/>
+                        <ContextMenu
+                            :items="contextMenuItems"
+
+                            :visible="isContextMenuOpen"
+                            :x="contextMenuPosition.x"
+                            :y="contextMenuPosition.y"
+                            @close="closeContextMenu"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -967,7 +1027,6 @@ function handleAuthSuccess() {
 <style module lang="scss">
 @use "@/assets/variables" as app;
 
-
 .basic {
     display: flex;
     position: relative;
@@ -1152,6 +1211,7 @@ function handleAuthSuccess() {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
 
             button {
                 flex: 1;

@@ -320,7 +320,10 @@ public sealed class APIv1(
 		var takeCount = limit == 0 ? int.MaxValue : (int)limit;
 
 		if (full) {
-			var query = db.CoursesFullEf();
+			var query = db.CoursesFullEf()
+				.AsNoTracking()
+				.AsSplitQuery();
+			
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
 			}
@@ -328,8 +331,6 @@ public sealed class APIv1(
 			var courses = await query
 				.OrderByDescending(c => c.CreatedAt)
 				.Take(takeCount)
-				.AsNoTracking()
-				.AsSplitQuery()
 				.ToListAsync(ct);
 
 			foreach (var c in courses) {
@@ -343,7 +344,9 @@ public sealed class APIv1(
 			return Ok(courses);
 		}
 		else {
-			var query = db.CoursesMinimalEf();
+			var query = db.CoursesMinimalEf()
+				.AsNoTracking()
+				.AsSplitQuery();
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
 			}
@@ -351,8 +354,6 @@ public sealed class APIv1(
 			var courses = await query
 				.OrderByDescending(c => c.CreatedAt)
 				.Take(takeCount)
-				.AsNoTracking()
-				.AsSplitQuery()
 				.ToListAsync(ct);
 
 			foreach (var c in courses) {
@@ -393,6 +394,8 @@ public sealed class APIv1(
 
 		if (full) {
 			course = await db.CoursesFullEf()
+				.AsNoTracking()
+				.AsSplitQuery()
 				.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
 			if (course == null) return NotFound(new { error = "Course not found." });
@@ -412,6 +415,8 @@ public sealed class APIv1(
 		}
 		else {
 			course = await db.CoursesMinimalEf()
+				.AsNoTracking()
+				.AsSplitQuery()
 				.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 
 			if (course == null) {
@@ -749,6 +754,7 @@ public sealed class APIv1(
 		var acc = await auth.ReAuthAsync(ct);
 
 		var courseImageData = await db.Courses
+			.AsNoTracking()
 			.Where(c => c.Uuid == uuid)
 			.Select(c => new { Exists = true, c.ImageUrl, c.LecturerUuid, c.Status })
 			.FirstOrDefaultAsync(ct);
@@ -825,6 +831,8 @@ public sealed class APIv1(
 		if (acc == null) return Unauthorized();
 
 		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.AsSplitQuery()
 			.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
@@ -946,6 +954,32 @@ public sealed class APIv1(
 		await db.SaveChangesAsync(ct);
 
 		return NoContent();
+	}
+
+	[HttpPut("courses/{uuid:guid}/status")]
+	public async Task<IActionResult> UpdateCourseStatus(Guid uuid, [FromBody] UpdateCourseStatusRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+		var existingCourse = await db.CoursesMinimalEf()
+			.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+		
+		if (body.Status == null && body.ScheduledStart == null) {
+			return BadRequest(new { error = "At least one of 'status' or 'scheduledStart' must be provided." });
+		}
+		
+		if (existingCourse == null) return NotFound();
+		
+		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+		
+		if (body.Status.HasValue && existingCourse.Status == body.Status.Value) {
+			return BadRequest(new { error = "Course is already in the specified status." });
+		}
+		
+		if (body.Status.HasValue) existingCourse.Status = body.Status.Value;
+		if (body.ScheduledStart != null) existingCourse.ScheduledStart = body.ScheduledStart;
+		
+		await db.SaveChangesAsync(ct);
+		return Ok(existingCourse);
 	}
 
 	[HttpPost("courses")]
@@ -1570,6 +1604,7 @@ public sealed class APIv1(
 		}
 
 		var quiz = await db.QuizzesEf()
+			.AsNoTracking()
 			.Where(q => q.CourseUuid == courseUuid)
 			.Where(q => q.Uuid == quizUuid)
 			.FirstOrDefaultAsync();
@@ -1844,6 +1879,8 @@ public sealed class APIv1(
 		var acc = await auth.ReAuthAsync();
 
 		var course = await db.Courses
+			.AsNoTracking()
+			.AsSplitQuery()
 			.Where(c => c.Uuid == courseUuid)
 			.FirstOrDefaultAsync();
 
@@ -1857,6 +1894,7 @@ public sealed class APIv1(
 		}
 
 		var quiz = await db.QuizzesEf()
+			.AsNoTracking()
 			.Where(q => q.CourseUuid == courseUuid)
 			.Where(q => q.Uuid == quizUuid)
 			.FirstOrDefaultAsync();
@@ -1963,6 +2001,8 @@ public sealed class APIv1(
 		var acc = await auth.ReAuthAsync();
 
 		var course = await db.Courses
+			.AsNoTracking()
+			.AsSplitQuery()
 			.Where(c => c.Uuid == courseUuid)
 			.FirstOrDefaultAsync();
 
@@ -1976,6 +2016,7 @@ public sealed class APIv1(
 		}
 
 		var quiz = await db.QuizzesEf()
+			.AsNoTracking()
 			.Where(q => q.CourseUuid == courseUuid)
 			.Where(q => q.Uuid == quizUuid)
 			.FirstOrDefaultAsync();
@@ -1985,6 +2026,7 @@ public sealed class APIv1(
 		}
 
 		var quizResult = await db.QuizResultsEf()
+			.AsNoTracking()
 			.Where(qr => qr.Uuid == resultUuid)
 			.FirstOrDefaultAsync();
 
@@ -2239,6 +2281,8 @@ public sealed class APIv1(
 		}
 
 		var feedPosts = await db.FeedPostsEf()
+			.AsNoTracking()
+			.AsSplitQuery()
 			.Where(fp => fp.CourseUuid == courseUuid)
 			.OrderByDescending(fp => fp.CreatedAt)
 			.ToListAsync();

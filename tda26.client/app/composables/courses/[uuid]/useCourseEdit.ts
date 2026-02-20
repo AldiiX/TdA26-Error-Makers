@@ -20,17 +20,6 @@ export function useCourseEdit(params: {
 
     const statusOptions: CourseStatus[] = ["draft", "scheduled", "live", "paused", "archived"];
 
-    const editedStatus = ref<CourseStatus>(params.courseSmall.value.status);
-
-    const displayedStatus = computed<CourseStatus>(() => params.course.value?.status ?? params.courseSmall.value.status);
-
-    const editedStatusModel = computed<string>({
-        get: () => String(editedStatus.value),
-        set: (value) => {
-            editedStatus.value = value as CourseStatus;
-        }
-    });
-
     const editedCategoryUuid = ref<string | null>(
         params.courseSmall.value.category?.uuid ?? params.categories.value?.[0]?.uuid ?? null
     );
@@ -59,15 +48,6 @@ export function useCourseEdit(params: {
         editedTagsUuid.value = val.tags?.map(t => t.uuid) ?? [];
     }, { immediate: true });
 
-    watch(
-        params.course,
-        (val) => {
-            if (!val) return;
-            editedStatus.value = val.status;
-        },
-        { immediate: true }
-    );
-
     const isDirty = computed(() => {
         if (!params.course.value || !params.originalCourse.value) return false;
 
@@ -80,7 +60,6 @@ export function useCourseEdit(params: {
         return (
             params.course.value.name !== params.originalCourse.value.name ||
             params.course.value.description !== params.originalCourse.value.description ||
-            editedStatus.value !== params.originalCourse.value.status ||
             editedCategoryUuid.value !== params.originalCourse.value.category?.uuid ||
             JSON.stringify(editedTags) !== JSON.stringify(originalTags)
         );
@@ -143,7 +122,6 @@ export function useCourseEdit(params: {
                     body: {
                         name: params.course.value.name,
                         description: params.course.value.description,
-                        status: editedStatus.value,
                         categoryUuid: editedCategoryUuid.value,
                         tagsUuid: editedTagsUuid.value
                     }
@@ -165,7 +143,6 @@ export function useCourseEdit(params: {
 
             editedCategoryUuid.value = updatedCourse.category?.uuid ?? editedCategoryUuid.value;
             editedTagsUuid.value = updatedCourse.tags?.map(t => t.uuid) ?? [];
-            editedStatus.value = updatedCourse.status;
 
             clearCourseCaches();
 
@@ -189,9 +166,6 @@ export function useCourseEdit(params: {
 
     return {
         statusOptions,
-        editedStatus,
-        editedStatusModel,
-        displayedStatus,
         editedCategoryUuid,
         editedTagsUuid,
         isDirty,

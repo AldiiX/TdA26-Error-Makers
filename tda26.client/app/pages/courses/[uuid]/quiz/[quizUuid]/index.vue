@@ -1,25 +1,47 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {AnswerSubmission, Course, Question, Quiz} from "#shared/types";
+import type {Account, AnswerSubmission, Course, Question, Quiz} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
 
 definePageMeta({
-    layout: "normal-page-layout"
+    layout: "normal-page-layout",
+    middleware: [
+        defineNuxtRouteMiddleware(async (to) => {
+            const courseUuid = to.params.uuid as string;
+            const quizUuid = to.params.quizUuid as string;
+
+            // pokud chybi uuid
+            if (!quizUuid) {
+                return navigateTo(`/courses/${courseUuid}`);
+            }
+
+            try {
+                const quiz = await $fetch<Quiz>(`${getBaseUrl()}/api/v1/courses/${courseUuid}/quizzes/${quizUuid}`, {
+                    query: { full: true },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
+                });
+
+                if (!quiz) {
+                    return navigateTo(`/courses/${courseUuid}`);
+                }
+                const quizState = useState<Quiz | null>(`quiz-${quizUuid}`, () => null);
+                quizState.value = quiz;
+            } catch (e) {
+                console.error("Error loading quiz:", e);
+                return navigateTo("/courses");
+            }
+        })
+    ]
 });
 
 
 const { uuid, quizUuid } = useRoute().params;
 
-const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
-    key: `course-${uuid}-quiz-${quizUuid}`,
-});
-
-if (quizError.value) {
-    console.error("Error fetching quiz:", quizError.value);
-    await navigateTo(`/courses/${uuid}`);
-}
+const quiz = useState<Quiz | null>(`quiz-${quizUuid}`);
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 

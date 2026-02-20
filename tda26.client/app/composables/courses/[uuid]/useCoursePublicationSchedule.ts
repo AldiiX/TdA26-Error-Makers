@@ -11,7 +11,6 @@ function getLocalDateTimeString(): string {
 
 
 export default function(params: {
-    editedStatus: Ref<CourseStatus>;
     enabledModal: Ref<CourseDetailModal>;
     course: Ref<Course>;
     updateError: Ref<string | null>;
@@ -46,8 +45,8 @@ export default function(params: {
         return new Date(now.getTime() + Number(selectedTimeOption.value) * 60000);
     });
 
-    watch(params.editedStatus, (newValue) => {
-        if (newValue === "scheduled") {
+    watch(params.course, (newValue) => {
+        if (newValue.status === "scheduled") {
             params.enabledModal.value = "schedulePublication";
         }
     });
@@ -66,20 +65,20 @@ export default function(params: {
     async function confirmPublicationSchedule() {
         if (!finalDateTime.value || !params.course.value) return;
 
-        await fetch(`/api/v1/courses/${params.course.value.uuid}`, {
+        await $fetch(`/api/v1/courses/${params.course.value.uuid}/status`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+            body: {
+                status: "scheduled",
                 scheduledStart: finalDateTime.value.toISOString()
-            })
+            }
         });
 
         params.enabledModal.value = null;
-        params.editedStatus.value = "scheduled";
+        params.course.value.status = "scheduled";
     }
 
     function cancelPublicationSchedule() {
-        params.editedStatus.value = params.originalCourse.value?.status ?? "draft";
+        params.course.value.status = params.originalCourse.value?.status ?? "draft";
         params.enabledModal.value = null;
     }
 
