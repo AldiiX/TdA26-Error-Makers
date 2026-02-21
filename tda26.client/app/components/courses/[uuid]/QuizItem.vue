@@ -1,12 +1,10 @@
 ﻿<script setup lang="ts">
 import type {Quiz, QuizResultsSummary} from "#shared/types";
-import { NuxtLink } from '#components';
-import Button from "~/components/Button.vue";
 import Modal from "~/components/Modal.vue";
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
 import toClockTime from "~/utils/toClockTime";
 import { Chart } from 'chart.js/auto';
-import type {Course, CourseStatus, Quiz} from "#shared/types";
+import type {Course, CourseStatus} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
@@ -36,7 +34,7 @@ const scoreDistributionChartElement = ref<HTMLCanvasElement | null>(null);
 const timeDistributionChartElement = ref<HTMLCanvasElement | null>(null);
 
 onMounted(() => {
-    fetch(`/api/v2/courses/${props.course.uuid}/quizzes/${props.quiz.uuid}/results-summary`)
+    fetch(`/api/v1/courses/${props.course.uuid}/quizzes/${props.quiz.uuid}/results-summary`)
         .then(res => {
             if (!res.ok) throw new Error("Failed to fetch quiz results summary");
             return res.json();
@@ -135,10 +133,6 @@ console.log(props.course)
         
         <div v-if="editMode" :class="$style.editButtons">
             <Button @click="openResults">Výsledky</Button>
-            <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`">
-                <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
-            </NuxtLink>
-            <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
             <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
