@@ -1,4 +1,4 @@
-﻿namespace tda26.Server.DTOs.v1;
+namespace tda26.Server.DTOs.v1;
 
 public class ReadQuizResponse
 {
@@ -9,4 +9,6 @@ public class ReadQuizResponse
     public DateTimeOffset? CreatedAt { get; set; }
 
     public List<object> Questions { get; set; } = new();
+    
+    public bool IsVisible { get; set; }
 }

@@ -7,20 +7,14 @@
         "dev": "nuxt dev",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
-        "postinstall": "nuxt prepare",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix"
+        "postinstall": "nuxt prepare"
     },
     "dependencies": {
-        "@nuxt/eslint": "^1.15.1",
         "@types/grecaptcha": "^3.0.9",
         "chart.js": "^4.5.1",
         "notivue": "^2.4.5",
         "nuxt": "^4.3.1",
         "sass": "^1.97.3",
         "vue": "^3.5.28"
-    },
-    "devDependencies": {
-        "typescript": "^5.9.3"
     }
 }

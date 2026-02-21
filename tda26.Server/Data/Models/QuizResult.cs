@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace tda26.Server.Data.Models;
 
-public class QuizResult {
+public sealed class QuizResult {
     [Key] public Guid Uuid { get; set; } = Guid.NewGuid();
 
     public Guid QuizUuid { get; set; }

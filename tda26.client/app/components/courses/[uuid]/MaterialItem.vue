@@ -1,17 +1,21 @@
 ﻿<script setup lang="ts">
-import type {Material} from "#shared/types";
+import type {Course, Material} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
+import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
+import Popover from "~/components/Popover.vue";
 
 const props = defineProps<{
     material: Material,
-    course: { uuid: string },
-    editMode?: boolean
+    course: Course,
+    editMode?: boolean,
+    isVisibilityToggleLoading?: boolean,
 }>();
 
 const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
+    (e: "toggleVisibility", material: Material): void;
 }>();
 
 const getHostname = (url?: string) => {
@@ -21,13 +25,17 @@ const getHostname = (url?: string) => {
         return ''
     }
 }
+
+function toggleVisibility(): void {
+    emit('toggleVisibility', props.material);
+}
 </script>
 
 <template>
     <!-- FILE MATERIAL -->
     <template v-if="material.type === 'file'">
         <div :class="$style.material">
-            <NuxtLink :href="`/api/v2/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
                 <div :class="$style.fileIcon"/>
 
                 <div :class="$style.fileInfo">
@@ -40,8 +48,33 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
+                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('edit', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="secondary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('delete', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Smazat</Button>
+                    </template>
+    
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
             </div>
         </div>
     </template>
@@ -64,8 +97,33 @@ const getHostname = (url?: string) => {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button button-style="primary" accent-color="secondary" style="width: 100%" @click="emit('edit', material)">Upravit</Button>
-                <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', material)">Smazat</Button>
+                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('edit', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
+                <Popover teleport :disabled="course.status === 'draft'">
+                    <template #trigger>
+                        <Button
+                            button-style="secondary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            @click="emit('delete', material)"
+                            :disabled="course.status !== 'draft'"
+                        >Smazat</Button>
+                    </template>
+
+                    <template #content>Kurz musí být návrh</template>
+                </Popover>
             </div>
         </div>
     </template>
@@ -98,7 +156,7 @@ const getHostname = (url?: string) => {
         flex: 1;
         
         .fileIcon {
-            mask-image: url('../../../public/icons/file.svg');
+            mask-image: url('/icons/file.svg');
             mask-size: cover;
             mask-position: center;
             mask-repeat: no-repeat;

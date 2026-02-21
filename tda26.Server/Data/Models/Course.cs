@@ -16,7 +16,7 @@ public enum CourseStatus {
     Archived
 }
 
-public class Course : Auditable {
+public sealed class Course : Auditable {
 
     // mapovani props na sloupce v db
     [Key]

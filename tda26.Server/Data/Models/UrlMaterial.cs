@@ -2,7 +2,7 @@
 
 namespace tda26.Server.Data.Models;
 
-public class UrlMaterial : Material {
+public sealed class UrlMaterial : Material {
 	[MaxLength(256), Required]
     public required string Url { get; set; }
 

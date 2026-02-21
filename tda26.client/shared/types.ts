@@ -36,6 +36,7 @@ export interface Material {
     createdAt: string;
     description?: string;
     faviconUrl?: string;
+    isVisible: boolean;
 }
 
 export interface MaterialFormModel {
@@ -55,6 +56,7 @@ export interface Quiz {
     attemptsCount: number;
     course: Course;
     questions: Question[];
+    isVisible: boolean;
 }
 
 export interface Question {
@@ -195,3 +197,4 @@ export interface QuizResultsSummary {
         count: number 
     }[];
 }
+export type CourseModule = Material | Quiz;

@@ -7,7 +7,7 @@ namespace tda26.Server.Data.Models;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(FileMaterial), "file")]
 [JsonDerivedType(typeof(UrlMaterial), "url")]
-public class Material : Auditable {
+public class Material : Auditable, IModule {
     public enum MaterialType {
         File,
         Url
@@ -32,4 +32,6 @@ public class Material : Auditable {
 
     [ForeignKey("CourseUuid"), JsonIgnore]
     public Course Course { get; set; } = null!;
+    
+    public bool IsVisible { get; set; } = false;
 }

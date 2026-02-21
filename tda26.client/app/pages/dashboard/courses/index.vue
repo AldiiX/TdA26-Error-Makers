@@ -10,6 +10,7 @@ import Button from "~/components/Button.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
 import Pagination from "~/components/Pagination.vue";
 import { push } from "notivue";
+import {useCourses} from "~/composables/useCourses";
 
 definePageMeta({
     layout: "normal-page-layout",
@@ -25,66 +26,10 @@ definePageMeta({
 const loggedAccount = useState<Account>('loggedAccount');
 
 const PAGE_SIZE = 12;
-const FIRST_FETCH_LIMIT = 24;
 
-// sdilena cache mezi navigacemi
-const coursesState = useState<Course[] | null>('myCoursesCache', () => null);
+const { myCourses: _courses, refreshMyCourses: refreshCourses } = useCourses();
 
-// ochrany proti opakovanemu full fetchi
-const fullFetchRunning = ref(false);
-const hasFetchedAllCourses = useState<boolean>('hasFetchedAllMyCourses', () => false);
-
-async function fetchAllCoursesIfNeeded() {
-    if (hasFetchedAllCourses.value) return;
-    if (fullFetchRunning.value) return;
-    if (!coursesState.value) return;
-
-    // kdyz prvni fetch vratil mene nez limit, dalsi data uz pravdepodobne nejsou
-    if (coursesState.value.length < FIRST_FETCH_LIMIT) {
-        hasFetchedAllCourses.value = true;
-        return;
-    }
-
-    fullFetchRunning.value = true;
-    try {
-        coursesState.value = await $fetch<Course[]>('/api/v2/me/courses', {
-            baseURL: getBaseUrl()
-        });
-
-        hasFetchedAllCourses.value = true;
-    } catch (e) {
-        // kdyz se full fetch nepovede, nechceme to zamknout navzdy
-        console.error('error fetching all my courses:', e);
-    } finally {
-        fullFetchRunning.value = false;
-    }
-}
-
-// prvni rychly fetch xx kurzů
-const { pending, error } = useLazyFetch<Course[]>(`/api/v2/me/courses?limit=${FIRST_FETCH_LIMIT}`, {
-    baseURL: getBaseUrl(),
-    key: `myCourses:limit:${FIRST_FETCH_LIMIT}`,
-    server: false,
-    immediate: true,
-    getCachedData: () => coursesState.value ?? undefined,
-    onResponse({ response }) {
-        coursesState.value = (response as any)._data as Course[];
-        void fetchAllCoursesIfNeeded();
-    }
-});
-
-// kdyz data prisla z cache, onresponse se nespusti, tak tohle zajisti upgrade fetch i v tom pripade
-watch(() => coursesState.value?.length, () => {
-    void fetchAllCoursesIfNeeded();
-}, { immediate: true });
-
-watch(error, (e) => {
-    if (e) {
-        console.error('error fetching my courses:', e);
-    }
-}, { immediate: true });
-
-const courses = computed(() => coursesState.value);
+const courses = computed(() => _courses.value);
 
 const sort = ref<'new' | 'old'>('new');
 const sortedCourses = computed(() => {
@@ -163,16 +108,6 @@ const visiblePages = computed<(number | '...')[]>(() => {
 const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
 
-const refreshCourses = async () => {
-    try {
-        coursesState.value = await $fetch<Course[]>('/api/v2/me/courses', {
-            baseURL: getBaseUrl()
-        });
-
-        hasFetchedAllCourses.value = true;
-    } catch {}
-};
-
 const selectedDeleteCourse = ref<Course | null>(null);
 const deleteError = ref<string | null>(null);
 
@@ -185,7 +120,7 @@ const deleteCourse = async () => {
     if (!selectedDeleteCourse.value) return;
 
     try {
-        await $fetch(getBaseUrl() + `/api/v2/courses/${selectedDeleteCourse.value.uuid}`, {
+        await $fetch(getBaseUrl() + `/api/v1/courses/${selectedDeleteCourse.value.uuid}`, {
             method: "DELETE"
         });
 

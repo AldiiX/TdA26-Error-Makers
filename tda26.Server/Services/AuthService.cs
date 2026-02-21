@@ -11,7 +11,7 @@ namespace tda26.Server.Services;
 
 
 
-public class AuthService(
+public sealed class AuthService(
     AppDbContext db,
     IHttpContextAccessor http
 ) : IAuthService {

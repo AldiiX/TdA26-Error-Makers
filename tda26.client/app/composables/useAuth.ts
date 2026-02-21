@@ -1,4 +1,4 @@
-﻿import {useCourses} from "~/composables/courses/useCourses";
+﻿import {useCourses} from "~/composables/useCourses";
 import type {Account} from "#shared/types";
 
 export default function(){
@@ -9,7 +9,7 @@ export default function(){
         navigateTo('/');
 
         try {
-            await $fetch('/api/v2/auth/logout', {
+            await $fetch('/api/v1/auth/logout', {
                 method: 'POST'
             });
         } catch (err) {

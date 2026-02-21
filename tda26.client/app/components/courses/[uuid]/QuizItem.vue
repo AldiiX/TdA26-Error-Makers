@@ -6,11 +6,17 @@ import Modal from "~/components/Modal.vue";
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
 import toClockTime from "~/utils/toClockTime";
 import { Chart } from 'chart.js/auto';
+import type {Course, CourseStatus, Quiz} from "#shared/types";
+import { NuxtLink } from '#components';
+import Button from "~/components/Button.vue";
+import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
+import Popover from "~/components/Popover.vue";
 
 const props = defineProps<{
     quiz: Quiz,
-    course: { uuid: string },
-    editMode?: boolean
+    course: Course,
+    editMode?: boolean,
+    isVisibilityToggleLoading?: boolean,
 }>();
 
 const { enabledModal } = useCourseDialogs();
@@ -22,6 +28,7 @@ function openResults() {
 const emit = defineEmits<{
     (e: "edit", quiz: Quiz): void;
     (e: "delete", quiz: Quiz): void;
+    (e: "toggleVisibility", quiz: Quiz): void;
 }>();
 
 const quizResultsSummary = ref<QuizResultsSummary | null>(null);
@@ -99,6 +106,11 @@ watch(timeDistributionChartElement, (element) => {
         }
     );
 });
+function toggleVisibility(): void {
+    emit('toggleVisibility', props.quiz);
+}
+
+console.log(props.course)
 </script>
 
 <template>
@@ -127,6 +139,37 @@ watch(timeDistributionChartElement, (element) => {
                 <Button button-style="primary" accent-color="secondary" style="width: 100%">Upravit</Button>
             </NuxtLink>
             <Button button-style="secondary" accent-color="secondary" style="width: 100%" @click="emit('delete', quiz)">Smazat</Button>
+            <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
+            <Popover teleport :disabled="course.status === 'draft'">
+                <template #trigger>
+                    <NuxtLink
+                        :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`"
+                        :disabled="course.status === 'draft'"
+                    >
+                        <Button
+                            button-style="primary"
+                            accent-color="secondary"
+                            style="width: 100%"
+                            :disabled="course.status !== 'draft'"
+                        >Upravit</Button>
+                    </NuxtLink>
+                </template>
+
+                <template #content>Kurz musí být návrh</template>
+            </Popover>
+            <Popover teleport :disabled="course.status === 'draft'">
+                <template #trigger>
+                    <Button
+                        button-style="secondary"
+                        accent-color="secondary"
+                        style="width: 100%"
+                        @click="emit('delete', quiz)"
+                        :disabled="course.status !== 'draft'"
+                    >Smazat</Button>
+                </template>
+
+                <template #content>Kurz musí být návrh</template>
+            </Popover>
         </div>
 
     </div>

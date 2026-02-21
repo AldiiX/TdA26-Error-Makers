@@ -6,196 +6,185 @@ using tda26.Server.Options;
 
 namespace tda26.Server.Services;
 
-public class MaterialAccessService(
-    IMinioClient minioClient,
-    IOptions<CustomMinioOptions> minioOptions) : IMaterialAccessService {
-    private const string PublicUrlPrefix = "/files/";
+public sealed class MaterialAccessService(
+	IMinioClient minioClient,
+	IOptions<CustomMinioOptions> minioOptions
+) : IMaterialAccessService {
+	private const string PublicUrlPrefix = "/files/";
 
-    public async Task<string> UploadFileMaterialAsync(Guid courseUuid, IFormFile file, CancellationToken ct = default)
-    {
-        var fileUuid = Guid.NewGuid();
-        var fileExtension = Path.GetExtension(file.FileName);
-        var objectName = $"materials/{courseUuid}/{fileUuid}{fileExtension}";
+	public async Task<string> UploadFileMaterialAsync(Guid courseUuid, IFormFile file, CancellationToken ct = default) {
+		var fileUuid = Guid.NewGuid();
+		var fileExtension = Path.GetExtension(file.FileName);
+		var objectName = $"materials/{courseUuid}/{fileUuid}{fileExtension}";
 
-        try 
-        {
-            var args = new PutObjectArgs()
-                .WithBucket(minioOptions.Value.BucketName)
-                .WithObject(objectName)
-                .WithStreamData(file.OpenReadStream())
-                .WithObjectSize(file.Length)
-                .WithContentType(file.ContentType);
-            
-            await minioClient.PutObjectAsync(args, ct).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"File upload to MinIO failed: {ex.Message}", ex);
-        }
-        
-        return objectName;
-    }
-    
-    public async Task<string> UploadCourseImageAsync(Guid courseUuid, IFormFile image, CancellationToken ct = default) {
-        var fileExtension = Path.GetExtension(image.FileName);
-        var objectName = $"course-images/{courseUuid}{fileExtension}";
+		try {
+			var args = new PutObjectArgs()
+				.WithBucket(minioOptions.Value.BucketName)
+				.WithObject(objectName)
+				.WithStreamData(file.OpenReadStream())
+				.WithObjectSize(file.Length)
+				.WithContentType(file.ContentType);
 
-        try {
-            var args = new PutObjectArgs()
-                .WithBucket(minioOptions.Value.BucketName)
-                .WithObject(objectName)
-                .WithStreamData(image.OpenReadStream())
-                .WithObjectSize(image.Length)
-                .WithContentType(image.ContentType);
+			await minioClient.PutObjectAsync(args, ct).ConfigureAwait(false);
+		} catch (Exception ex) {
+			throw new Exception($"File upload to MinIO failed: {ex.Message}", ex);
+		}
 
-            await minioClient.PutObjectAsync(args, ct).ConfigureAwait(false);
-        } catch (Exception ex) {
-            throw new Exception($"Course image upload to MinIO failed: {ex.Message}", ex);
-        }
+		return objectName;
+	}
 
-        return objectName;
-    }
-    
-    public async Task DeleteFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
-        await minioClient.RemoveObjectAsync(
-            new RemoveObjectArgs()
-                .WithBucket(minioOptions.Value.BucketName)
-                .WithObject(fileUrl),
-            ct
-        );
-    }
+	public async Task<string> UploadCourseImageAsync(Guid courseUuid, IFormFile image, CancellationToken ct = default) {
+		var fileExtension = Path.GetExtension(image.FileName);
+		var objectName = $"course-images/{courseUuid}{fileExtension}";
 
-    public async Task<MemoryStream> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
-        // Retry logic for transient access denied errors (for some reason after upload it doesn't have access for the first access)
-        var retries = 3;
-        var delay = TimeSpan.FromMilliseconds(150);
+		try {
+			var args = new PutObjectArgs()
+				.WithBucket(minioOptions.Value.BucketName)
+				.WithObject(objectName)
+				.WithStreamData(image.OpenReadStream())
+				.WithObjectSize(image.Length)
+				.WithContentType(image.ContentType);
 
-        while (true) {
-            try {
-                var ms = new MemoryStream();
+			await minioClient.PutObjectAsync(args, ct).ConfigureAwait(false);
+		} catch (Exception ex) {
+			throw new Exception($"Course image upload to MinIO failed: {ex.Message}", ex);
+		}
 
-                await minioClient.GetObjectAsync(
-                    new GetObjectArgs()
-                        .WithBucket(minioOptions.Value.BucketName)
-                        .WithObject(fileUrl)
-                        .WithCallbackStream(stream => stream.CopyTo(ms)),
-                    ct
-                );
+		return objectName;
+	}
 
-                ms.Position = 0;
-                return ms;
-            } catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
-                await Task.Delay(delay, ct);
-                delay += delay;
-            }
-            catch (Minio.Exceptions.ObjectNotFoundException)
-            {
-                Console.WriteLine("Object not found in MinIO: " + fileUrl);
-            }
-        }
-    }
-    public async Task CopyCourseMaterialsDirectoryAsync(Guid sourceCourseUuid, Guid targetCourseUuid, CancellationToken ct = default)
-    {
-        var sourcePrefix = $"materials/{sourceCourseUuid}/";
-        var targetPrefix = $"materials/{targetCourseUuid}/";
+	public async Task DeleteFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
+		await minioClient.RemoveObjectAsync(
+			new RemoveObjectArgs()
+				.WithBucket(minioOptions.Value.BucketName)
+				.WithObject(fileUrl),
+			ct
+		);
+	}
 
-        var retries = 3;
-        var delay = TimeSpan.FromMilliseconds(150);
+	public async Task<MemoryStream> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
+		// Retry logic for transient access denied errors (for some reason after upload it doesn't have access for the first access)
+		var retries = 3;
+		var delay = TimeSpan.FromMilliseconds(150);
 
-        while (retries-- > 0) {
-            //Console.WriteLine("Try number: " + (4 - retries));
+		while (true)
+			try {
+				var ms = new MemoryStream();
 
-            try {
-                var listArgs = new ListObjectsArgs()
-                    .WithBucket(minioOptions.Value.BucketName)
-                    .WithPrefix(sourcePrefix)
-                    .WithRecursive(true);
+				await minioClient.GetObjectAsync(
+					new GetObjectArgs()
+						.WithBucket(minioOptions.Value.BucketName)
+						.WithObject(fileUrl)
+						.WithCallbackStream(stream => stream.CopyTo(ms)),
+					ct
+				);
 
-                var items = await minioClient
-                    .ListObjectsAsync(listArgs)
-                    .Where(i => !i.IsDir && !string.IsNullOrEmpty(i.Key))
-                    .ToList();
+				ms.Position = 0;
+				return ms;
+			} catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
+				await Task.Delay(delay, ct);
+				delay += delay;
+			} catch (Minio.Exceptions.ObjectNotFoundException) {
+				Console.WriteLine("Object not found in MinIO: " + fileUrl);
+			}
+	}
 
-                foreach (var item in items) {
-                    var targetKey = targetPrefix + item.Key[sourcePrefix.Length..];
+	public async Task CopyCourseMaterialsDirectoryAsync(Guid sourceCourseUuid, Guid targetCourseUuid, CancellationToken ct = default) {
+		var sourcePrefix = $"materials/{sourceCourseUuid}/";
+		var targetPrefix = $"materials/{targetCourseUuid}/";
 
-                    using var ms = new MemoryStream();
+		var retries = 3;
+		var delay = TimeSpan.FromMilliseconds(150);
 
-                    await minioClient.GetObjectAsync(
-                        new GetObjectArgs()
-                            .WithBucket(minioOptions.Value.BucketName)
-                            .WithObject(item.Key)
-                            .WithCallbackStream(s => s.CopyTo(ms)),
-                        ct);
+		while (retries-- > 0)
+			//Console.WriteLine("Try number: " + (4 - retries));
+			try {
+				var listArgs = new ListObjectsArgs()
+					.WithBucket(minioOptions.Value.BucketName)
+					.WithPrefix(sourcePrefix)
+					.WithRecursive(true);
 
-                    ms.Position = 0;
+				var items = await minioClient
+					.ListObjectsAsync(listArgs)
+					.Where(i => !i.IsDir && !string.IsNullOrEmpty(i.Key))
+					.ToList();
 
-                    await minioClient.PutObjectAsync(
-                        new PutObjectArgs()
-                            .WithBucket(minioOptions.Value.BucketName)
-                            .WithObject(targetKey)
-                            .WithStreamData(ms)
-                            .WithObjectSize(ms.Length),
-                        ct);
-                }
+				foreach (var item in items) {
+					var targetKey = targetPrefix + item.Key[sourcePrefix.Length..];
 
-                return;
-            }
-            catch (OperationCanceledException) {
-                throw;
-            }
-            catch (Minio.Exceptions.AccessDeniedException) when (retries > 0) {
-                Console.WriteLine($"Access denied, retrying… Remaining: {retries}");
-                await Task.Delay(delay, ct);
-                delay *= 2;
-            }
-        }
+					using var ms = new MemoryStream();
 
-        throw new Exception("Failed to copy course materials after retries.");
-    }
+					await minioClient.GetObjectAsync(
+						new GetObjectArgs()
+							.WithBucket(minioOptions.Value.BucketName)
+							.WithObject(item.Key)
+							.WithCallbackStream(s => s.CopyTo(ms)),
+						ct);
 
-    public async Task<string> CopyFileAsync(string sourceKey, string targetKey, CancellationToken ct = default) {
-        if (string.IsNullOrWhiteSpace(sourceKey)) {
-            throw new ArgumentException("Source key is required.", nameof(sourceKey));
-        }
+					ms.Position = 0;
 
-        if (string.IsNullOrWhiteSpace(targetKey)) {
-            throw new ArgumentException("Target key is required.", nameof(targetKey));
-        }
+					await minioClient.PutObjectAsync(
+						new PutObjectArgs()
+							.WithBucket(minioOptions.Value.BucketName)
+							.WithObject(targetKey)
+							.WithStreamData(ms)
+							.WithObjectSize(ms.Length),
+						ct);
+				}
 
-        var retries = 3;
-        var delay = TimeSpan.FromMilliseconds(150);
+				return;
+			} catch (OperationCanceledException) {
+				throw;
+			} catch (Minio.Exceptions.AccessDeniedException) when (retries > 0) {
+				Console.WriteLine($"Access denied, retrying… Remaining: {retries}");
+				await Task.Delay(delay, ct);
+				delay *= 2;
+			}
 
-        while (true) {
-            try {
-                using var ms = new MemoryStream();
+		throw new Exception("Failed to copy course materials after retries.");
+	}
 
-                await minioClient.GetObjectAsync(
-                    new GetObjectArgs()
-                        .WithBucket(minioOptions.Value.BucketName)
-                        .WithObject(sourceKey)
-                        .WithCallbackStream(s => s.CopyTo(ms)),
-                    ct
-                );
+	public async Task<string> CopyFileAsync(string sourceKey, string targetKey, CancellationToken ct = default) {
+		if (string.IsNullOrWhiteSpace(sourceKey)) {
+			throw new ArgumentException("Source key is required.", nameof(sourceKey));
+		}
 
-                ms.Position = 0;
+		if (string.IsNullOrWhiteSpace(targetKey)) {
+			throw new ArgumentException("Target key is required.", nameof(targetKey));
+		}
 
-                await minioClient.PutObjectAsync(
-                    new PutObjectArgs()
-                        .WithBucket(minioOptions.Value.BucketName)
-                        .WithObject(targetKey)
-                        .WithStreamData(ms)
-                        .WithObjectSize(ms.Length)
-                        .WithContentType("application/octet-stream"),
-                    ct
-                );
+		var retries = 3;
+		var delay = TimeSpan.FromMilliseconds(150);
 
-                return targetKey;
-            } catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
-                await Task.Delay(delay, ct);
-                delay *= 2;
-            }
-        }
-    }
+		while (true)
+			try {
+				using var ms = new MemoryStream();
+
+				await minioClient.GetObjectAsync(
+					new GetObjectArgs()
+						.WithBucket(minioOptions.Value.BucketName)
+						.WithObject(sourceKey)
+						.WithCallbackStream(s => s.CopyTo(ms)),
+					ct
+				);
+
+				ms.Position = 0;
+
+				await minioClient.PutObjectAsync(
+					new PutObjectArgs()
+						.WithBucket(minioOptions.Value.BucketName)
+						.WithObject(targetKey)
+						.WithStreamData(ms)
+						.WithObjectSize(ms.Length)
+						.WithContentType("application/octet-stream"),
+					ct
+				);
+
+				return targetKey;
+			} catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
+				await Task.Delay(delay, ct);
+				delay *= 2;
+			}
+	}
 
 }

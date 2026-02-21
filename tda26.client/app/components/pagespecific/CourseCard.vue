@@ -11,13 +11,18 @@ import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import { useState } from "#app";
 import {useContextMenu} from "~/composables/useContextMenu";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import Popover from "~/components/Popover.vue";
 
-const props = defineProps<{
-    course: Course,
-    editMode?: boolean,
-    /** delay reveal animace v ms */
-    revealDelayMs?: number
-}>();
+const props = withDefaults(defineProps<{
+    course: Course;
+    editMode?: boolean;
+    openable?: boolean;
+    revealDelayMs?: number;
+}>(), {
+    editMode: false,
+    openable: true,
+});
 
 const emit = defineEmits<{
     (e: "delete"): void;
@@ -80,14 +85,14 @@ const editBgImage = () => {
             uploadStatusText.value = "Nahrávám obrázek...";
 
             try {
-                const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+                const response = await fetch(`/api/v1/courses/${props.course.uuid}/image`, {
                     method: 'POST',
                     body: formData
                 });
 
                 if (!response.ok) return;
 
-                const newUrl = `/api/v2/courses/${props.course.uuid}/image?t=${Date.now()}`;
+                const newUrl = `/api/v1/courses/${props.course.uuid}/image?t=${Date.now()}`;
                 imageUrlOverride.value = newUrl;
                 // pokud model obsahuje imageUrl, udrzime to i v course objektu
                 (courseReactive.value as any).imageUrl = newUrl;
@@ -107,7 +112,7 @@ const resetBgImage = async () => {
     uploadStatusText.value = "Odstraňuji obrázek...";
 
     try {
-        const response = await fetch(`/api/v2/courses/${props.course.uuid}/image`, {
+        const response = await fetch(`/api/v1/courses/${props.course.uuid}/image`, {
             method: 'DELETE'
         });
 
@@ -128,7 +133,7 @@ async function duplicateCourse() {
     isDuplicating.value = true;
 
     try {
-        const newCourse = await $fetch<Course>(`/api/v2/courses/${props.course.uuid}/duplicate`, {
+        const newCourse = await $fetch<Course>(`/api/v1/courses/${props.course.uuid}/duplicate`, {
             method: "POST"
         });
 
@@ -145,13 +150,13 @@ const contextMenuItems = computed(() => {
         {
             text: "Změnit obrázek",
             onClick: editBgImage,
-            disabled: isUploading.value,
+            disabled: isUploading.value || course.value.status !== "draft",
             iconPath: "/icons/imageEdit.svg",
         },
         {
             text: "Obnovit výchozí obrázek",
             onClick: resetBgImage,
-            disabled: isUploading.value,
+            disabled: isUploading.value || course.value.status !== "draft",
             iconPath: "/icons/trash.svg",
         },
         {
@@ -162,10 +167,18 @@ const contextMenuItems = computed(() => {
         },
     ];
 });
+
+const cutDescription = computed(() => {
+    const maxLength = 100;
+    if (props.course.description.length > maxLength) {
+        return props.course.description.slice(0, maxLength) + "...";
+    }
+    return props.course.description;
+});
 </script>
 
 <template>
-    <div :class="[$style.container, editMode && $style.editMode]" :style="revealStyle">
+    <div :class="[$style.container, editMode && $style.editMode, openable && $style.openable]" :style="revealStyle">
         <div :class="$style.top">
             <div v-if="isUploading || isDuplicating" :class="$style.uploadOverlay">
                 <div :class="$style.spinner"/>
@@ -181,10 +194,7 @@ const contextMenuItems = computed(() => {
                 <div
                     :class="$style.bgButton"
                 >
-                    <span
-                        :class="[$style.contextMenuButton]"
-                        @click="openContextMenu"
-                    />
+                    <ContextMenuButton @open="openContextMenu" />
                     <ContextMenu
                          :items="contextMenuItems"
 
@@ -199,6 +209,7 @@ const contextMenuItems = computed(() => {
             <CourseCardImageContainer
                 :course="course"
                 :image-url-override="imageUrlOverride"
+                :style="{ pointerEvents: openable ? 'all' : 'none' }"
             />
         </div>
         <div :class="$style.bottom">
@@ -237,10 +248,12 @@ const contextMenuItems = computed(() => {
                 </div>
 
 
-                <div :class="$style.date">
+                <div :class="$style.date" v-if="false">
                     <p :class="$style.created">Vytvořeno {{ timeAgoString(course.createdAt) }}</p>
                     <p :class="$style.lastUpdate">Poslední úprava {{ timeAgoString(course.updatedAt) }}</p>
                 </div>
+
+                <p :class="$style.desc" :title="course.description">{{ cutDescription }}</p>
             </div>
             <div :class="$style.buttonsContainer">
                 <div :class="$style.anotherInfo">
@@ -255,31 +268,48 @@ const contextMenuItems = computed(() => {
                 </div>
 
                 <div :class="$style.actionContainer">
-                    <div v-if="!editMode" :class="$style.userButtons">
-                        <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
-                            <Button button-style="primary" accent-color="secondary" style="width: 100%">
-                                Zobrazit kurz
-                            </Button>
-                        </NuxtLink>
-                    </div>
-                    <div v-else :class="$style.lecturerButtons">
-                        <Button
-                                button-style="primary"
-                                accent-color="secondary"
-                                style="width: 100%"
-                                @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
-                        >
-                            Upravit
-                        </Button>
-                        <Button
-                                button-style="secondary"
-                                accent-color="secondary"
-                                style="width: 100%"
-                                @click="emit('delete')"
-                        >
-                            Smazat
-                        </Button>
-                    </div>
+                    <template v-if="openable || editMode">
+                        <div v-if="!editMode" :class="$style.userButtons">
+                            <NuxtLink :to="`/courses/${course.uuid}`" :class="$style.button">
+                                <Button button-style="primary" accent-color="secondary" style="width: 100%">
+                                    Zobrazit kurz
+                                </Button>
+                            </NuxtLink>
+                        </div>
+
+                        <div v-else-if="editMode" :class="$style.lecturerButtons">
+                            <Popover teleport :disabled="course.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        button-style="primary"
+                                        accent-color="secondary"
+                                        style="width: 100%"
+                                        @click="navigateTo(`/courses/${course.uuid}?edit=true`)"
+                                        :disabled="course.status !== 'draft'"
+                                    >
+                                        Upravit
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
+                            <Popover teleport :disabled="course.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        button-style="secondary"
+                                        accent-color="secondary"
+                                        style="width: 100%"
+                                        @click="emit('delete')"
+                                        :disabled="course.status !== 'draft'"
+                                    >
+                                        Smazat
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
@@ -371,38 +401,6 @@ const contextMenuItems = computed(() => {
                 mask-image: url("/icons/trash.svg");
             }
         }
-        
-        .contextMenuButton {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.3);
-            transition-duration: 0.3s;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.3s;
-            @extend .liquid-glass;
-
-            &::before {
-                content: '';
-                display: block;
-                width: 20px;
-                height: 20px;
-                background-color: black;
-                mask-size: contain;
-                mask-position: center;
-                mask-repeat: no-repeat;
-                mask-image: url("/icons/ellipsis.svg");
-            }
-            
-            &:hover {
-                background-color: rgba(255, 255, 255, 0.7);
-                transition-duration: 0.3s;
-            }
-        }
     }
 }
 
@@ -478,6 +476,7 @@ const contextMenuItems = computed(() => {
         width: 100%;
         flex-grow: 1;
         padding: 16px;
+        overflow: hidden;
 
         .infoContainer {
             display: flex;
@@ -566,6 +565,13 @@ const contextMenuItems = computed(() => {
                     margin: 2px 0;
                 }
             }
+
+            .desc {
+                margin: 0;
+                opacity: 0.5;
+                margin-bottom: 12px;
+                height: 41px;
+            }
         }
 
         .buttonsContainer {
@@ -573,6 +579,7 @@ const contextMenuItems = computed(() => {
             justify-content: space-between;
             align-items: end;
             width: 100%;
+            min-height: 48px;
 
             .anotherInfo {
                 display: flex;

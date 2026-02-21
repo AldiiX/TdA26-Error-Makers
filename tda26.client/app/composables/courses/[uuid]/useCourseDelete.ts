@@ -24,7 +24,7 @@ export function useCourseDelete(params: {
         params.deleteError.value = null;
 
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v2/courses/${params.courseSmall.value.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.courseSmall.value.uuid}`, {
                 method: "DELETE"
             });
 

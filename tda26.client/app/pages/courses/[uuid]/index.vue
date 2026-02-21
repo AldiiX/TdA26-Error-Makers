@@ -2,12 +2,14 @@
 import type {
     Account,
     Course,
-    CourseCategory, Quiz
+    CourseCategory, CourseStatus,
+    Material,
+    Quiz
 } from "#shared/types";
 import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
-import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+import MaterialItem from "~/components/courses/[uuid]/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
@@ -33,9 +35,15 @@ import { useCourseRating } from "~/composables/courses/[uuid]/useCourseRating";
 import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
+import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisibility";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
+import {useContextMenu} from "~/composables/useContextMenu";
+import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
+import Popover from "~/components/Popover.vue";
 
 
 definePageMeta({
@@ -44,6 +52,7 @@ definePageMeta({
     middleware: [
         defineNuxtRouteMiddleware(async (to) => {
             const uuid = to.params.uuid as string;
+            const isEditMode = to.query.edit === "true";
 
             // pokud chybi uuid
             if (!uuid) {
@@ -56,13 +65,24 @@ definePageMeta({
             }
 
             try {
-                const course = await $fetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+                const course = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
                     query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
                 });
 
                 if (!course) {
                     return navigateTo("/courses");
                 }
+                
+                if (isEditMode)        {        
+                    // pokud je edit mode, musi byt kurz draft
+                    if (course.status !== "draft") {
+                        return navigateTo(`/courses/${uuid}`);
+                    }
+                }
+                
                 const courseSmallState = useState<Course | null>(`course-small-${uuid}`, () => null);
                 courseSmallState.value = course;
 
@@ -115,7 +135,7 @@ if (isEditMode) {
 }
 
 // client full fetch
-const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v1/courses/${uuid}`, {
     query: { full: true },
     server: false,
     key: `course-${uuid}-full`,
@@ -130,7 +150,7 @@ const originalCourse = ref<Course | null>(null);
 
 // categories jsou server-renderovane, aby select mel data hned
 const { data: categories } = await useFetch<CourseCategory[]>(
-    getBaseUrl() + "/api/v2/course-categories",
+    getBaseUrl() + "/api/v1/course-categories",
     { server: true }
 );
 
@@ -138,7 +158,7 @@ const { data: categories } = await useFetch<CourseCategory[]>(
 useCourseViewEvent(uuid);
 
 // edit stav + ulozeni
-const {statusOptions, editedStatus, editedStatusModel, displayedStatus, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
+const {statusOptions, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
 
 // upozorneni pri zavirani tab
 useBeforeUnloadUnsavedChanges(isDirty);
@@ -155,13 +175,44 @@ const selectItem = (item: string) => {
 };
 
 // publication schedule
-const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ editedStatus, enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
 
 // materiály
 const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
 
 // kvízy
 const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError });
+
+// status kurzu
+const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
+
+// context menu
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
+// visibility toggling
+const moduleLoadingStates = ref<Record<string, boolean>>({});
+
+const handleMaterialVisibilityToggle = async (material: Material) => {
+    moduleLoadingStates.value[material.uuid] = true;
+    try {
+        const moduleRef = ref(material);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!material.isVisible);
+    } finally {
+        moduleLoadingStates.value[material.uuid] = false;
+    }
+};
+
+const handleQuizVisibilityToggle = async (quiz: Quiz) => {
+    moduleLoadingStates.value[quiz.uuid] = true;
+    try {
+        const moduleRef = ref(quiz);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!quiz.isVisible);
+    } finally {
+        moduleLoadingStates.value[quiz.uuid] = false;
+    }
+};
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
@@ -189,6 +240,23 @@ function handleAuthSuccess() {
     enabledModal.value = null;
     window.location.reload();
 }
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Upravit kurz",
+            onClick: editClick,
+            iconPath: "/icons/pen.svg",
+            disabled: courseSmall.value.status !== "draft",
+        },
+        {
+            text: "Smazat kurz",
+            onClick: openDeleteCourseModal,
+            iconPath: "/icons/trash.svg",
+            disabled: courseSmall.value.status !== "draft",
+        }
+    ];
+});
 </script>
 
 <template>
@@ -244,25 +312,7 @@ function handleAuthSuccess() {
             <div :class="['liquid-glass',$style.right]">
                 <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
 
-                <Input
-                    v-if="isEditMode"
-                    :key="editedStatusModel"
-                    v-model="editedStatusModel"
-                    type="select"
-                    :class="[$style.status, $style.statusSelect]"
-                    :data-status="editedStatus"
-                >
-                    <option
-                        v-for="status in statusOptions"
-                        :key="status"
-                        :value="String(status)"
-                        :selected="editedStatusModel === String(status)"
-                    >
-                        {{ statusToText(status) }}
-                    </option>
-                </Input>
-
-                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
+                <p v-if="currentStatus" :class="$style.status" :data-status="currentStatus">{{ statusToText(currentStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -300,17 +350,63 @@ function handleAuthSuccess() {
                 </div>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
+                    <!-- Primary button -->
                     <Button
+                        v-if="courseSmall?.status === 'draft' || courseSmall?.status === 'scheduled' || courseSmall?.status === 'paused'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="editClick"
-                    >Upravit kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('live')"
+                    >Spustit</Button>
                     <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('paused')"
+                    >Pozastavit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'archived'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Obnovit na návrh</Button>
+                    
+                    <!-- Secondary button -->
+                    <Button
+                        v-if="courseSmall?.status === 'draft'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="openDeleteCourseModal"
-                    >Smazat kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="enabledModal = 'schedulePublication'"
+                    >Naplánovat</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'scheduled'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Vrátit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('archived')"
+                    >Ukončit</Button>
+
+                    <div>
+                        <ContextMenuButton @open="openContextMenu"/>
+                        <ContextMenu
+                            :items="contextMenuItems"
+
+                            :visible="isContextMenuOpen"
+                            :x="contextMenuPosition.x"
+                            :y="contextMenuPosition.y"
+                            @close="closeContextMenu"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,9 +428,22 @@ function handleAuthSuccess() {
                 <SmoothSizeWrapper :change-width="false">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="openCreateMaterialModal">
-                                Přidat nový materiál
-                            </Button>
+                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        v-if="ownsCourse"
+                                        button-style="primary"
+                                        accent-color="primary"
+                                        :class="$style.addMaterialButton"
+                                        @click="openCreateMaterialModal"
+                                        :disabled="courseSmall.status !== 'draft'"
+                                    >
+                                        Přidat nový materiál
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
 
                             <p v-if="coursePending">Načítání materiálů...</p>
                             <p v-else-if="course?.materials === undefined || course?.materials.length == 0">Tento kurz nemá žádné materiály.</p>
@@ -344,8 +453,10 @@ function handleAuthSuccess() {
                                         :material="material"
                                         :course="course"
                                         :edit-mode="ownsCourse"
+                                        :is-visibility-toggle-loading="moduleLoadingStates[material.uuid] || false"
                                         @edit="openUpdateMaterialModal"
                                         @delete="openDeleteMaterialModal"
+                                        @toggle-visibility="handleMaterialVisibilityToggle"
                                     />
                                 </li>
                             </ul>
@@ -363,7 +474,9 @@ function handleAuthSuccess() {
                                         :quiz="quiz"
                                         :course="course"
                                         :edit-mode="ownsCourse"
+                                        :is-visibility-toggle-loading="moduleLoadingStates[quiz.uuid] || false"
                                         @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                        @toggle-visibility="handleQuizVisibilityToggle"
                                     />
                                 </li>
                             </ul>
@@ -932,7 +1045,6 @@ function handleAuthSuccess() {
 <style module lang="scss">
 @use "@/assets/variables" as app;
 
-
 .basic {
     display: flex;
     position: relative;
@@ -1117,6 +1229,7 @@ function handleAuthSuccess() {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
 
             button {
                 flex: 1;
@@ -1592,7 +1705,7 @@ ul {
         .materials {
             .addMaterialButton {
                 margin-bottom: 16px;
-
+                width: fit-content;
             }
 
             ul {

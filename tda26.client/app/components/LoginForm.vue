@@ -4,7 +4,7 @@ import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
 import type {Account} from "#shared/types";
 import { push } from "notivue";
-import {useCourses} from "~/composables/courses/useCourses";
+import {useCourses} from "~/composables/useCourses";
 
 const emit = defineEmits<{
     (e: "loginSuccess", account: Account): void;
@@ -37,7 +37,7 @@ async function submitLoginForm(event: Event) {
     errorMsg.value = null;
 
     try {
-        const res = await $fetch<Account | null>("/api/v2/auth/login", {
+        const res = await $fetch<Account | null>("/api/v1/auth/login", {
             method: "POST",
             body: formDataObj
         });
@@ -55,6 +55,7 @@ async function submitLoginForm(event: Event) {
         });
 
         emit("loginSuccess", res);
+        invalidateCoursesState();
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";
 
@@ -64,7 +65,6 @@ async function submitLoginForm(event: Event) {
             duration: 6000
         });
     } finally {
-        invalidateCoursesState();
         isLoading.value = false;
     }
 }
