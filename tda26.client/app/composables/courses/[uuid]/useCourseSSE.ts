@@ -27,6 +27,10 @@ export default function(params: {
         }
     }
 
+    function onMaterialVisibilityChanged(event: MessageEvent) {
+        const data = JSON.parse(event.data);
+    }
+
     // ostantni
     onMounted(() => {
         if (!import.meta.client || !params.course.value.uuid) return;
@@ -38,6 +42,7 @@ export default function(params: {
         });
 
         eventSource.addEventListener("status_changed", onStatusChanged);
+        eventSource.addEventListener("material_visibility_changed", onMaterialVisibilityChanged);
 
         eventSource.onerror = (err) => {
             console.error("SSE feed error", err);

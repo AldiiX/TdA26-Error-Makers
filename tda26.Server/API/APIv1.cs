@@ -1621,6 +1621,7 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync();
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
+		await sb.PublishAsync(courseUuid, new StreamMessage("material_visibility_changed", new { materialUuid = material.Uuid, isVisible = material.IsVisible }));
 
 		return Ok(new { quizUuid = material.Uuid, isVisible = material.IsVisible });
 	}
