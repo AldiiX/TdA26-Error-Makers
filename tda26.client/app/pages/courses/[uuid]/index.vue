@@ -424,8 +424,9 @@ const contextMenuItems = computed(() => {
                     </li>
                 </ul>
             </nav>
+
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper :change-width="false">
+                <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || courseSmall.status === 'live'">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
                             <Popover teleport :disabled="courseSmall.status === 'draft'">
@@ -555,6 +556,7 @@ const contextMenuItems = computed(() => {
                                                 <Button
                                                     button-style="secondary"
                                                     accent-color="secondary"
+                                                    v-if="feedPost.type === 'manual'"
                                                     @click="openUpdateFeedPost(feedPost)"
                                                 >
                                                     Upravit
@@ -608,6 +610,10 @@ const contextMenuItems = computed(() => {
                             </ul>
                         </div>
                     </ClientOnly>
+                </SmoothSizeWrapper>
+
+                <SmoothSizeWrapper :change-width="false" v-else>
+                    <p>Kurz je momentálně ve stavu {{ statusToText(courseSmall?.status ?? "unknown") }}. Moduly lze vidět pouze pokud kurz probíhá.</p>
                 </SmoothSizeWrapper>
             </div>
         </div>

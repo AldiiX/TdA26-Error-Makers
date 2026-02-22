@@ -43,10 +43,10 @@ export function useCourseFeed(params: {
                         return true;
 
                     case "material":
-                        return post.purpose === "createMaterial" || post.purpose === "updateMaterial" || post.purpose === "deleteMaterial";
+                        return post.purpose === "createMaterial" || post.purpose === "updateMaterial" || post.purpose === "deleteMaterial" || post.purpose === "showMaterial" || post.purpose === "hideMaterial";
 
                     case "quiz":
-                        return post.purpose === "createQuiz" || post.purpose === "updateQuiz" || post.purpose === "deleteQuiz";
+                        return post.purpose === "createQuiz" || post.purpose === "updateQuiz" || post.purpose === "deleteQuiz" || post.purpose === "showQuiz" || post.purpose === "hideQuiz";
 
                     default:
                         return true;
