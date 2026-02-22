@@ -462,9 +462,22 @@ const contextMenuItems = computed(() => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="enabledModal = 'createQuiz'">
-                                Přidat nový kvíz
-                            </Button>
+                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                                <template #trigger>
+                                    <Button
+                                        v-if="ownsCourse"
+                                        button-style="primary"
+                                        accent-color="primary"
+                                        :class="$style.addMaterialButton"
+                                        @click="enabledModal = 'createQuiz'"
+                                        :disabled="courseSmall.status !== 'draft'"
+                                    >
+                                        Přidat nový kvíz
+                                    </Button>
+                                </template>
+
+                                <template #content>Kurz musí být návrh</template>
+                            </Popover>
 
                             <p v-if="coursePending">Načítání kvízů...</p>
                             <p v-else-if="course?.quizzes === undefined || course?.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
