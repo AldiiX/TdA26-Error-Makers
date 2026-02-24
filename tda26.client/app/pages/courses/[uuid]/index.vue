@@ -451,6 +451,7 @@ const contextMenuItems = computed(() => {
                             <ul v-else>
                                 <li v-for="material in course?.materials" :key="material.uuid">
                                     <MaterialItem
+                                        v-if="ownsCourse || material.isVisible"
                                         :material="material"
                                         :course="course"
                                         :edit-mode="ownsCourse"

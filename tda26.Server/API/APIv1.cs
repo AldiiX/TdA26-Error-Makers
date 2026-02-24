@@ -1995,6 +1995,7 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync();
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
+		await sb.PublishAsync(courseUuid, new StreamMessage("quiz_visibility_changed", new { quizUuid = quiz.Uuid, isVisible = quiz.IsVisible }));
 
 		return Ok(new { quizUuid = quiz.Uuid, isVisible = quiz.IsVisible });
 	}

@@ -29,6 +29,14 @@ export default function(params: {
 
     function onMaterialVisibilityChanged(event: MessageEvent) {
         const data = JSON.parse(event.data);
+        
+        console.log(data);
+    }
+
+    function onQuizVisibilityChanged(event: MessageEvent) {
+        const data = JSON.parse(event.data);
+
+        console.log(data);
     }
 
     // ostantni
@@ -43,6 +51,7 @@ export default function(params: {
 
         eventSource.addEventListener("status_changed", onStatusChanged);
         eventSource.addEventListener("material_visibility_changed", onMaterialVisibilityChanged);
+        eventSource.addEventListener("quiz_visibility_changed", onQuizVisibilityChanged);
 
         eventSource.onerror = (err) => {
             console.error("SSE feed error", err);
