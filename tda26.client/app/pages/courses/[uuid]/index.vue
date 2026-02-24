@@ -221,7 +221,7 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
 // obecne sse
-const { } = useCourseSSE({ course: courseSmall, editMode: isEditMode });
+const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -473,6 +473,7 @@ const contextMenuItems = computed(() => {
                             <ul v-else>
                                 <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
                                     <QuizItem
+                                        v-if="ownsCourse || quiz.isVisible"
                                         :quiz="quiz"
                                         :course="course"
                                         :edit-mode="ownsCourse"
