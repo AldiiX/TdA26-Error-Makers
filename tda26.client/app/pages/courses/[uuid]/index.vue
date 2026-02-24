@@ -4,7 +4,7 @@ import type {
     Course,
     CourseCategory, CourseStatus,
     Material,
-    Quiz
+    Quiz, QuizResultsSummary
 } from "#shared/types";
 import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
@@ -44,6 +44,7 @@ import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import {useContextMenu} from "~/composables/useContextMenu";
 import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
 import Popover from "~/components/Popover.vue";
+import QuizResultsModal from "~/components/pagespecific/QuizResultsModal.vue";
 
 
 definePageMeta({
@@ -257,6 +258,24 @@ const contextMenuItems = computed(() => {
         }
     ];
 });
+
+const selectedQuizResultsSummary = ref<QuizResultsSummary | null>(null);
+
+function openResults(quiz: Quiz) {
+    fetch(`/api/v1/courses/${courseSmall.value.uuid}/quizzes/${quiz.uuid}/results-summary`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch quiz results summary");
+            return res.json();
+        })
+        .then(data => {
+            selectedQuizResultsSummary.value = data;
+        })
+        .catch(err => {
+            console.error("Error fetching quiz results summary:", err);
+        });
+    
+    enabledModal.value = "quizResults";
+}
 </script>
 
 <template>
@@ -490,6 +509,7 @@ const contextMenuItems = computed(() => {
                                         :is-visibility-toggle-loading="moduleLoadingStates[quiz.uuid] || false"
                                         @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
                                         @toggle-visibility="handleQuizVisibilityToggle"
+                                        @openResults="openResults"
                                     />
                                 </li>
                             </ul>
@@ -1051,6 +1071,12 @@ const contextMenuItems = computed(() => {
             </p>
             <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
         </ModalDestructive>
+
+        <QuizResultsModal
+            :enabled="enabledModal === 'quizResults'"
+            @close="enabledModal = null"
+            :quizResultsSummary="selectedQuizResultsSummary"
+        />
 
     </Teleport>
 </template>

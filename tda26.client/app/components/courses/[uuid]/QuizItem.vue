@@ -17,98 +17,16 @@ const props = defineProps<{
     isVisibilityToggleLoading?: boolean,
 }>();
 
-const { enabledModal } = useCourseDialogs();
-
-function openResults() {
-    enabledModal.value = "quizResults";
-}
-
 const emit = defineEmits<{
     (e: "edit", quiz: Quiz): void;
     (e: "delete", quiz: Quiz): void;
     (e: "toggleVisibility", quiz: Quiz): void;
+    (e: "openResults", quiz: Quiz): void;
 }>();
 
-const quizResultsSummary = ref<QuizResultsSummary | null>(null);
-const scoreDistributionChartElement = ref<HTMLCanvasElement | null>(null);
-const timeDistributionChartElement = ref<HTMLCanvasElement | null>(null);
-
-onMounted(() => {
-    fetch(`/api/v1/courses/${props.course.uuid}/quizzes/${props.quiz.uuid}/results-summary`)
-        .then(res => {
-            if (!res.ok) throw new Error("Failed to fetch quiz results summary");
-            return res.json();
-        })
-        .then(data => {
-            quizResultsSummary.value = data;
-        })
-        .catch(err => {
-            console.error("Error fetching quiz results summary:", err);
-        });
-});
-
-watch(scoreDistributionChartElement, (element) => {
-    if (!element || !(element instanceof HTMLCanvasElement)) return;
-    
-    const data = (quizResultsSummary.value?.scoreDistribution
-        .filter(item => item.count > 0)
-        .map(item => ({
-            label: item.label,
-            count: item.count
-        })) || []);
-
-    console.log("Score distribution data for chart:", data);
-
-    new Chart(
-        element,
-        {
-            type: 'pie',
-            data: {
-                labels: data.map(row => row.label),
-                datasets: [
-                    {
-                        label: 'Počet pokusů',
-                        data: data.map(row => row.count)
-                    }
-                ]
-            }
-        }
-    );
-});
-
-watch(timeDistributionChartElement, (element) => {
-    if (!element || !(element instanceof HTMLCanvasElement) || quizResultsSummary.value?.timeDistribution === undefined) return;
-    
-    const data = (quizResultsSummary.value.timeDistribution
-        .filter(item => item.count > 0)
-        .map(item => ({
-            label: item.label,
-            count: item.count
-        })) || []);
-
-    console.log("Score distribution data for chart:", data);
-
-    new Chart(
-        element,
-        {
-            type: 'pie',
-            data: {
-                labels: data.map(row => row.label),
-                datasets: [
-                    {
-                        label: 'Počet pokusů',
-                        data: data.map(row => row.count)
-                    }
-                ]
-            }
-        }
-    );
-});
 function toggleVisibility(): void {
     emit('toggleVisibility', props.quiz);
 }
-
-console.log(props.course)
 </script>
 
 <template>
@@ -132,7 +50,7 @@ console.log(props.course)
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
-            <Button @click="openResults">Výsledky</Button>
+            <Button @click="emit('openResults', quiz)">Výsledky</Button>
             <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
@@ -167,36 +85,6 @@ console.log(props.course)
         </div>
 
     </div>
-    
-    <Teleport to="#teleports">
-        <Modal
-            v-if="quizResultsSummary"
-            :enabled="enabledModal === 'quizResults'"
-            can-be-closed-by-clicking-outside
-            :modal-style="{ maxWidth: '1080px' }"
-            @close="enabledModal = null"
-        >
-            <div :class="$style.quizResultsModal">
-                <h3>Výsledky kvízu</h3>
-                <div :class="$style.info">
-                    <p>Průměrný strávený čas: {{ toClockTime(quizResultsSummary.averageTimeSpent) }}</p>
-                    <p>Průměrné skóre: {{ Math.round(quizResultsSummary.averageScore * 100) / 100 }} ({{ Math.round(quizResultsSummary.averageScorePercentage) }}%)</p>
-                </div>
-
-                <div :class="$style.charts">
-                    <div :class="$style.scoreDistribution">
-                        <h4>Distribuce skóre</h4>
-                        <canvas ref="scoreDistributionChartElement"></canvas>
-                    </div>
-                    <div :class="$style.timeDistribution">
-                        <h4>Distribuce času</h4>
-                        <canvas ref="timeDistributionChartElement"></canvas>
-                    </div>
-                </div>
-            </div>
-        </Modal>
-
-    </Teleport>
     
 </template>
 
@@ -291,47 +179,6 @@ console.log(props.course)
         display: flex;
         gap: 8px;
         padding: 12px 16px;
-    }
-}
-
-.quizResultsModal {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    
-    >h3 {
-        margin-bottom: 12px !important;
-    }
-    
-    >.info {
-        display: flex;
-        gap: 12px;
-        flex-direction: column;
-        
-        p {
-            margin: 0;
-        }
-    }
-    
-    .charts {
-        display: flex;
-        gap: 24px;
-        flex-wrap: wrap;
-        
-        >div {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-width: 300px;
-            max-height: 300px;
-            
-            h4 {
-                margin: 0;
-                font-size: 24px;
-                text-align: center;
-            }
-        }
     }
 }
 </style>

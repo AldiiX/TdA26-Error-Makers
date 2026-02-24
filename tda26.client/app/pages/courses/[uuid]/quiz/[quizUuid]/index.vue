@@ -86,6 +86,7 @@ const updateSelectedIndices = async (i: number, selectedIndices: number[]) => {
 
 const endQuiz = async () => {
     if (!quiz.value) return;
+    console.log("totalTimeSeconds", totalTimeSeconds);
 
     const answers = quiz.value.questions
         .map((question, i) => {

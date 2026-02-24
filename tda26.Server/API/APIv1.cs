@@ -435,6 +435,15 @@ public sealed class APIv1(
 
 		if (course.Account != null) course.Account.Ratings = [];
 
+		foreach (var quiz in course.Quizzes) {
+			// Fix inconsistent attempt counts for quizzes
+			var attemptsCount = await db.QuizResultsEf()
+				.AsNoTracking()
+				.CountAsync(qa => qa.QuizUuid == quiz.Uuid, ct);
+			
+			quiz.AttemptsCount = attemptsCount;
+		}
+
 		return Ok(course.ToReadDto(true));
 	}
 
@@ -2178,7 +2187,8 @@ public sealed class APIv1(
 				}
 
 				return answer;
-			}).ToList()
+			}).ToList(),
+			TotalTimeSeconds = body.TotalTimeSeconds
 		};
 
 		quiz.AttemptsCount++;
