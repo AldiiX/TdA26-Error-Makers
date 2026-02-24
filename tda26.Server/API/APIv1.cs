@@ -2245,18 +2245,23 @@ public sealed class APIv1(
 
         var totalAttempts = results.Count;
 
-        var averageScore = totalAttempts > 0
-            ? results.Where(r => r.Score > 0).Average(r => r.Score)
-            : 0;
+        var totalQuestions = quiz.Questions.Count;
 
-        var averageTimeSpent = totalAttempts > 0
-            ? results.Where(r => r.TotalTimeSeconds > 0).Average(r => r.TotalTimeSeconds)
-            : 0;
+        var averageScore = results
+	        .Select(r => (double)r.Score)
+	        .DefaultIfEmpty(0)
+	        .Average();
+
+        var averageTimeSpent = results
+	        .Where(r => r.TotalTimeSeconds > 0)
+	        .Select(r => (double)r.TotalTimeSeconds)
+	        .DefaultIfEmpty(0)
+	        .Average();
 
         var averageScorePercentage =
-            quiz.Questions.Count > 0
-                ? averageScore / quiz.Questions.Count * 100
-                : 0;
+	        totalQuestions > 0
+		        ? averageScore / totalQuestions * 100
+		        : 0;
 
         // Score distribution (percent)
         var scoreBuckets = new[] {
