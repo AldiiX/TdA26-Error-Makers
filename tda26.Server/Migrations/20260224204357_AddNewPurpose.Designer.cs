@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260222160004_AddNewFeedPurpose")]
-    partial class AddNewFeedPurpose
+    [Migration("20260224204357_AddNewPurpose")]
+    partial class AddNewPurpose
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
