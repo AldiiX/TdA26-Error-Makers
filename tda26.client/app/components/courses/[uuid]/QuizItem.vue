@@ -1,13 +1,10 @@
 ﻿<script setup lang="ts">
-import type {Quiz, QuizResultsSummary} from "#shared/types";
-import Modal from "~/components/Modal.vue";
-import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
-import toClockTime from "~/utils/toClockTime";
-import type {Course, CourseStatus} from "#shared/types";
+import type {Quiz, Course} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Popover from "~/components/Popover.vue";
+
 
 
 const props = defineProps<{

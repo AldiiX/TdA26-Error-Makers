@@ -259,9 +259,15 @@ const contextMenuItems = computed(() => {
     ];
 });
 
+const selectedQuizForResults = ref<Quiz | null>(null);
 const selectedQuizResultsSummary = ref<QuizResultsSummary | null>(null);
 
 function openResults(quiz: Quiz) {
+    selectedQuizForResults.value = quiz;
+    selectedQuizResultsSummary.value = null;
+
+    enabledModal.value = "quizResults"; // otevři hned (loader může být v modalu)
+
     fetch(`/api/v1/courses/${courseSmall.value.uuid}/quizzes/${quiz.uuid}/results-summary`)
         .then(res => {
             if (!res.ok) throw new Error("Failed to fetch quiz results summary");
@@ -273,8 +279,12 @@ function openResults(quiz: Quiz) {
         .catch(err => {
             console.error("Error fetching quiz results summary:", err);
         });
-    
-    enabledModal.value = "quizResults";
+}
+
+function closeResultsModal() {
+    enabledModal.value = null;
+    selectedQuizForResults.value = null;
+    selectedQuizResultsSummary.value = null;
 }
 </script>
 
@@ -1074,8 +1084,10 @@ function openResults(quiz: Quiz) {
 
         <QuizResultsModal
             :enabled="enabledModal === 'quizResults'"
-            @close="enabledModal = null"
-            :quizResultsSummary="selectedQuizResultsSummary"
+            :course="courseSmall"
+            :quiz="selectedQuizForResults ?? undefined"
+            :quiz-results-summary="selectedQuizResultsSummary"
+            @close="closeResultsModal"
         />
 
     </Teleport>
