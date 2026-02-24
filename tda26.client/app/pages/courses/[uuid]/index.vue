@@ -221,7 +221,7 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
 // obecne sse
-const { } = useCourseSSE({ course: courseSmall, editMode: isEditMode });
+const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -429,10 +429,9 @@ const contextMenuItems = computed(() => {
                 <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || courseSmall.status === 'live'">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
-                                        v-if="ownsCourse"
                                         button-style="primary"
                                         accent-color="primary"
                                         :class="$style.addMaterialButton"
@@ -473,6 +472,7 @@ const contextMenuItems = computed(() => {
                             <ul v-else>
                                 <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
                                     <QuizItem
+                                        v-if="ownsCourse || quiz.isVisible"
                                         :quiz="quiz"
                                         :course="course"
                                         :edit-mode="ownsCourse"
