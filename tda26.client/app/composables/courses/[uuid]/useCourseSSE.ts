@@ -5,6 +5,7 @@ import { push } from "notivue";
 
 export default function(params: {
     course: Ref<Course>;
+    courseFullData: Ref<Course | null>;
     editMode: boolean;
 }) {
     // propy
@@ -27,6 +28,54 @@ export default function(params: {
         }
     }
 
+    async function refreshFullCourse(fullCourse: Course, field: "materials" | "quizzes") {
+        try {
+            const updatedCourse = await $fetch<Course>(
+                `${getBaseUrl()}/api/v1/courses/${params.course.value.uuid}`,
+                { query: { full: true } }
+            );
+            if (updatedCourse?.[field]) {
+                (fullCourse as any)[field] = updatedCourse[field];
+            }
+        } catch (e) {
+            console.error(`Failed to refresh ${field} after visibility change`, e);
+        }
+    }
+
+    async function onMaterialVisibilityChanged(event: MessageEvent) {
+        const data: { materialUuid: string; isVisible: boolean } = JSON.parse(event.data);
+        const fullCourse = params.courseFullData.value;
+        if (!fullCourse) return;
+
+        if (!data.isVisible) {
+            // hide: update isVisible in place so v-if hides it for non-owners
+            const material = fullCourse.materials?.find(m => m.uuid === data.materialUuid);
+            if (material) {
+                material.isVisible = false;
+            }
+        } else {
+            // show: re-fetch the full course to get the newly visible material
+            await refreshFullCourse(fullCourse, "materials");
+        }
+    }
+
+    async function onQuizVisibilityChanged(event: MessageEvent) {
+        const data: { quizUuid: string; isVisible: boolean } = JSON.parse(event.data);
+        const fullCourse = params.courseFullData.value;
+        if (!fullCourse) return;
+
+        if (!data.isVisible) {
+            // hide: update isVisible in place so v-if hides it for non-owners
+            const quiz = fullCourse.quizzes?.find(q => q.uuid === data.quizUuid);
+            if (quiz) {
+                quiz.isVisible = false;
+            }
+        } else {
+            // show: re-fetch the full course to get the newly visible quiz
+            await refreshFullCourse(fullCourse, "quizzes");
+        }
+    }
+
     // ostantni
     onMounted(() => {
         if (!import.meta.client || !params.course.value.uuid) return;
@@ -38,6 +87,8 @@ export default function(params: {
         });
 
         eventSource.addEventListener("status_changed", onStatusChanged);
+        eventSource.addEventListener("material_visibility_changed", onMaterialVisibilityChanged);
+        eventSource.addEventListener("quiz_visibility_changed", onQuizVisibilityChanged);
 
         eventSource.onerror = (err) => {
             console.error("SSE feed error", err);

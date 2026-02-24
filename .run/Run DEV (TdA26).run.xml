@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run DEV (TdA26)" type="CompoundRunConfigurationType">
     <toRun name="tda26.Server: http" type="LaunchSettings" />
-    <toRun name="tda26.client: run" type="js.build_tools.npm" />
+    <toRun name="dev" type="js.build_tools.npm" />
     <method v="2" />
   </configuration>
 </component>

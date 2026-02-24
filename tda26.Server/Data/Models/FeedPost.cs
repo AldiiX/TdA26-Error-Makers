@@ -46,9 +46,21 @@ public sealed class FeedPost : Auditable {
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
     public enum FeedPostType { Manual, System }
-    
+
     [JsonConverter(typeof(JsonStringEnumCamelCaseConverter))]
-    public enum FeedPurpose { CreateMaterial, UpdateMaterial, DeleteMaterial, CreateQuiz , UpdateQuiz, DeleteQuiz , Default }
+    public enum FeedPurpose {
+        CreateMaterial,
+        UpdateMaterial,
+        DeleteMaterial,
+        ShowMaterial,
+        HideMaterial,
+        CreateQuiz,
+        UpdateQuiz,
+        DeleteQuiz,
+        ShowQuiz,
+        HideQuiz,
+        Default
+    }
 
     [NotMapped]
     public AuthorDto? Author => Account?.ToAuthorDto(); // pokud je author null, tak se pravdepodobne jedna o systemovy prispevek
