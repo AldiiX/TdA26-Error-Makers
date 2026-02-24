@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
 import type {QuizResultsSummary} from "#shared/types";
 import Modal from "~/components/Modal.vue";
-import { Chart } from 'chart.js/auto';
+import VueApexCharts from "vue3-apexcharts";
+
 
 const props = defineProps<{
     quizResultsSummary: QuizResultsSummary | null,
@@ -14,6 +15,14 @@ const emit = defineEmits<{
 
 watch(() => props.quizResultsSummary, (results) => {
     console.log("Received quiz results summary:", results);
+});
+
+
+
+const series = ref([{ name: "Score", data: [10, 20, 15, 30, 25] }]);
+const options = ref({
+    chart: { type: "line" as const },
+    xaxis: { categories: [5,6,7,8,9] }
 });
 
 const scoreDistributionChartElement = ref<HTMLCanvasElement | null>(null);
@@ -30,22 +39,7 @@ watch(scoreDistributionChartElement, (element) => {
         })) || []);
 
     console.log("Score distribution data for chart:", data);
-
-    new Chart(
-        element,
-        {
-            type: 'pie',
-            data: {
-                labels: data.map(row => row.label),
-                datasets: [
-                    {
-                        label: 'Počet pokusů',
-                        data: data.map(row => row.count)
-                    }
-                ]
-            }
-        }
-    );
+    
 });
 
 watch(timeDistributionChartElement, (element) => {
@@ -60,21 +54,7 @@ watch(timeDistributionChartElement, (element) => {
 
     console.log("Score distribution data for chart:", data);
 
-    new Chart(
-        element,
-        {
-            type: 'pie',
-            data: {
-                labels: data.map(row => row.label),
-                datasets: [
-                    {
-                        label: 'Počet pokusů',
-                        data: data.map(row => row.count)
-                    }
-                ]
-            }
-        }
-    );
+    
 });
 </script>
 
@@ -86,24 +66,7 @@ watch(timeDistributionChartElement, (element) => {
         :modal-style="{ maxWidth: '1080px' }"
         @close="emit('close')"
     >
-        <div :class="$style.quizResultsModal">
-            <h3>Výsledky kvízu</h3>
-            <div :class="$style.info">
-                <p>Průměrný strávený čas: {{ toClockTime(quizResultsSummary.averageTimeSpent) }}</p>
-                <p>Průměrné skóre: {{ Math.round(quizResultsSummary.averageScore * 100) / 100 }} ({{ Math.round(quizResultsSummary.averageScorePercentage) }}%)</p>
-            </div>
-
-            <div :class="$style.charts">
-                <div :class="$style.scoreDistribution">
-                    <h4>Distribuce skóre</h4>
-                    <canvas ref="scoreDistributionChartElement"></canvas>
-                </div>
-                <div :class="$style.timeDistribution">
-                    <h4>Distribuce času</h4>
-                    <canvas ref="timeDistributionChartElement"></canvas>
-                </div>
-            </div>
-        </div>
+        <VueApexCharts type="line" :series="series" :options="options" />
     </Modal>
 </template>
 
