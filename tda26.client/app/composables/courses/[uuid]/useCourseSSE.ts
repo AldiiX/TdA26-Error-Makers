@@ -35,7 +35,7 @@ export default function(params: {
                 { query: { full: true } }
             );
             if (updatedCourse?.[field]) {
-                fullCourse[field] = updatedCourse[field];
+                (fullCourse as any)[field] = updatedCourse[field];
             }
         } catch (e) {
             console.error(`Failed to refresh ${field} after visibility change`, e);

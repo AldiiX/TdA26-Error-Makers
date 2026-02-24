@@ -429,10 +429,9 @@ const contextMenuItems = computed(() => {
                 <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || courseSmall.status === 'live'">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
-                                        v-if="ownsCourse"
                                         button-style="primary"
                                         accent-color="primary"
                                         :class="$style.addMaterialButton"
