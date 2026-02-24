@@ -26,55 +26,24 @@ export function useModuleVisibility(params: {
 
             if (isMaterial(module)) {
                 // Update material visibility
-                const url = getBaseUrl() + `/api/v1/courses/${params.courseUuid}/materials/${module.uuid}`;
+                const updatedMaterial = await $fetch<Material>(getBaseUrl() + `/api/v1/courses/${params.courseUuid}/materials/${module.uuid}/visibility`, {
+                    method: "PUT",
+                    body: {
+                        name: module.name,
+                        description: module.description,
+                        url: module.url,
+                        isVisible: visible
+                    }
+                });
                 
-                if (module.type === 'url') {
-                    const updatedMaterial = await $fetch<Material>(url, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: {
-                            name: module.name,
-                            description: module.description,
-                            url: module.url,
-                            isVisible: visible
-                        }
-                    });
-                    
-                    params.module.value.isVisible = updatedMaterial.isVisible;
-                } else if (module.type === 'file') {
-                    const form = new FormData();
-                    form.append("Name", module.name);
-                    form.append("Description", module.description ?? "");
-                    form.append("IsVisible", visible.toString());
-
-                    const updatedMaterial = await $fetch<Material>(url, {
-                        method: "PUT",
-                        body: form
-                    });
-                    
-                    params.module.value.isVisible = updatedMaterial.isVisible;
-                }
+                params.module.value.isVisible = updatedMaterial.isVisible;
             } else if (isQuiz(module)) {
                 // Update quiz visibility
-                const url = getBaseUrl() + `/api/v1/courses/${params.courseUuid}/quizzes/${module.uuid}`;
                 
-                const updatedQuiz = await $fetch<Quiz>(url, {
+                const updatedQuiz = await $fetch<Quiz>(getBaseUrl() + `/api/v1/courses/${params.courseUuid}/quizzes/${module.uuid}/visibility`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
                     body: {
-                        uuid: module.uuid,
-                        title: module.title,
-                        attemptsCount: module.attemptsCount,
                         isVisible: visible,
-                        questions: module.questions.map((q, index) => ({
-                            uuid: q.uuid,
-                            type: q.type === "singleChoice" ? "singleChoice" : "multipleChoice",
-                            question: q.question,
-                            options: q.options,
-                            correctIndex: q.correctIndex,
-                            correctIndices: q.correctIndices,
-                            order: index
-                        }))
                     }
                 });
                 

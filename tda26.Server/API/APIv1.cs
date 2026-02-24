@@ -1602,6 +1602,43 @@ public sealed class APIv1(
 		return Ok(fileMaterial.ToReadDto());
 	}
 
+	[HttpPut("courses/{courseUuid:guid}/materials/{materialUuid:guid}/visibility")]
+	public async Task<IActionResult> UpdateMaterialVisibility(
+		[FromRoute] Guid courseUuid,
+		[FromRoute] Guid materialUuid,
+		[FromBody] UpdateModuleVisibilityRequest body
+	) {
+		var material = await db.Materials
+			.Where(m => m.CourseUuid == courseUuid)
+			.Where(m => m.Uuid == materialUuid)
+			.FirstOrDefaultAsync();
+		
+		if (material == null) return NotFound(new { error = "Material not found." });
+
+		material.IsVisible = body.IsVisible;
+		material.UpdatedAt = DateTime.UtcNow;
+		
+		db.Materials.Update(material);
+		await db.SaveChangesAsync();
+		
+		//odesilani info do sse
+		var newFeedPost = new FeedPost {
+			Uuid = Guid.NewGuid(),
+			CourseUuid = courseUuid,
+			Type = FeedPost.FeedPostType.System,
+			Message = $"Viditelnost materiálu '{material.Name}' byla změněna na {(body.IsVisible ? "viditelný" : "skrytý")}.",
+			CreatedAt = DateTime.UtcNow,
+			UpdatedAt = DateTime.UtcNow,
+			Purpose = FeedPost.FeedPurpose.UpdateQuiz
+		};
+		
+		db.FeedPosts.Add(newFeedPost);
+		await db.SaveChangesAsync();
+		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
+		
+		return Ok(new { quizUuid = material.Uuid, isVisible = material.IsVisible });
+	}
+
 	#endregion
 
 	#region course Kvizy
@@ -1938,6 +1975,43 @@ public sealed class APIv1(
 		await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
 
 		return Ok(quiz.ToReadDto());
+	}
+
+	[HttpPut("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}/visibility")]
+	public async Task<IActionResult> UpdateQuizVisibility(
+		[FromRoute] Guid courseUuid,
+		[FromRoute] Guid quizUuid,
+		[FromBody] UpdateModuleVisibilityRequest body
+	) {
+		var quiz = await db.Quizzes
+			.Where(q => q.CourseUuid == courseUuid)
+			.Where(q => q.Uuid == quizUuid)
+			.FirstOrDefaultAsync();
+
+		if (quiz == null) return NotFound(new { error = "Quiz not found." });
+
+		quiz.IsVisible = body.IsVisible;
+		quiz.UpdatedAt = DateTime.UtcNow;
+		
+		db.Quizzes.Update(quiz);
+		await db.SaveChangesAsync();
+		
+		//odesilani info do sse
+		var newFeedPost = new FeedPost {
+			Uuid = Guid.NewGuid(),
+			CourseUuid = courseUuid,
+			Type = FeedPost.FeedPostType.System,
+			Message = $"Viditelnost kvízu '{quiz.Title}' byla změněna na {(body.IsVisible ? "viditelný" : "skrytý")}.",
+			CreatedAt = DateTime.UtcNow,
+			UpdatedAt = DateTime.UtcNow,
+			Purpose = FeedPost.FeedPurpose.UpdateQuiz
+		};
+		
+		db.FeedPosts.Add(newFeedPost);
+		await db.SaveChangesAsync();
+		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
+		
+		return Ok(new { quizUuid = quiz.Uuid, isVisible = quiz.IsVisible });
 	}
 
 	[HttpDelete("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]
