@@ -463,10 +463,9 @@ const contextMenuItems = computed(() => {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
-                                        v-if="ownsCourse"
                                         button-style="primary"
                                         accent-color="primary"
                                         :class="$style.addMaterialButton"
