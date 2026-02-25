@@ -1,9 +1,11 @@
 ﻿<script setup lang="ts">
-import type {Course, CourseStatus, Quiz} from "#shared/types";
+import type {Quiz, Course} from "#shared/types";
 import { NuxtLink } from '#components';
 import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Popover from "~/components/Popover.vue";
+
+
 
 const props = defineProps<{
     quiz: Quiz,
@@ -16,13 +18,12 @@ const emit = defineEmits<{
     (e: "edit", quiz: Quiz): void;
     (e: "delete", quiz: Quiz): void;
     (e: "toggleVisibility", quiz: Quiz): void;
+    (e: "openResults", quiz: Quiz): void;
 }>();
 
 function toggleVisibility(): void {
     emit('toggleVisibility', props.quiz);
 }
-
-console.log(props.course)
 </script>
 
 <template>
@@ -46,6 +47,7 @@ console.log(props.course)
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
+            <Button @click="emit('openResults', quiz)">Výsledky</Button>
             <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
@@ -78,7 +80,9 @@ console.log(props.course)
                 <template #content>Kurz musí být návrh</template>
             </Popover>
         </div>
+
     </div>
+    
 </template>
 
 <style module lang="scss">

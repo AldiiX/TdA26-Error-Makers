@@ -4,7 +4,7 @@ import type {
     Course,
     CourseCategory, CourseStatus,
     Material,
-    Quiz
+    Quiz, QuizResultsSummary
 } from "#shared/types";
 import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
@@ -44,6 +44,7 @@ import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
 import {useContextMenu} from "~/composables/useContextMenu";
 import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
 import Popover from "~/components/Popover.vue";
+import QuizResultsModal from "~/components/pagespecific/QuizResultsModal.vue";
 
 
 definePageMeta({
@@ -217,6 +218,7 @@ const handleQuizVisibilityToggle = async (quiz: Quiz) => {
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
 
+
 // delete course
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
@@ -258,6 +260,42 @@ const contextMenuItems = computed(() => {
     ];
 });
 
+const selectedQuizForResults = ref<Quiz | null>(null);
+const selectedQuizResultsSummary = ref<QuizResultsSummary | null>(null);
+
+let resultsReqId = 0;
+
+function openResults(quiz: Quiz) {
+    const reqId = ++resultsReqId;
+
+    selectedQuizForResults.value = quiz;
+    selectedQuizResultsSummary.value = null; // klidně nech, ale modal ještě neotevírej
+
+    fetch(`/api/v1/courses/${courseSmall.value.uuid}/quizzes/${quiz.uuid}/results-summary`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch quiz results summary");
+            return res.json();
+        })
+        .then((data: QuizResultsSummary) => {
+            // pokud mezitím user otevřel jiný quiz / zavřel modal, ignoruj
+            if (reqId !== resultsReqId) return;
+
+            selectedQuizResultsSummary.value = data;
+            enabledModal.value = "quizResults"; // otevři až TEĎ
+        })
+        .catch(err => {
+            if (reqId !== resultsReqId) return;
+            console.error("Error fetching quiz results summary:", err);
+            // volitelně: můžeš otevřít modal s obecnou chybou, nebo nechat být
+        });
+}
+
+function closeResultsModal() {
+    resultsReqId++; // zneplatní rozjetý fetch
+    enabledModal.value = null;
+    selectedQuizForResults.value = null;
+    selectedQuizResultsSummary.value = null;
+}
 </script>
 
 <template>
@@ -492,6 +530,7 @@ const contextMenuItems = computed(() => {
                                         :is-visibility-toggle-loading="moduleLoadingStates[quiz.uuid] || false"
                                         @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
                                         @toggle-visibility="handleQuizVisibilityToggle"
+                                        @openResults="openResults"
                                     />
                                 </li>
                             </ul>
@@ -1058,6 +1097,14 @@ const contextMenuItems = computed(() => {
             </p>
             <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
         </ModalDestructive>
+
+        <QuizResultsModal
+            :enabled="enabledModal === 'quizResults'"
+            :course="courseSmall"
+            :quiz="selectedQuizForResults ?? undefined"
+            :quiz-results-summary="selectedQuizResultsSummary"
+            @close="closeResultsModal"
+        />
 
     </Teleport>
 </template>

@@ -194,4 +194,18 @@ export type TimeOption = {
     values: number | "custom";
 };
 
+export interface QuizResultsSummary {
+    totalAttempts: number;
+    averageScore: number;
+    averageTimeSpent: number;
+    averageScorePercentage: number;
+    scoreDistribution: { 
+        label: string; 
+        count: number 
+    }[];
+    timeDistribution?: { 
+        label: string; 
+        count: number 
+    }[];
+}
 export type CourseModule = Material | Quiz;

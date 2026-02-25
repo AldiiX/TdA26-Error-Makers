@@ -86,6 +86,7 @@ const updateSelectedIndices = async (i: number, selectedIndices: number[]) => {
 
 const endQuiz = async () => {
     if (!quiz.value) return;
+    console.log("totalTimeSeconds", totalTimeSeconds);
 
     const answers = quiz.value.questions
         .map((question, i) => {
@@ -112,6 +113,7 @@ const endQuiz = async () => {
         method: 'POST',
         body: {
             answers,
+            totalTimeSeconds: totalTimeSeconds
         }
     });
     
@@ -150,6 +152,17 @@ const setQuestionIndex = (i: number) => {
     //         ]?.selectedIndices ?? [])
 };
 
+let totalTimeSeconds = 0;
+
+onMounted(() => {
+    const interval = setInterval(() => {
+        totalTimeSeconds++;
+    }, 1000);
+
+    onUnmounted(() => {
+        clearInterval(interval);
+    });
+});
 </script>
 
 <template>
