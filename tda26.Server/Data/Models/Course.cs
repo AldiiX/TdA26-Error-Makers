@@ -33,7 +33,7 @@ public sealed class Course : Auditable {
 
     public CourseStatus Status { get; set; } = CourseStatus.Draft;
     
-    public DateTime? ScheduledStart { get; set; }
+    public DateTimeOffset? ScheduledStart { get; set; }
 
     public int ViewCount { get; set; } = 0;
 

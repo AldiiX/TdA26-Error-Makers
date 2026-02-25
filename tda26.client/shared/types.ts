@@ -24,7 +24,8 @@ export interface Course {
     category: {
         uuid: string,
         label: string,
-    }
+    },
+    scheduledStart?: string,
 }
 
 export interface Material {
