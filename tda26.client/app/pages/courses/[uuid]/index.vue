@@ -227,7 +227,7 @@ const handleQuizVisibilityToggle = async (quiz: Quiz) => {
 };
 
 // drag & drop for modules
-const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules });
+const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules, course });
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
@@ -483,48 +483,49 @@ function closeResultsModal() {
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
                 <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || loggedAccount?.type === 'admin' || courseSmall.status === 'live'">
                     <ClientOnly>
-                        <div v-if="selectedItem == 'Moduly'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
-                                <template #trigger>
-                                    <Button
-                                        button-style="primary"
-                                        accent-color="primary"
-                                        :class="$style.addMaterialButton"
-                                        @click="openCreateMaterialModal"
-                                        :disabled="courseSmall.status !== 'draft'"
-                                    >
-                                        Přidat nový materiál
-                                    </Button>
-                                </template>
+                        <div v-if="selectedItem == 'Moduly'" :class="$style.modulesList">
+                            <div :class="$style.modulesListHeader">
+                                <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
+                                    <template #trigger>
+                                        <Button
+                                            button-style="primary"
+                                            accent-color="primary"
+                                            :class="$style.addModuleButton"
+                                            @click="openCreateMaterialModal"
+                                            :disabled="courseSmall.status !== 'draft'"
+                                        >
+                                            Přidat nový materiál
+                                        </Button>
+                                    </template>
 
-                                <template #content>Kurz musí být návrh</template>
-                            </Popover>
-                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
-                                <template #trigger>
-                                    <Button
-                                        button-style="primary"
-                                        accent-color="primary"
-                                        :class="$style.addMaterialButton"
-                                        @click="enabledModal = 'createQuiz'"
-                                        :disabled="courseSmall.status !== 'draft'"
-                                    >
-                                        Přidat nový kvíz
-                                    </Button>
-                                </template>
+                                    <template #content>Kurz musí být návrh</template>
+                                </Popover>
+                                <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
+                                    <template #trigger>
+                                        <Button
+                                            button-style="primary"
+                                            accent-color="primary"
+                                            :class="$style.addModuleButton"
+                                            @click="enabledModal = 'createQuiz'"
+                                            :disabled="courseSmall.status !== 'draft'"
+                                        >
+                                            Přidat nový kvíz
+                                        </Button>
+                                    </template>
 
-                                <template #content>Kurz musí být návrh</template>
-                            </Popover>
+                                    <template #content>Kurz musí být návrh</template>
+                                </Popover>
+                            </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
                             <p v-else-if=" modules.length === 0">Tento kurz nemá žádné materiály či kvízy.</p>
-                            <ul v-else>
+                            <TransitionGroup v-else tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
                                 <li
                                     v-for="module in modules"
                                     :key="module.uuid"
                                     :draggable="ownsCourse"
                                     :class="{
                                         [$style.dragging]: draggedModuleUuid === module.uuid,
-                                        [$style.dragOver]: dragOverModuleUuid === module.uuid && draggedModuleUuid !== module.uuid,
                                     }"
                                     @dragstart="ownsCourse && onModuleDragStart($event, module.uuid)"
                                     @dragover="ownsCourse && onModuleDragOver($event, module.uuid)"
@@ -532,32 +533,67 @@ function closeResultsModal() {
                                     @drop="ownsCourse && onModuleDrop($event, module.uuid)"
                                     @dragend="onModuleDragEnd"
                                 >
-                                    <template v-if="module.moduleType === 'material'">
-                                        <MaterialItem
-                                            v-if="ownsCourse || module.isVisible"
-                                            :material="module"
-                                            :course="course"
-                                            :edit-mode="ownsCourse"
-                                            :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
-                                            @edit="openUpdateMaterialModal"
-                                            @delete="openDeleteMaterialModal"
-                                            @toggle-visibility="handleMaterialVisibilityToggle"
+                                    <Transition name="drag-placeholder">
+                                        <div
+                                            v-if="dragOverModuleUuid === module.uuid && draggedModuleUuid !== module.uuid"
+                                            :class="$style.dragPlaceholder"
                                         />
-                                    </template>
-                                    <template v-else-if="module.moduleType === 'quiz'">
-                                        <QuizItem
-                                            v-if="ownsCourse || module.isVisible"
-                                            :quiz="module"
-                                            :course="course"
-                                            :edit-mode="ownsCourse"
-                                            :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
-                                            @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                            @toggle-visibility="handleQuizVisibilityToggle"
-                                            @openResults="openResults"
-                                        />
-                                    </template>
+                                    </Transition>
+                                    <div :class="$style.module">
+                                        <div v-if="ownsCourse" :class="$style.dragHandle">
+                                            <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                                <circle cx="2" cy="2" r="1.5"/>
+                                                <circle cx="8" cy="2" r="1.5"/>
+                                                <circle cx="2" cy="8" r="1.5"/>
+                                                <circle cx="8" cy="8" r="1.5"/>
+                                                <circle cx="2" cy="14" r="1.5"/>
+                                                <circle cx="8" cy="14" r="1.5"/>
+                                            </svg>
+                                        </div>
+                                        <div :class="$style.moduleContent">
+                                            <template v-if="module.moduleType === 'material'">
+                                                <MaterialItem
+                                                    v-if="ownsCourse || module.isVisible"
+                                                    :material="module"
+                                                    :course="course"
+                                                    :edit-mode="ownsCourse"
+                                                    :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
+                                                    @edit="openUpdateMaterialModal"
+                                                    @delete="openDeleteMaterialModal"
+                                                    @toggle-visibility="handleMaterialVisibilityToggle"
+                                                />
+                                            </template>
+                                            <template v-else-if="module.moduleType === 'quiz'">
+                                                <QuizItem
+                                                    v-if="ownsCourse || module.isVisible"
+                                                    :quiz="module"
+                                                    :course="course"
+                                                    :edit-mode="ownsCourse"
+                                                    :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
+                                                    @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                                    @toggle-visibility="handleQuizVisibilityToggle"
+                                                    @openResults="openResults"
+                                                />
+                                            </template>
+                                        </div>
+                                    </div>
                                 </li>
-                            </ul>
+                                <li
+                                    v-if="ownsCourse && draggedModuleUuid"
+                                    key="__end__"
+                                    :class="$style.endDropZone"
+                                    @dragover="onModuleDragOver($event, '__end__')"
+                                    @dragleave="onModuleDragLeave($event, '__end__')"
+                                    @drop="onModuleDrop($event, '__end__')"
+                                >
+                                    <Transition name="drag-placeholder">
+                                        <div
+                                            v-if="dragOverModuleUuid === '__end__'"
+                                            :class="$style.dragPlaceholder"
+                                        />
+                                    </Transition>
+                                </li>
+                            </TransitionGroup>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
                             <div v-if="feedData" :class="$style.activityHeader">
@@ -1793,8 +1829,13 @@ ul {
             margin-top: 16px;
         }
 
-        .materials {
-            .addMaterialButton {
+        .modulesList {
+            .modulesListHeader{
+                display: flex;
+                gap: 12px;
+            }
+            
+            .addModuleButton {
                 margin-bottom: 16px;
                 width: fit-content;
             }
@@ -1804,23 +1845,65 @@ ul {
                 flex-direction: column;
                 gap: 12px;
 
-                li[draggable="true"] {
-                    cursor: grab;
+                .module {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
 
-                    &:active {
-                        cursor: grabbing;
-                    }
+                &.isDragging .moduleContent {
+                    pointer-events: none;
                 }
             }
         }
 
-        .dragging {
+        .dragHandle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            min-width: 20px;
+            height: 40px;
+            cursor: grab;
+            color: var(--text-color-secondary);
             opacity: 0.4;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+
+            &:hover {
+                opacity: 1;
+            }
+
+            &:active {
+                cursor: grabbing;
+            }
         }
 
-        .dragOver {
-            border-top: 2px solid var(--accent-color-primary);
-            padding-top: 4px;
+        .moduleContent {
+            flex: 1;
+            min-width: 0;
+        }
+
+
+        .dragging {
+            opacity: 0.4;
+            transition: none !important;
+        }
+
+        .dragPlaceholder {
+            border: 2px dashed var(--accent-color-secondary-theme);
+            background-color: rgb(from var(--accent-color-secondary-theme) r g b / 0.1);
+            height: 63px;
+            width: 100%;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .endDropZone {
+            min-height: 40px;
+            list-style: none;
         }
 
         .activity {
@@ -2247,5 +2330,23 @@ ul {
             }
         }
     }
+}
+</style>
+
+<style lang="scss">
+.drag-placeholder-enter-active,
+.drag-placeholder-leave-active {
+    transition: height 0.2s ease, margin-bottom 0.2s ease, opacity 0.2s ease;
+}
+
+.drag-placeholder-enter-from,
+.drag-placeholder-leave-to {
+    height: 0 !important;
+    margin-bottom: 0 !important;
+    opacity: 0;
+}
+
+.module-list-move {
+    transition: transform 0.3s ease;
 }
 </style>
