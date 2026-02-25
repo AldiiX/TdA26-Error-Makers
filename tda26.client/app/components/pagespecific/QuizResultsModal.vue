@@ -5,97 +5,79 @@ import VueApexCharts from "vue3-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { computed } from "vue";
 
-/**
- * OPTIONAL navíc z parenta (abychom uměli ukázat i:
- * - úspěšnost jednotlivých kvízů (bar chart přes kurz)
- * - počet stažení materiálů
- * - počet otevření odkazů
- */
-type CourseAnalyticsExtra = {
-    perQuizSuccess?: Array<{ quizUuid: string; title: string; avgPercent: number; totalAttempts: number }>;
-    materialDownloads?: number; // celkem za kurz
-    linkOpens?: number;         // celkem za kurz
-};
-
 const props = defineProps<{
     enabled: boolean;
     quizResultsSummary: QuizResultsSummary | null;
-    extra?: CourseAnalyticsExtra | null;
 }>();
 
 const emit = defineEmits<{ (e: "close"): void }>();
 
 const summary = computed(() => props.quizResultsSummary);
 
-// ---- default buckets (aby grafy nikdy nebyly "prázdné strukturou") ----
-const defaultScoreBuckets = [
-    "0–20%",
-    "20–40%",
-    "40–60%",
-    "60–80%",
-    "80–100%",
-];
+// Globální stav: kvíz nemá žádné informace
+const hasQuizInfo = computed(() => !!summary.value && (summary.value.totalAttempts ?? 0) > 0);
 
-const defaultTimeBuckets = [
-    "0–1 min",
-    "1–3 min",
-    "3–5 min",
-    "5–10 min",
-    "10+ min",
-];
-
-function normalizeDist(
-    incoming: Array<{ label: string; count: number }> | undefined,
-    defaults: string[]
-) {
-    const map = new Map((incoming ?? []).map(x => [x.label, Number(x.count) || 0]));
-    return defaults.map(label => ({ label, count: map.get(label) ?? 0 }));
+// --- jednoduché formátování (nepřidává data, jen prezentace) ---
+function round2(n: number) {
+    return Math.round(n * 100) / 100;
+}
+function formatSeconds(sec: number) {
+    const s = Math.max(0, Math.round(sec));
+    if (s < 60) return `${s} s`;
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m} min ${r} s`;
 }
 
-// ---- always full arrays (including zeros) ----
-const scoreDist = computed(() =>
-    normalizeDist((summary.value as any)?.scoreDistribution, defaultScoreBuckets)
-);
-
-const timeDist = computed(() =>
-    normalizeDist((summary.value as any)?.timeDistribution, defaultTimeBuckets)
-);
-
-// ---- info cards ----
+// INFO
 const totalAttempts = computed(() => summary.value?.totalAttempts ?? 0);
 const averageScore = computed(() => summary.value?.averageScore ?? 0);
-const averageTimeSpent = computed(() => summary.value?.averageTimeSpent ?? 0);
 const averageScorePercentage = computed(() => summary.value?.averageScorePercentage ?? 0);
+const averageTimeSpent = computed(() => summary.value?.averageTimeSpent ?? 0);
 
+// --- distributions: pouze z API, žádné default buckety ---
+const scoreDist = computed(() => summary.value?.scoreDistribution ?? []);
+const timeDist = computed(() => summary.value?.timeDistribution ?? []);
+
+// součty bucketů (pro render rozhodnutí + diagnostiku)
+const scoreBucketsTotal = computed(() => scoreDist.value.reduce((a, b) => a + (Number(b.count) || 0), 0));
+const timeBucketsTotal = computed(() => timeDist.value.reduce((a, b) => a + (Number(b.count) || 0), 0));
+
+const canRenderScoreCharts = computed(() => scoreBucketsTotal.value > 0);
+const canRenderTimeChart = computed(() => timeBucketsTotal.value > 0);
+
+// nejčastější bucket
 const mostCommonScoreBucket = computed(() => {
     const dist = scoreDist.value;
     if (!dist.length) return "—";
-    const top = [...dist].sort((a, b) => b.count - a.count)[0];
-    // když jsou všechno 0, je to stejně “—”, aby to nebylo matoucí
-    if (!top || top.count === 0) return "—";
+    const top = [...dist].sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0))[0];
+    if (!top || (Number(top.count) || 0) === 0) return "—";
     return `${top.label} (${top.count})`;
 });
 
 const mostCommonTimeBucket = computed(() => {
     const dist = timeDist.value;
     if (!dist.length) return "—";
-    const top = [...dist].sort((a, b) => b.count - a.count)[0];
-    if (!top || top.count === 0) return "—";
+    const top = [...dist].sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0))[0];
+    if (!top || (Number(top.count) || 0) === 0) return "—";
     return `${top.label} (${top.count})`;
 });
 
-// ---- PIE (scoreDistribution) ----
-const pieSeries = computed(() => scoreDist.value.map(x => x.count));
+// PIE (skóre) – ApexCharts pie potřebuje number[] + labels[] citeturn0search12turn0search4
+const pieSeries = computed<number[]>(() => scoreDist.value.map(x => Number(x.count) || 0));
 const pieOptions = computed<ApexOptions>(() => ({
-    chart: { type: "pie" },
     labels: scoreDist.value.map(x => x.label),
     legend: { position: "top" },
-    dataLabels: { enabled: true },
+    dataLabels: {
+        enabled: true,
+        // v pie/donut jsou dataLabels procenta výseče (ne count) citeturn0search0
+        formatter: (val: number) => `${Math.round(val)}%`,
+    },
 }));
 
-// ---- 100% stacked bar (scoreDistribution) ----
+// 100% stacked bar (skóre) – chart.stacked + stackType 100% citeturn0search1
 const stackedSeries = computed(() =>
-    scoreDist.value.map(d => ({ name: d.label, data: [d.count] }))
+    scoreDist.value.map(d => ({ name: d.label, data: [Number(d.count) || 0] }))
 );
 
 const stackedOptions = computed<ApexOptions>(() => ({
@@ -108,14 +90,16 @@ const stackedOptions = computed<ApexOptions>(() => ({
     plotOptions: {
         bar: { horizontal: true, barHeight: "40%" },
     },
-    xaxis: { categories: ["Score distribution"], labels: { show: false } },
+    xaxis: { categories: ["Rozložení skóre"], labels: { show: false } },
     yaxis: { labels: { show: false } },
     legend: { position: "top" },
+    dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
 }));
 
-// ---- LINE (timeDistribution) ----
+// čas – tvoje “timeDistribution” je bucketované, bar by byl často čitelnější,
+// ale line nechám (jen český popisek)
 const lineSeries = computed(() => [
-    { name: "Time distribution", data: timeDist.value.map(x => x.count) },
+    { name: "Počet pokusů", data: timeDist.value.map(x => Number(x.count) || 0) },
 ]);
 
 const lineOptions = computed<ApexOptions>(() => ({
@@ -125,21 +109,15 @@ const lineOptions = computed<ApexOptions>(() => ({
     legend: { position: "top" },
 }));
 
-// ---- COURSE: per-quiz success (optional extra) ----
-const perQuiz = computed(() => props.extra?.perQuizSuccess ?? []);
-const perQuizSeries = computed(() => [{ name: "Úspěšnost (%)", data: perQuiz.value.map(x => x.avgPercent) }]);
-const perQuizOptions = computed<ApexOptions>(() => ({
-    chart: { type: "bar", toolbar: { show: false } },
-    xaxis: { categories: perQuiz.value.map(x => x.title) },
-    dataLabels: { enabled: true },
-    plotOptions: { bar: { borderRadius: 6 } },
-}));
+// vysvětlivky – čistě text, žádná vymyšlená data
+const scoreBucketsHelp = computed(() => {
+    return "Intervaly skóre udávají, kolik % otázek bylo v jednom pokusu zodpovězeno správně. " +
+        "Např. „20–40 %“ znamená pokusy s úspěšností alespoň 20 % a menší než 40 % (dle logiky na backendu).";
+});
 
-const materialDownloads = computed(() => props.extra?.materialDownloads ?? null);
-const linkOpens = computed(() => props.extra?.linkOpens ?? null);
-
-// helper: “jsou vůbec nějaké pokusy?”
-const hasAttempts = computed(() => (summary.value?.totalAttempts ?? 0) > 0);
+const timeBucketsHelp = computed(() => {
+    return "Intervaly času udávají, do jakého časového rozmezí spadla doba vyplňování kvízu (v sekundách převedená na minuty).";
+});
 </script>
 
 <template>
@@ -150,80 +128,107 @@ const hasAttempts = computed(() => (summary.value?.totalAttempts ?? 0) > 0);
         :modal-style="{ maxWidth: '1080px' }"
         @close="emit('close')"
     >
-        <div v-if="!summary" style="padding: 16px;">
-            Nejsou k dispozici data.
+        <div v-if="!hasQuizInfo" style="padding: 16px;">
+            K tomuto kvízu zatím nejsou žádné informace (žádné odevzdané pokusy).
         </div>
 
         <div v-else :class="$style.quizResultsModal">
             <h3>Výsledky kvízu</h3>
 
-            <div v-if="!hasAttempts" style="margin-bottom: 8px; opacity: 0.7;">
-                Zatím nejsou žádné pokusy — grafy budou mít hodnoty 0.
-            </div>
-
             <!-- INFO -->
             <div :class="$style.infoGrid">
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Celkem pokusů</div>
+                    <div :class="$style.infoLabel">Počet pokusů</div>
                     <div :class="$style.infoValue">{{ totalAttempts }}</div>
                 </div>
 
                 <div :class="$style.infoCard">
                     <div :class="$style.infoLabel">Průměrné skóre</div>
-                    <div :class="$style.infoValue">{{ averageScore }}</div>
+                    <div :class="$style.infoValue">{{ round2(averageScore) }}</div>
                 </div>
 
                 <div :class="$style.infoCard">
                     <div :class="$style.infoLabel">Průměrná úspěšnost</div>
-                    <div :class="$style.infoValue">{{ Math.round(averageScorePercentage) }}%</div>
+                    <div :class="$style.infoValue">{{ Math.round(averageScorePercentage) }} %</div>
                 </div>
 
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Průměrný čas</div>
-                    <div :class="$style.infoValue">{{ Math.round(averageTimeSpent) }} s</div>
+                    <div :class="$style.infoLabel">Průměrný čas vyplňování</div>
+                    <div :class="$style.infoValue">{{ formatSeconds(averageTimeSpent) }}</div>
                 </div>
 
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Nejčastější skóre bucket</div>
+                    <div :class="$style.infoLabel">Nejčastější interval skóre</div>
                     <div :class="$style.infoValue">{{ mostCommonScoreBucket }}</div>
                 </div>
 
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Nejčastější čas bucket</div>
+                    <div :class="$style.infoLabel">Nejčastější interval času</div>
                     <div :class="$style.infoValue">{{ mostCommonTimeBucket }}</div>
-                </div>
-
-                <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Počet stažení materiálů</div>
-                    <div :class="$style.infoValue">{{ materialDownloads ?? "—" }}</div>
-                </div>
-
-                <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Počet otevření odkazů</div>
-                    <div :class="$style.infoValue">{{ linkOpens ?? "—" }}</div>
                 </div>
             </div>
 
+            <!-- Diagnostika dat z API (užitečné hlavně kvůli bucket bugům) -->
+            <p v-if="scoreBucketsTotal !== totalAttempts" style="opacity:.75; margin: 0;">
+                Pozn.: Součet rozložení skóre ({{ scoreBucketsTotal }}) neodpovídá počtu pokusů ({{ totalAttempts }}).
+                To typicky znamená, že některé výsledky nespadly do žádného intervalu (např. 100% úspěšnost).
+            </p>
+
+            <!-- Vysvětlivky -->
+            <div style="opacity: .85;">
+                <p style="margin: 8px 0 0;"><strong>Co znamenají intervaly?</strong></p>
+                <p style="margin: 4px 0 0;">{{ scoreBucketsHelp }}</p>
+                <p style="margin: 4px 0 0;">{{ timeBucketsHelp }}</p>
+            </div>
+
             <!-- CHARTS -->
-            <div :class="$style.chartsGrid">
+            <div :class="$style.chartsGrid" style="margin-top: 12px;">
                 <div :class="$style.chartCard">
-                    <h4>Time distribution</h4>
-                    <VueApexCharts type="line" :series="lineSeries" :options="lineOptions" height="320" />
+                    <h4>Rozložení času</h4>
+
+                    <div v-if="!canRenderTimeChart" style="opacity:.8;">
+                        Rozložení času není k dispozici.
+                    </div>
+
+                    <VueApexCharts
+                        v-else
+                        type="line"
+                        :series="lineSeries"
+                        :options="lineOptions"
+                        height="320"
+                    />
                 </div>
 
                 <div :class="$style.chartCard">
-                    <h4>Score distribution (pie)</h4>
-                    <VueApexCharts type="pie" :series="pieSeries" :options="pieOptions" height="320" />
+                    <h4>Rozložení skóre (koláč)</h4>
+
+                    <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">
+                        Rozložení skóre není k dispozici (součet bucketů je 0).
+                    </div>
+
+                    <VueApexCharts
+                        v-else
+                        type="pie"
+                        :series="pieSeries"
+                        :options="pieOptions"
+                        height="320"
+                    />
                 </div>
 
                 <div :class="$style.chartCard">
-                    <h4>Score distribution (100%)</h4>
-                    <VueApexCharts type="bar" :series="stackedSeries" :options="stackedOptions" height="220" />
-                </div>
+                    <h4>Rozložení skóre (100% skládaný graf)</h4>
 
-                <div v-if="perQuiz.length" :class="$style.chartCard" style="grid-column: 1 / -1;">
-                    <h4>Úspěšnost jednotlivých kvízů</h4>
-                    <VueApexCharts type="bar" :series="perQuizSeries" :options="perQuizOptions" height="320" />
+                    <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">
+                        100% skládaný graf nelze vykreslit, když je součet 0.
+                    </div>
+
+                    <VueApexCharts
+                        v-else
+                        type="bar"
+                        :series="stackedSeries"
+                        :options="stackedOptions"
+                        height="220"
+                    />
                 </div>
             </div>
         </div>
