@@ -218,6 +218,7 @@ const handleQuizVisibilityToggle = async (quiz: Quiz) => {
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
 
+
 // delete course
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
@@ -262,26 +263,35 @@ const contextMenuItems = computed(() => {
 const selectedQuizForResults = ref<Quiz | null>(null);
 const selectedQuizResultsSummary = ref<QuizResultsSummary | null>(null);
 
-function openResults(quiz: Quiz) {
-    selectedQuizForResults.value = quiz;
-    selectedQuizResultsSummary.value = null;
+let resultsReqId = 0;
 
-    enabledModal.value = "quizResults"; // otevři hned (loader může být v modalu)
+function openResults(quiz: Quiz) {
+    const reqId = ++resultsReqId;
+
+    selectedQuizForResults.value = quiz;
+    selectedQuizResultsSummary.value = null; // klidně nech, ale modal ještě neotevírej
 
     fetch(`/api/v1/courses/${courseSmall.value.uuid}/quizzes/${quiz.uuid}/results-summary`)
         .then(res => {
             if (!res.ok) throw new Error("Failed to fetch quiz results summary");
             return res.json();
         })
-        .then(data => {
+        .then((data: QuizResultsSummary) => {
+            // pokud mezitím user otevřel jiný quiz / zavřel modal, ignoruj
+            if (reqId !== resultsReqId) return;
+
             selectedQuizResultsSummary.value = data;
+            enabledModal.value = "quizResults"; // otevři až TEĎ
         })
         .catch(err => {
+            if (reqId !== resultsReqId) return;
             console.error("Error fetching quiz results summary:", err);
+            // volitelně: můžeš otevřít modal s obecnou chybou, nebo nechat být
         });
 }
 
 function closeResultsModal() {
+    resultsReqId++; // zneplatní rozjetý fetch
     enabledModal.value = null;
     selectedQuizForResults.value = null;
     selectedQuizResultsSummary.value = null;

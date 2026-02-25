@@ -127,8 +127,9 @@ const timeBucketsHelp = computed(() => {
         can-be-closed-by-clicking-outside
         :modal-style="{ maxWidth: '1080px' }"
         @close="emit('close')"
+        
     >
-        <div v-if="!hasQuizInfo" style="padding: 16px;">
+        <div v-if="!hasQuizInfo" style="padding: 16px; font-family: 'Dosis', sans-serif; font-size: 18px; font-weight: 700">
             K tomuto kvízu zatím nejsou žádné informace (žádné odevzdané pokusy).
         </div>
 
@@ -265,14 +266,16 @@ const timeBucketsHelp = computed(() => {
 }
 
 .infoLabel {
-    font-size: 12px;
+    font-size: 18px;
     color: var(--text-color-secondary);
+    font-family: "Dosis" , sans-serif;
     margin-bottom: 6px;
 }
 
 .infoValue {
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 700;
+    font-family: "Dosis" , sans-serif;
 }
 
 .chartsGrid {
