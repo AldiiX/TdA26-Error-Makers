@@ -257,6 +257,7 @@ const contextMenuItems = computed(() => {
         }
     ];
 });
+
 </script>
 
 <template>
@@ -426,7 +427,7 @@ const contextMenuItems = computed(() => {
             </nav>
 
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || courseSmall.status === 'live'">
+                <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || loggedAccount?.type === 'admin' || courseSmall.status === 'live'">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
                             <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">

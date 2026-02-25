@@ -403,7 +403,7 @@ public sealed class APIv1(
 			var ownsCourse = acc != null && course.LecturerUuid != null && course.LecturerUuid == acc.Uuid;
 
 			// Hide non-visible modules for users who do not own the course
-			if (!ownsCourse) {
+			if (!ownsCourse && acc is not Admin) {
 				course.Materials = course.Materials.Where(m => m.IsVisible).ToList();
 				course.Quizzes = course.Quizzes.Where(q => q.IsVisible).ToList();
 			}
