@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260216081123_AddTotalTimeSecondsToQuestionResult")]
-    partial class AddTotalTimeSecondsToQuestionResult
+    [Migration("20260225192142_AddTotalTimeSeconds")]
+    partial class AddTotalTimeSeconds
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -154,7 +154,7 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
 
-                    b.Property<DateTime?>("ScheduledStart")
+                    b.Property<DateTimeOffset?>("ScheduledStart")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")
@@ -248,6 +248,9 @@ namespace tda26.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(13)
                         .HasColumnType("varchar(13)");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -350,6 +353,9 @@ namespace tda26.Server.Migrations
                         .HasColumnType("datetime(6)");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Title")
                         .IsRequired()

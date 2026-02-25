@@ -151,7 +151,7 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
 
-                    b.Property<DateTime?>("ScheduledStart")
+                    b.Property<DateTimeOffset?>("ScheduledStart")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")

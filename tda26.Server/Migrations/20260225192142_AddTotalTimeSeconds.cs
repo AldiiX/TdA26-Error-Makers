@@ -5,7 +5,7 @@
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddTotalTimeSecondsToQuestionResult : Migration
+    public partial class AddTotalTimeSeconds : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
