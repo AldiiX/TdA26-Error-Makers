@@ -107,7 +107,7 @@ const endQuiz = async () => {
                 selectedIndices: saved.selectedIndices
             } satisfies AnswerSubmission;
         })
-        .filter((entry): entry is AnswerSubmission => entry !== null);
+        .filter((entry): entry is AnswerSubmission | any => entry !== null);
 
     const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}/submit`, {
         method: 'POST',

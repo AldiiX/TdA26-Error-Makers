@@ -133,6 +133,8 @@ const setQuestionIndex = (i: number) => {
                 @click="incrementQuestionIndex(1)"
             >Další</Button>
         </div>
+
+        <NuxtLink :href="`/courses/${uuid}`"><Button style="width: 100%">Zpět na kurz</Button></NuxtLink>
     </div>
 </template>
 

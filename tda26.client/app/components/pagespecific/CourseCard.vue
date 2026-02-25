@@ -13,6 +13,7 @@ import { useState } from "#app";
 import {useContextMenu} from "~/composables/useContextMenu";
 import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
 import Popover from "~/components/Popover.vue";
+import timeToString from "#shared/utils/timeToString";
 
 const props = withDefaults(defineProps<{
     course: Course;
@@ -256,7 +257,7 @@ const cutDescription = computed(() => {
                 <p :class="$style.desc" :title="course.description">{{ cutDescription }}</p>
             </div>
             <div :class="$style.buttonsContainer">
-                <div :class="$style.anotherInfo">
+                <div :class="$style.anotherInfo" v-if="course.status !== 'draft' && course.status !== 'scheduled'">
                     <div :class="$style.info">
                         <div style="mask-image: url(/icons/thumbs_up_filled.svg)"/>
                         <p>{{ course.likeCount }}</p>
@@ -265,6 +266,25 @@ const cutDescription = computed(() => {
                         <div style="mask-image: url(/icons/views.svg)"/>
                         <p>{{ course.viewCount }}</p>
                     </div>
+                </div>
+                <div :class="$style.startTime" v-else>
+                    <Popover 
+                        v-if="course.scheduledStart" 
+                        trigger="hover"
+                        teleport
+                    >
+                        <template #trigger>
+                            <p>Začíná {{ timeToString(course.scheduledStart) }}</p>
+                        </template>
+                        
+                        <template #content>
+                            Kurz začína {{ new Intl.DateTimeFormat('cs-CZ', {
+                                dateStyle: 'medium',
+                                timeStyle: 'medium',
+                            }).format(new Date(course.scheduledStart!)) }}
+                        </template>
+                    </Popover>
+                    <p v-else>Začátek není naplánován</p>
                 </div>
 
                 <div :class="$style.actionContainer">
@@ -408,7 +428,7 @@ const cutDescription = computed(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 400px;
+    height: 100%;
     width: 350px;
     border-radius: 24px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
@@ -605,6 +625,16 @@ const cutDescription = computed(() => {
                         margin: 0;
                         color: var(--text-color-secondary);
                     }
+                }
+            }
+            
+            .startTime {
+                font-size: 14px;
+                color: var(--text-color-secondary);
+                margin-right: 4px;
+                
+                p {
+                    margin: 4px 0;
                 }
             }
 

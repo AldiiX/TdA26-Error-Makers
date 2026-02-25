@@ -24,7 +24,8 @@ export interface Course {
     category: {
         uuid: string,
         label: string,
-    }
+    },
+    scheduledStart?: string,
 }
 
 export interface Material {
@@ -146,7 +147,17 @@ export interface FeedPost {
     author: Author | null;
     createdAt: string;
     updatedAt: string;
-    purpose: "createMaterial" | "updateMaterial" | "deleteMaterial" | "createQuiz" | "updateQuiz" | "deleteQuiz" | "default";
+    purpose: "createMaterial"
+        | "updateMaterial"
+        | "deleteMaterial"
+        | "showMaterial"
+        | "hideMaterial"
+        | "createQuiz"
+        | "updateQuiz"
+        | "deleteQuiz"
+        | "showQuiz"
+        | "hideQuiz"
+        | "default";
 }
 
 export interface FeedPostView extends FeedPost {

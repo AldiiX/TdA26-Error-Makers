@@ -369,7 +369,7 @@ public sealed class APIv1(
 	}
 
 	private IActionResult? ValidateRestrictedCourseAccess(Course course, Account? acc) {
-		if (course.Status is CourseStatus.Archived or CourseStatus.Paused or CourseStatus.Draft) {
+		if (course.Status is CourseStatus.Archived or CourseStatus.Draft) {
 			if (acc == null) {
 				return Unauthorized();
 			}
@@ -403,7 +403,7 @@ public sealed class APIv1(
 			var ownsCourse = acc != null && course.LecturerUuid != null && course.LecturerUuid == acc.Uuid;
 
 			// Hide non-visible modules for users who do not own the course
-			if (!ownsCourse) {
+			if (!ownsCourse && acc is not Admin) {
 				course.Materials = course.Materials.Where(m => m.IsVisible).ToList();
 				course.Quizzes = course.Quizzes.Where(q => q.IsVisible).ToList();
 			}
@@ -998,6 +998,12 @@ public sealed class APIv1(
 		if (body.ScheduledStart != null) existingCourse.ScheduledStart = body.ScheduledStart;
 		
 		await db.SaveChangesAsync(ct);
+		await sb.PublishAsync(
+			existingCourse.Uuid,
+			new StreamMessage("status_changed", new { status = existingCourse.Status.ToString().ToLower() }),
+			ct
+		);
+
 		return Ok(existingCourse);
 	}
 
@@ -1217,7 +1223,6 @@ public sealed class APIv1(
 
 		db.FeedPosts.Add(post);
 		await db.SaveChangesAsync(ct);
-		await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post), ct);
 
 		return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, obj);
 	}
@@ -1310,7 +1315,6 @@ public sealed class APIv1(
 
 		db.FeedPosts.Add(post);
 		await db.SaveChangesAsync(ct);
-		await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", post), ct);
 
 		return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, responseObj);
 	}
@@ -1419,12 +1423,6 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
 
-		await fsb.PublishAsync(
-			existingCourse.Uuid,
-			new FeedStreamMessage("new_post", newFeedPost),
-			ct
-		);
-
 		db.Materials.Remove(material);
 		await db.SaveChangesAsync(ct);
 
@@ -1491,12 +1489,6 @@ public sealed class APIv1(
 
 				db.FeedPosts.Add(newFeedPost);
 				await db.SaveChangesAsync(ct);
-
-				await fsb.PublishAsync(
-					course.Uuid,
-					new FeedStreamMessage("new_post", newFeedPost),
-					ct
-				);
 
 				return Ok(urlMaterial.ToReadDto());
 
@@ -1602,12 +1594,6 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
 
-		await fsb.PublishAsync(
-			course.Uuid,
-			new FeedStreamMessage("new_post", newFeedPost),
-			ct
-		);
-
 		return Ok(fileMaterial.ToReadDto());
 	}
 
@@ -1638,13 +1624,14 @@ public sealed class APIv1(
 			Message = $"Viditelnost materiálu '{material.Name}' byla změněna na {(body.IsVisible ? "viditelný" : "skrytý")}.",
 			CreatedAt = DateTime.UtcNow,
 			UpdatedAt = DateTime.UtcNow,
-			Purpose = FeedPost.FeedPurpose.UpdateQuiz
+			Purpose = body.IsVisible ? FeedPost.FeedPurpose.ShowMaterial : FeedPost.FeedPurpose.HideMaterial
 		};
 		
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync();
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
-		
+		await sb.PublishAsync(courseUuid, new StreamMessage("material_visibility_changed", new { materialUuid = material.Uuid, isVisible = material.IsVisible }));
+
 		return Ok(new { quizUuid = material.Uuid, isVisible = material.IsVisible });
 	}
 
@@ -1781,7 +1768,6 @@ public sealed class APIv1(
         db.FeedPosts.Add(newFeedPost);
 
         await db.SaveChangesAsync(ct);
-        await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
         return Ok(newQuiz.ToReadDto());
     }
@@ -1981,7 +1967,6 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 
 		await db.SaveChangesAsync();
-		await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
 
 		return Ok(quiz.ToReadDto());
 	}
@@ -2013,13 +1998,14 @@ public sealed class APIv1(
 			Message = $"Viditelnost kvízu '{quiz.Title}' byla změněna na {(body.IsVisible ? "viditelný" : "skrytý")}.",
 			CreatedAt = DateTime.UtcNow,
 			UpdatedAt = DateTime.UtcNow,
-			Purpose = FeedPost.FeedPurpose.UpdateQuiz
+			Purpose = body.IsVisible ? FeedPost.FeedPurpose.ShowQuiz : FeedPost.FeedPurpose.HideQuiz
 		};
 		
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync();
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost));
-		
+		await sb.PublishAsync(courseUuid, new StreamMessage("quiz_visibility_changed", new { quizUuid = quiz.Uuid, isVisible = quiz.IsVisible }));
+
 		return Ok(new { quizUuid = quiz.Uuid, isVisible = quiz.IsVisible });
 	}
 
@@ -2073,7 +2059,6 @@ public sealed class APIv1(
 		db.FeedPosts.Add(newFeedPost);
 
 		await db.SaveChangesAsync();
-		await fsb.PublishAsync(course.Uuid, new FeedStreamMessage("new_post", newFeedPost));
 
 		return NoContent();
 	}
@@ -2618,7 +2603,6 @@ public sealed class APIv1(
 
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
-
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
 		return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid }, newFeedPost);
@@ -2648,7 +2632,6 @@ public sealed class APIv1(
 
 		db.FeedPosts.Remove(feedPost);
 		await db.SaveChangesAsync(ct);
-
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("delete_post", new { uuid = feedPostUuid }), ct);
 
 		return NoContent();
@@ -2680,7 +2663,6 @@ public sealed class APIv1(
 		feedPost.Edited = body.Edited;
 
 		await db.SaveChangesAsync(ct);
-
 		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("update_post", feedPost), ct);
 
 		return Ok(feedPost);

@@ -52,6 +52,24 @@ export function mapFeedPurpose(
                 background: "--color-error",
             };
 
+        case "showMaterial":
+            return {
+                label: "Zveřejněn materiál",
+                type: "material",
+                icon: "/icons/addFile.svg",
+                color: "--accent-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "hideMaterial":
+            return {
+                label: "Skryt materiál",
+                type: "material",
+                icon: "/icons/deleteFile.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
         // ===== quiz =====
         case "createQuiz":
             return {
@@ -74,6 +92,24 @@ export function mapFeedPurpose(
         case "deleteQuiz":
             return {
                 label: "Smazán kvíz",
+                type: "quiz",
+                icon: "/icons/deleteQuiz.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
+        case "showQuiz":
+            return {
+                label: "Zveřejněn kvíz",
+                type: "quiz",
+                icon: "/icons/addQuiz.svg",
+                color: "--accent-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "hideQuiz":
+            return {
+                label: "Skryt kvíz",
                 type: "quiz",
                 icon: "/icons/deleteQuiz.svg",
                 color: "--color-error",

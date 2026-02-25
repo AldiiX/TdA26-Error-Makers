@@ -223,7 +223,7 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
 // obecne sse
-const { } = useCourseSSE({ course: courseSmall, editMode: isEditMode });
+const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -463,14 +463,14 @@ function closeResultsModal() {
                     </li>
                 </ul>
             </nav>
+
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper :change-width="false">
+                <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || loggedAccount?.type === 'admin' || courseSmall.status === 'live'">
                     <ClientOnly>
                         <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
-                                        v-if="ownsCourse"
                                         button-style="primary"
                                         accent-color="primary"
                                         :class="$style.addMaterialButton"
@@ -489,6 +489,7 @@ function closeResultsModal() {
                             <ul v-else>
                                 <li v-for="material in course?.materials" :key="material.uuid">
                                     <MaterialItem
+                                        v-if="ownsCourse || material.isVisible"
                                         :material="material"
                                         :course="course"
                                         :edit-mode="ownsCourse"
@@ -501,10 +502,9 @@ function closeResultsModal() {
                             </ul>
                         </div>
                         <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                            <Popover teleport :disabled="courseSmall.status === 'draft'">
+                            <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
-                                        v-if="ownsCourse"
                                         button-style="primary"
                                         accent-color="primary"
                                         :class="$style.addMaterialButton"
@@ -523,6 +523,7 @@ function closeResultsModal() {
                             <ul v-else>
                                 <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
                                     <QuizItem
+                                        v-if="ownsCourse || quiz.isVisible"
                                         :quiz="quiz"
                                         :course="course"
                                         :edit-mode="ownsCourse"
@@ -608,6 +609,7 @@ function closeResultsModal() {
                                                 <Button
                                                     button-style="secondary"
                                                     accent-color="secondary"
+                                                    v-if="feedPost.type === 'manual'"
                                                     @click="openUpdateFeedPost(feedPost)"
                                                 >
                                                     Upravit
@@ -661,6 +663,10 @@ function closeResultsModal() {
                             </ul>
                         </div>
                     </ClientOnly>
+                </SmoothSizeWrapper>
+
+                <SmoothSizeWrapper :change-width="false" v-else>
+                    <p>Kurz je momentálně ve stavu {{ statusToText(courseSmall?.status ?? "unknown") }}. Moduly lze vidět pouze pokud kurz probíhá.</p>
                 </SmoothSizeWrapper>
             </div>
         </div>
