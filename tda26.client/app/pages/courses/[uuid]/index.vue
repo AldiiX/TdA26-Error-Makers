@@ -2,7 +2,7 @@
 import type {
     Account,
     Course,
-    CourseCategory, CourseStatus,
+    CourseCategory, CourseModule, CourseStatus,
     Material,
     Quiz, QuizResultsSummary
 } from "#shared/types";
@@ -36,6 +36,7 @@ import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
 import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisibility";
+import { useModuleDrag } from "~/composables/courses/[uuid]/useModuleDrag";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
@@ -149,6 +150,16 @@ if (courseError.value) {
 const course = ref<Course | null>(_course.value ?? null);
 const originalCourse = ref<Course | null>(null);
 
+const modules = computed(() => {
+    if (!course.value) return [];
+    const materials = course.value.materials?.map(m => ({ ...m, moduleType: "material" as const })) ?? [];
+    const quizzes = course.value.quizzes?.map(q => ({ ...q, moduleType: "quiz" as const })) ?? [];
+    return [...materials, ...quizzes].sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order; // primarni razeni podle order
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // sekundarni razeni podle createdAt
+    });
+});
+
 // categories jsou server-renderovane, aby select mel data hned
 const { data: categories } = await useFetch<CourseCategory[]>(
     getBaseUrl() + "/api/v1/course-categories",
@@ -168,7 +179,7 @@ useBeforeUnloadUnsavedChanges(isDirty);
 const {ratingLoading, isThisCourseLikedDesign, isThisCourseDislikedDesign, optimisticLikeCount, addRating,} = useCourseRating({uuid, loggedAccount, courseSmall, course, enabledModal,});
 
 // menu
-const menuItems = ["Materiály", "Kvízy", "Aktivita"];
+const menuItems = ["Moduly", "Aktivita"];
 const selectedItem = ref(menuItems[0]);
 
 const selectItem = (item: string) => {
@@ -214,6 +225,9 @@ const handleQuizVisibilityToggle = async (quiz: Quiz) => {
         moduleLoadingStates.value[quiz.uuid] = false;
     }
 };
+
+// drag & drop for modules
+const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules });
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
@@ -296,6 +310,8 @@ function closeResultsModal() {
     selectedQuizForResults.value = null;
     selectedQuizResultsSummary.value = null;
 }
+
+
 </script>
 
 <template>
@@ -467,7 +483,7 @@ function closeResultsModal() {
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
                 <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || loggedAccount?.type === 'admin' || courseSmall.status === 'live'">
                     <ClientOnly>
-                        <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
+                        <div v-if="selectedItem == 'Moduly'" :class="$style.materials">
                             <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
@@ -483,25 +499,6 @@ function closeResultsModal() {
 
                                 <template #content>Kurz musí být návrh</template>
                             </Popover>
-
-                            <p v-if="coursePending">Načítání materiálů...</p>
-                            <p v-else-if="course?.materials === undefined || course?.materials.length == 0">Tento kurz nemá žádné materiály.</p>
-                            <ul v-else>
-                                <li v-for="material in course?.materials" :key="material.uuid">
-                                    <MaterialItem
-                                        v-if="ownsCourse || material.isVisible"
-                                        :material="material"
-                                        :course="course"
-                                        :edit-mode="ownsCourse"
-                                        :is-visibility-toggle-loading="moduleLoadingStates[material.uuid] || false"
-                                        @edit="openUpdateMaterialModal"
-                                        @delete="openDeleteMaterialModal"
-                                        @toggle-visibility="handleMaterialVisibilityToggle"
-                                    />
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
                             <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
                                 <template #trigger>
                                     <Button
@@ -518,20 +515,47 @@ function closeResultsModal() {
                                 <template #content>Kurz musí být návrh</template>
                             </Popover>
 
-                            <p v-if="coursePending">Načítání kvízů...</p>
-                            <p v-else-if="course?.quizzes === undefined || course?.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
+                            <p v-if="coursePending || !course">Načítání materiálů...</p>
+                            <p v-else-if=" modules.length === 0">Tento kurz nemá žádné materiály či kvízy.</p>
                             <ul v-else>
-                                <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
-                                    <QuizItem
-                                        v-if="ownsCourse || quiz.isVisible"
-                                        :quiz="quiz"
-                                        :course="course"
-                                        :edit-mode="ownsCourse"
-                                        :is-visibility-toggle-loading="moduleLoadingStates[quiz.uuid] || false"
-                                        @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                        @toggle-visibility="handleQuizVisibilityToggle"
-                                        @openResults="openResults"
-                                    />
+                                <li
+                                    v-for="module in modules"
+                                    :key="module.uuid"
+                                    :draggable="ownsCourse"
+                                    :class="{
+                                        [$style.dragging]: draggedModuleUuid === module.uuid,
+                                        [$style.dragOver]: dragOverModuleUuid === module.uuid && draggedModuleUuid !== module.uuid,
+                                    }"
+                                    @dragstart="ownsCourse && onModuleDragStart($event, module.uuid)"
+                                    @dragover="ownsCourse && onModuleDragOver($event, module.uuid)"
+                                    @dragleave="ownsCourse && onModuleDragLeave($event, module.uuid)"
+                                    @drop="ownsCourse && onModuleDrop($event, module.uuid)"
+                                    @dragend="onModuleDragEnd"
+                                >
+                                    <template v-if="module.moduleType === 'material'">
+                                        <MaterialItem
+                                            v-if="ownsCourse || module.isVisible"
+                                            :material="module"
+                                            :course="course"
+                                            :edit-mode="ownsCourse"
+                                            :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
+                                            @edit="openUpdateMaterialModal"
+                                            @delete="openDeleteMaterialModal"
+                                            @toggle-visibility="handleMaterialVisibilityToggle"
+                                        />
+                                    </template>
+                                    <template v-else-if="module.moduleType === 'quiz'">
+                                        <QuizItem
+                                            v-if="ownsCourse || module.isVisible"
+                                            :quiz="module"
+                                            :course="course"
+                                            :edit-mode="ownsCourse"
+                                            :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
+                                            @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                            @toggle-visibility="handleQuizVisibilityToggle"
+                                            @openResults="openResults"
+                                        />
+                                    </template>
                                 </li>
                             </ul>
                         </div>
@@ -1779,7 +1803,24 @@ ul {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
+
+                li[draggable="true"] {
+                    cursor: grab;
+
+                    &:active {
+                        cursor: grabbing;
+                    }
+                }
             }
+        }
+
+        .dragging {
+            opacity: 0.4;
+        }
+
+        .dragOver {
+            border-top: 2px solid var(--accent-color-primary);
+            padding-top: 4px;
         }
 
         .activity {

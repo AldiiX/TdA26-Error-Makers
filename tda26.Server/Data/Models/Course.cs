@@ -57,6 +57,7 @@ public sealed class Course : Auditable {
   
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
 
+
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 

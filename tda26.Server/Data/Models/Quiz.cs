@@ -23,4 +23,6 @@ public class Quiz : Auditable, IModule {
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     
     public bool IsVisible { get; set; } = false;
+
+    public int Order { get; set; } = 0;
 }

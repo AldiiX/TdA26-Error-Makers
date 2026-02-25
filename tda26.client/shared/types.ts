@@ -38,6 +38,7 @@ export interface Material {
     description?: string;
     faviconUrl?: string;
     isVisible: boolean;
+    order: number;
 }
 
 export interface MaterialFormModel {
@@ -58,6 +59,7 @@ export interface Quiz {
     course: Course;
     questions: Question[];
     isVisible: boolean;
+    order: number;
 }
 
 export interface Question {

@@ -34,4 +34,6 @@ public class Material : Auditable, IModule {
     public Course Course { get; set; } = null!;
     
     public bool IsVisible { get; set; } = false;
+
+    public int Order { get; set; } = 0;
 }
