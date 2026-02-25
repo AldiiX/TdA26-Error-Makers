@@ -1,107 +1,102 @@
 ﻿<script setup lang="ts">
-import type {QuizResultsSummary} from "#shared/types";
+import type { QuizResultsSummary } from "#shared/types";
 import Modal from "~/components/Modal.vue";
 import VueApexCharts from "vue3-apexcharts";
-import type {Course, Quiz} from "#shared/types";
-import type {ApexOptions} from "apexcharts";
-import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import type { ApexOptions } from "apexcharts";
+import { computed } from "vue";
 
-
-const quizResultsSummary = ref<QuizResultsSummary | null>(null);
-
-type DistributionItem = {
-    label: string;
-    count: number;
+/**
+ * OPTIONAL navíc z parenta (abychom uměli ukázat i:
+ * - úspěšnost jednotlivých kvízů (bar chart přes kurz)
+ * - počet stažení materiálů
+ * - počet otevření odkazů
+ */
+type CourseAnalyticsExtra = {
+    perQuizSuccess?: Array<{ quizUuid: string; title: string; avgPercent: number; totalAttempts: number }>;
+    materialDownloads?: number; // celkem za kurz
+    linkOpens?: number;         // celkem za kurz
 };
 
 const props = defineProps<{
-    course?: Course,
-    quiz?: Quiz,
-    quizResultsSummary: QuizResultsSummary | null,
-    enabled: boolean,
+    enabled: boolean;
+    quizResultsSummary: QuizResultsSummary | null;
+    extra?: CourseAnalyticsExtra | null;
 }>();
 
-const emit = defineEmits<{
-    (e: "close"): void;
-}>();
+const emit = defineEmits<{ (e: "close"): void }>();
 
-watch(() => props.quizResultsSummary, (results) => {
-    console.log("Received quiz results summary:", results);
-});
+const summary = computed(() => props.quizResultsSummary);
 
-const localSummary = ref<QuizResultsSummary | null>(null);
+// ---- default buckets (aby grafy nikdy nebyly "prázdné strukturou") ----
+const defaultScoreBuckets = [
+    "0–20%",
+    "20–40%",
+    "40–60%",
+    "60–80%",
+    "80–100%",
+];
 
-const summary = computed<QuizResultsSummary | null>(() => {
-    return props.quizResultsSummary ?? localSummary.value ?? null;
-});
+const defaultTimeBuckets = [
+    "0–1 min",
+    "1–3 min",
+    "3–5 min",
+    "5–10 min",
+    "10+ min",
+];
 
-async function fetchSummaryIfNeeded() {
-    if (props.quizResultsSummary) return;
-    if (!props.course?.uuid || !props.quiz?.uuid) return;
-
-    try {
-        const res = await fetch(`/api/v1/courses/${props.course.uuid}/quizzes/${props.quiz.uuid}/results-summary`);
-        if (!res.ok) throw new Error("Failed to fetch quiz results summary");
-        localSummary.value = await res.json();
-    } catch (e) {
-        console.error(e);
-    }
+function normalizeDist(
+    incoming: Array<{ label: string; count: number }> | undefined,
+    defaults: string[]
+) {
+    const map = new Map((incoming ?? []).map(x => [x.label, Number(x.count) || 0]));
+    return defaults.map(label => ({ label, count: map.get(label) ?? 0 }));
 }
 
-onMounted(fetchSummaryIfNeeded);
-watch(() => props.quizResultsSummary, () => {
-    // když začneš posílat summary z parenta, nemusíme nic fetchovat
-}, { deep: false });
-// ---------- helpers ----------
-function getScoreDist(): DistributionItem[] {
-    const dist = (summary.value as any)?.scoreDistribution as DistributionItem[] | undefined;
-    return (dist ?? []).filter((x) => x.count > 0);
-}
+// ---- always full arrays (including zeros) ----
+const scoreDist = computed(() =>
+    normalizeDist((summary.value as any)?.scoreDistribution, defaultScoreBuckets)
+);
 
-function getTimeDist(): DistributionItem[] {
-    const dist = (summary.value as any)?.timeDistribution as DistributionItem[] | undefined;
-    return (dist ?? []).filter((x) => x.count > 0);
-}
+const timeDist = computed(() =>
+    normalizeDist((summary.value as any)?.timeDistribution, defaultTimeBuckets)
+);
 
-const totalAttempts = computed(() => {
-    // fallback: sečtu scoreDistribution counts
-    const s = getScoreDist();
-    if (s.length) return s.reduce((a, b) => a + (Number(b.count) || 0), 0);
-    const t = getTimeDist();
-    if (t.length) return t.reduce((a, b) => a + (Number(b.count) || 0), 0);
-    return 0;
-});
+// ---- info cards ----
+const totalAttempts = computed(() => summary.value?.totalAttempts ?? 0);
+const averageScore = computed(() => summary.value?.averageScore ?? 0);
+const averageTimeSpent = computed(() => summary.value?.averageTimeSpent ?? 0);
+const averageScorePercentage = computed(() => summary.value?.averageScorePercentage ?? 0);
 
 const mostCommonScoreBucket = computed(() => {
-    const s = getScoreDist();
-    if (!s.length) return "—";
-    const top = [...s].sort((a, b) => b.count - a.count)[0];
-    return `${top?.label} (${top?.count})`;
+    const dist = scoreDist.value;
+    if (!dist.length) return "—";
+    const top = [...dist].sort((a, b) => b.count - a.count)[0];
+    // když jsou všechno 0, je to stejně “—”, aby to nebylo matoucí
+    if (!top || top.count === 0) return "—";
+    return `${top.label} (${top.count})`;
 });
 
 const mostCommonTimeBucket = computed(() => {
-    const t = getTimeDist();
-    if (!t.length) return "—";
-    const top = [...t].sort((a, b) => b.count - a.count)[0];
-    return `${top?.label} (${top?.count})`;
+    const dist = timeDist.value;
+    if (!dist.length) return "—";
+    const top = [...dist].sort((a, b) => b.count - a.count)[0];
+    if (!top || top.count === 0) return "—";
+    return `${top.label} (${top.count})`;
 });
 
-// ---------- PIE (scoreDistribution) ----------
-const pieSeries = computed<number[]>(() => getScoreDist().map((x) => x.count));
+// ---- PIE (scoreDistribution) ----
+const pieSeries = computed(() => scoreDist.value.map(x => x.count));
 const pieOptions = computed<ApexOptions>(() => ({
     chart: { type: "pie" },
-    labels: getScoreDist().map((x) => x.label),
+    labels: scoreDist.value.map(x => x.label),
     legend: { position: "top" },
     dataLabels: { enabled: true },
 }));
 
-// ---------- 100% STACKED BAR (scoreDistribution jako 1 bar rozdělený segmenty) ----------
-const stackedCategories = computed(() => ["Score distribution"]);
-const stackedSeries = computed(() => {
-    const dist = getScoreDist();
-    // každý bucket = vlastní série, data má jen jednu hodnotu => jeden bar
-    return dist.map((d) => ({ name: d.label, data: [d.count] }));
-});
+// ---- 100% stacked bar (scoreDistribution) ----
+const stackedSeries = computed(() =>
+    scoreDist.value.map(d => ({ name: d.label, data: [d.count] }))
+);
 
 const stackedOptions = computed<ApexOptions>(() => ({
     chart: {
@@ -111,96 +106,40 @@ const stackedOptions = computed<ApexOptions>(() => ({
         toolbar: { show: false },
     },
     plotOptions: {
-        bar: {
-            horizontal: true,
-            barHeight: "40%",
-            dataLabels: { position: "center" },
-        },
+        bar: { horizontal: true, barHeight: "40%" },
     },
-    xaxis: {
-        categories: stackedCategories.value,
-        labels: { show: false },
-    },
+    xaxis: { categories: ["Score distribution"], labels: { show: false } },
     yaxis: { labels: { show: false } },
     legend: { position: "top" },
-    dataLabels: {
-        enabled: true,
-        formatter: (val: number) => `${Math.round(val)}%`,
-    },
-    tooltip: {
-        y: {
-            formatter: (val: number) => `${val}`,
-        },
-    },
 }));
 
-// ---------- DYNAMIC UPDATING LINE ----------
-const dynLabels = ref<string[]>([]);
-const dynSeriesA = ref<number[]>([]);
-const dynSeriesB = ref<number[]>([]);
-const dynTimer = ref<number | null>(null);
-
-function initDynamicSeries() {
-    // vezmu jako základ timeDistribution (A) a scoreDistribution (B)
-    const a = getTimeDist();
-    const b = getScoreDist();
-
-    // když nejsou data, udělám demo
-    if (!a.length || !b.length) {
-        dynLabels.value = Array.from({ length: 14 }, (_, i) => String(i + 1));
-        dynSeriesA.value = [24, 33, 25, 21, 20, 6, 9, 15, 10, 50, 32, 12, 26, 33];
-        dynSeriesB.value = [42, 13, 18, 28, 36, 35, 50, 32, 34, 20, 50, 36, 30, 32];
-        return;
-    }
-
-    // sjednotím délku na min
-    const n = Math.min(a.length, b.length);
-    dynLabels.value = Array.from({ length: n }, (_, i) => String(i + 1));
-    dynSeriesA.value = a.slice(0, n).map((x) => x.count);
-    dynSeriesB.value = b.slice(0, n).map((x) => x.count);
-}
-
-function startDynamicUpdates() {
-    stopDynamicUpdates();
-    dynTimer.value = window.setInterval(() => {
-        // posuň okno a přidej nový bod (random walk)
-        const nextA = Math.max(0, Math.round((dynSeriesA.value.at(-1) ?? 10) + (Math.random() * 20 - 10)));
-        const nextB = Math.max(0, Math.round((dynSeriesB.value.at(-1) ?? 10) + (Math.random() * 20 - 10)));
-
-        if (dynSeriesA.value.length > 1) dynSeriesA.value = [...dynSeriesA.value.slice(1), nextA];
-        if (dynSeriesB.value.length > 1) dynSeriesB.value = [...dynSeriesB.value.slice(1), nextB];
-    }, 900);
-}
-
-function stopDynamicUpdates() {
-    if (dynTimer.value) window.clearInterval(dynTimer.value);
-    dynTimer.value = null;
-}
-
-watch(summary, () => {
-    initDynamicSeries();
-}, { immediate: true });
-
-watch(() => props.enabled, (en) => {
-    if (en) startDynamicUpdates();
-    else stopDynamicUpdates();
-}, { immediate: true });
-
-onBeforeUnmount(stopDynamicUpdates);
-
+// ---- LINE (timeDistribution) ----
 const lineSeries = computed(() => [
-    { name: "Time dist", data: dynSeriesA.value },
-    { name: "Score dist", data: dynSeriesB.value },
+    { name: "Time distribution", data: timeDist.value.map(x => x.count) },
 ]);
 
 const lineOptions = computed<ApexOptions>(() => ({
-    chart: { type: "line", animations: { enabled: true } },
+    chart: { type: "line" },
     stroke: { curve: "smooth", width: 4 },
-    xaxis: { categories: dynLabels.value },
+    xaxis: { categories: timeDist.value.map(x => x.label) },
     legend: { position: "top" },
-    grid: { strokeDashArray: 4 },
 }));
 
+// ---- COURSE: per-quiz success (optional extra) ----
+const perQuiz = computed(() => props.extra?.perQuizSuccess ?? []);
+const perQuizSeries = computed(() => [{ name: "Úspěšnost (%)", data: perQuiz.value.map(x => x.avgPercent) }]);
+const perQuizOptions = computed<ApexOptions>(() => ({
+    chart: { type: "bar", toolbar: { show: false } },
+    xaxis: { categories: perQuiz.value.map(x => x.title) },
+    dataLabels: { enabled: true },
+    plotOptions: { bar: { borderRadius: 6 } },
+}));
+
+const materialDownloads = computed(() => props.extra?.materialDownloads ?? null);
+const linkOpens = computed(() => props.extra?.linkOpens ?? null);
+
+// helper: “jsou vůbec nějaké pokusy?”
+const hasAttempts = computed(() => (summary.value?.totalAttempts ?? 0) > 0);
 </script>
 
 <template>
@@ -211,8 +150,16 @@ const lineOptions = computed<ApexOptions>(() => ({
         :modal-style="{ maxWidth: '1080px' }"
         @close="emit('close')"
     >
-        <div :class="$style.quizResultsModal">
+        <div v-if="!summary" style="padding: 16px;">
+            Nejsou k dispozici data.
+        </div>
+
+        <div v-else :class="$style.quizResultsModal">
             <h3>Výsledky kvízu</h3>
+
+            <div v-if="!hasAttempts" style="margin-bottom: 8px; opacity: 0.7;">
+                Zatím nejsou žádné pokusy — grafy budou mít hodnoty 0.
+            </div>
 
             <!-- INFO -->
             <div :class="$style.infoGrid">
@@ -222,31 +169,61 @@ const lineOptions = computed<ApexOptions>(() => ({
                 </div>
 
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Nejčastější skóre</div>
+                    <div :class="$style.infoLabel">Průměrné skóre</div>
+                    <div :class="$style.infoValue">{{ averageScore }}</div>
+                </div>
+
+                <div :class="$style.infoCard">
+                    <div :class="$style.infoLabel">Průměrná úspěšnost</div>
+                    <div :class="$style.infoValue">{{ Math.round(averageScorePercentage) }}%</div>
+                </div>
+
+                <div :class="$style.infoCard">
+                    <div :class="$style.infoLabel">Průměrný čas</div>
+                    <div :class="$style.infoValue">{{ Math.round(averageTimeSpent) }} s</div>
+                </div>
+
+                <div :class="$style.infoCard">
+                    <div :class="$style.infoLabel">Nejčastější skóre bucket</div>
                     <div :class="$style.infoValue">{{ mostCommonScoreBucket }}</div>
                 </div>
 
                 <div :class="$style.infoCard">
-                    <div :class="$style.infoLabel">Nejčastější čas</div>
+                    <div :class="$style.infoLabel">Nejčastější čas bucket</div>
                     <div :class="$style.infoValue">{{ mostCommonTimeBucket }}</div>
+                </div>
+
+                <div :class="$style.infoCard">
+                    <div :class="$style.infoLabel">Počet stažení materiálů</div>
+                    <div :class="$style.infoValue">{{ materialDownloads ?? "—" }}</div>
+                </div>
+
+                <div :class="$style.infoCard">
+                    <div :class="$style.infoLabel">Počet otevření odkazů</div>
+                    <div :class="$style.infoValue">{{ linkOpens ?? "—" }}</div>
                 </div>
             </div>
 
             <!-- CHARTS -->
             <div :class="$style.chartsGrid">
                 <div :class="$style.chartCard">
-                    <h4>Dynamic Updating Chart</h4>
+                    <h4>Time distribution</h4>
                     <VueApexCharts type="line" :series="lineSeries" :options="lineOptions" height="320" />
                 </div>
 
                 <div :class="$style.chartCard">
-                    <h4>Pie (score distribution)</h4>
+                    <h4>Score distribution (pie)</h4>
                     <VueApexCharts type="pie" :series="pieSeries" :options="pieOptions" height="320" />
                 </div>
 
                 <div :class="$style.chartCard">
-                    <h4>100% Stacked Bar (score distribution)</h4>
+                    <h4>Score distribution (100%)</h4>
                     <VueApexCharts type="bar" :series="stackedSeries" :options="stackedOptions" height="220" />
+                </div>
+
+                <div v-if="perQuiz.length" :class="$style.chartCard" style="grid-column: 1 / -1;">
+                    <h4>Úspěšnost jednotlivých kvízů</h4>
+                    <VueApexCharts type="bar" :series="perQuizSeries" :options="perQuizOptions" height="320" />
                 </div>
             </div>
         </div>
