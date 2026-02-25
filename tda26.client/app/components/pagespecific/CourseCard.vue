@@ -428,7 +428,7 @@ const cutDescription = computed(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 400px;
+    height: 100%;
     width: 350px;
     border-radius: 24px;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.1);
