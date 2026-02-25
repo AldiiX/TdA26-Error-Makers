@@ -14,4 +14,5 @@ public class ReadMaterialResponse {
     public required DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
     public required DateTimeOffset UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsVisible { get; set; }
+    public int Order { get; set; } = 0;
 }

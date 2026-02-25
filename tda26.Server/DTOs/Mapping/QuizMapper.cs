@@ -15,6 +15,7 @@ public static class QuizMapper {
                     .Select(q => (object)q.ToReadDto())
                     .ToList(),
                 IsVisible = quiz.IsVisible,
+                Order = quiz.Order
             };
         }
         

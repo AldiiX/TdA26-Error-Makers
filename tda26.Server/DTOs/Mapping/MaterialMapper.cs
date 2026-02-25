@@ -19,6 +19,7 @@ public static class MaterialMapper
                 CreatedAt = url.CreatedAt,
                 UpdatedAt = url.UpdatedAt,
                 IsVisible = url.IsVisible,
+                Order = url.Order
             },
 
             FileMaterial file => new ReadFileMaterialResponse
@@ -33,6 +34,7 @@ public static class MaterialMapper
                 CreatedAt = file.CreatedAt,
                 UpdatedAt = file.UpdatedAt,
                 IsVisible = file.IsVisible,
+                Order = file.Order
             },
 
             _ => throw new InvalidOperationException($"Unknown material type: {material.GetType().Name}")

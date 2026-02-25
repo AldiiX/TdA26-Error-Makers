@@ -36,7 +36,7 @@ export function useModuleDrag(params: {
         }
     }
 
-    function onModuleDrop(event: DragEvent, targetModuleUuid: string) {
+    async function onModuleDrop(event: DragEvent, targetModuleUuid: string) {
         event.preventDefault();
         dragOverModuleUuid.value = null;
 
@@ -108,6 +108,15 @@ export function useModuleDrag(params: {
         console.log('New module order:', newOrder);
 
         draggedModuleUuid.value = null;
+        
+        await $fetch(`/api/v1/courses/${courseVal?.uuid}/module-order`, {
+            method: 'POST',
+            body: {
+                moduleOrders: newOrder,
+            },
+        }).catch(err => {
+            console.error('Error saving module order:', err);
+        });
     }
 
     function onModuleDragEnd() {

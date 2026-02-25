@@ -523,14 +523,14 @@ function closeResultsModal() {
                                 <li
                                     v-for="module in modules"
                                     :key="module.uuid"
-                                    :draggable="ownsCourse"
+                                    :draggable="ownsCourse && courseSmall.status === 'draft'"
                                     :class="{
                                         [$style.dragging]: draggedModuleUuid === module.uuid,
                                     }"
-                                    @dragstart="ownsCourse && onModuleDragStart($event, module.uuid)"
-                                    @dragover="ownsCourse && onModuleDragOver($event, module.uuid)"
-                                    @dragleave="ownsCourse && onModuleDragLeave($event, module.uuid)"
-                                    @drop="ownsCourse && onModuleDrop($event, module.uuid)"
+                                    @dragstart="ownsCourse && courseSmall.status === 'draft' && onModuleDragStart($event, module.uuid)"
+                                    @dragover="ownsCourse && courseSmall.status === 'draft' && onModuleDragOver($event, module.uuid)"
+                                    @dragleave="ownsCourse && courseSmall.status === 'draft' && onModuleDragLeave($event, module.uuid)"
+                                    @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, module.uuid)"
                                     @dragend="onModuleDragEnd"
                                 >
                                     <Transition name="drag-placeholder">
@@ -540,7 +540,7 @@ function closeResultsModal() {
                                         />
                                     </Transition>
                                     <div :class="$style.module">
-                                        <div v-if="ownsCourse" :class="$style.dragHandle">
+                                        <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
                                             <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                                 <circle cx="2" cy="2" r="1.5"/>
                                                 <circle cx="8" cy="2" r="1.5"/>
@@ -579,7 +579,7 @@ function closeResultsModal() {
                                     </div>
                                 </li>
                                 <li
-                                    v-if="ownsCourse && draggedModuleUuid"
+                                    v-if="ownsCourse && courseSmall.status === 'draft' && draggedModuleUuid"
                                     key="__end__"
                                     :class="$style.endDropZone"
                                     @dragover="onModuleDragOver($event, '__end__')"

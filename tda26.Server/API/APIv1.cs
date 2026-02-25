@@ -1006,6 +1006,43 @@ public sealed class APIv1(
 
 		return Ok(existingCourse);
 	}
+	
+	[HttpPost("courses/{uuid:guid}/module-order")]
+	public async Task<IActionResult> UpdateCourseModuleOrder(Guid uuid, [FromBody] UpdateCourseModuleOrderRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var existingCourse = await db.CoursesFullEf()
+			.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
+		if (existingCourse == null) return NotFound();
+
+		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
+		foreach (var module in body.ModuleOrders) {
+			if (module.ModuleType == "material") {
+				var existingMaterial = existingCourse.Materials.FirstOrDefault(m => m.Uuid == module.Uuid);
+				
+				if (existingMaterial == null)
+					return BadRequest(new { error = $"Invalid material UUID: {module.Uuid}" });
+				
+				existingMaterial.Order = module.Order;
+			}
+
+			if (module.ModuleType == "quiz") {
+				var existingQuiz = existingCourse.Quizzes.FirstOrDefault(q => q.Uuid == module.Uuid);
+				
+				if (existingQuiz == null)
+					return BadRequest(new { error = $"Invalid quiz UUID: {module.Uuid}" });
+				
+				existingQuiz.Order = module.Order;
+			}
+		}
+
+		var affected = await db.SaveChangesAsync(ct);
+		return Ok(new { affected });
+	}
 
 	[HttpPost("courses")]
 	public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body, CancellationToken ct = default) {
