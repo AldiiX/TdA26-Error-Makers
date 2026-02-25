@@ -201,7 +201,7 @@ const timeBucketsHelp = computed(() => {
                 </div>
 
                 <div :class="$style.chartCard">
-                    <h4>Rozložení skóre (koláč)</h4>
+                    <h4>Rozložení skóre</h4>
 
                     <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">
                         Rozložení skóre není k dispozici (součet bucketů je 0).
@@ -216,21 +216,21 @@ const timeBucketsHelp = computed(() => {
                     />
                 </div>
 
-                <div :class="$style.chartCard">
-                    <h4>Rozložení skóre (100% skládaný graf)</h4>
+<!--                <div :class="$style.chartCard">-->
+<!--                    <h4>Rozložení skóre (100% skládaný graf)</h4>-->
 
-                    <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">
-                        100% skládaný graf nelze vykreslit, když je součet 0.
-                    </div>
+<!--                    <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">-->
+<!--                        100% skládaný graf nelze vykreslit, když je součet 0.-->
+<!--                    </div>-->
 
-                    <VueApexCharts
-                        v-else
-                        type="bar"
-                        :series="stackedSeries"
-                        :options="stackedOptions"
-                        height="220"
-                    />
-                </div>
+<!--                    <VueApexCharts-->
+<!--                        v-else-->
+<!--                        type="bar"-->
+<!--                        :series="stackedSeries"-->
+<!--                        :options="stackedOptions"-->
+<!--                        height="220"-->
+<!--                    />-->
+<!--                </div>-->
             </div>
         </div>
     </Modal>
