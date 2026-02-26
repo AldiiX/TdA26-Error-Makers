@@ -123,6 +123,8 @@ function onItemDragStart(event: DragEvent, uuid: string) {
 }
 
 function onItemDragOver(event: DragEvent, uuid: string) {
+    // Only show within-module reorder hints when the drag originated from THIS module
+    if (!draggedItemUuid.value) return;
     if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
     event.preventDefault();
     event.stopPropagation();
@@ -138,6 +140,8 @@ function onItemDragLeave(event: DragEvent, uuid: string) {
 }
 
 function onEndZoneDragOver(event: DragEvent) {
+    // Only show within-module end-zone hint when the drag originated from THIS module
+    if (!draggedItemUuid.value) return;
     if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
     event.preventDefault();
     event.stopPropagation();

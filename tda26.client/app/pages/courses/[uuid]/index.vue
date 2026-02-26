@@ -275,24 +275,22 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
     const courseVal = course.value;
     if (itemType === 'material') {
         // Check flat unassigned list first
-        const flatIdx = courseVal.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
-        if (flatIdx !== -1 && courseVal.materials) {
-            const [item] = courseVal.materials.splice(flatIdx, 1);
+        const item = courseVal.materials?.find(m => m.uuid === itemUuid);
+        if (item && courseVal.materials) {
+            courseVal.materials = courseVal.materials.filter(m => m.uuid !== itemUuid);
             const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-            if (targetMod && item) {
-                targetMod.materials = targetMod.materials ?? [];
-                targetMod.materials.push(item);
+            if (targetMod) {
+                targetMod.materials = [...(targetMod.materials ?? []), item];
             }
         } else {
             // Check inside existing modules
             for (const mod of (courseVal.modules ?? [])) {
-                const idx = mod.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
-                if (idx !== -1 && mod.materials) {
-                    const [item] = mod.materials.splice(idx, 1);
+                const modItem = mod.materials?.find(m => m.uuid === itemUuid);
+                if (modItem && mod.materials) {
+                    mod.materials = mod.materials.filter(m => m.uuid !== itemUuid);
                     const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-                    if (targetMod && item) {
-                        targetMod.materials = targetMod.materials ?? [];
-                        targetMod.materials.push(item);
+                    if (targetMod) {
+                        targetMod.materials = [...(targetMod.materials ?? []), modItem];
                     }
                     break;
                 }
@@ -300,32 +298,28 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
         }
     } else if (itemType === 'quiz') {
         // Check flat unassigned list first
-        const flatIdx = courseVal.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
-        if (flatIdx !== -1 && courseVal.quizzes) {
-            const [item] = courseVal.quizzes.splice(flatIdx, 1);
+        const item = courseVal.quizzes?.find(q => q.uuid === itemUuid);
+        if (item && courseVal.quizzes) {
+            courseVal.quizzes = courseVal.quizzes.filter(q => q.uuid !== itemUuid);
             const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-            if (targetMod && item) {
-                targetMod.quizzes = targetMod.quizzes ?? [];
-                targetMod.quizzes.push(item);
+            if (targetMod) {
+                targetMod.quizzes = [...(targetMod.quizzes ?? []), item];
             }
         } else {
             // Check inside existing modules
             for (const mod of (courseVal.modules ?? [])) {
-                const idx = mod.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
-                if (idx !== -1 && mod.quizzes) {
-                    const [item] = mod.quizzes.splice(idx, 1);
+                const modItem = mod.quizzes?.find(q => q.uuid === itemUuid);
+                if (modItem && mod.quizzes) {
+                    mod.quizzes = mod.quizzes.filter(q => q.uuid !== itemUuid);
                     const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-                    if (targetMod && item) {
-                        targetMod.quizzes = targetMod.quizzes ?? [];
-                        targetMod.quizzes.push(item);
+                    if (targetMod) {
+                        targetMod.quizzes = [...(targetMod.quizzes ?? []), modItem];
                     }
                     break;
                 }
             }
         }
     }
-    // trigger reactivity — deep clone so Vue sees all nested array mutations
-    // trigger reactivity
     course.value = { ...courseVal };
 
     // persist to backend
