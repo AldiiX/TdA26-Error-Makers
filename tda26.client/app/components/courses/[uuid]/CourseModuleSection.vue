@@ -31,6 +31,9 @@ const emit = defineEmits<{
 }>();
 
 const isCollapsed = ref(false);
+const isDraggingEnabled = computed(() => props.editMode === true && props.course.status === 'draft');
+
+// ─── Drop-INTO-MODULE (flat item → module) ─────────────────────────────────
 const isDragOver = ref(false);
 
 function onDragOver(event: DragEvent) {
@@ -65,6 +68,92 @@ function onDrop(event: DragEvent) {
 
 function onDragEnd() {
     isDragOver.value = false;
+}
+
+// ─── WITHIN-MODULE item reorder ─────────────────────────────────────────────
+const MODULE_ITEM_KEY = 'application/module-item';
+
+type ModuleItem =
+    | (Material & { itemType: 'material' })
+    | (Quiz    & { itemType: 'quiz' });
+
+const moduleItems = computed<ModuleItem[]>(() => {
+    const mats: ModuleItem[] = props.module.materials.map(m => ({ ...m, itemType: 'material' as const }));
+    const qzs:  ModuleItem[] = props.module.quizzes.map(q => ({ ...q, itemType: 'quiz' as const }));
+    return [...mats, ...qzs].sort((a, b) => a.order - b.order);
+});
+
+const draggedItemUuid = ref<string | null>(null);
+const dragOverItemUuid = ref<string | null>(null);
+
+function onItemDragStart(event: DragEvent, uuid: string) {
+    draggedItemUuid.value = uuid;
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData(MODULE_ITEM_KEY, uuid);
+    }
+    // stop propagation so the outer module-section drop target is not triggered
+    event.stopPropagation();
+}
+
+function onItemDragOver(event: DragEvent, uuid: string) {
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverItemUuid.value = uuid;
+}
+
+function onItemDragLeave(event: DragEvent, uuid: string) {
+    const related = event.relatedTarget as Node | null;
+    const current = event.currentTarget as HTMLElement | null;
+    if (current && related && current.contains(related)) return;
+    if (dragOverItemUuid.value === uuid) dragOverItemUuid.value = null;
+}
+
+async function onItemDrop(event: DragEvent, targetUuid: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverItemUuid.value = null;
+
+    const dragged = draggedItemUuid.value;
+    draggedItemUuid.value = null;
+
+    if (!dragged || dragged === targetUuid) return;
+
+    const items = [...moduleItems.value];
+    const fromIdx = items.findIndex(i => i.uuid === dragged);
+    const toIdx   = items.findIndex(i => i.uuid === targetUuid);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const [moved] = items.splice(fromIdx, 1);
+    items.splice(toIdx, 0, moved);
+
+    // Optimistically update order values on the source module arrays
+    items.forEach((item, idx) => {
+        if (item.itemType === 'material') {
+            const mat = props.module.materials.find(m => m.uuid === item.uuid);
+            if (mat) mat.order = idx;
+        } else {
+            const quiz = props.module.quizzes.find(q => q.uuid === item.uuid);
+            if (quiz) quiz.order = idx;
+        }
+    });
+
+    const newOrders = items.map((item, idx) => ({
+        uuid: item.uuid,
+        moduleType: item.itemType,
+        order: idx,
+    }));
+
+    await $fetch(`/api/v1/courses/${props.course.uuid}/modules/${props.module.uuid}/items/reorder`, {
+        method: 'POST',
+        body: { moduleOrders: newOrders },
+    }).catch(err => console.error('Error saving item order within module:', err));
+}
+
+function onItemDragEnd() {
+    draggedItemUuid.value = null;
+    dragOverItemUuid.value = null;
 }
 </script>
 
@@ -127,7 +216,7 @@ function onDragEnd() {
             </div>
         </div>
 
-        <!-- Drop overlay hint -->
+        <!-- Drop overlay hint (flat item → module) -->
         <div v-if="isDragOver" :class="$style.dropOverlay">
             <p>Přidat do modulu „{{ module.title }}"</p>
         </div>
@@ -135,33 +224,60 @@ function onDragEnd() {
         <!-- Module items -->
         <Transition name="collapse">
             <div v-if="!isCollapsed" :class="$style.moduleItems">
-                <p v-if="module.materials.length === 0 && module.quizzes.length === 0" :class="$style.emptyMessage">
+                <p v-if="moduleItems.length === 0" :class="$style.emptyMessage">
                     Tento modul neobsahuje žádné materiály ani kvízy.
                 </p>
 
-                <template v-for="material in [...module.materials].sort((a,b) => a.order - b.order)" :key="material.uuid">
-                    <MaterialItem
-                        :material="material"
-                        :course="course"
-                        :edit-mode="editMode"
-                        :is-visibility-toggle-loading="itemLoadingStates?.[material.uuid] ?? false"
-                        @edit="emit('editMaterial', material)"
-                        @delete="emit('deleteMaterial', material)"
-                        @toggle-visibility="emit('toggleMaterialVisibility', material)"
-                    />
-                </template>
-
-                <template v-for="quiz in [...module.quizzes].sort((a,b) => a.order - b.order)" :key="quiz.uuid">
-                    <QuizItem
-                        :quiz="quiz"
-                        :course="course"
-                        :edit-mode="editMode"
-                        :is-visibility-toggle-loading="itemLoadingStates?.[quiz.uuid] ?? false"
-                        @delete="emit('deleteQuiz', quiz)"
-                        @toggle-visibility="emit('toggleQuizVisibility', quiz)"
-                        @open-results="emit('openQuizResults', quiz)"
-                    />
-                </template>
+                <ul v-else :class="$style.itemList">
+                    <li
+                        v-for="item in moduleItems"
+                        :key="item.uuid"
+                        :draggable="isDraggingEnabled"
+                        :class="{
+                            [$style.itemRow]: true,
+                            [$style.itemDragging]: draggedItemUuid === item.uuid,
+                            [$style.itemDragOver]: dragOverItemUuid === item.uuid && draggedItemUuid !== item.uuid,
+                        }"
+                        @dragstart="isDraggingEnabled && onItemDragStart($event, item.uuid)"
+                        @dragover="isDraggingEnabled && onItemDragOver($event, item.uuid)"
+                        @dragleave="isDraggingEnabled && onItemDragLeave($event, item.uuid)"
+                        @drop="isDraggingEnabled && onItemDrop($event, item.uuid)"
+                        @dragend="onItemDragEnd"
+                    >
+                        <div v-if="isDraggingEnabled" :class="$style.itemDragHandle">
+                            <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                <circle cx="2" cy="2" r="1.5"/>
+                                <circle cx="8" cy="2" r="1.5"/>
+                                <circle cx="2" cy="8" r="1.5"/>
+                                <circle cx="8" cy="8" r="1.5"/>
+                                <circle cx="2" cy="14" r="1.5"/>
+                                <circle cx="8" cy="14" r="1.5"/>
+                            </svg>
+                        </div>
+                        <div :class="$style.itemContent">
+                            <MaterialItem
+                                v-if="item.itemType === 'material'"
+                                :material="(item as Material)"
+                                :course="course"
+                                :edit-mode="editMode"
+                                :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
+                                @edit="emit('editMaterial', item as Material)"
+                                @delete="emit('deleteMaterial', item as Material)"
+                                @toggle-visibility="emit('toggleMaterialVisibility', item as Material)"
+                            />
+                            <QuizItem
+                                v-else-if="item.itemType === 'quiz'"
+                                :quiz="(item as Quiz)"
+                                :course="course"
+                                :edit-mode="editMode"
+                                :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
+                                @delete="emit('deleteQuiz', item as Quiz)"
+                                @toggle-visibility="emit('toggleQuizVisibility', item as Quiz)"
+                                @open-results="emit('openQuizResults', item as Quiz)"
+                            />
+                        </div>
+                    </li>
+                </ul>
 
                 <!-- Add items buttons (edit mode only) -->
                 <div v-if="editMode && course.status === 'draft'" :class="$style.addItemButtons">
@@ -322,6 +438,59 @@ function onDragEnd() {
     color: var(--text-color-secondary);
     text-align: center;
     padding: 12px 0;
+}
+
+.itemList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.itemRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    transition: opacity 0.2s, outline 0.15s;
+
+    &.itemDragging {
+        opacity: 0.35;
+    }
+
+    &.itemDragOver {
+        outline: 2px solid color-mix(in srgb, var(--accent-color-primary) 60%, transparent);
+        outline-offset: 2px;
+    }
+}
+
+.itemDragHandle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    min-width: 18px;
+    height: 36px;
+    cursor: grab;
+    color: var(--text-color-secondary);
+    opacity: 0.4;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.8;
+    }
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+.itemContent {
+    flex: 1;
+    min-width: 0;
 }
 
 .addItemButtons {
