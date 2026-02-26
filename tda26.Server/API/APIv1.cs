@@ -404,15 +404,11 @@ public sealed class APIv1(
 
 			// Hide non-visible modules for users who do not own the course
 			if (!ownsCourse && acc is not Admin) {
-				course.Materials = course.Materials.Where(m => m.IsVisible).ToList();
-				course.Quizzes = course.Quizzes.Where(q => q.IsVisible).ToList();
+				course.Materials = [];
+				course.Quizzes = [];
+				
 				course.Modules = course.Modules
 					.Where(m => m.IsVisible)
-					.Select(m => {
-						m.Materials = m.Materials.Where(mat => mat.IsVisible).ToList();
-						m.Quizzes = m.Quizzes.Where(q => q.IsVisible).ToList();
-						return m;
-					})
 					.ToList();
 			}
 

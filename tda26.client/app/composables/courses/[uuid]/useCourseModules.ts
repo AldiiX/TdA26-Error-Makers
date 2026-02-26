@@ -151,8 +151,24 @@ export function useCourseModules(params: {
                 { method: "DELETE" }
             );
 
+            const deletedModule = selectedModule.value!;
+
+            // Move materials and quizzes from the deleted module back to the flat course lists
+            const orphanedMaterials = deletedModule.materials ?? [];
+            const orphanedQuizzes = deletedModule.quizzes ?? [];
+
+            if (orphanedMaterials.length > 0) {
+                params.course.value.materials = params.course.value.materials ?? [];
+                params.course.value.materials.push(...orphanedMaterials);
+            }
+
+            if (orphanedQuizzes.length > 0) {
+                params.course.value.quizzes = params.course.value.quizzes ?? [];
+                params.course.value.quizzes.push(...orphanedQuizzes);
+            }
+
             params.course.value.modules = (params.course.value.modules ?? []).filter(
-                m => m.uuid !== selectedModule.value!.uuid
+                m => m.uuid !== deletedModule.uuid
             );
 
             push.success({ title: "Modul smazán", message: "Modul byl úspěšně smazán.", duration: 4000 });
