@@ -119,8 +119,9 @@ export function useCourseModules(params: {
             if (params.course.value.modules) {
                 const idx = params.course.value.modules.findIndex(m => m.uuid === updated.uuid);
                 if (idx !== -1) {
+                    const existing = params.course.value.modules[idx]!;
                     params.course.value.modules[idx] = {
-                        ...params.course.value.modules[idx],
+                        ...existing,
                         title: updated.title,
                         description: updated.description,
                         updatedAt: updated.updatedAt,
@@ -179,7 +180,7 @@ export function useCourseModules(params: {
             if (params.course.value.modules) {
                 const idx = params.course.value.modules.findIndex(m => m.uuid === module.uuid);
                 if (idx !== -1) {
-                    params.course.value.modules[idx].isVisible = !module.isVisible;
+                    params.course.value.modules[idx]!.isVisible = !module.isVisible;
                 }
             }
         } catch (err) {

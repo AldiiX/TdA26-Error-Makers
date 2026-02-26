@@ -154,10 +154,22 @@ if (courseError.value) {
 const course = ref<Course | null>(_course.value ?? null);
 const originalCourse = ref<Course | null>(null);
 
-const modules = computed(() => {
+const unassignedModules = computed(() => {
     if (!course.value) return [];
-    const materials = course.value.materials?.map(m => ({ ...m, moduleType: "material" as const })) ?? [];
-    const quizzes = course.value.quizzes?.map(q => ({ ...q, moduleType: "quiz" as const })) ?? [];
+
+    // collect all UUIDs that are already assigned to a module section
+    const assignedUuids = new Set<string>();
+    for (const mod of course.value.modules ?? []) {
+        for (const m of mod.materials ?? []) assignedUuids.add(m.uuid);
+        for (const q of mod.quizzes ?? []) assignedUuids.add(q.uuid);
+    }
+
+    const materials = (course.value.materials ?? [])
+        .filter(m => !assignedUuids.has(m.uuid))
+        .map(m => ({ ...m, moduleType: "material" as const }));
+    const quizzes = (course.value.quizzes ?? [])
+        .filter(q => !assignedUuids.has(q.uuid))
+        .map(q => ({ ...q, moduleType: "quiz" as const }));
     return [...materials, ...quizzes].sort((a, b) => {
         if (a.order !== b.order) return a.order - b.order; // primarni razeni podle order
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // sekundarni razeni podle createdAt
@@ -247,7 +259,7 @@ const handleQuizVisibilityToggle = async (quiz: Quiz) => {
 };
 
 // drag & drop for modules
-const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules, course });
+const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules: unassignedModules, course });
 
 // drag & drop for module sections (chapter-level)
 const { draggedModuleUuid: draggedSectionUuid, dragOverModuleUuid: dragOverSectionUuid, onModuleDragStart: onSectionDragStart, onModuleDragOver: onSectionDragOver, onModuleDragLeave: onSectionDragLeave, onModuleDrop: onSectionDrop, onModuleDragEnd: onSectionDragEnd } = useModuleSectionDrag({ course });
@@ -605,7 +617,7 @@ function closeResultsModal() {
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
 
                             <!-- MODULE-BASED VIEW -->
-                            <template v-else-if="course.modules && course.modules.length > 0">
+                            <template v-else>
                                 <ul :class="$style.moduleSectionList">
                                     <li
                                         v-for="mod in [...(course.modules ?? [])].sort((a,b) => a.order - b.order)"
@@ -620,12 +632,12 @@ function closeResultsModal() {
                                         @drop="ownsCourse && courseSmall.status === 'draft' && onSectionDrop($event, mod.uuid)"
                                         @dragend="onSectionDragEnd"
                                     >
-                                        <Transition name="drag-placeholder">
-                                            <div
-                                                v-if="dragOverSectionUuid === mod.uuid && draggedSectionUuid !== mod.uuid"
-                                                :class="$style.dragPlaceholder"
-                                            />
-                                        </Transition>
+<!--                                        <Transition name="drag-placeholder">-->
+<!--                                            <div-->
+<!--                                                v-if="dragOverSectionUuid === mod.uuid && draggedSectionUuid !== mod.uuid"-->
+<!--                                                :class="$style.dragPlaceholder"-->
+<!--                                            />-->
+<!--                                        </Transition>-->
                                         <div :class="$style.moduleDragWrapper">
                                             <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
                                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
@@ -676,7 +688,7 @@ function closeResultsModal() {
                                 </ul>
 
                                 <!-- Unassigned materials/quizzes (not in any module) - visible to owner only -->
-                                <template v-if="ownsCourse && ((course.materials?.length ?? 0) > 0 || (course.quizzes?.length ?? 0) > 0)">
+                                <template v-if="ownsCourse && unassignedModules.length > 0">
                                     <div :class="$style.unassignedSection">
                                         <div :class="$style.unassignedHeader">
                                             <p :class="$style.unassignedLabel">Nepřiřazené položky</p>
@@ -687,7 +699,7 @@ function closeResultsModal() {
                                         </div>
                                         <TransitionGroup tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
                                             <li
-                                                v-for="mod in modules"
+                                                v-for="mod in unassignedModules"
                                                 :key="mod.uuid"
                                                 :draggable="ownsCourse && courseSmall.status === 'draft'"
                                                 :class="{ [$style.dragging]: draggedModuleUuid === mod.uuid }"
@@ -737,86 +749,6 @@ function closeResultsModal() {
                                         </TransitionGroup>
                                     </div>
                                 </template>
-                            </template>
-
-                            <!-- FLAT VIEW (no modules) -->
-                            <template v-else>
-                                <p v-if="modules.length === 0">Tento kurz nemá žádné materiály či kvízy.</p>
-                                <TransitionGroup v-else tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
-                                    <li
-                                        v-for="module in modules"
-                                        :key="module.uuid"
-                                        :draggable="ownsCourse && courseSmall.status === 'draft'"
-                                        :class="{
-                                            [$style.dragging]: draggedModuleUuid === module.uuid,
-                                        }"
-                                        @dragstart="ownsCourse && courseSmall.status === 'draft' && onModuleDragStart($event, module.uuid)"
-                                        @dragover="ownsCourse && courseSmall.status === 'draft' && onModuleDragOver($event, module.uuid)"
-                                        @dragleave="ownsCourse && courseSmall.status === 'draft' && onModuleDragLeave($event, module.uuid)"
-                                        @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, module.uuid)"
-                                        @dragend="onModuleDragEnd"
-                                    >
-                                        <Transition name="drag-placeholder">
-                                            <div
-                                                v-if="dragOverModuleUuid === module.uuid && draggedModuleUuid !== module.uuid"
-                                                :class="$style.dragPlaceholder"
-                                            />
-                                        </Transition>
-                                        <div :class="$style.module">
-                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
-                                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
-                                                    <circle cx="2" cy="2" r="1.5"/>
-                                                    <circle cx="8" cy="2" r="1.5"/>
-                                                    <circle cx="2" cy="8" r="1.5"/>
-                                                    <circle cx="8" cy="8" r="1.5"/>
-                                                    <circle cx="2" cy="14" r="1.5"/>
-                                                    <circle cx="8" cy="14" r="1.5"/>
-                                                </svg>
-                                            </div>
-                                            <div :class="$style.moduleContent">
-                                                <template v-if="module.moduleType === 'material'">
-                                                    <MaterialItem
-                                                        v-if="ownsCourse || module.isVisible"
-                                                        :material="module"
-                                                        :course="course"
-                                                        :edit-mode="ownsCourse"
-                                                        :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
-                                                        @edit="openUpdateMaterialModal"
-                                                        @delete="openDeleteMaterialModal"
-                                                        @toggle-visibility="handleMaterialVisibilityToggle"
-                                                    />
-                                                </template>
-                                                <template v-else-if="module.moduleType === 'quiz'">
-                                                    <QuizItem
-                                                        v-if="ownsCourse || module.isVisible"
-                                                        :quiz="module"
-                                                        :course="course"
-                                                        :edit-mode="ownsCourse"
-                                                        :is-visibility-toggle-loading="moduleLoadingStates[module.uuid] || false"
-                                                        @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                                        @toggle-visibility="handleQuizVisibilityToggle"
-                                                        @openResults="openResults"
-                                                    />
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li
-                                        v-if="ownsCourse && courseSmall.status === 'draft' && draggedModuleUuid"
-                                        key="__end__"
-                                        :class="$style.endDropZone"
-                                        @dragover="onModuleDragOver($event, '__end__')"
-                                        @dragleave="onModuleDragLeave($event, '__end__')"
-                                        @drop="onModuleDrop($event, '__end__')"
-                                    >
-                                        <Transition name="drag-placeholder">
-                                            <div
-                                                v-if="dragOverModuleUuid === '__end__'"
-                                                :class="$style.dragPlaceholder"
-                                            />
-                                        </Transition>
-                                    </li>
-                                </TransitionGroup>
                             </template>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
@@ -1228,6 +1160,7 @@ function closeResultsModal() {
                         required
                         :disabled="isActionInProgress"
                         placeholder="např. Úvod do tématu"
+                        style="width: 100%;"
                     />
                 </div>
                 <div>
@@ -1238,6 +1171,7 @@ function closeResultsModal() {
                         maxlength="1048"
                         :disabled="isActionInProgress"
                         placeholder="Krátký popis obsahu modulu"
+                        style="width: 100%;"
                     />
                 </div>
                 <div :class="$style.modalButtons">
@@ -1265,15 +1199,17 @@ function closeResultsModal() {
                         maxlength="128"
                         required
                         :disabled="isActionInProgress"
+                        style="width: 100%;"
                     />
                 </div>
                 <div>
-                    <label for="editModuleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis (volitelné)</label>
+                    <label for="editModuleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis</label>
                     <Input
                         id="editModuleDesc"
                         v-model="editingModule.description"
                         maxlength="1048"
                         :disabled="isActionInProgress"
+                        style="width: 100%;"
                     />
                 </div>
                 <div :class="$style.modalButtons">

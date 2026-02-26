@@ -36,6 +36,17 @@ const isDraggingEnabled = computed(() => props.editMode === true && props.course
 // ─── Drop-INTO-MODULE (flat item → module) ─────────────────────────────────
 const isDragOver = ref(false);
 
+// Reset isDragOver whenever any drag operation ends globally (handles cancelled drags / drops outside)
+onMounted(() => document.addEventListener('dragend', resetDragOver));
+onUnmounted(() => document.removeEventListener('dragend', resetDragOver));
+
+function resetDragOver() {
+    isDragOver.value = false;
+    draggedItemUuid.value = null;
+    dragOverItemUuid.value = null;
+    dragOverEndZone.value = false;
+}
+
 function onDragOver(event: DragEvent) {
     if (!props.editMode || props.course.status !== 'draft') return;
     if (!event.dataTransfer?.types.includes(DRAG_ITEM_KEY)) return;
@@ -85,6 +96,8 @@ const moduleItems = computed<ModuleItem[]>(() => {
 
 const draggedItemUuid = ref<string | null>(null);
 const dragOverItemUuid = ref<string | null>(null);
+// true when cursor is over the end-zone drop target (drop after last item)
+const dragOverEndZone = ref(false);
 
 function onItemDragStart(event: DragEvent, uuid: string) {
     draggedItemUuid.value = uuid;
@@ -101,6 +114,7 @@ function onItemDragOver(event: DragEvent, uuid: string) {
     event.preventDefault();
     event.stopPropagation();
     dragOverItemUuid.value = uuid;
+    dragOverEndZone.value = false;
 }
 
 function onItemDragLeave(event: DragEvent, uuid: string) {
@@ -110,23 +124,42 @@ function onItemDragLeave(event: DragEvent, uuid: string) {
     if (dragOverItemUuid.value === uuid) dragOverItemUuid.value = null;
 }
 
-async function onItemDrop(event: DragEvent, targetUuid: string) {
+function onEndZoneDragOver(event: DragEvent) {
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
     event.preventDefault();
     event.stopPropagation();
+    dragOverEndZone.value = true;
     dragOverItemUuid.value = null;
+}
 
+function onEndZoneDragLeave(event: DragEvent) {
+    const related = event.relatedTarget as Node | null;
+    const current = event.currentTarget as HTMLElement | null;
+    if (current && related && current.contains(related)) return;
+    dragOverEndZone.value = false;
+}
+
+async function performReorder(targetUuid: string | '__end__') {
     const dragged = draggedItemUuid.value;
     draggedItemUuid.value = null;
 
-    if (!dragged || dragged === targetUuid) return;
+    if (!dragged) return;
 
     const items = [...moduleItems.value];
     const fromIdx = items.findIndex(i => i.uuid === dragged);
-    const toIdx   = items.findIndex(i => i.uuid === targetUuid);
-    if (fromIdx === -1 || toIdx === -1) return;
+    if (fromIdx === -1) return;
 
     const [moved] = items.splice(fromIdx, 1);
-    items.splice(toIdx, 0, moved);
+    if (!moved) return;
+
+    if (targetUuid === '__end__') {
+        items.push(moved);
+    } else {
+        if (dragged === targetUuid) { items.splice(fromIdx, 0, moved); return; }
+        const toIdx = items.findIndex(i => i.uuid === targetUuid);
+        if (toIdx === -1) { items.splice(fromIdx, 0, moved); return; }
+        items.splice(toIdx, 0, moved);
+    }
 
     // Optimistically update order values on the source module arrays
     items.forEach((item, idx) => {
@@ -151,9 +184,30 @@ async function onItemDrop(event: DragEvent, targetUuid: string) {
     }).catch(err => console.error('Error saving item order within module:', err));
 }
 
+async function onItemDrop(event: DragEvent, targetUuid: string) {
+    // If this is a flat-item-to-module drop (not a within-module reorder), let it bubble up
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverItemUuid.value = null;
+
+    await performReorder(targetUuid);
+}
+
+async function onEndZoneDrop(event: DragEvent) {
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverEndZone.value = false;
+
+    await performReorder('__end__');
+}
+
 function onItemDragEnd() {
     draggedItemUuid.value = null;
     dragOverItemUuid.value = null;
+    dragOverEndZone.value = false;
 }
 </script>
 
@@ -182,7 +236,6 @@ function onItemDragEnd() {
                     <span>{{ module.title }}</span>
                     <span v-if="module.description" :class="$style.moduleDescription">{{ module.description }}</span>
                 </div>
-                <span v-if="!module.isVisible" :class="$style.hiddenBadge">Skryté</span>
             </div>
 
             <div v-if="editMode" :class="$style.moduleActions">
@@ -236,7 +289,7 @@ function onItemDragEnd() {
                         :class="{
                             [$style.itemRow]: true,
                             [$style.itemDragging]: draggedItemUuid === item.uuid,
-                            [$style.itemDragOver]: dragOverItemUuid === item.uuid && draggedItemUuid !== item.uuid,
+                            // [$style.itemDragOver]: dragOverItemUuid === item.uuid && draggedItemUuid !== item.uuid,
                         }"
                         @dragstart="isDraggingEnabled && onItemDragStart($event, item.uuid)"
                         @dragover="isDraggingEnabled && onItemDragOver($event, item.uuid)"
@@ -244,40 +297,62 @@ function onItemDragEnd() {
                         @drop="isDraggingEnabled && onItemDrop($event, item.uuid)"
                         @dragend="onItemDragEnd"
                     >
-                        <div v-if="isDraggingEnabled" :class="$style.itemDragHandle">
-                            <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
-                                <circle cx="2" cy="2" r="1.5"/>
-                                <circle cx="8" cy="2" r="1.5"/>
-                                <circle cx="2" cy="8" r="1.5"/>
-                                <circle cx="8" cy="8" r="1.5"/>
-                                <circle cx="2" cy="14" r="1.5"/>
-                                <circle cx="8" cy="14" r="1.5"/>
-                            </svg>
-                        </div>
-                        <div :class="$style.itemContent">
-                            <MaterialItem
-                                v-if="item.itemType === 'material'"
-                                :material="(item as Material)"
-                                :course="course"
-                                :edit-mode="editMode"
-                                :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
-                                @edit="emit('editMaterial', item as Material)"
-                                @delete="emit('deleteMaterial', item as Material)"
-                                @toggle-visibility="emit('toggleMaterialVisibility', item as Material)"
+
+                        <Transition name="drag-placeholder">
+                            <div
+                                v-if="isDraggingEnabled && dragOverItemUuid === item.uuid && draggedItemUuid !== item.uuid"
+                                :class="$style.dragPlaceholder"
                             />
-                            <QuizItem
-                                v-else-if="item.itemType === 'quiz'"
-                                :quiz="(item as Quiz)"
-                                :course="course"
-                                :edit-mode="editMode"
-                                :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
-                                @delete="emit('deleteQuiz', item as Quiz)"
-                                @toggle-visibility="emit('toggleQuizVisibility', item as Quiz)"
-                                @open-results="emit('openQuizResults', item as Quiz)"
-                            />
+                        </Transition>
+                        <div :class="$style.item">
+                            <div v-if="isDraggingEnabled" :class="$style.itemDragHandle">
+                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                    <circle cx="2" cy="2" r="1.5"/>
+                                    <circle cx="8" cy="2" r="1.5"/>
+                                    <circle cx="2" cy="8" r="1.5"/>
+                                    <circle cx="8" cy="8" r="1.5"/>
+                                    <circle cx="2" cy="14" r="1.5"/>
+                                    <circle cx="8" cy="14" r="1.5"/>
+                                </svg>
+                            </div>
+                            <div :class="$style.itemContent">
+                                <MaterialItem
+                                    v-if="item.itemType === 'material'"
+                                    :material="(item as Material)"
+                                    :course="course"
+                                    :edit-mode="editMode"
+                                    :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
+                                    @edit="emit('editMaterial', item as Material)"
+                                    @delete="emit('deleteMaterial', item as Material)"
+                                    @toggle-visibility="emit('toggleMaterialVisibility', item as Material)"
+                                />
+                                <QuizItem
+                                    v-else-if="item.itemType === 'quiz'"
+                                    :quiz="(item as Quiz)"
+                                    :course="course"
+                                    :edit-mode="editMode"
+                                    :is-visibility-toggle-loading="itemLoadingStates?.[item.uuid] ?? false"
+                                    @delete="emit('deleteQuiz', item as Quiz)"
+                                    @toggle-visibility="emit('toggleQuizVisibility', item as Quiz)"
+                                    @open-results="emit('openQuizResults', item as Quiz)"
+                                />
+                            </div>
                         </div>
                     </li>
                 </ul>
+
+                <!-- End-zone: drop target to place item after the last one -->
+                <div
+                    v-if="isDraggingEnabled && draggedItemUuid"
+                    :class="[$style.endDropZone, dragOverEndZone && $style.endDropZoneActive]"
+                    @dragover="onEndZoneDragOver"
+                    @dragleave="onEndZoneDragLeave"
+                    @drop="onEndZoneDrop"
+                >
+                    <Transition name="drag-placeholder">
+                        <div v-if="dragOverEndZone" :class="$style.dragPlaceholder" />
+                    </Transition>
+                </div>
 
                 <!-- Add items buttons (edit mode only) -->
                 <div v-if="editMode && course.status === 'draft'" :class="$style.addItemButtons">
@@ -304,16 +379,23 @@ function onItemDragEnd() {
 </template>
 
 <style module lang="scss">
+.dragPlaceholder {
+    border: 2px dashed var(--accent-color-secondary-theme);
+    background-color: rgb(from var(--accent-color-secondary-theme) r g b / 0.1);
+    height: 63px;
+    width: 100%;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    pointer-events: none;
+    overflow: hidden;
+}
+
 .moduleSection {
     border: 1px solid color-mix(in srgb, var(--text-color-secondary) 15%, transparent);
     border-radius: 16px;
     overflow: hidden;
     transition: opacity 0.3s, border-color 0.2s, box-shadow 0.2s;
     position: relative;
-
-    &.hidden {
-        opacity: 0.6;
-    }
 
     &.dropTarget {
         border-color: var(--accent-color-primary);
@@ -348,8 +430,7 @@ function onItemDragEnd() {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 16px;
-    background-color: color-mix(in srgb, var(--background-color-secondary) 60%, transparent);
+    padding: 14px 32px 14px 16px;
     gap: 12px;
     flex-wrap: wrap;
 }
@@ -407,17 +488,6 @@ function onItemDragEnd() {
     text-overflow: ellipsis;
 }
 
-.hiddenBadge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background-color: color-mix(in srgb, var(--color-warning, orange) 15%, transparent);
-    color: var(--color-warning, orange);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
 .moduleActions {
     display: flex;
     gap: 8px;
@@ -449,10 +519,15 @@ function onItemDragEnd() {
     gap: 6px;
 }
 
-.itemRow {
+.item {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+}
+
+.itemRow {
+    gap: 12px;
     border-radius: 10px;
     transition: opacity 0.2s, outline 0.15s;
 
@@ -460,10 +535,10 @@ function onItemDragEnd() {
         opacity: 0.35;
     }
 
-    &.itemDragOver {
-        outline: 2px solid color-mix(in srgb, var(--accent-color-primary) 60%, transparent);
-        outline-offset: 2px;
-    }
+    //&.itemDragOver {
+    //    outline: 2px solid color-mix(in srgb, var(--accent-color-primary) 60%, transparent);
+    //    outline-offset: 2px;
+    //}
 }
 
 .itemDragHandle {
@@ -503,6 +578,17 @@ function onItemDragEnd() {
 .addItemButton {
     font-size: 14px;
 }
+
+.endDropZone {
+    min-height: 16px;
+    width: 100%;
+    border-radius: 10px;
+    transition: min-height 0.2s;
+
+    &.endDropZoneActive {
+        min-height: 20px;
+    }
+}
 </style>
 
 <style scoped>
@@ -516,3 +602,20 @@ function onItemDragEnd() {
 }
 </style>
 
+<style lang="scss">
+.drag-placeholder-enter-active,
+.drag-placeholder-leave-active {
+    transition: height 0.2s ease, margin-bottom 0.2s ease, opacity 0.2s ease;
+}
+
+.drag-placeholder-enter-from,
+.drag-placeholder-leave-to {
+    height: 0 !important;
+    margin-bottom: 0 !important;
+    opacity: 0;
+}
+
+.module-list-move {
+    transition: transform 0.3s ease;
+}
+</style>
