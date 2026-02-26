@@ -239,7 +239,7 @@ const moduleLoadingStates = ref<Record<string, boolean>>({});
 // Modules sorted by order (used by show-next / hide-current buttons)
 const sortedModules = computed(() => [...(course.value?.modules ?? [])].sort((a, b) => a.order - b.order));
 const nextHiddenModule = computed(() => sortedModules.value.filter(m => !m.isVisible).at(-1) ?? null);
-const lastVisibleModule = computed(() => sortedModules.value.filter(m => m.isVisible).at(-1) ?? null);
+const lastVisibleModule = computed(() => sortedModules.value.filter(m => m.isVisible).at(0) ?? null);
 const isModuleVisibilityToggling = ref(false);
 
 const handleShowNextModule = async () => {
@@ -652,14 +652,7 @@ function closeResultsModal() {
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
-                                <template v-if="ownsCourse">
-                                    <Button
-                                        button-style="secondary"
-                                        accent-color="secondary"
-                                        :loading="isModuleVisibilityToggling"
-                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
-                                        @click="handleHideCurrentModule"
-                                    >Skrýt aktuální</Button>
+                                <div :class="$style.showHideButtons" v-if="ownsCourse">
                                     <Button
                                         button-style="primary"
                                         accent-color="primary"
@@ -667,7 +660,14 @@ function closeResultsModal() {
                                         :disabled="!nextHiddenModule || isModuleVisibilityToggling"
                                         @click="handleShowNextModule"
                                     >Zobrazit další</Button>
-                                </template>
+                                    <Button
+                                        button-style="secondary"
+                                        accent-color="secondary"
+                                        :loading="isModuleVisibilityToggling"
+                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
+                                        @click="handleHideCurrentModule"
+                                    >Skrýt aktuální</Button>
+                                </div>
                             </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
@@ -2134,11 +2134,17 @@ ul {
             .modulesListHeader{
                 display: flex;
                 gap: 12px;
-            }
-            
-            .addModuleButton {
-                margin-bottom: 16px;
-                width: fit-content;
+
+                button {
+                    margin-bottom: 16px;
+                    width: fit-content;
+                }
+                
+                .showHideButtons {
+                    display: flex;
+                    gap: 12px;
+                    margin-left: auto;
+                }
             }
 
             ul {

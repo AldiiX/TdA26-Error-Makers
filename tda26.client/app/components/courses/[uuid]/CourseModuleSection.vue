@@ -281,13 +281,14 @@ function onItemDragEnd(event: DragEvent) {
                     </svg>
                 </button>
                 <div :class="$style.moduleTitle">
-                    <span>{{ module.title }}</span>
+                    <span>{{ module.title }} 
+                        <span v-if="editMode" :class="[$style.visibilityBadge, module.isVisible ? $style.badgeVisible : $style.badgeHidden]">
+                            <span :class="$style.badgeIcon" aria-hidden="true" />
+                            {{ module.isVisible ? 'Zobrazeno' : 'Skryto' }}
+                        </span>
+                    </span>
                     <span v-if="module.description" :class="$style.moduleDescription">{{ module.description }}</span>
                 </div>
-                <span v-if="editMode" :class="[$style.visibilityBadge, module.isVisible ? $style.badgeVisible : $style.badgeHidden]">
-                    <span :class="$style.badgeIcon" aria-hidden="true" />
-                    {{ module.isVisible ? 'Zobrazeno' : 'Skryto' }}
-                </span>
             </div>
 
             <div v-if="editMode" :class="$style.moduleActions">
@@ -522,6 +523,9 @@ function onItemDragEnd(event: DragEvent) {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 }
 
