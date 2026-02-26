@@ -1,5 +1,7 @@
 import type {Course, CourseModule, Module} from "#shared/types";
 
+export const DRAG_ITEM_KEY = 'application/flat-item';
+
 type ModuleWithType = CourseModule & { moduleType: 'quiz' | 'material' };
 
 export function useModuleDrag(params: {

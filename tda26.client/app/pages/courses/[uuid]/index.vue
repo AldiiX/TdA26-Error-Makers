@@ -26,6 +26,7 @@ import RegisterForm from "~/components/RegisterForm.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
 import { statusToText } from "#shared/utils/statusMapper";
+import { push } from "notivue";
 
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
 import { useCourseEdit } from "~/composables/courses/[uuid]/useCourseEdit";
@@ -38,7 +39,7 @@ import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
 import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisibility";
-import { useModuleDrag, useModuleSectionDrag } from "~/composables/courses/[uuid]/useModuleDrag";
+import { useModuleDrag, useModuleSectionDrag, DRAG_ITEM_KEY } from "~/composables/courses/[uuid]/useModuleDrag";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
@@ -250,6 +251,53 @@ const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOve
 
 // drag & drop for module sections (chapter-level)
 const { draggedModuleUuid: draggedSectionUuid, dragOverModuleUuid: dragOverSectionUuid, onModuleDragStart: onSectionDragStart, onModuleDragOver: onSectionDragOver, onModuleDragLeave: onSectionDragLeave, onModuleDrop: onSectionDrop, onModuleDragEnd: onSectionDragEnd } = useModuleSectionDrag({ course });
+
+// called when a flat item is dropped onto a module section
+const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | 'quiz', moduleUuid: string) => {
+    if (!course.value) return;
+
+    // snapshot for rollback
+    const snapshot = JSON.parse(JSON.stringify(course.value));
+
+    // optimistically move item from flat list into module
+    const courseVal = course.value;
+    if (itemType === 'material' && courseVal.materials) {
+        const idx = courseVal.materials.findIndex(m => m.uuid === itemUuid);
+        if (idx !== -1) {
+            const [item] = courseVal.materials.splice(idx, 1);
+            const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                targetMod.materials = targetMod.materials ?? [];
+                targetMod.materials.push(item);
+            }
+        }
+    } else if (itemType === 'quiz' && courseVal.quizzes) {
+        const idx = courseVal.quizzes.findIndex(q => q.uuid === itemUuid);
+        if (idx !== -1) {
+            const [item] = courseVal.quizzes.splice(idx, 1);
+            const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                targetMod.quizzes = targetMod.quizzes ?? [];
+                targetMod.quizzes.push(item);
+            }
+        }
+    }
+    // trigger reactivity
+    course.value = { ...courseVal };
+
+    // persist to backend
+    try {
+        await $fetch(`/api/v1/courses/${courseVal.uuid}/items/assign-module`, {
+            method: 'PUT',
+            body: { itemUuid, itemType, moduleUuid },
+        });
+    } catch (err) {
+        console.error('Error assigning item to module:', err);
+        // rollback optimistic update
+        course.value = snapshot;
+        push.error({ title: 'Chyba', message: 'Nepodařilo se přiřadit položku do modulu.', duration: 4000 });
+    }
+};
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
@@ -606,6 +654,7 @@ function closeResultsModal() {
                                                 @open-quiz-results="openResults"
                                                 @add-material="openCreateMaterialModalForModule(mod.uuid)"
                                                 @add-quiz="openCreateQuizModalForModule(mod.uuid)"
+                                                @item-dropped="(itemUuid, itemType) => handleItemDropToModule(itemUuid, itemType, mod.uuid)"
                                             />
                                         </div>
                                     </li>
@@ -626,61 +675,67 @@ function closeResultsModal() {
                                     </li>
                                 </ul>
 
-                                <!-- Unassigned materials/quizzes (not in any module) -->
-                                <template v-if="(course.materials?.length ?? 0) > 0 || (course.quizzes?.length ?? 0) > 0">
-                                    <p :class="$style.unassignedLabel">Nepřiřazené položky</p>
-                                    <TransitionGroup tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
-                                        <li
-                                            v-for="mod in modules"
-                                            :key="mod.uuid"
-                                            :draggable="ownsCourse && courseSmall.status === 'draft'"
-                                            :class="{ [$style.dragging]: draggedModuleUuid === mod.uuid }"
-                                            @dragstart="ownsCourse && courseSmall.status === 'draft' && onModuleDragStart($event, mod.uuid)"
-                                            @dragover="ownsCourse && courseSmall.status === 'draft' && onModuleDragOver($event, mod.uuid)"
-                                            @dragleave="ownsCourse && courseSmall.status === 'draft' && onModuleDragLeave($event, mod.uuid)"
-                                            @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, mod.uuid)"
-                                            @dragend="onModuleDragEnd"
-                                        >
-                                            <div :class="$style.module">
-                                                <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
-                                                    <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
-                                                        <circle cx="2" cy="2" r="1.5"/>
-                                                        <circle cx="8" cy="2" r="1.5"/>
-                                                        <circle cx="2" cy="8" r="1.5"/>
-                                                        <circle cx="8" cy="8" r="1.5"/>
-                                                        <circle cx="2" cy="14" r="1.5"/>
-                                                        <circle cx="8" cy="14" r="1.5"/>
-                                                    </svg>
+                                <!-- Unassigned materials/quizzes (not in any module) - visible to owner only -->
+                                <template v-if="ownsCourse && ((course.materials?.length ?? 0) > 0 || (course.quizzes?.length ?? 0) > 0)">
+                                    <div :class="$style.unassignedSection">
+                                        <div :class="$style.unassignedHeader">
+                                            <p :class="$style.unassignedLabel">Nepřiřazené položky</p>
+                                            <p :class="$style.unassignedWarning">
+                                                <span :class="$style.warningIcon">⚠</span>
+                                                Tyto položky nejsou přiřazeny do žádného modulu a nebudou viditelné pro studenty. Přetáhněte je do modulu.
+                                            </p>
+                                        </div>
+                                        <TransitionGroup tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
+                                            <li
+                                                v-for="mod in modules"
+                                                :key="mod.uuid"
+                                                :draggable="ownsCourse && courseSmall.status === 'draft'"
+                                                :class="{ [$style.dragging]: draggedModuleUuid === mod.uuid }"
+                                                @dragstart="(e) => { if (ownsCourse && courseSmall.status === 'draft') { e.dataTransfer?.setData(DRAG_ITEM_KEY, JSON.stringify({uuid: mod.uuid, itemType: mod.moduleType})); onModuleDragStart(e, mod.uuid); } }"
+                                                @dragover="ownsCourse && courseSmall.status === 'draft' && onModuleDragOver($event, mod.uuid)"
+                                                @dragleave="ownsCourse && courseSmall.status === 'draft' && onModuleDragLeave($event, mod.uuid)"
+                                                @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, mod.uuid)"
+                                                @dragend="onModuleDragEnd"
+                                            >
+                                                <div :class="$style.module">
+                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                                        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                                            <circle cx="2" cy="2" r="1.5"/>
+                                                            <circle cx="8" cy="2" r="1.5"/>
+                                                            <circle cx="2" cy="8" r="1.5"/>
+                                                            <circle cx="8" cy="8" r="1.5"/>
+                                                            <circle cx="2" cy="14" r="1.5"/>
+                                                            <circle cx="8" cy="14" r="1.5"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div :class="$style.moduleContent">
+                                                        <template v-if="mod.moduleType === 'material'">
+                                                            <MaterialItem
+                                                                :material="mod"
+                                                                :course="course"
+                                                                :edit-mode="ownsCourse"
+                                                                :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
+                                                                @edit="openUpdateMaterialModal"
+                                                                @delete="openDeleteMaterialModal"
+                                                                @toggle-visibility="handleMaterialVisibilityToggle"
+                                                            />
+                                                        </template>
+                                                        <template v-else-if="mod.moduleType === 'quiz'">
+                                                            <QuizItem
+                                                                :quiz="mod"
+                                                                :course="course"
+                                                                :edit-mode="ownsCourse"
+                                                                :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
+                                                                @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                                                @toggle-visibility="handleQuizVisibilityToggle"
+                                                                @openResults="openResults"
+                                                            />
+                                                        </template>
+                                                    </div>
                                                 </div>
-                                                <div :class="$style.moduleContent">
-                                                    <template v-if="mod.moduleType === 'material'">
-                                                        <MaterialItem
-                                                            v-if="ownsCourse || mod.isVisible"
-                                                            :material="mod"
-                                                            :course="course"
-                                                            :edit-mode="ownsCourse"
-                                                            :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
-                                                            @edit="openUpdateMaterialModal"
-                                                            @delete="openDeleteMaterialModal"
-                                                            @toggle-visibility="handleMaterialVisibilityToggle"
-                                                        />
-                                                    </template>
-                                                    <template v-else-if="mod.moduleType === 'quiz'">
-                                                        <QuizItem
-                                                            v-if="ownsCourse || mod.isVisible"
-                                                            :quiz="mod"
-                                                            :course="course"
-                                                            :edit-mode="ownsCourse"
-                                                            :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
-                                                            @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                                            @toggle-visibility="handleQuizVisibilityToggle"
-                                                            @openResults="openResults"
-                                                        />
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </TransitionGroup>
+                                            </li>
+                                        </TransitionGroup>
+                                    </div>
                                 </template>
                             </template>
 
@@ -2130,13 +2185,37 @@ ul {
                 }
             }
 
+            .unassignedSection {
+                margin-top: 16px;
+                border: 1px dashed color-mix(in srgb, var(--color-warning, orange) 40%, transparent);
+                border-radius: 12px;
+                padding: 12px 16px;
+                background-color: color-mix(in srgb, var(--color-warning, orange) 5%, transparent);
+            }
+
+            .unassignedHeader {
+                margin-bottom: 12px;
+            }
+
             .unassignedLabel {
                 font-size: 14px;
                 font-weight: 600;
                 color: var(--text-color-secondary);
-                margin: 16px 0 8px;
-                padding-bottom: 4px;
-                border-bottom: 1px solid color-mix(in srgb, var(--text-color-secondary) 15%, transparent);
+                margin: 0 0 6px;
+            }
+
+            .unassignedWarning {
+                font-size: 13px;
+                color: color-mix(in srgb, var(--color-warning, orange) 90%, var(--text-color-secondary) 10%);
+                margin: 0;
+                display: flex;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .warningIcon {
+                flex-shrink: 0;
+                font-size: 14px;
             }
         }
 

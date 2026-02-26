@@ -1350,6 +1350,51 @@ public sealed class APIv1(
 		return Ok(new { affected = body.ModuleOrders.Count });
 	}
 
+	[HttpPut("courses/{courseUuid:guid}/items/assign-module")]
+	public async Task<IActionResult> AssignItemToModule([FromRoute] Guid courseUuid, [FromBody] AssignItemToModuleRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (course.Status != CourseStatus.Draft)
+			return BadRequest(new { error = "Only courses in draft status can be updated." });
+
+		// Validate target module if provided
+		if (body.ModuleUuid.HasValue) {
+			var moduleExists = await db.CourseModules
+				.AnyAsync(m => m.Uuid == body.ModuleUuid.Value && m.CourseUuid == courseUuid, ct);
+			if (!moduleExists)
+				return BadRequest(new { error = "Invalid module UUID." });
+		}
+
+		if (body.ItemType == "material") {
+			var material = await db.Materials
+				.FirstOrDefaultAsync(m => m.Uuid == body.ItemUuid && m.CourseUuid == courseUuid, ct);
+			if (material == null) return NotFound(new { error = "Material not found." });
+			material.ModuleUuid = body.ModuleUuid;
+			material.UpdatedAt = DateTime.UtcNow;
+			db.Materials.Update(material);
+		} else if (body.ItemType == "quiz") {
+			var quiz = await db.Quizzes
+				.FirstOrDefaultAsync(q => q.Uuid == body.ItemUuid && q.CourseUuid == courseUuid, ct);
+			if (quiz == null) return NotFound(new { error = "Quiz not found." });
+			quiz.ModuleUuid = body.ModuleUuid;
+			quiz.UpdatedAt = DateTime.UtcNow;
+			db.Quizzes.Update(quiz);
+		} else {
+			return BadRequest(new { error = "Invalid item type. Use 'material' or 'quiz'." });
+		}
+
+		await db.SaveChangesAsync(ct);
+		return Ok(new { itemUuid = body.ItemUuid, moduleUuid = body.ModuleUuid });
+	}
+
 	#endregion
 
 	[HttpPost("courses")]

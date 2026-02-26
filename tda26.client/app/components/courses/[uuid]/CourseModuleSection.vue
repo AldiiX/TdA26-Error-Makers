@@ -5,6 +5,7 @@ import QuizItem from "~/components/courses/[uuid]/QuizItem.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Button from "~/components/Button.vue";
 import Popover from "~/components/Popover.vue";
+import { DRAG_ITEM_KEY } from "~/composables/courses/[uuid]/useModuleDrag";
 
 const props = defineProps<{
     module: Module;
@@ -26,13 +27,55 @@ const emit = defineEmits<{
     (e: "openQuizResults", quiz: Quiz): void;
     (e: "addMaterial"): void;
     (e: "addQuiz"): void;
+    (e: "itemDropped", itemUuid: string, itemType: "material" | "quiz"): void;
 }>();
 
 const isCollapsed = ref(false);
+const isDragOver = ref(false);
+
+function onDragOver(event: DragEvent) {
+    if (!props.editMode || props.course.status !== 'draft') return;
+    if (!event.dataTransfer?.types.includes(DRAG_ITEM_KEY)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    isDragOver.value = true;
+}
+
+function onDragLeave(event: DragEvent) {
+    const related = event.relatedTarget as Node | null;
+    const current = event.currentTarget as HTMLElement | null;
+    if (current && related && current.contains(related)) return;
+    isDragOver.value = false;
+}
+
+function onDrop(event: DragEvent) {
+    isDragOver.value = false;
+    if (!props.editMode || props.course.status !== 'draft') return;
+    const raw = event.dataTransfer?.getData(DRAG_ITEM_KEY);
+    if (!raw) return;
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+        const { uuid, itemType } = JSON.parse(raw) as { uuid: string; itemType: 'material' | 'quiz' };
+        emit('itemDropped', uuid, itemType);
+    } catch {
+        // ignore malformed data
+    }
+}
+
+function onDragEnd() {
+    isDragOver.value = false;
+}
 </script>
 
 <template>
-    <div :class="[$style.moduleSection, !module.isVisible && $style.hidden]">
+    <div
+        :class="[$style.moduleSection, !module.isVisible && $style.hidden, isDragOver && $style.dropTarget]"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+        @dragend="onDragEnd"
+    >
         <!-- Module header -->
         <div :class="$style.moduleHeader">
             <div :class="$style.moduleHeaderLeft">
@@ -82,6 +125,11 @@ const isCollapsed = ref(false);
                     <template #content>Kurz musí být návrh</template>
                 </Popover>
             </div>
+        </div>
+
+        <!-- Drop overlay hint -->
+        <div v-if="isDragOver" :class="$style.dropOverlay">
+            <p>Přidat do modulu „{{ module.title }}"</p>
         </div>
 
         <!-- Module items -->
@@ -144,10 +192,39 @@ const isCollapsed = ref(false);
     border: 1px solid color-mix(in srgb, var(--text-color-secondary) 15%, transparent);
     border-radius: 16px;
     overflow: hidden;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
 
     &.hidden {
         opacity: 0.6;
+    }
+
+    &.dropTarget {
+        border-color: var(--accent-color-primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+}
+
+.dropOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+    border-radius: 16px;
+    z-index: 10;
+    pointer-events: none;
+
+    p {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--accent-color-primary);
+        background-color: color-mix(in srgb, var(--background-color-secondary) 90%, transparent);
+        padding: 8px 20px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--accent-color-primary) 40%, transparent);
     }
 }
 
@@ -269,3 +346,4 @@ const isCollapsed = ref(false);
     opacity: 0;
 }
 </style>
+
