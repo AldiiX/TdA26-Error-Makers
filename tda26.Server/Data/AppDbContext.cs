@@ -22,6 +22,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<FileMaterial> FileMaterials => Set<FileMaterial>();
     public DbSet<UrlMaterial> UrlMaterials => Set<UrlMaterial>();
     
+    public DbSet<CourseModule> CourseModules { get; set; }
+    
     public DbSet<Quiz> Quizzes => Set<Quiz>();
 
     public DbSet<Question> Questions => Set<Question>();

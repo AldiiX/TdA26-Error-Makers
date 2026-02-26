@@ -52,6 +52,8 @@ public sealed class Course : Auditable {
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
   
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
+
+    public ICollection<CourseModule> Modules { get; set; } = new List<CourseModule>();
     
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
   
