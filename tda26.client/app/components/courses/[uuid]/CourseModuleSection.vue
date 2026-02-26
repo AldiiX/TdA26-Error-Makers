@@ -68,6 +68,7 @@ function onDrop(event: DragEvent) {
     isDragOver.value = false;
     if (!props.editMode || props.course.status !== 'draft') return;
     const raw = event.dataTransfer?.getData(DRAG_ITEM_KEY);
+    console.log('[CourseModuleSection onDrop]', props.module.title, '| raw:', raw, '| types:', event.dataTransfer?.types);
     if (!raw) return;
     event.preventDefault();
     event.stopPropagation();

@@ -271,8 +271,20 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
     // snapshot for rollback
     const snapshot = JSON.parse(JSON.stringify(course.value));
 
-    // optimistically move item into target module
+    // capture names for the notification before the optimistic update
     const courseVal = course.value;
+    const targetModule = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+    const targetModuleTitle = targetModule?.title ?? 'modul';
+    let itemName: string | undefined;
+    if (itemType === 'material') {
+        itemName = courseVal.materials?.find(m => m.uuid === itemUuid)?.name
+            ?? (courseVal.modules ?? []).flatMap(m => m.materials ?? []).find(m => m.uuid === itemUuid)?.name;
+    } else {
+        itemName = courseVal.quizzes?.find(q => q.uuid === itemUuid)?.title
+            ?? (courseVal.modules ?? []).flatMap(m => m.quizzes ?? []).find(q => q.uuid === itemUuid)?.title;
+    }
+
+    // optimistically move item into target module
     if (itemType === 'material') {
         // Check flat unassigned list first
         const item = courseVal.materials?.find(m => m.uuid === itemUuid);
@@ -327,6 +339,13 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
         await $fetch(`/api/v1/courses/${courseVal.uuid}/items/assign-module`, {
             method: 'PUT',
             body: { itemUuid, itemType, moduleUuid },
+        });
+        push.success({
+            title: 'Přesunuto',
+            message: itemName
+                ? `„${itemName}" bylo přesunuto do modulu „${targetModuleTitle}".`
+                : `Položka byla přesunuta do modulu „${targetModuleTitle}".`,
+            duration: 3000,
         });
     } catch (err) {
         console.error('Error assigning item to module:', err);
