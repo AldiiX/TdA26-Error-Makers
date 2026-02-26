@@ -1287,19 +1287,22 @@ public sealed class APIv1(
 		if (modules.Count != body.Modules.Count)
 			return BadRequest(new { error = "One or more module UUIDs are invalid." });
 
-		await using var transaction = await db.Database.BeginTransactionAsync(ct);
-		try {
-			foreach (var item in body.Modules) {
-				var module = modules.First(m => m.Uuid == item.Uuid);
-				module.Order = item.Order;
-				db.CourseModules.Update(module);
+		var strategy = db.Database.CreateExecutionStrategy();
+		await strategy.ExecuteAsync(async () => {
+			await using var transaction = await db.Database.BeginTransactionAsync(ct);
+			try {
+				foreach (var item in body.Modules) {
+					var module = modules.First(m => m.Uuid == item.Uuid);
+					module.Order = item.Order;
+					db.CourseModules.Update(module);
+				}
+				await db.SaveChangesAsync(ct);
+				await transaction.CommitAsync(ct);
+			} catch {
+				await transaction.RollbackAsync(ct);
+				throw;
 			}
-			await db.SaveChangesAsync(ct);
-			await transaction.CommitAsync(ct);
-		} catch {
-			await transaction.RollbackAsync(ct);
-			throw;
-		}
+		});
 
 		return Ok(new { affected = modules.Count });
 	}
@@ -1323,30 +1326,39 @@ public sealed class APIv1(
 			.FirstOrDefaultAsync(ct);
 		if (module == null) return NotFound(new { error = "Module not found." });
 
-		await using var transaction = await db.Database.BeginTransactionAsync(ct);
-		try {
-			foreach (var item in body.ModuleOrders) {
-				if (item.ModuleType == "material") {
-					var material = module.Materials.FirstOrDefault(m => m.Uuid == item.Uuid);
-					if (material == null)
-						return BadRequest(new { error = $"Invalid material UUID: {item.Uuid}" });
-					material.Order = item.Order;
-					db.Materials.Update(material);
-				} else if (item.ModuleType == "quiz") {
-					var quiz = module.Quizzes.FirstOrDefault(q => q.Uuid == item.Uuid);
-					if (quiz == null)
-						return BadRequest(new { error = $"Invalid quiz UUID: {item.Uuid}" });
-					quiz.Order = item.Order;
-					db.Quizzes.Update(quiz);
+		IActionResult? validationError = null;
+		var strategy = db.Database.CreateExecutionStrategy();
+		await strategy.ExecuteAsync(async () => {
+			await using var transaction = await db.Database.BeginTransactionAsync(ct);
+			try {
+				foreach (var item in body.ModuleOrders) {
+					if (item.ModuleType == "material") {
+						var material = module.Materials.FirstOrDefault(m => m.Uuid == item.Uuid);
+						if (material == null) {
+							validationError = BadRequest(new { error = $"Invalid material UUID: {item.Uuid}" });
+							return;
+						}
+						material.Order = item.Order;
+						db.Materials.Update(material);
+					} else if (item.ModuleType == "quiz") {
+						var quiz = module.Quizzes.FirstOrDefault(q => q.Uuid == item.Uuid);
+						if (quiz == null) {
+							validationError = BadRequest(new { error = $"Invalid quiz UUID: {item.Uuid}" });
+							return;
+						}
+						quiz.Order = item.Order;
+						db.Quizzes.Update(quiz);
+					}
 				}
+				await db.SaveChangesAsync(ct);
+				await transaction.CommitAsync(ct);
+			} catch {
+				await transaction.RollbackAsync(ct);
+				throw;
 			}
-			await db.SaveChangesAsync(ct);
-			await transaction.CommitAsync(ct);
-		} catch {
-			await transaction.RollbackAsync(ct);
-			throw;
-		}
+		});
 
+		if (validationError != null) return validationError;
 		return Ok(new { affected = body.ModuleOrders.Count });
 	}
 
