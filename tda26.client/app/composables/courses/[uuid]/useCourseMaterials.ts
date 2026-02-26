@@ -66,6 +66,7 @@ export function useCourseMaterials(params: {
     isActionInProgress: Ref<boolean>;
     updateError: Ref<string | null>;
     deleteError: Ref<string | null>;
+    targetModuleUuid?: Ref<string | null>;
 }) {
 
     const selectedMaterial = ref<Material | null>(null);
@@ -227,6 +228,7 @@ export function useCourseMaterials(params: {
                         name: edited.name,
                         description: edited.description,
                         url: edited.url,
+                        moduleUuid: params.targetModuleUuid?.value ?? undefined,
                     }
                 });
             } else {
@@ -240,11 +242,27 @@ export function useCourseMaterials(params: {
                 form.append("Name", edited.name ?? "");
                 form.append("Description", edited.description ?? "");
                 form.append("File", edited.file);
+                if (params.targetModuleUuid?.value) {
+                    form.append("ModuleUuid", params.targetModuleUuid.value);
+                }
 
                 createdMaterial = await $fetch<Material>(url, {
                     method: "POST",
                     body: form
                 });
+            }
+
+            // If the material belongs to a module, add it to the module's list
+            const moduleUuid = params.targetModuleUuid?.value;
+            if (moduleUuid && params.course.value?.modules) {
+                const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
+                if (mod) {
+                    mod.materials = mod.materials ?? [];
+                    mod.materials.push(createdMaterial);
+                    params.targetModuleUuid!.value = null;
+                    params.enabledModal.value = null;
+                    return;
+                }
             }
 
             params.course.value.materials = params.course.value.materials ?? [];

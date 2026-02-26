@@ -10,6 +10,7 @@ export function useCourseQuizzes(params: {
     isActionInProgress: Ref<boolean>;
     updateError: Ref<string | null>;
     deleteError: Ref<string | null>;
+    targetModuleUuid?: Ref<string | null>;
 }) {
 
     const selectedQuiz = ref<Quiz | null>(null);
@@ -63,9 +64,33 @@ export function useCourseQuizzes(params: {
                 `${getBaseUrl()}/api/v1/courses/${params.course.value.uuid}/quizzes`,
                 {
                     method: "POST",
-                    body: { title: quizName }
+                    body: {
+                        title: quizName,
+                        moduleUuid: params.targetModuleUuid?.value ?? undefined,
+                    }
                 }
             );
+
+            const moduleUuid = params.targetModuleUuid?.value;
+            if (moduleUuid && params.course.value.modules) {
+                const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
+                if (mod) {
+                    mod.quizzes = mod.quizzes ?? [];
+                    newQuiz.createdAt = new Date().toISOString();
+                    mod.quizzes.push(newQuiz);
+                    if (params.targetModuleUuid) params.targetModuleUuid.value = null;
+
+                    push.success({
+                        title: "Kvíz vytvořen",
+                        message: "Kvíz byl úspěšně vytvořen.",
+                        duration: 4000
+                    });
+
+                    params.enabledModal.value = null;
+                    form.reset();
+                    return;
+                }
+            }
 
             params.course.value.quizzes = params.course.value.quizzes ?? [];
             newQuiz.createdAt = new Date().toISOString();
