@@ -102,6 +102,8 @@ const draggedItemUuid = ref<string | null>(null);
 const dragOverItemUuid = ref<string | null>(null);
 // true when cursor is over the end-zone drop target (drop after last item)
 const dragOverEndZone = ref(false);
+// true when the drag was handled as a within-module reorder (so we don't remove the item on dragend)
+const droppedWithinModule = ref(false);
 
 function onItemDragStart(event: DragEvent, uuid: string) {
     draggedItemUuid.value = uuid;
@@ -213,6 +215,7 @@ async function onItemDrop(event: DragEvent, targetUuid: string) {
     event.preventDefault();
     event.stopPropagation();
     dragOverItemUuid.value = null;
+    droppedWithinModule.value = true;
 
     await performReorder(targetUuid);
 }
@@ -226,14 +229,31 @@ async function onEndZoneDrop(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
     dragOverEndZone.value = false;
+    droppedWithinModule.value = true;
 
     await performReorder('__end__');
 }
 
-function onItemDragEnd() {
+function onItemDragEnd(event: DragEvent) {
+    const uuid = draggedItemUuid.value;
+    const wasWithinModule = droppedWithinModule.value;
     draggedItemUuid.value = null;
     dragOverItemUuid.value = null;
     dragOverEndZone.value = false;
+    droppedWithinModule.value = false;
+
+    // Only remove the item if it was dropped into a *different* module (not a within-module reorder)
+    if (uuid && !wasWithinModule && event.dataTransfer?.dropEffect === 'move') {
+        const matIdx = props.module.materials.findIndex(m => m.uuid === uuid);
+        if (matIdx >= 0) {
+            props.module.materials.splice(matIdx, 1);
+        } else {
+            const qIdx = props.module.quizzes.findIndex(q => q.uuid === uuid);
+            if (qIdx >= 0) {
+                props.module.quizzes.splice(qIdx, 1);
+            }
+        }
+    }
 }
 </script>
 
@@ -321,7 +341,7 @@ function onItemDragEnd() {
                         @dragover="isDraggingEnabled && onItemDragOver($event, item.uuid)"
                         @dragleave="isDraggingEnabled && onItemDragLeave($event, item.uuid)"
                         @drop="isDraggingEnabled && onItemDrop($event, item.uuid)"
-                        @dragend="onItemDragEnd"
+                        @dragend="onItemDragEnd($event)"
                     >
 
                         <Transition name="drag-placeholder">
