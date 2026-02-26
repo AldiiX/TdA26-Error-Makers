@@ -52,6 +52,8 @@ function onDragOver(event: DragEvent) {
     if (!event.dataTransfer?.types.includes(DRAG_ITEM_KEY)) return;
     event.preventDefault();
     event.stopPropagation();
+    // We can't read the data during dragover (security restriction), so we show the overlay
+    // and will guard against same-module drops in onDrop
     isDragOver.value = true;
 }
 
@@ -70,7 +72,9 @@ function onDrop(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
     try {
-        const { uuid, itemType } = JSON.parse(raw) as { uuid: string; itemType: 'material' | 'quiz' };
+        const { uuid, itemType, sourceModuleUuid } = JSON.parse(raw) as { uuid: string; itemType: 'material' | 'quiz'; sourceModuleUuid?: string };
+        // Don't emit if item is being dropped onto the same module it came from
+        if (sourceModuleUuid === props.module.uuid) return;
         emit('itemDropped', uuid, itemType);
     } catch {
         // ignore malformed data
@@ -104,6 +108,15 @@ function onItemDragStart(event: DragEvent, uuid: string) {
     if (event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData(MODULE_ITEM_KEY, uuid);
+        // Also set DRAG_ITEM_KEY so other module sections can detect this drag and show their drop overlay
+        const item = moduleItems.value.find(i => i.uuid === uuid);
+        if (item) {
+            event.dataTransfer.setData(DRAG_ITEM_KEY, JSON.stringify({
+                uuid,
+                itemType: item.itemType,
+                sourceModuleUuid: props.module.uuid,
+            }));
+        }
     }
     // stop propagation so the outer module-section drop target is not triggered
     event.stopPropagation();
@@ -188,6 +201,11 @@ async function onItemDrop(event: DragEvent, targetUuid: string) {
     // If this is a flat-item-to-module drop (not a within-module reorder), let it bubble up
     if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
 
+    // Check if the dragged item belongs to THIS module; if not, let the event bubble
+    // up to the outer onDrop handler so it can handle the cross-module move.
+    const draggedUuid = event.dataTransfer?.getData(MODULE_ITEM_KEY);
+    if (draggedUuid && !moduleItems.value.some(i => i.uuid === draggedUuid)) return;
+
     event.preventDefault();
     event.stopPropagation();
     dragOverItemUuid.value = null;
@@ -197,6 +215,10 @@ async function onItemDrop(event: DragEvent, targetUuid: string) {
 
 async function onEndZoneDrop(event: DragEvent) {
     if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+
+    // Check if the dragged item belongs to THIS module; if not, let the event bubble
+    const draggedUuid = event.dataTransfer?.getData(MODULE_ITEM_KEY);
+    if (draggedUuid && !moduleItems.value.some(i => i.uuid === draggedUuid)) return;
     event.preventDefault();
     event.stopPropagation();
     dragOverEndZone.value = false;
@@ -213,7 +235,7 @@ function onItemDragEnd() {
 
 <template>
     <div
-        :class="[$style.moduleSection, !module.isVisible && $style.hidden, isDragOver && $style.dropTarget]"
+        :class="[$style.moduleSection, !module.isVisible && $style.hidden, isDragOver && !draggedItemUuid && $style.dropTarget]"
         @dragover="onDragOver"
         @dragleave="onDragLeave"
         @drop="onDrop"
@@ -269,8 +291,8 @@ function onItemDragEnd() {
             </div>
         </div>
 
-        <!-- Drop overlay hint (flat item → module) -->
-        <div v-if="isDragOver" :class="$style.dropOverlay">
+        <!-- Drop overlay hint (flat item → module, or item from another module) -->
+        <div v-if="isDragOver && !draggedItemUuid" :class="$style.dropOverlay">
             <p>Přidat do modulu „{{ module.title }}"</p>
         </div>
 

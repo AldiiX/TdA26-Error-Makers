@@ -271,29 +271,60 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
     // snapshot for rollback
     const snapshot = JSON.parse(JSON.stringify(course.value));
 
-    // optimistically move item from flat list into module
+    // optimistically move item into target module
     const courseVal = course.value;
-    if (itemType === 'material' && courseVal.materials) {
-        const idx = courseVal.materials.findIndex(m => m.uuid === itemUuid);
-        if (idx !== -1) {
-            const [item] = courseVal.materials.splice(idx, 1);
+    if (itemType === 'material') {
+        // Check flat unassigned list first
+        const flatIdx = courseVal.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
+        if (flatIdx !== -1 && courseVal.materials) {
+            const [item] = courseVal.materials.splice(flatIdx, 1);
             const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
             if (targetMod && item) {
                 targetMod.materials = targetMod.materials ?? [];
                 targetMod.materials.push(item);
             }
+        } else {
+            // Check inside existing modules
+            for (const mod of (courseVal.modules ?? [])) {
+                const idx = mod.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
+                if (idx !== -1 && mod.materials) {
+                    const [item] = mod.materials.splice(idx, 1);
+                    const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+                    if (targetMod && item) {
+                        targetMod.materials = targetMod.materials ?? [];
+                        targetMod.materials.push(item);
+                    }
+                    break;
+                }
+            }
         }
-    } else if (itemType === 'quiz' && courseVal.quizzes) {
-        const idx = courseVal.quizzes.findIndex(q => q.uuid === itemUuid);
-        if (idx !== -1) {
-            const [item] = courseVal.quizzes.splice(idx, 1);
+    } else if (itemType === 'quiz') {
+        // Check flat unassigned list first
+        const flatIdx = courseVal.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
+        if (flatIdx !== -1 && courseVal.quizzes) {
+            const [item] = courseVal.quizzes.splice(flatIdx, 1);
             const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
             if (targetMod && item) {
                 targetMod.quizzes = targetMod.quizzes ?? [];
                 targetMod.quizzes.push(item);
             }
+        } else {
+            // Check inside existing modules
+            for (const mod of (courseVal.modules ?? [])) {
+                const idx = mod.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
+                if (idx !== -1 && mod.quizzes) {
+                    const [item] = mod.quizzes.splice(idx, 1);
+                    const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+                    if (targetMod && item) {
+                        targetMod.quizzes = targetMod.quizzes ?? [];
+                        targetMod.quizzes.push(item);
+                    }
+                    break;
+                }
+            }
         }
     }
+    // trigger reactivity — deep clone so Vue sees all nested array mutations
     // trigger reactivity
     course.value = { ...courseVal };
 
@@ -1164,7 +1195,7 @@ function closeResultsModal() {
                     />
                 </div>
                 <div>
-                    <label for="moduleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis (volitelné)</label>
+                    <label for="moduleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis</label>
                     <Input
                         id="moduleDesc"
                         v-model="editingModule.description"
