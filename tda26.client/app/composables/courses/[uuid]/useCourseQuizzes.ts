@@ -72,13 +72,14 @@ export function useCourseQuizzes(params: {
             );
 
             const moduleUuid = params.targetModuleUuid?.value;
+            if (params.targetModuleUuid) params.targetModuleUuid.value = null;
+
             if (moduleUuid && params.course.value.modules) {
                 const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
                 if (mod) {
                     mod.quizzes = mod.quizzes ?? [];
                     newQuiz.createdAt = new Date().toISOString();
                     mod.quizzes.push(newQuiz);
-                    if (params.targetModuleUuid) params.targetModuleUuid.value = null;
 
                     push.success({
                         title: "Kvíz vytvořen",

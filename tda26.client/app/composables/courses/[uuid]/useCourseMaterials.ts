@@ -254,12 +254,13 @@ export function useCourseMaterials(params: {
 
             // If the material belongs to a module, add it to the module's list
             const moduleUuid = params.targetModuleUuid?.value;
+            if (params.targetModuleUuid) params.targetModuleUuid.value = null;
+
             if (moduleUuid && params.course.value?.modules) {
                 const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
                 if (mod) {
                     mod.materials = mod.materials ?? [];
                     mod.materials.push(createdMaterial);
-                    params.targetModuleUuid!.value = null;
                     params.enabledModal.value = null;
                     return;
                 }
