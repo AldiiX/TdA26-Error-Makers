@@ -6,21 +6,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCourseModules : Migration
+    public partial class AddCourseModule : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Create CourseModules table (was in the orphaned AddCourseModules migration)
             migrationBuilder.CreateTable(
                 name: "CourseModules",
                 columns: table => new
                 {
-                    Uuid = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Title = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: false),
-                    Description = table.Column<string>(type: "varchar(1048)", maxLength: 1048, nullable: true),
+                    Uuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    Title = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Description = table.Column<string>(type: "varchar(1048)", maxLength: 1048, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     IsVisible = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: false),
                     Order = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    CourseUuid = table.Column<Guid>(type: "char(36)", nullable: false),
+                    CourseUuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false)
                 },
@@ -39,44 +42,45 @@ namespace tda26.Server.Migrations
                 name: "ModuleUuid",
                 table: "Quizzes",
                 type: "char(36)",
-                nullable: true);
+                nullable: true,
+                collation: "ascii_general_ci");
 
             migrationBuilder.AddColumn<Guid>(
                 name: "ModuleUuid",
                 table: "Materials",
                 type: "char(36)",
-                nullable: true);
+                nullable: true,
+                collation: "ascii_general_ci");
 
+            // Create indexes without Order constraint (final desired state)
             migrationBuilder.CreateIndex(
-                name: "IX_CourseModules_CourseUuid_Order",
-                table: "CourseModules",
-                columns: new[] { "CourseUuid", "Order" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Materials_ModuleUuid_Order",
-                table: "Materials",
-                columns: new[] { "ModuleUuid", "Order" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Quizzes_ModuleUuid_Order",
+                name: "IX_Quizzes_ModuleUuid",
                 table: "Quizzes",
-                columns: new[] { "ModuleUuid", "Order" });
+                column: "ModuleUuid");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Materials_ModuleUuid",
+                table: "Materials",
+                column: "ModuleUuid");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseModules_CourseUuid",
+                table: "CourseModules",
+                column: "CourseUuid");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Materials_CourseModules_ModuleUuid",
                 table: "Materials",
                 column: "ModuleUuid",
                 principalTable: "CourseModules",
-                principalColumn: "Uuid",
-                onDelete: ReferentialAction.SetNull);
+                principalColumn: "Uuid");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Quizzes_CourseModules_ModuleUuid",
                 table: "Quizzes",
                 column: "ModuleUuid",
                 principalTable: "CourseModules",
-                principalColumn: "Uuid",
-                onDelete: ReferentialAction.SetNull);
+                principalColumn: "Uuid");
         }
 
         /// <inheritdoc />
@@ -91,12 +95,12 @@ namespace tda26.Server.Migrations
                 table: "Quizzes");
 
             migrationBuilder.DropIndex(
-                name: "IX_Materials_ModuleUuid_Order",
-                table: "Materials");
+                name: "IX_Quizzes_ModuleUuid",
+                table: "Quizzes");
 
             migrationBuilder.DropIndex(
-                name: "IX_Quizzes_ModuleUuid_Order",
-                table: "Quizzes");
+                name: "IX_Materials_ModuleUuid",
+                table: "Materials");
 
             migrationBuilder.DropColumn(
                 name: "ModuleUuid",
