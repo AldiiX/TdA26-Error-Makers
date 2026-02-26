@@ -2,7 +2,6 @@
 import type { Course, Module, Material, Quiz } from "#shared/types";
 import MaterialItem from "~/components/courses/[uuid]/MaterialItem.vue";
 import QuizItem from "~/components/courses/[uuid]/QuizItem.vue";
-import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Button from "~/components/Button.vue";
 import Popover from "~/components/Popover.vue";
 import { DRAG_ITEM_KEY } from "~/composables/courses/[uuid]/useModuleDrag";
@@ -11,14 +10,12 @@ const props = defineProps<{
     module: Module;
     course: Course;
     editMode?: boolean;
-    isVisibilityToggleLoading?: boolean;
     itemLoadingStates?: Record<string, boolean>;
 }>();
 
 const emit = defineEmits<{
     (e: "editModule", module: Module): void;
     (e: "deleteModule", module: Module): void;
-    (e: "toggleModuleVisibility", module: Module): void;
     (e: "editMaterial", material: Material): void;
     (e: "deleteMaterial", material: Material): void;
     (e: "toggleMaterialVisibility", material: Material): void;
@@ -290,11 +287,6 @@ function onItemDragEnd(event: DragEvent) {
             </div>
 
             <div v-if="editMode" :class="$style.moduleActions">
-                <ToggleVisibilityButton
-                    :is-visible="module.isVisible"
-                    :loading="isVisibilityToggleLoading"
-                    @toggle="emit('toggleModuleVisibility', module)"
-                />
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
                         <Button

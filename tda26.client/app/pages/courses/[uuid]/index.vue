@@ -236,6 +236,32 @@ const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openCont
 // visibility toggling
 const moduleLoadingStates = ref<Record<string, boolean>>({});
 
+// Modules sorted by order (used by show-next / hide-current buttons)
+const sortedModules = computed(() => [...(course.value?.modules ?? [])].sort((a, b) => a.order - b.order));
+const nextHiddenModule = computed(() => sortedModules.value.find(m => !m.isVisible) ?? null);
+const lastVisibleModule = computed(() => sortedModules.value.filter(m => m.isVisible).at(-1) ?? null);
+const isModuleVisibilityToggling = ref(false);
+
+const handleShowNextModule = async () => {
+    if (!nextHiddenModule.value || isModuleVisibilityToggling.value) return;
+    isModuleVisibilityToggling.value = true;
+    try {
+        await toggleModuleVisibility(nextHiddenModule.value);
+    } finally {
+        isModuleVisibilityToggling.value = false;
+    }
+};
+
+const handleHideCurrentModule = async () => {
+    if (!lastVisibleModule.value || isModuleVisibilityToggling.value) return;
+    isModuleVisibilityToggling.value = true;
+    try {
+        await toggleModuleVisibility(lastVisibleModule.value);
+    } finally {
+        isModuleVisibilityToggling.value = false;
+    }
+};
+
 const handleMaterialVisibilityToggle = async (material: Material) => {
     moduleLoadingStates.value[material.uuid] = true;
     try {
@@ -626,6 +652,22 @@ function closeResultsModal() {
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
+                                <template v-if="ownsCourse">
+                                    <Button
+                                        button-style="secondary"
+                                        accent-color="secondary"
+                                        :loading="isModuleVisibilityToggling"
+                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
+                                        @click="handleHideCurrentModule"
+                                    >Skrýt aktuální</Button>
+                                    <Button
+                                        button-style="primary"
+                                        accent-color="primary"
+                                        :loading="isModuleVisibilityToggling"
+                                        :disabled="!nextHiddenModule || isModuleVisibilityToggling"
+                                        @click="handleShowNextModule"
+                                    >Zobrazit další</Button>
+                                </template>
                             </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
@@ -667,11 +709,9 @@ function closeResultsModal() {
                                                 :module="mod"
                                                 :course="course"
                                                 :edit-mode="ownsCourse"
-                                                :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
                                                 :item-loading-states="moduleLoadingStates"
                                                 @edit-module="openUpdateModuleModal"
                                                 @delete-module="openDeleteModuleModal"
-                                                @toggle-module-visibility="(m) => { moduleLoadingStates[m.uuid] = true; toggleModuleVisibility(m).finally(() => { moduleLoadingStates[m.uuid] = false; }); }"
                                                 @edit-material="openUpdateMaterialModal"
                                                 @delete-material="openDeleteMaterialModal"
                                                 @toggle-material-visibility="handleMaterialVisibilityToggle"
