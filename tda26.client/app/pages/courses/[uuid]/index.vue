@@ -268,13 +268,16 @@ const { draggedModuleUuid: draggedSectionUuid, dragOverModuleUuid: dragOverSecti
 const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | 'quiz', moduleUuid: string, sourceModuleUuid?: string) => {
     if (!course.value) return;
 
-    // snapshot for rollback
-    const snapshot = JSON.parse(JSON.stringify(course.value));
+    // Deep-clone the current course for both rollback snapshot and the optimistic update.
+    // Using JSON.parse/stringify ensures we get entirely fresh plain objects so Vue's ref
+    // setter sees genuinely new references at every level and creates new reactive proxies,
+    // reliably triggering re-renders in all affected CourseModuleSection components.
+    const snapshot = JSON.parse(JSON.stringify(course.value)) as Course;
+    const updated  = JSON.parse(JSON.stringify(course.value)) as Course;
 
     // capture names for the notification before the optimistic update
     const courseVal = course.value;
-    const targetModule = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-    const targetModuleTitle = targetModule?.title ?? 'modul';
+    const targetModuleTitle = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid)?.title ?? 'modul';
     let itemName: string | undefined;
     if (itemType === 'material') {
         itemName = courseVal.materials?.find(m => m.uuid === itemUuid)?.name
@@ -284,78 +287,59 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
             ?? (courseVal.modules ?? []).flatMap(m => m.quizzes ?? []).find(q => q.uuid === itemUuid)?.title;
     }
 
-    // Optimistically move item into target module.
-    // Use .map() to produce NEW object references for affected modules so Vue
-    // detects prop changes and re-renders the child CourseModuleSection components.
+    // Optimistically move item inside the cloned object, then assign it as the new ref value.
     if (itemType === 'material') {
-        const flatItem = courseVal.materials?.find(m => m.uuid === itemUuid);
-        if (flatItem) {
+        const flatIdx = (updated.materials ?? []).findIndex(m => m.uuid === itemUuid);
+        if (flatIdx >= 0) {
             // Item is in the flat unassigned list
-            course.value = {
-                ...courseVal,
-                materials: (courseVal.materials ?? []).filter(m => m.uuid !== itemUuid),
-                modules: (courseVal.modules ?? []).map(mod =>
-                    mod.uuid === moduleUuid
-                        ? { ...mod, materials: [...(mod.materials ?? []), flatItem] }
-                        : mod
-                ),
-            };
+            const [item] = (updated.materials ?? []).splice(flatIdx, 1);
+            const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                if (!targetMod.materials) targetMod.materials = [];
+                targetMod.materials.push(item);
+            }
         } else {
             // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
-            const srcMod = sourceModuleUuid
-                ? (courseVal.modules ?? []).find(m => m.uuid === sourceModuleUuid)
-                : (courseVal.modules ?? []).find(m => m.materials?.some(mat => mat.uuid === itemUuid));
-            const modItem = srcMod?.materials?.find(m => m.uuid === itemUuid);
-            if (srcMod && modItem) {
-                course.value = {
-                    ...courseVal,
-                    modules: (courseVal.modules ?? []).map(mod => {
-                        if (mod.uuid === srcMod.uuid) {
-                            return { ...mod, materials: (mod.materials ?? []).filter(m => m.uuid !== itemUuid) };
-                        }
-                        if (mod.uuid === moduleUuid) {
-                            return { ...mod, materials: [...(mod.materials ?? []), modItem] };
-                        }
-                        return mod;
-                    }),
-                };
+            const srcMod = (updated.modules ?? []).find(m =>
+                sourceModuleUuid ? m.uuid === sourceModuleUuid : m.materials?.some(mat => mat.uuid === itemUuid)
+            );
+            const matIdx = srcMod?.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
+            if (srcMod && srcMod.materials && matIdx >= 0) {
+                const [item] = srcMod.materials.splice(matIdx, 1);
+                const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+                if (targetMod && item) {
+                    if (!targetMod.materials) targetMod.materials = [];
+                    targetMod.materials.push(item);
+                }
             }
         }
     } else if (itemType === 'quiz') {
-        const flatItem = courseVal.quizzes?.find(q => q.uuid === itemUuid);
-        if (flatItem) {
+        const flatIdx = (updated.quizzes ?? []).findIndex(q => q.uuid === itemUuid);
+        if (flatIdx >= 0) {
             // Item is in the flat unassigned list
-            course.value = {
-                ...courseVal,
-                quizzes: (courseVal.quizzes ?? []).filter(q => q.uuid !== itemUuid),
-                modules: (courseVal.modules ?? []).map(mod =>
-                    mod.uuid === moduleUuid
-                        ? { ...mod, quizzes: [...(mod.quizzes ?? []), flatItem] }
-                        : mod
-                ),
-            };
+            const [item] = (updated.quizzes ?? []).splice(flatIdx, 1);
+            const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                if (!targetMod.quizzes) targetMod.quizzes = [];
+                targetMod.quizzes.push(item);
+            }
         } else {
             // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
-            const srcMod = sourceModuleUuid
-                ? (courseVal.modules ?? []).find(m => m.uuid === sourceModuleUuid)
-                : (courseVal.modules ?? []).find(m => m.quizzes?.some(q => q.uuid === itemUuid));
-            const modItem = srcMod?.quizzes?.find(q => q.uuid === itemUuid);
-            if (srcMod && modItem) {
-                course.value = {
-                    ...courseVal,
-                    modules: (courseVal.modules ?? []).map(mod => {
-                        if (mod.uuid === srcMod.uuid) {
-                            return { ...mod, quizzes: (mod.quizzes ?? []).filter(q => q.uuid !== itemUuid) };
-                        }
-                        if (mod.uuid === moduleUuid) {
-                            return { ...mod, quizzes: [...(mod.quizzes ?? []), modItem] };
-                        }
-                        return mod;
-                    }),
-                };
+            const srcMod = (updated.modules ?? []).find(m =>
+                sourceModuleUuid ? m.uuid === sourceModuleUuid : m.quizzes?.some(q => q.uuid === itemUuid)
+            );
+            const qIdx = srcMod?.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
+            if (srcMod && srcMod.quizzes && qIdx >= 0) {
+                const [item] = srcMod.quizzes.splice(qIdx, 1);
+                const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+                if (targetMod && item) {
+                    if (!targetMod.quizzes) targetMod.quizzes = [];
+                    targetMod.quizzes.push(item);
+                }
             }
         }
     }
+    course.value = updated;
 
     // persist to backend
     try {
