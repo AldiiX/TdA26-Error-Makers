@@ -50,10 +50,13 @@ function resetDragOver() {
 function onDragOver(event: DragEvent) {
     if (!props.editMode || props.course.status !== 'draft') return;
     if (!event.dataTransfer?.types.includes(DRAG_ITEM_KEY)) return;
+    // If the drag originated from within this module, don't accept it here —
+    // the item-level and end-zone handlers take care of within-module reordering.
+    // Crucially, NOT calling preventDefault keeps dropEffect as 'none' so that
+    // onItemDragEnd won't remove the item when dropped on the module background.
+    if (draggedItemUuid.value) return;
     event.preventDefault();
     event.stopPropagation();
-    // We can't read the data during dragover (security restriction), so we show the overlay
-    // and will guard against same-module drops in onDrop
     isDragOver.value = true;
 }
 
@@ -69,12 +72,14 @@ function onDrop(event: DragEvent) {
     if (!props.editMode || props.course.status !== 'draft') return;
     const raw = event.dataTransfer?.getData(DRAG_ITEM_KEY);
     if (!raw) return;
-    event.preventDefault();
-    event.stopPropagation();
     try {
         const { uuid, itemType, sourceModuleUuid } = JSON.parse(raw) as { uuid: string; itemType: 'material' | 'quiz'; sourceModuleUuid?: string };
-        // Don't emit if item is being dropped onto the same module it came from
+        // Don't accept a drop if the item came from this same module —
+        // doing so before preventDefault keeps dropEffect as 'none' so
+        // onItemDragEnd won't mistakenly remove the item.
         if (sourceModuleUuid === props.module.uuid) return;
+        event.preventDefault();
+        event.stopPropagation();
         emit('itemDropped', uuid, itemType, sourceModuleUuid);
     } catch {
         // ignore malformed data
@@ -403,20 +408,18 @@ function onItemDragEnd(event: DragEvent) {
                 <!-- Add items buttons (edit mode only) -->
                 <div v-if="editMode && course.status === 'draft'" :class="$style.addItemButtons">
                     <Button
-                        button-style="tertiary"
                         accent-color="primary"
                         :class="$style.addItemButton"
                         @click="emit('addMaterial')"
                     >
-                        + Přidat materiál
+                        Přidat materiál
                     </Button>
                     <Button
-                        button-style="tertiary"
                         accent-color="primary"
                         :class="$style.addItemButton"
                         @click="emit('addQuiz')"
                     >
-                        + Přidat kvíz
+                        Přidat kvíz
                     </Button>
                 </div>
             </div>

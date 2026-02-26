@@ -19,6 +19,9 @@ export function useModuleDrag(params: {
     }
 
     function onModuleDragOver(event: DragEvent, moduleUuid: string) {
+        // Reject drops from inside a module section (application/module-item or application/flat-item
+        // with a sourceModuleUuid) — those should only be accepted by actual module drop zones, not the unassigned list.
+        if (event.dataTransfer?.types.includes('application/module-item')) return;
         event.preventDefault();
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'move';
@@ -39,6 +42,8 @@ export function useModuleDrag(params: {
     }
 
     async function onModuleDrop(event: DragEvent, targetModuleUuid: string) {
+        // Ignore drops from module items — only handle unassigned-list reorders here.
+        if (event.dataTransfer?.types.includes('application/module-item')) return;
         event.preventDefault();
         dragOverModuleUuid.value = null;
 
@@ -152,6 +157,10 @@ export function useModuleSectionDrag(params: {
     }
 
     function onModuleDragOver(event: DragEvent, moduleUuid: string) {
+        // Ignore drags that originate from inside a module (items being reordered or moved
+        // between modules) — those must only land on CourseModuleSection drop zones.
+        if (event.dataTransfer?.types.includes('application/module-item')) return;
+        if (event.dataTransfer?.types.includes('application/flat-item')) return;
         event.preventDefault();
         if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
         dragOverModuleUuid.value = moduleUuid;
@@ -165,6 +174,9 @@ export function useModuleSectionDrag(params: {
     }
 
     async function onModuleDrop(event: DragEvent, targetUuid: string) {
+        // Ignore drops from module items — only handle section-level reorders here.
+        if (event.dataTransfer?.types.includes('application/module-item')) return;
+        if (event.dataTransfer?.types.includes('application/flat-item')) return;
         event.preventDefault();
         dragOverModuleUuid.value = null;
 

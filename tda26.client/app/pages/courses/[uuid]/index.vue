@@ -621,42 +621,11 @@ function closeResultsModal() {
                                             @click="openCreateModuleModal"
                                             :disabled="courseSmall.status !== 'draft'"
                                         >
-                                            + Nový modul
+                                            Nový modul
                                         </Button>
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
-
-                                <template v-if="ownsCourse && (!course?.modules || course.modules.length === 0)">
-                                    <Popover teleport :disabled="courseSmall.status === 'draft'">
-                                        <template #trigger>
-                                            <Button
-                                                button-style="primary"
-                                                accent-color="primary"
-                                                :class="$style.addModuleButton"
-                                                @click="openCreateMaterialModal"
-                                                :disabled="courseSmall.status !== 'draft'"
-                                            >
-                                                Přidat nový materiál
-                                            </Button>
-                                        </template>
-                                        <template #content>Kurz musí být návrh</template>
-                                    </Popover>
-                                    <Popover teleport :disabled="courseSmall.status === 'draft'">
-                                        <template #trigger>
-                                            <Button
-                                                button-style="primary"
-                                                accent-color="primary"
-                                                :class="$style.addModuleButton"
-                                                @click="enabledModal = 'createQuiz'"
-                                                :disabled="courseSmall.status !== 'draft'"
-                                            >
-                                                Přidat nový kvíz
-                                            </Button>
-                                        </template>
-                                        <template #content>Kurz musí být návrh</template>
-                                    </Popover>
-                                </template>
                             </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
@@ -2190,7 +2159,7 @@ ul {
                 color: color-mix(in srgb, var(--color-warning, orange) 90%, var(--text-color-secondary) 10%);
                 margin: 0;
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 gap: 6px;
             }
 
