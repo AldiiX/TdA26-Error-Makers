@@ -156,10 +156,19 @@ export function useCourseMaterials(params: {
                 });
             }
 
-            // update local state
+            // update local state — flat list
             params.course.value.materials = (params.course.value.materials ?? []).map(m =>
                 m.uuid === updatedMaterial.uuid ? updatedMaterial : m
             );
+
+            // also update the material inside any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.materials) {
+                    mod.materials = mod.materials.map(m =>
+                        m.uuid === updatedMaterial.uuid ? updatedMaterial : m
+                    );
+                }
+            }
 
             params.enabledModal.value = null;
 
