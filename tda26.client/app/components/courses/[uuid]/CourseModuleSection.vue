@@ -27,7 +27,7 @@ const emit = defineEmits<{
     (e: "openQuizResults", quiz: Quiz): void;
     (e: "addMaterial"): void;
     (e: "addQuiz"): void;
-    (e: "itemDropped", itemUuid: string, itemType: "material" | "quiz"): void;
+    (e: "itemDropped", itemUuid: string, itemType: "material" | "quiz", sourceModuleUuid?: string): void;
 }>();
 
 const isCollapsed = ref(false);
@@ -76,7 +76,7 @@ function onDrop(event: DragEvent) {
         const { uuid, itemType, sourceModuleUuid } = JSON.parse(raw) as { uuid: string; itemType: 'material' | 'quiz'; sourceModuleUuid?: string };
         // Don't emit if item is being dropped onto the same module it came from
         if (sourceModuleUuid === props.module.uuid) return;
-        emit('itemDropped', uuid, itemType);
+        emit('itemDropped', uuid, itemType, sourceModuleUuid);
     } catch {
         // ignore malformed data
     }

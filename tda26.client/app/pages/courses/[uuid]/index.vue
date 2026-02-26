@@ -265,7 +265,7 @@ const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOve
 const { draggedModuleUuid: draggedSectionUuid, dragOverModuleUuid: dragOverSectionUuid, onModuleDragStart: onSectionDragStart, onModuleDragOver: onSectionDragOver, onModuleDragLeave: onSectionDragLeave, onModuleDrop: onSectionDrop, onModuleDragEnd: onSectionDragEnd } = useModuleSectionDrag({ course });
 
 // called when a flat item is dropped onto a module section
-const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | 'quiz', moduleUuid: string) => {
+const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | 'quiz', moduleUuid: string, sourceModuleUuid?: string) => {
     if (!course.value) return;
 
     // snapshot for rollback
@@ -284,55 +284,78 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
             ?? (courseVal.modules ?? []).flatMap(m => m.quizzes ?? []).find(q => q.uuid === itemUuid)?.title;
     }
 
-    // optimistically move item into target module
+    // Optimistically move item into target module.
+    // Use .map() to produce NEW object references for affected modules so Vue
+    // detects prop changes and re-renders the child CourseModuleSection components.
     if (itemType === 'material') {
-        // Check flat unassigned list first
-        const item = courseVal.materials?.find(m => m.uuid === itemUuid);
-        if (item && courseVal.materials) {
-            courseVal.materials = courseVal.materials.filter(m => m.uuid !== itemUuid);
-            const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-            if (targetMod) {
-                targetMod.materials = [...(targetMod.materials ?? []), item];
-            }
+        const flatItem = courseVal.materials?.find(m => m.uuid === itemUuid);
+        if (flatItem) {
+            // Item is in the flat unassigned list
+            course.value = {
+                ...courseVal,
+                materials: (courseVal.materials ?? []).filter(m => m.uuid !== itemUuid),
+                modules: (courseVal.modules ?? []).map(mod =>
+                    mod.uuid === moduleUuid
+                        ? { ...mod, materials: [...(mod.materials ?? []), flatItem] }
+                        : mod
+                ),
+            };
         } else {
-            // Check inside existing modules
-            for (const mod of (courseVal.modules ?? [])) {
-                const modItem = mod.materials?.find(m => m.uuid === itemUuid);
-                if (modItem && mod.materials) {
-                    mod.materials = mod.materials.filter(m => m.uuid !== itemUuid);
-                    const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-                    if (targetMod) {
-                        targetMod.materials = [...(targetMod.materials ?? []), modItem];
-                    }
-                    break;
-                }
+            // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
+            const srcMod = sourceModuleUuid
+                ? (courseVal.modules ?? []).find(m => m.uuid === sourceModuleUuid)
+                : (courseVal.modules ?? []).find(m => m.materials?.some(mat => mat.uuid === itemUuid));
+            const modItem = srcMod?.materials?.find(m => m.uuid === itemUuid);
+            if (srcMod && modItem) {
+                course.value = {
+                    ...courseVal,
+                    modules: (courseVal.modules ?? []).map(mod => {
+                        if (mod.uuid === srcMod.uuid) {
+                            return { ...mod, materials: (mod.materials ?? []).filter(m => m.uuid !== itemUuid) };
+                        }
+                        if (mod.uuid === moduleUuid) {
+                            return { ...mod, materials: [...(mod.materials ?? []), modItem] };
+                        }
+                        return mod;
+                    }),
+                };
             }
         }
     } else if (itemType === 'quiz') {
-        // Check flat unassigned list first
-        const item = courseVal.quizzes?.find(q => q.uuid === itemUuid);
-        if (item && courseVal.quizzes) {
-            courseVal.quizzes = courseVal.quizzes.filter(q => q.uuid !== itemUuid);
-            const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-            if (targetMod) {
-                targetMod.quizzes = [...(targetMod.quizzes ?? []), item];
-            }
+        const flatItem = courseVal.quizzes?.find(q => q.uuid === itemUuid);
+        if (flatItem) {
+            // Item is in the flat unassigned list
+            course.value = {
+                ...courseVal,
+                quizzes: (courseVal.quizzes ?? []).filter(q => q.uuid !== itemUuid),
+                modules: (courseVal.modules ?? []).map(mod =>
+                    mod.uuid === moduleUuid
+                        ? { ...mod, quizzes: [...(mod.quizzes ?? []), flatItem] }
+                        : mod
+                ),
+            };
         } else {
-            // Check inside existing modules
-            for (const mod of (courseVal.modules ?? [])) {
-                const modItem = mod.quizzes?.find(q => q.uuid === itemUuid);
-                if (modItem && mod.quizzes) {
-                    mod.quizzes = mod.quizzes.filter(q => q.uuid !== itemUuid);
-                    const targetMod = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
-                    if (targetMod) {
-                        targetMod.quizzes = [...(targetMod.quizzes ?? []), modItem];
-                    }
-                    break;
-                }
+            // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
+            const srcMod = sourceModuleUuid
+                ? (courseVal.modules ?? []).find(m => m.uuid === sourceModuleUuid)
+                : (courseVal.modules ?? []).find(m => m.quizzes?.some(q => q.uuid === itemUuid));
+            const modItem = srcMod?.quizzes?.find(q => q.uuid === itemUuid);
+            if (srcMod && modItem) {
+                course.value = {
+                    ...courseVal,
+                    modules: (courseVal.modules ?? []).map(mod => {
+                        if (mod.uuid === srcMod.uuid) {
+                            return { ...mod, quizzes: (mod.quizzes ?? []).filter(q => q.uuid !== itemUuid) };
+                        }
+                        if (mod.uuid === moduleUuid) {
+                            return { ...mod, quizzes: [...(mod.quizzes ?? []), modItem] };
+                        }
+                        return mod;
+                    }),
+                };
             }
         }
     }
-    course.value = { ...courseVal };
 
     // persist to backend
     try {
@@ -710,7 +733,7 @@ function closeResultsModal() {
                                                 @open-quiz-results="openResults"
                                                 @add-material="openCreateMaterialModalForModule(mod.uuid)"
                                                 @add-quiz="openCreateQuizModalForModule(mod.uuid)"
-                                                @item-dropped="(itemUuid, itemType) => handleItemDropToModule(itemUuid, itemType, mod.uuid)"
+                                                @item-dropped="(itemUuid, itemType, sourceModuleUuid) => handleItemDropToModule(itemUuid, itemType, mod.uuid, sourceModuleUuid)"
                                             />
                                         </div>
                                     </li>
