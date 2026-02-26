@@ -277,7 +277,8 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
 
     // capture names for the notification before the optimistic update
     const courseVal = course.value;
-    const targetModuleTitle = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid)?.title ?? 'modul';
+    const targetModule = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+    const targetModuleTitle = targetModule?.title ?? 'modul';
     let itemName: string | undefined;
     if (itemType === 'material') {
         itemName = courseVal.materials?.find(m => m.uuid === itemUuid)?.name
@@ -287,7 +288,7 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
             ?? (courseVal.modules ?? []).flatMap(m => m.quizzes ?? []).find(q => q.uuid === itemUuid)?.title;
     }
 
-    // Optimistically move item inside the cloned object, then assign it as the new ref value.
+    // optimistically move item into target module
     if (itemType === 'material') {
         const flatIdx = (updated.materials ?? []).findIndex(m => m.uuid === itemUuid);
         if (flatIdx >= 0) {
@@ -346,13 +347,6 @@ const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | '
         await $fetch(`/api/v1/courses/${courseVal.uuid}/items/assign-module`, {
             method: 'PUT',
             body: { itemUuid, itemType, moduleUuid },
-        });
-        push.success({
-            title: 'Přesunuto',
-            message: itemName
-                ? `„${itemName}" bylo přesunuto do modulu „${targetModuleTitle}".`
-                : `Položka byla přesunuta do modulu „${targetModuleTitle}".`,
-            duration: 3000,
         });
     } catch (err) {
         console.error('Error assigning item to module:', err);
