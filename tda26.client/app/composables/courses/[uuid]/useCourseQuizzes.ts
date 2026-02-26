@@ -16,17 +16,29 @@ export function useCourseQuizzes(params: {
     const selectedQuiz = ref<Quiz | null>(null);
 
     const handleQuizDelete = async () => {
-        if (!params.course.value || !params.course.value.quizzes) return;
+        if (!params.course.value) return;
 
         params.deleteError.value = null;
         params.isActionInProgress.value = true;
 
+        const deletedUuid = selectedQuiz.value?.uuid;
+
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/quizzes/${deletedUuid}`, {
                 method: "DELETE"
             });
 
-            params.course.value.quizzes = params.course.value.quizzes.filter(q => q.uuid !== selectedQuiz.value?.uuid);
+            // Remove from flat list
+            if (params.course.value.quizzes) {
+                params.course.value.quizzes = params.course.value.quizzes.filter(q => q.uuid !== deletedUuid);
+            }
+
+            // Remove from any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.quizzes) {
+                    mod.quizzes = mod.quizzes.filter(q => q.uuid !== deletedUuid);
+                }
+            }
 
             push.success({
                 title: "Kvíz smazán",

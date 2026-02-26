@@ -181,17 +181,29 @@ export function useCourseMaterials(params: {
     };
 
     const handleMaterialDelete = async () => {
-        if (!params.course.value || !params.course.value.materials) return;
+        if (!params.course.value) return;
 
         params.deleteError.value = null;
         params.isActionInProgress.value = true;
 
+        const deletedUuid = selectedMaterial.value?.uuid;
+
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${deletedUuid}`, {
                 method: "DELETE"
             });
 
-            params.course.value.materials = params.course.value.materials.filter(m => m.uuid !== selectedMaterial.value?.uuid);
+            // Remove from flat list
+            if (params.course.value.materials) {
+                params.course.value.materials = params.course.value.materials.filter(m => m.uuid !== deletedUuid);
+            }
+
+            // Remove from any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.materials) {
+                    mod.materials = mod.materials.filter(m => m.uuid !== deletedUuid);
+                }
+            }
 
             params.enabledModal.value = null;
         } catch (err) {
