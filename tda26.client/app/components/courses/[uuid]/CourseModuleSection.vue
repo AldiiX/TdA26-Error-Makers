@@ -284,6 +284,10 @@ function onItemDragEnd(event: DragEvent) {
                     <span>{{ module.title }}</span>
                     <span v-if="module.description" :class="$style.moduleDescription">{{ module.description }}</span>
                 </div>
+                <span v-if="editMode" :class="[$style.visibilityBadge, module.isVisible ? $style.badgeVisible : $style.badgeHidden]">
+                    <span :class="$style.badgeIcon" aria-hidden="true" />
+                    {{ module.isVisible ? 'Zobrazeno' : 'Skryto' }}
+                </span>
             </div>
 
             <div v-if="editMode" :class="$style.moduleActions">
@@ -527,6 +531,50 @@ function onItemDragEnd(event: DragEvent) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.visibilityBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid;
+    flex-shrink: 0;
+    white-space: nowrap;
+
+    &.badgeVisible {
+        color: color-mix(in srgb, var(--accent-color-primary) 80%, var(--text-color) 20%);
+        background-color: color-mix(in srgb, var(--accent-color-primary) 10%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 35%, transparent);
+    }
+
+    &.badgeHidden {
+        color: var(--text-color-secondary);
+        background-color: color-mix(in srgb, var(--text-color-secondary) 8%, transparent);
+        border-color: color-mix(in srgb, var(--text-color-secondary) 20%, transparent);
+    }
+
+    .badgeIcon {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        min-width: 14px;
+        mask-size: cover;
+        mask-position: center;
+        mask-repeat: no-repeat;
+        background-color: currentColor;
+    }
+}
+
+.badgeVisible .badgeIcon {
+    mask-image: url('/icons/eye.svg');
+}
+
+.badgeHidden .badgeIcon {
+    mask-image: url('/icons/eye-slash.svg');
 }
 
 .moduleActions {

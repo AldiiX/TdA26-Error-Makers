@@ -238,7 +238,7 @@ const moduleLoadingStates = ref<Record<string, boolean>>({});
 
 // Modules sorted by order (used by show-next / hide-current buttons)
 const sortedModules = computed(() => [...(course.value?.modules ?? [])].sort((a, b) => a.order - b.order));
-const nextHiddenModule = computed(() => sortedModules.value.find(m => !m.isVisible) ?? null);
+const nextHiddenModule = computed(() => sortedModules.value.filter(m => !m.isVisible).at(-1) ?? null);
 const lastVisibleModule = computed(() => sortedModules.value.filter(m => m.isVisible).at(-1) ?? null);
 const isModuleVisibilityToggling = ref(false);
 
