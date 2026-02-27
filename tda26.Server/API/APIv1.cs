@@ -404,8 +404,12 @@ public sealed class APIv1(
 
 			// Hide non-visible modules for users who do not own the course
 			if (!ownsCourse && acc is not Admin) {
-				course.Materials = course.Materials.Where(m => m.IsVisible).ToList();
-				course.Quizzes = course.Quizzes.Where(q => q.IsVisible).ToList();
+				course.Materials = [];
+				course.Quizzes = [];
+				
+				course.Modules = course.Modules
+					.Where(m => m.IsVisible)
+					.ToList();
 			}
 
 			/*course.Account = await db.Lecturers
@@ -1044,6 +1048,367 @@ public sealed class APIv1(
 		return Ok(new { affected });
 	}
 
+	#region course modules
+
+	[HttpGet("courses/{courseUuid:guid}/modules")]
+	public async Task<IActionResult> GetCourseModules([FromRoute] Guid courseUuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		var accessResult = ValidateRestrictedCourseAccess(course, acc);
+		if (accessResult != null) return accessResult;
+
+		var ownsCourse = acc != null && course.LecturerUuid == acc.Uuid;
+		var isAdmin = acc is Admin;
+
+		var modules = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid)
+			.Include(m => m.Materials.OrderBy(mat => mat.Order))
+			.Include(m => m.Quizzes.OrderBy(q => q.Order))
+			.OrderBy(m => m.Order)
+			.AsNoTracking()
+			.ToListAsync(ct);
+
+		var result = modules
+			.Where(m => m.IsVisible || ownsCourse || isAdmin)
+			.Select(m => new ReadModuleResponse {
+				Uuid = m.Uuid,
+				Title = m.Title,
+				Description = m.Description,
+				IsVisible = m.IsVisible,
+				Order = m.Order,
+				CreatedAt = m.CreatedAt,
+				UpdatedAt = m.UpdatedAt,
+				Materials = (ownsCourse || isAdmin
+					? m.Materials
+					: m.Materials.Where(mat => mat.IsVisible).ToList())
+					.OrderBy(mat => mat.Order)
+					.Select(mat => mat.ToReadDto())
+					.ToList(),
+				Quizzes = (ownsCourse || isAdmin
+					? m.Quizzes
+					: m.Quizzes.Where(q => q.IsVisible).ToList())
+					.OrderBy(q => q.Order)
+					.Select(q => q.ToReadDto())
+					.ToList()
+			})
+			.ToList();
+
+		return Ok(result);
+	}
+
+	[HttpPost("courses/{courseUuid:guid}/modules")]
+	public async Task<IActionResult> CreateCourseModule([FromRoute] Guid courseUuid, [FromBody] CreateModuleRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (string.IsNullOrWhiteSpace(body.Title))
+			return BadRequest(new { error = "Title is required." });
+
+		var module = new CourseModule {
+			Title = body.Title,
+			Description = body.Description,
+			IsVisible = body.IsVisible,
+			Order = body.Order,
+			CourseUuid = courseUuid
+		};
+
+		db.CourseModules.Add(module);
+		await db.SaveChangesAsync(ct);
+
+		return CreatedAtAction(nameof(GetCourseModuleById), new { courseUuid, moduleUuid = module.Uuid }, new ReadModuleResponse {
+			Uuid = module.Uuid,
+			Title = module.Title,
+			Description = module.Description,
+			IsVisible = module.IsVisible,
+			Order = module.Order,
+			CreatedAt = module.CreatedAt,
+			UpdatedAt = module.UpdatedAt,
+			Materials = [],
+			Quizzes = []
+		});
+	}
+
+	[HttpGet("courses/{courseUuid:guid}/modules/{moduleUuid:guid}")]
+	public async Task<IActionResult> GetCourseModuleById([FromRoute] Guid courseUuid, [FromRoute] Guid moduleUuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		var accessResult = ValidateRestrictedCourseAccess(course, acc);
+		if (accessResult != null) return accessResult;
+
+		var module = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == moduleUuid)
+			.Include(m => m.Materials.OrderBy(mat => mat.Order))
+			.Include(m => m.Quizzes.OrderBy(q => q.Order))
+			.AsNoTracking()
+			.FirstOrDefaultAsync(ct);
+		if (module == null) return NotFound(new { error = "Module not found." });
+
+		var ownsCourse = acc != null && course.LecturerUuid == acc.Uuid;
+		var isAdmin = acc is Admin;
+
+		if (!module.IsVisible && !ownsCourse && !isAdmin)
+			return NotFound(new { error = "Module not found." });
+
+		return Ok(new ReadModuleResponse {
+			Uuid = module.Uuid,
+			Title = module.Title,
+			Description = module.Description,
+			IsVisible = module.IsVisible,
+			Order = module.Order,
+			CreatedAt = module.CreatedAt,
+			UpdatedAt = module.UpdatedAt,
+			Materials = (ownsCourse || isAdmin
+				? module.Materials
+				: module.Materials.Where(mat => mat.IsVisible).ToList())
+				.OrderBy(mat => mat.Order)
+				.Select(mat => mat.ToReadDto())
+				.ToList(),
+			Quizzes = (ownsCourse || isAdmin
+				? module.Quizzes
+				: module.Quizzes.Where(q => q.IsVisible).ToList())
+				.OrderBy(q => q.Order)
+				.Select(q => q.ToReadDto())
+				.ToList()
+		});
+	}
+
+	[HttpPut("courses/{courseUuid:guid}/modules/{moduleUuid:guid}")]
+	public async Task<IActionResult> UpdateCourseModule([FromRoute] Guid courseUuid, [FromRoute] Guid moduleUuid, [FromBody] UpdateModuleRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		var module = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == moduleUuid)
+			.FirstOrDefaultAsync(ct);
+		if (module == null) return NotFound(new { error = "Module not found." });
+
+		if (!string.IsNullOrWhiteSpace(body.Title)) module.Title = body.Title;
+		if (body.Description != null) module.Description = body.Description;
+		if (body.IsVisible.HasValue) module.IsVisible = body.IsVisible.Value;
+		if (body.Order.HasValue) module.Order = body.Order.Value;
+		module.UpdatedAt = DateTime.UtcNow;
+
+		db.CourseModules.Update(module);
+		await db.SaveChangesAsync(ct);
+
+		if (body.IsVisible.HasValue) {
+			await sb.PublishAsync(courseUuid, new StreamMessage("module_visibility_changed", new { moduleUuid = module.Uuid, isVisible = module.IsVisible }), ct);
+		}
+
+		return Ok(new ReadModuleResponse {
+			Uuid = module.Uuid,
+			Title = module.Title,
+			Description = module.Description,
+			IsVisible = module.IsVisible,
+			Order = module.Order,
+			CreatedAt = module.CreatedAt,
+			UpdatedAt = module.UpdatedAt,
+			Materials = [],
+			Quizzes = []
+		});
+	}
+
+	[HttpDelete("courses/{courseUuid:guid}/modules/{moduleUuid:guid}")]
+	public async Task<IActionResult> DeleteCourseModule([FromRoute] Guid courseUuid, [FromRoute] Guid moduleUuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		var module = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == moduleUuid)
+			.Include(m => m.Materials)
+			.Include(m => m.Quizzes)
+			.FirstOrDefaultAsync(ct);
+		if (module == null) return NotFound(new { error = "Module not found." });
+
+		// Unlink items from module before deleting
+		foreach (var material in module.Materials) {
+			material.ModuleUuid = null;
+			db.Materials.Update(material);
+		}
+		foreach (var quiz in module.Quizzes) {
+			quiz.ModuleUuid = null;
+			db.Quizzes.Update(quiz);
+		}
+
+		db.CourseModules.Remove(module);
+		await db.SaveChangesAsync(ct);
+
+		return NoContent();
+	}
+
+	[HttpPut("courses/{courseUuid:guid}/modules/order")]
+	public async Task<IActionResult> ReorderCourseModules([FromRoute] Guid courseUuid, [FromBody] ReorderModulesRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		var moduleUuids = body.Modules.Select(m => m.Uuid).ToList();
+		var modules = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid && moduleUuids.Contains(m.Uuid))
+			.ToListAsync(ct);
+
+		if (modules.Count != body.Modules.Count)
+			return BadRequest(new { error = "One or more module UUIDs are invalid." });
+
+		var strategy = db.Database.CreateExecutionStrategy();
+		await strategy.ExecuteAsync(async () => {
+			await using var transaction = await db.Database.BeginTransactionAsync(ct);
+			try {
+				foreach (var item in body.Modules) {
+					var module = modules.First(m => m.Uuid == item.Uuid);
+					module.Order = item.Order;
+					db.CourseModules.Update(module);
+				}
+				await db.SaveChangesAsync(ct);
+				await transaction.CommitAsync(ct);
+			} catch {
+				await transaction.RollbackAsync(ct);
+				throw;
+			}
+		});
+
+		return Ok(new { affected = modules.Count });
+	}
+
+	[HttpPost("courses/{courseUuid:guid}/modules/{moduleUuid:guid}/items/reorder")]
+	public async Task<IActionResult> ReorderModuleItems([FromRoute] Guid courseUuid, [FromRoute] Guid moduleUuid, [FromBody] UpdateCourseModuleOrderRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		var module = await db.CourseModules
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == moduleUuid)
+			.Include(m => m.Materials)
+			.Include(m => m.Quizzes)
+			.FirstOrDefaultAsync(ct);
+		if (module == null) return NotFound(new { error = "Module not found." });
+
+		IActionResult? validationError = null;
+		var strategy = db.Database.CreateExecutionStrategy();
+		await strategy.ExecuteAsync(async () => {
+			await using var transaction = await db.Database.BeginTransactionAsync(ct);
+			try {
+				foreach (var item in body.ModuleOrders) {
+					if (item.ModuleType == "material") {
+						var material = module.Materials.FirstOrDefault(m => m.Uuid == item.Uuid);
+						if (material == null) {
+							validationError = BadRequest(new { error = $"Invalid material UUID: {item.Uuid}" });
+							return;
+						}
+						material.Order = item.Order;
+						db.Materials.Update(material);
+					} else if (item.ModuleType == "quiz") {
+						var quiz = module.Quizzes.FirstOrDefault(q => q.Uuid == item.Uuid);
+						if (quiz == null) {
+							validationError = BadRequest(new { error = $"Invalid quiz UUID: {item.Uuid}" });
+							return;
+						}
+						quiz.Order = item.Order;
+						db.Quizzes.Update(quiz);
+					}
+				}
+				await db.SaveChangesAsync(ct);
+				await transaction.CommitAsync(ct);
+			} catch {
+				await transaction.RollbackAsync(ct);
+				throw;
+			}
+		});
+
+		if (validationError != null) return validationError;
+		return Ok(new { affected = body.ModuleOrders.Count });
+	}
+
+	[HttpPut("courses/{courseUuid:guid}/items/assign-module")]
+	public async Task<IActionResult> AssignItemToModule([FromRoute] Guid courseUuid, [FromBody] AssignItemToModuleRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.CoursesMinimalEf()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+		if (course.Status != CourseStatus.Draft)
+			return BadRequest(new { error = "Only courses in draft status can be updated." });
+
+		// Validate target module if provided
+		if (body.ModuleUuid.HasValue) {
+			var moduleExists = await db.CourseModules
+				.AnyAsync(m => m.Uuid == body.ModuleUuid.Value && m.CourseUuid == courseUuid, ct);
+			if (!moduleExists)
+				return BadRequest(new { error = "Invalid module UUID." });
+		}
+
+		if (body.ItemType == "material") {
+			var material = await db.Materials
+				.FirstOrDefaultAsync(m => m.Uuid == body.ItemUuid && m.CourseUuid == courseUuid, ct);
+			if (material == null) return NotFound(new { error = "Material not found." });
+			material.ModuleUuid = body.ModuleUuid;
+			material.UpdatedAt = DateTime.UtcNow;
+			db.Materials.Update(material);
+		} else if (body.ItemType == "quiz") {
+			var quiz = await db.Quizzes
+				.FirstOrDefaultAsync(q => q.Uuid == body.ItemUuid && q.CourseUuid == courseUuid, ct);
+			if (quiz == null) return NotFound(new { error = "Quiz not found." });
+			quiz.ModuleUuid = body.ModuleUuid;
+			quiz.UpdatedAt = DateTime.UtcNow;
+			db.Quizzes.Update(quiz);
+		} else {
+			return BadRequest(new { error = "Invalid item type. Use 'material' or 'quiz'." });
+		}
+
+		await db.SaveChangesAsync(ct);
+		return Ok(new { itemUuid = body.ItemUuid, moduleUuid = body.ModuleUuid });
+	}
+
+	#endregion
+
 	[HttpPost("courses")]
 	public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequest body, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
@@ -1233,6 +1598,14 @@ public sealed class APIv1(
 			CourseUuid = course.Uuid
 		};
 
+		if (body.ModuleUuid.HasValue) {
+			var module = await db.CourseModules
+				.FirstOrDefaultAsync(m => m.Uuid == body.ModuleUuid.Value && m.CourseUuid == course.Uuid, ct);
+			if (module == null)
+				return BadRequest(new { error = "Invalid module UUID." });
+			newMaterial.ModuleUuid = module.Uuid;
+		}
+
 		db.Materials.Add(newMaterial);
 		await db.SaveChangesAsync(ct);
 
@@ -1324,6 +1697,14 @@ public sealed class APIv1(
 			UpdatedAt = DateTime.UtcNow
 		};
 
+		if (body.ModuleUuid.HasValue) {
+			var module = await db.CourseModules
+				.FirstOrDefaultAsync(m => m.Uuid == body.ModuleUuid.Value && m.CourseUuid == course.Uuid, ct);
+			if (module == null)
+				return BadRequest(new { error = "Invalid module UUID." });
+			newMaterial.ModuleUuid = module.Uuid;
+		}
+
 		db.Materials.Add(newMaterial);
 		await db.SaveChangesAsync(ct);
 
@@ -1369,13 +1750,14 @@ public sealed class APIv1(
 			return NotFound(new { error = "Course not found." });
 		}
 
-		var material = course.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+		var module = course.Modules.FirstOrDefault(m => m.Materials.Any(mat => mat.Uuid == materialUuid));
+		var material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
 
-		if (material == null) {
+		if (module == null || material == null) {
 			return NotFound(new { error = "Material not found." });
 		}
 
-		if (material.IsVisible == false) {
+		if (!module.IsVisible) {
 			if (acc == null) return Unauthorized();
 			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
 		}
@@ -1704,9 +2086,21 @@ public sealed class APIv1(
 			return NotFound(new { error = "Quiz not found in the specified course." });
 		}
 
-		if (quiz.IsVisible == false) {
-			if (acc == null) return Unauthorized();
-			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+		// if (quiz.IsVisible == false) {
+		// 	if (acc == null) return Unauthorized();
+		// 	if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+		// }
+
+		if (acc == null) {
+			if (!quiz.ModuleUuid.HasValue) return Unauthorized();
+			
+			var module = await db.CourseModules
+				.AsNoTracking()
+				.FirstOrDefaultAsync(m => m.Uuid == quiz.ModuleUuid.Value);
+
+			if (module == null) return Unauthorized();
+			
+			if (!module.IsVisible) return Unauthorized();
 		}
 
 		return Ok(quiz.ToReadDto());
@@ -1789,6 +2183,14 @@ public sealed class APIv1(
         }
 
         // ulozeni kvizu do db
+        if (body.ModuleUuid.HasValue) {
+            var module = await db.CourseModules
+                .FirstOrDefaultAsync(m => m.Uuid == body.ModuleUuid.Value && m.CourseUuid == course.Uuid, ct);
+            if (module == null)
+                return BadRequest(new { error = "Invalid module UUID." });
+            newQuiz.ModuleUuid = module.Uuid;
+        }
+
         db.Quizzes.Add(newQuiz);
 
         // oznameni do sse feedu o novem kvizu

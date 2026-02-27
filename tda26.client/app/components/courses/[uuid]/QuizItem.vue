@@ -48,7 +48,7 @@ function toggleVisibility(): void {
         
         <div v-if="editMode" :class="$style.editButtons">
             <Button @click="emit('openResults', quiz)">Výsledky</Button>
-            <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>
+<!--            <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
                     <NuxtLink

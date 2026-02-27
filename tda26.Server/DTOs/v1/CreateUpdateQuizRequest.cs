@@ -5,6 +5,7 @@ public class CreateUpdateQuizRequest {
     public string Title { get; set; } = null!;
     public int AttemptsCount { get; set; }
     public bool? IsVisible { get; set; }
+    public Guid? ModuleUuid { get; set; }
 
     public List<CreateUpdateQuestionRequest> Questions { get; set; } = new() {
         new CreateUpdateSingleChoiceQuestionRequest {

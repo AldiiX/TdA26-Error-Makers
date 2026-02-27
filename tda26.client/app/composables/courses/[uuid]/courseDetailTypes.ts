@@ -11,4 +11,7 @@ export type CourseDetailModal =
     | "quizResults"
     | "deleteCourse"
     | "schedulePublication"
+    | "createModule"
+    | "updateModule"
+    | "deleteModule"
     | null;

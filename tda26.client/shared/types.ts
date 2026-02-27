@@ -2,6 +2,18 @@ export type WebTheme = "dark" | "light";
 
 export type CourseStatus = "draft" | "scheduled" | "live" | "paused" | "archived";
 
+export interface Module {
+    uuid: string;
+    title: string;
+    description?: string;
+    isVisible: boolean;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+    materials: Material[];
+    quizzes: Quiz[];
+}
+
 export interface Course {
     uuid: string;
     name: string;
@@ -14,6 +26,7 @@ export interface Course {
     account: Account | null;
     materials?: Material[];
     quizzes?: Quiz[];
+    modules?: Module[];
     feed?: FeedPost[];
     tags: Tag[] | null;
     likeCount: number,
