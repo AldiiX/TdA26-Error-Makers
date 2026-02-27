@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260226144211_AddCourseModule")]
-    partial class AddCourseModule
+    [Migration("20260227124256_AddOrderedModules")]
+    partial class AddOrderedModules
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

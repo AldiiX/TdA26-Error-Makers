@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,12 +7,39 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCourseModule : Migration
+    public partial class AddOrderedModules : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Create CourseModules table (was in the orphaned AddCourseModules migration)
+            migrationBuilder.AddColumn<Guid>(
+                name: "ModuleUuid",
+                table: "Quizzes",
+                type: "char(36)",
+                nullable: true,
+                collation: "ascii_general_ci");
+
+            migrationBuilder.AddColumn<int>(
+                name: "Order",
+                table: "Quizzes",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "ModuleUuid",
+                table: "Materials",
+                type: "char(36)",
+                nullable: true,
+                collation: "ascii_general_ci");
+
+            migrationBuilder.AddColumn<int>(
+                name: "Order",
+                table: "Materials",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
             migrationBuilder.CreateTable(
                 name: "CourseModules",
                 columns: table => new
@@ -21,11 +49,13 @@ namespace tda26.Server.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "varchar(1048)", maxLength: 1048, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsVisible = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: false),
-                    Order = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    IsVisible = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    Order = table.Column<int>(type: "int", nullable: false),
                     CourseUuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn)
                 },
                 constraints: table =>
                 {
@@ -36,23 +66,9 @@ namespace tda26.Server.Migrations
                         principalTable: "Courses",
                         principalColumn: "Uuid",
                         onDelete: ReferentialAction.Cascade);
-                });
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "ModuleUuid",
-                table: "Quizzes",
-                type: "char(36)",
-                nullable: true,
-                collation: "ascii_general_ci");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "ModuleUuid",
-                table: "Materials",
-                type: "char(36)",
-                nullable: true,
-                collation: "ascii_general_ci");
-
-            // Create indexes without Order constraint (final desired state)
             migrationBuilder.CreateIndex(
                 name: "IX_Quizzes_ModuleUuid",
                 table: "Quizzes",
@@ -94,6 +110,9 @@ namespace tda26.Server.Migrations
                 name: "FK_Quizzes_CourseModules_ModuleUuid",
                 table: "Quizzes");
 
+            migrationBuilder.DropTable(
+                name: "CourseModules");
+
             migrationBuilder.DropIndex(
                 name: "IX_Quizzes_ModuleUuid",
                 table: "Quizzes");
@@ -107,11 +126,16 @@ namespace tda26.Server.Migrations
                 table: "Quizzes");
 
             migrationBuilder.DropColumn(
+                name: "Order",
+                table: "Quizzes");
+
+            migrationBuilder.DropColumn(
                 name: "ModuleUuid",
                 table: "Materials");
 
-            migrationBuilder.DropTable(
-                name: "CourseModules");
+            migrationBuilder.DropColumn(
+                name: "Order",
+                table: "Materials");
         }
     }
 }
