@@ -185,7 +185,7 @@ export function useCourseModules(params: {
         if (!params.course.value) return;
 
         try {
-            await $fetch<Module>(
+            const updated = await $fetch<Module>(
                 `${getBaseUrl()}/api/v1/courses/${params.course.value.uuid}/modules/${module.uuid}`,
                 {
                     method: "PUT",
@@ -196,7 +196,7 @@ export function useCourseModules(params: {
             if (params.course.value.modules) {
                 const idx = params.course.value.modules.findIndex(m => m.uuid === module.uuid);
                 if (idx !== -1) {
-                    params.course.value.modules[idx]!.isVisible = !module.isVisible;
+                    params.course.value.modules[idx]!.isVisible = updated.isVisible;
                 }
             }
         } catch (err) {

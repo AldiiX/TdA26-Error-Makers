@@ -676,7 +676,7 @@ function closeResultsModal() {
                             <template v-else>
                                 <ul :class="$style.moduleSectionList">
                                     <li
-                                        v-for="mod in [...(course.modules ?? [])].sort((a,b) => a.order - b.order)"
+                                        v-for="mod in [...(course.modules ?? [])].filter(m => ownsCourse || m.isVisible).sort((a,b) => a.order - b.order)"
                                         :key="mod.uuid"
                                         :draggable="ownsCourse && courseSmall.status === 'draft'"
                                         :class="{
