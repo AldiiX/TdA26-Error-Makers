@@ -1215,6 +1215,10 @@ public sealed class APIv1(
 		db.CourseModules.Update(module);
 		await db.SaveChangesAsync(ct);
 
+		if (body.IsVisible.HasValue) {
+			await sb.PublishAsync(courseUuid, new StreamMessage("module_visibility_changed", new { moduleUuid = module.Uuid, isVisible = module.IsVisible }), ct);
+		}
+
 		return Ok(new ReadModuleResponse {
 			Uuid = module.Uuid,
 			Title = module.Title,
