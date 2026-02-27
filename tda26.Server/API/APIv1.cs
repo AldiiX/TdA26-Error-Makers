@@ -1750,13 +1750,14 @@ public sealed class APIv1(
 			return NotFound(new { error = "Course not found." });
 		}
 
-		var material = course.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+		var module = course.Modules.FirstOrDefault(m => m.Materials.Any(mat => mat.Uuid == materialUuid));
+		var material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
 
-		if (material == null) {
+		if (module == null || material == null) {
 			return NotFound(new { error = "Material not found." });
 		}
 
-		if (material.IsVisible == false) {
+		if (!module.IsVisible) {
 			if (acc == null) return Unauthorized();
 			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
 		}
@@ -2085,9 +2086,21 @@ public sealed class APIv1(
 			return NotFound(new { error = "Quiz not found in the specified course." });
 		}
 
-		if (quiz.IsVisible == false) {
-			if (acc == null) return Unauthorized();
-			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+		// if (quiz.IsVisible == false) {
+		// 	if (acc == null) return Unauthorized();
+		// 	if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+		// }
+
+		if (acc == null) {
+			if (!quiz.ModuleUuid.HasValue) return Unauthorized();
+			
+			var module = await db.CourseModules
+				.AsNoTracking()
+				.FirstOrDefaultAsync(m => m.Uuid == quiz.ModuleUuid.Value);
+
+			if (module == null) return Unauthorized();
+			
+			if (!module.IsVisible) return Unauthorized();
 		}
 
 		return Ok(quiz.ToReadDto());
