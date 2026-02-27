@@ -434,7 +434,12 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
                 {{ i + 1 }}
             </li>
 
-            <li :class="$style.add" @click="addQuestion"/>
+            <li :class="$style.add"
+                @click="addQuestion"
+                @dragover.prevent="dragTo = quiz!.questions.length"
+                @dragleave="dragTo = null"
+                @drop.prevent="onDrop"
+            />
         </ul>
         <p
             :class="$style.editable"

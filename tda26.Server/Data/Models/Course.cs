@@ -52,10 +52,13 @@ public sealed class Course : Auditable {
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
   
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
+
+    public ICollection<CourseModule> Modules { get; set; } = new List<CourseModule>();
     
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
   
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
+
 
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();

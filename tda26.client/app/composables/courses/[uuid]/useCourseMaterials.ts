@@ -66,6 +66,7 @@ export function useCourseMaterials(params: {
     isActionInProgress: Ref<boolean>;
     updateError: Ref<string | null>;
     deleteError: Ref<string | null>;
+    targetModuleUuid?: Ref<string | null>;
 }) {
 
     const selectedMaterial = ref<Material | null>(null);
@@ -155,10 +156,19 @@ export function useCourseMaterials(params: {
                 });
             }
 
-            // update local state
+            // update local state — flat list
             params.course.value.materials = (params.course.value.materials ?? []).map(m =>
                 m.uuid === updatedMaterial.uuid ? updatedMaterial : m
             );
+
+            // also update the material inside any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.materials) {
+                    mod.materials = mod.materials.map(m =>
+                        m.uuid === updatedMaterial.uuid ? updatedMaterial : m
+                    );
+                }
+            }
 
             params.enabledModal.value = null;
 
@@ -171,17 +181,29 @@ export function useCourseMaterials(params: {
     };
 
     const handleMaterialDelete = async () => {
-        if (!params.course.value || !params.course.value.materials) return;
+        if (!params.course.value) return;
 
         params.deleteError.value = null;
         params.isActionInProgress.value = true;
 
+        const deletedUuid = selectedMaterial.value?.uuid;
+
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${selectedMaterial.value?.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/materials/${deletedUuid}`, {
                 method: "DELETE"
             });
 
-            params.course.value.materials = params.course.value.materials.filter(m => m.uuid !== selectedMaterial.value?.uuid);
+            // Remove from flat list
+            if (params.course.value.materials) {
+                params.course.value.materials = params.course.value.materials.filter(m => m.uuid !== deletedUuid);
+            }
+
+            // Remove from any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.materials) {
+                    mod.materials = mod.materials.filter(m => m.uuid !== deletedUuid);
+                }
+            }
 
             params.enabledModal.value = null;
         } catch (err) {
@@ -227,6 +249,7 @@ export function useCourseMaterials(params: {
                         name: edited.name,
                         description: edited.description,
                         url: edited.url,
+                        moduleUuid: params.targetModuleUuid?.value ?? undefined,
                     }
                 });
             } else {
@@ -240,11 +263,28 @@ export function useCourseMaterials(params: {
                 form.append("Name", edited.name ?? "");
                 form.append("Description", edited.description ?? "");
                 form.append("File", edited.file);
+                if (params.targetModuleUuid?.value) {
+                    form.append("ModuleUuid", params.targetModuleUuid.value);
+                }
 
                 createdMaterial = await $fetch<Material>(url, {
                     method: "POST",
                     body: form
                 });
+            }
+
+            // If the material belongs to a module, add it to the module's list
+            const moduleUuid = params.targetModuleUuid?.value;
+            if (params.targetModuleUuid) params.targetModuleUuid.value = null;
+
+            if (moduleUuid && params.course.value?.modules) {
+                const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
+                if (mod) {
+                    mod.materials = mod.materials ?? [];
+                    mod.materials.push(createdMaterial);
+                    params.enabledModal.value = null;
+                    return;
+                }
             }
 
             params.course.value.materials = params.course.value.materials ?? [];

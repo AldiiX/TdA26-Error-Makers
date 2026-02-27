@@ -19,8 +19,16 @@ public class Quiz : Auditable, IModule {
 
     [ForeignKey("CourseUuid"), JsonIgnore]
     public Course Course { get; set; } = null!;
-    
+
+    [JsonIgnore]
+    public Guid? ModuleUuid { get; set; }
+
+    [ForeignKey(nameof(ModuleUuid)), JsonIgnore]
+    public CourseModule? Module { get; set; }
+
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     
     public bool IsVisible { get; set; } = false;
+
+    public int Order { get; set; } = 0;
 }

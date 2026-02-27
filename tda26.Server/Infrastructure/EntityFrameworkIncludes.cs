@@ -24,6 +24,12 @@ public static class EntityFrameworkIncludes {
 					.OrderByDescending(q => q.CreatedAt))
 				/*.ThenInclude(q => q.Questions)
 					.ThenInclude(qu => qu.Options)*/
+				.Include(c => c.Modules
+					.OrderBy(m => m.Order))
+					.ThenInclude(m => m.Materials.OrderBy(mat => mat.Order))
+				.Include(c => c.Modules
+					.OrderBy(m => m.Order))
+					.ThenInclude(m => m.Quizzes.OrderBy(q => q.Order))
 				.Include(c => c.Feed)
 			;
 	}

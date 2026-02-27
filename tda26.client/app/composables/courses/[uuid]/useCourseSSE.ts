@@ -28,7 +28,7 @@ export default function(params: {
         }
     }
 
-    async function refreshFullCourse(fullCourse: Course, field: "materials" | "quizzes") {
+    async function refreshFullCourse(fullCourse: Course, field: "materials" | "quizzes" | "modules") {
         try {
             const updatedCourse = await $fetch<Course>(
                 `${getBaseUrl()}/api/v1/courses/${params.course.value.uuid}`,
@@ -76,6 +76,23 @@ export default function(params: {
         }
     }
 
+    async function onModuleVisibilityChanged(event: MessageEvent) {
+        const data: { moduleUuid: string; isVisible: boolean } = JSON.parse(event.data);
+        const fullCourse = params.courseFullData.value;
+        if (!fullCourse) return;
+
+        if (!data.isVisible) {
+            // hide: update isVisible in place so the module is hidden for non-owners
+            const mod = fullCourse.modules?.find(m => m.uuid === data.moduleUuid);
+            if (mod) {
+                mod.isVisible = false;
+            }
+        } else {
+            // show: re-fetch modules to get the newly visible module
+            await refreshFullCourse(fullCourse, "modules");
+        }
+    }
+
     // ostantni
     onMounted(() => {
         if (!import.meta.client || !params.course.value.uuid) return;
@@ -89,6 +106,7 @@ export default function(params: {
         eventSource.addEventListener("status_changed", onStatusChanged);
         eventSource.addEventListener("material_visibility_changed", onMaterialVisibilityChanged);
         eventSource.addEventListener("quiz_visibility_changed", onQuizVisibilityChanged);
+        eventSource.addEventListener("module_visibility_changed", onModuleVisibilityChanged);
 
         eventSource.onerror = (err) => {
             console.error("SSE feed error", err);

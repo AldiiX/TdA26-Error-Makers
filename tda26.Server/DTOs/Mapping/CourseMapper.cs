@@ -29,6 +29,20 @@ public static class CourseMapper {
 			CategoryImageUrl = course.CategoryImageUrl,
 			Materials = course.Materials.Select(m => m.ToReadDto()).ToList(),
 			Quizzes = course.Quizzes.Select(q => q.ToReadDto(extended)).ToList(),
+			Modules = course.Modules
+				.OrderBy(m => m.Order)
+				.Select(m => new ReadModuleResponse {
+					Uuid = m.Uuid,
+					Title = m.Title,
+					Description = m.Description,
+					IsVisible = m.IsVisible,
+					Order = m.Order,
+					CreatedAt = m.CreatedAt,
+					UpdatedAt = m.UpdatedAt,
+					Materials = m.Materials.OrderBy(mat => mat.Order).Select(mat => mat.ToReadDto()).ToList(),
+					Quizzes = m.Quizzes.OrderBy(q => q.Order).Select(q => q.ToReadDto(extended)).ToList()
+				})
+				.ToList(),
 			Feed = course.Feed,
 			RatingScore = course.RatingScore,
 			Author = course.Author,

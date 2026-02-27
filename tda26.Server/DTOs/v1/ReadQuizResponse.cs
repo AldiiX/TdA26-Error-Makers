@@ -11,4 +11,5 @@ public class ReadQuizResponse
     public List<object> Questions { get; set; } = new();
     
     public bool IsVisible { get; set; }
+    public int Order { get; set; } = 0;
 }
