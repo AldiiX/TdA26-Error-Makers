@@ -8,4 +8,9 @@ public sealed class UrlMaterial : Material {
 
     [MaxLength(256)]
     public string? FaviconUrl { get; set; }
+    
+    public DateTime? LastClickedAt { get; set; }
+    
+    public int ClickCount { get; set; }
+    
 }

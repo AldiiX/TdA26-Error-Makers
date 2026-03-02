@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260302214118_MaterialStatistics")]
+    partial class MaterialStatistics
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -668,8 +671,8 @@ namespace tda26.Server.Migrations
                     b.Property<int>("SizeBytes")
                         .HasColumnType("int");
 
-                    b.Property<long>("TotalBytesDownloaded")
-                        .HasColumnType("bigint");
+                    b.Property<int>("TotalBytesDownloaded")
+                        .HasColumnType("int");
 
                     b.HasDiscriminator().HasValue("FileMaterial");
                 });
@@ -692,6 +695,9 @@ namespace tda26.Server.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
 
                     b.HasDiscriminator().HasValue("UrlMaterial");
                 });

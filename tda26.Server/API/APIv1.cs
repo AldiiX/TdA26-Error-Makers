@@ -1774,6 +1774,18 @@ public sealed class APIv1(
 				try {
 					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
 
+					var now = DateTime.UtcNow;
+
+					await db.Materials
+						.OfType<FileMaterial>()
+						.Where(m => m.Uuid == fileMaterial.Uuid && m.CourseUuid == courseUuid)
+						.ExecuteUpdateAsync(setters => setters
+								.SetProperty(m => m.DownloadCount, m => m.DownloadCount + 1)
+								.SetProperty(m => m.LastDownload, _ => now)
+								.SetProperty(m => m.TotalBytesDownloaded, m => m.TotalBytesDownloaded + m.SizeBytes),
+							ct
+						);
+					
 					var baseName = material.Name.Trim().ToLowerInvariant().Replace(" ", "-");
 
 					string extension;
@@ -1807,6 +1819,50 @@ public sealed class APIv1(
 		}
 	}
 
+	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/go")]
+	public async Task<IActionResult> GoToUrlMaterial(
+		[FromRoute] Guid courseUuid,
+		[FromRoute] Guid materialUuid,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		
+		var course = await db.CoursesFullEf()
+			.AsNoTracking()
+			.AsSplitQuery()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+		if (course == null) return NotFound(new { error = "Course not found." });
+		
+		var accessResult = ValidateRestrictedCourseAccess(course, acc);
+		if (accessResult != null) return accessResult;
+		
+		var module = course.Modules.FirstOrDefault(m => m.Materials.Any(mat => mat.Uuid == materialUuid));
+		var material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+		if (module == null || material == null) return NotFound(new { error = "Material not found." });
+		
+		if (!module.IsVisible) {
+			if (acc == null) return Unauthorized();
+			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+		}
+		
+		if (material is not UrlMaterial urlMaterial) {
+			return BadRequest(new { error = "Material is not of type 'url'." });
+		}
+		
+		var now = DateTime.UtcNow;
+		
+		await db.Materials
+			.OfType<UrlMaterial>()
+			.Where(m => m.Uuid == urlMaterial.Uuid && m.CourseUuid == courseUuid)
+			.ExecuteUpdateAsync(setters => setters
+					.SetProperty(m => m.ClickCount, m => m.ClickCount + 1)
+					.SetProperty(m => m.LastClickedAt, _ => now),
+				ct
+			);
+		
+		return Redirect(urlMaterial.Url);
+	}
+	
 	[HttpDelete("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
 	public async Task<IActionResult> DeleteCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
@@ -2053,9 +2109,111 @@ public sealed class APIv1(
 
 		return Ok(new { quizUuid = material.Uuid, isVisible = material.IsVisible });
 	}
+	
+	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/url-stats")]
+	public async Task<IActionResult> GetUrlMaterialStats(
+		[FromRoute] Guid courseUuid,
+		[FromRoute] Guid materialUuid,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.Courses
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+
+		if (course == null)
+			return NotFound(new { error = "Course not found." });
+
+		// jen lecturer/admin
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid)
+			return Forbid();
+
+		var accessResult = ValidateRestrictedCourseAccess(course, acc);
+		if (accessResult != null)
+			return accessResult;
+
+		var urlMaterial = await db.Materials
+			.OfType<UrlMaterial>()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(m => 
+				m.CourseUuid == courseUuid && 
+				m.Uuid == materialUuid, ct);
+
+		if (urlMaterial == null)
+			return NotFound(new { error = "URL material not found." });
+
+		return Ok(new {
+			materialUuid = urlMaterial.Uuid,
+			type = "url",
+			clickCount = urlMaterial.ClickCount,
+			lastClickedAt = urlMaterial.LastClickedAt
+		});
+	}
+	
+	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/file-stats")]
+	public async Task<IActionResult> GetFileMaterialStats(
+	    [FromRoute] Guid courseUuid,
+	    [FromRoute] Guid materialUuid,
+	    CancellationToken ct = default
+	) {
+	    var acc = await auth.ReAuthAsync(ct);
+	    if (acc == null) return Unauthorized();
+
+	    var course = await db.Courses
+	        .AsNoTracking()
+	        .Where(c => c.Uuid == courseUuid)
+	        .Select(c => new { c.Uuid, c.LecturerUuid, c.Status })
+	        .FirstOrDefaultAsync(ct);
+
+	    if (course == null) return NotFound(new { error = "Course not found." });
+
+	    // jen lecturer/admin
+	    if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+	    // restricted access pravidla (pokud používáš)
+	    var accessResult = ValidateRestrictedCourseAccess(await db.Courses
+	        .AsNoTracking()
+	        .FirstAsync(c => c.Uuid == courseUuid, ct), acc);
+	    if (accessResult != null) return accessResult;
+
+	    var material = await db.Materials
+	        .AsNoTracking()
+	        .Where(m => m.CourseUuid == courseUuid && m.Uuid == materialUuid)
+	        .FirstOrDefaultAsync(ct);
+
+	    if (material == null) return NotFound(new { error = "Material not found." });
+
+	    if (material is not FileMaterial fileMaterial)
+	        return BadRequest(new { error = "Material is not of type 'file'." });
+
+	    var downloads = fileMaterial.DownloadCount;
+
+	    // TotalBytesDownloaded máš jako int — radši počítat v longu
+	    long totalBytesDownloaded = fileMaterial.TotalBytesDownloaded;
+	    if (totalBytesDownloaded <= 0 && downloads > 0 && fileMaterial.SizeBytes > 0) {
+	        totalBytesDownloaded = (long)downloads * fileMaterial.SizeBytes;
+	    }
+
+	    var totalMb = totalBytesDownloaded / (1024.0 * 1024.0);
+	    var avgMbPerDownload = downloads > 0 ? totalMb / downloads : 0;
+
+	    return Ok(new {
+	        materialUuid = fileMaterial.Uuid,
+	        type = "file",
+	        sizeBytes = fileMaterial.SizeBytes,
+	        downloadCount = downloads,
+	        lastDownloadedAt = fileMaterial.LastDownload, // doporučuju přejmenovat na LastDownloadedAt
+	        totalBytesDownloaded,
+	        totalMegabytesDownloaded = totalMb,
+	        averageMegabytesPerDownload = avgMbPerDownload
+	    });
+	}
 
 	#endregion
 
+	
 	#region course Kvizy
 
 	[HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]

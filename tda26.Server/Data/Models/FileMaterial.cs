@@ -6,4 +6,10 @@ public sealed class FileMaterial : Material {
     [Required] [MaxLength(256)] public required string FileUrl { get; set; }
     [MaxLength(256)] public string? MimeType { get; set; }
     public int SizeBytes { get; set; }
+    
+    public int DownloadCount { get; set; }
+    
+    public DateTime? LastDownload { get; set; }
+    
+    public long TotalBytesDownloaded { get; set; }
 }
