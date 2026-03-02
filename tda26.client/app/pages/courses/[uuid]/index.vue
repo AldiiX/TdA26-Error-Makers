@@ -4,6 +4,7 @@ import type {
     Course,
     CourseCategory, CourseModule, CourseStatus,
     Material,
+    MaterialResultsSummary,
     Module,
     Quiz, QuizResultsSummary
 } from "#shared/types";
@@ -27,7 +28,6 @@ import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsS
 import timeAgoString from "#shared/utils/timeAgoString";
 import { statusToText } from "#shared/utils/statusMapper";
 import { push } from "notivue";
-
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
 import { useCourseEdit } from "~/composables/courses/[uuid]/useCourseEdit";
 import { useCourseMaterials } from "~/composables/courses/[uuid]/useCourseMaterials";
@@ -50,6 +50,7 @@ import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
 import Popover from "~/components/Popover.vue";
 import QuizResultsModal from "~/components/pagespecific/QuizResultsModal.vue";
 import CourseModuleSection from "~/components/courses/[uuid]/CourseModuleSection.vue";
+import MaterialResultsModal from "~/components/pagespecific/MaterialResultsModal.vue";
 
 
 definePageMeta({
@@ -457,6 +458,7 @@ function openResults(quiz: Quiz) {
         });
 }
 
+
 function closeResultsModal() {
     resultsReqId++; // zneplatní rozjetý fetch
     enabledModal.value = null;
@@ -464,6 +466,64 @@ function closeResultsModal() {
     selectedQuizResultsSummary.value = null;
 }
 
+const selectedMaterialForResults = ref<Material | null>(null);
+const selectedMaterialResultsSummary = ref<MaterialResultsSummary | null>(null);
+
+let materialResultsReqId = 0;
+
+function openMaterialResults(material: Material) {
+    const reqId = ++materialResultsReqId;
+
+    selectedMaterialForResults.value = material;
+    selectedMaterialResultsSummary.value = null;
+
+    const base = `/api/v1/courses/${courseSmall.value.uuid}/materials/${material.uuid}`;
+    const url = material.type === "url" ? `${base}/url-stats` : `${base}/file-stats`;
+
+    fetch(url, { credentials: "include" })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch material results summary");
+            return res.json();
+        })
+        .then((data: any) => {
+            if (reqId !== materialResultsReqId) return;
+
+            // normalize kvůli possible naming rozdílům (lastDownload vs lastDownloadedAt)
+            if (material.type === "file") {
+                selectedMaterialResultsSummary.value = {
+                    materialUuid: data.materialUuid,
+                    type: "file",
+                    sizeBytes: data.sizeBytes ?? 0,
+                    downloadCount: data.downloadCount ?? 0,
+                    lastDownloadedAt: data.lastDownloadedAt ?? data.lastDownload ?? null,
+                    totalBytesDownloaded: data.totalBytesDownloaded ?? 0,
+                    totalMegabytesDownloaded: data.totalMegabytesDownloaded ?? 0,
+                    averageMegabytesPerDownload: data.averageMegabytesPerDownload ?? 0,
+                };
+            } else {
+                selectedMaterialResultsSummary.value = {
+                    materialUuid: data.materialUuid,
+                    type: "url",
+                    clickCount: data.clickCount ?? 0,
+                    lastClickedAt: data.lastClickedAt ?? null,
+                };
+            }
+
+            enabledModal.value = "materialResults";
+        })
+        .catch(err => {
+            if (reqId !== materialResultsReqId) return;
+            console.error("Error fetching material results summary:", err);
+            // volitelně: otevřít error modal / toast
+        });
+}
+
+function closeMaterialResultsModal() {
+    materialResultsReqId++; // zneplatní rozjetý fetch
+    enabledModal.value = null;
+    selectedMaterialForResults.value = null;
+    selectedMaterialResultsSummary.value = null;
+}
 
 </script>
 
@@ -714,6 +774,7 @@ function closeResultsModal() {
                                                 @delete-module="openDeleteModuleModal"
                                                 @edit-material="openUpdateMaterialModal"
                                                 @delete-material="openDeleteMaterialModal"
+                                                @open-material-results="openMaterialResults"
                                                 @toggle-material-visibility="handleMaterialVisibilityToggle"
                                                 @delete-quiz="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
                                                 @toggle-quiz-visibility="handleQuizVisibilityToggle"
@@ -784,6 +845,7 @@ function closeResultsModal() {
                                                                 @edit="openUpdateMaterialModal"
                                                                 @delete="openDeleteMaterialModal"
                                                                 @toggle-visibility="handleMaterialVisibilityToggle"
+                                                                @openMaterialResults="openMaterialResults"
                                                             />
                                                         </template>
                                                         <template v-else-if="mod.moduleType === 'quiz'">
@@ -1465,6 +1527,12 @@ function closeResultsModal() {
             :quiz="selectedQuizForResults ?? undefined"
             :quiz-results-summary="selectedQuizResultsSummary"
             @close="closeResultsModal"
+        />
+
+        <MaterialResultsModal
+            :enabled="enabledModal === 'materialResults'"
+            :material-results-summary="selectedMaterialResultsSummary"
+            @close="closeMaterialResultsModal"
         />
 
     </Teleport>

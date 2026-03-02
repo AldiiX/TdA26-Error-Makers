@@ -33,6 +33,7 @@ const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
     (e: "toggleVisibility", material: Material): void;
+    (e: "openMaterialResults", material: Material): void;
 }>();
 
 const getHostname = (url?: string) => {
@@ -65,6 +66,7 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <Button @click="emit('openMaterialResults', material)">Výsledky</Button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
@@ -114,6 +116,7 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <Button @click="emit('openMaterialResults', material)">Výsledky</Button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
