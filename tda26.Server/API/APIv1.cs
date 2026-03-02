@@ -1818,49 +1818,24 @@ public sealed class APIv1(
 
 		}
 	}
-
-	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/go")]
-	public async Task<IActionResult> GoToUrlMaterial(
-		[FromRoute] Guid courseUuid,
-		[FromRoute] Guid materialUuid,
-		CancellationToken ct = default
-	) {
+	
+	[HttpPost("courses/{courseUuid:guid}/materials/{materialUuid:guid}/track-click")]
+	public async Task<IActionResult> TrackUrlClick(Guid courseUuid, Guid materialUuid, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
-		
-		var course = await db.CoursesFullEf()
-			.AsNoTracking()
-			.AsSplitQuery()
-			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
-		if (course == null) return NotFound(new { error = "Course not found." });
-		
-		var accessResult = ValidateRestrictedCourseAccess(course, acc);
-		if (accessResult != null) return accessResult;
-		
-		var module = course.Modules.FirstOrDefault(m => m.Materials.Any(mat => mat.Uuid == materialUuid));
-		var material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
-		if (module == null || material == null) return NotFound(new { error = "Material not found." });
-		
-		if (!module.IsVisible) {
-			if (acc == null) return Unauthorized();
-			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
-		}
-		
-		if (material is not UrlMaterial urlMaterial) {
-			return BadRequest(new { error = "Material is not of type 'url'." });
-		}
-		
+		if (acc == null) return Unauthorized();
+
 		var now = DateTime.UtcNow;
-		
-		await db.Materials
+
+		var updated = await db.Materials
 			.OfType<UrlMaterial>()
-			.Where(m => m.Uuid == urlMaterial.Uuid && m.CourseUuid == courseUuid)
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == materialUuid)
 			.ExecuteUpdateAsync(setters => setters
 					.SetProperty(m => m.ClickCount, m => m.ClickCount + 1)
 					.SetProperty(m => m.LastClickedAt, _ => now),
-				ct
-			);
-		
-		return Redirect(urlMaterial.Url);
+				ct);
+
+		if (updated == 0) return NotFound(new { error = "URL material not found." });
+		return Ok(new { ok = true });
 	}
 	
 	[HttpDelete("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]

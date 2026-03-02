@@ -12,6 +12,23 @@ const props = defineProps<{
     isVisibilityToggleLoading?: boolean,
 }>();
 
+const onUrlClick = async (e: MouseEvent) => {
+    // otevři cílový url hned
+    window.open(props.material.url!, "_blank", "noopener,noreferrer");
+
+    // pošli tracking (fire-and-forget)
+    // preferuj navigator.sendBeacon pokud můžeš
+    const url = `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}/track-click`;
+
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon(url);
+        return;
+    }
+
+    // fallback
+    fetch(url, { method: "POST", credentials: "include" }).catch(() => {});
+};
+
 const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
@@ -82,7 +99,7 @@ function toggleVisibility(): void {
     <!-- URL MATERIAL -->
     <template v-else-if="material.type === 'url'">
         <div :class="$style.material">
-            <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer" @click.prevent="onUrlClick">
                 <div :class="$style.favicon">
                     <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" >
                 </div>
