@@ -298,6 +298,15 @@ function handleAuthSuccess() {
                         </div>
                     </div>
                 </div>
+                <Button
+                    v-if="ownsCourse && isEditMode"
+                    button-style="secondary"
+                    accent-color="secondary"
+                    :disabled="isActionInProgress"
+                    @click="openDeleteCourseModal"
+                >
+                    Smazat
+                </Button>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
                     <Button
@@ -525,14 +534,6 @@ function handleAuthSuccess() {
                     @click="editBackClick"
                 >
                     Ukončit
-                </Button>
-                <Button
-                    button-style="secondary"
-                    :style="{ '--color': 'var(--color-error)' }"
-                    :disabled="isActionInProgress"
-                    @click="openDeleteCourseModal"
-                >
-                    Smazat
                 </Button>
             </div>
         </div>
