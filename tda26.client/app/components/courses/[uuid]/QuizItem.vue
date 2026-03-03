@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import type {Quiz, Course} from "#shared/types";
 import { NuxtLink } from '#components';
-import Button from "~/components/Button.vue";
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Popover from "~/components/Popover.vue";
 
@@ -47,7 +46,14 @@ function toggleVisibility(): void {
         </NuxtLink>
         
         <div v-if="editMode" :class="$style.editButtons">
-            <Button @click="emit('openResults', quiz)">Výsledky</Button>
+            <button
+                type="button"
+                :class="[$style.iconButton, $style.iconButtonResults]"
+                @click="emit('openResults', quiz)"
+                title="Výsledky"
+            >
+                <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+            </button>
 <!--            <ToggleVisibilityButton :is-visible="quiz.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
@@ -55,12 +61,14 @@ function toggleVisibility(): void {
                         :href="`/courses/${course.uuid}/quiz/${quiz.uuid}/edit`"
                         :disabled="course.status === 'draft'"
                     >
-                        <Button
-                            button-style="primary"
-                            accent-color="secondary"
-                            style="width: 100%"
+                        <button
+                            type="button"
+                            :class="[$style.iconButton, $style.iconButtonEdit]"
                             :disabled="course.status !== 'draft'"
-                        >Upravit</Button>
+                            title="Upravit"
+                        >
+                            <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                        </button>
                     </NuxtLink>
                 </template>
 
@@ -68,13 +76,15 @@ function toggleVisibility(): void {
             </Popover>
             <Popover teleport :disabled="course.status === 'draft'">
                 <template #trigger>
-                    <Button
-                        button-style="secondary"
-                        accent-color="secondary"
-                        style="width: 100%"
+                    <button
+                        type="button"
+                        :class="[$style.iconButton, $style.iconButtonDelete]"
                         @click="emit('delete', quiz)"
                         :disabled="course.status !== 'draft'"
-                    >Smazat</Button>
+                        title="Smazat"
+                    >
+                        <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                    </button>
                 </template>
 
                 <template #content>Kurz musí být návrh</template>
@@ -174,8 +184,71 @@ function toggleVisibility(): void {
     
     .editButtons {
         display: flex;
-        gap: 8px;
+        gap: 4px;
         padding: 12px 16px;
+    }
+}
+
+.iconButton {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background-color 0.2s, border-color 0.2s;
+
+    &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .iconButtonIcon {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        min-width: 18px;
+        mask-size: cover;
+        mask-position: center;
+        mask-repeat: no-repeat;
+    }
+}
+
+.iconButtonResults {
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/stats.svg');
+        background-color: var(--accent-color-primary);
+    }
+}
+
+.iconButtonEdit {
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-secondary-theme) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-secondary-theme) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/pen.svg');
+        background-color: var(--accent-color-secondary-theme, #2ecc71);
+    }
+}
+
+.iconButtonDelete {
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, #e74c3c 12%, transparent);
+        border-color: color-mix(in srgb, #e74c3c 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/trash.svg');
+        background-color: #e74c3c;
     }
 }
 </style>
