@@ -43,7 +43,7 @@ watch(
         }
 
         const tags = await $fetch<Tag[]>(
-            getBaseUrl() + "/api/v2/course-tags",
+            getBaseUrl() + "/api/v1/course-tags",
             {
                 query: { categoryUuid: uuid }
             }
@@ -101,7 +101,7 @@ const addCustomTag = async () => {
 
     try {
         const newTag = await $fetch<Tag>(
-            getBaseUrl() + "/api/v2/course-tags",
+            getBaseUrl() + "/api/v1/course-tags",
             {
                 method: "POST",
                 body: {

@@ -62,7 +62,7 @@
         if(allCategories.value !== null) return
 
         try {
-            const categories = await $fetch<any[]>('/api/v2/course-categories', {
+            const categories = await $fetch<any[]>('/api/v1/course-categories', {
                 baseURL: getBaseUrl()
             })
 

@@ -7,7 +7,55 @@ import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
 import { push } from "notivue";
 
 definePageMeta({
-    layout: "normal-page-layout"
+    layout: "normal-page-layout",
+    middleware: [
+        defineNuxtRouteMiddleware(async (to) => {
+            const courseUuid = to.params.uuid as string;
+            const quizUuid = to.params.quizUuid as string;
+
+            // pokud chybi uuid
+            if (!quizUuid) {
+                return navigateTo(`/courses/${courseUuid}`);
+            }
+
+            try {
+                const courseSmall = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${courseUuid}`, {
+                    query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
+                });
+                
+                if (!courseSmall) {
+                    return navigateTo("/courses");
+                }
+                
+                if (courseSmall.status !== "draft") {
+                    return navigateTo(`/courses/${courseUuid}`);
+                }
+
+                const courseSmallState = useState<Course | null>(`course-${quizUuid}-small`, () => null);
+                courseSmallState.value = courseSmall;
+                
+                const quiz = await $fetch<Quiz>(`${getBaseUrl()}/api/v1/courses/${courseUuid}/quizzes/${quizUuid}`, {
+                    query: { full: true },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
+                });
+
+                if (!quiz) {
+                    return navigateTo(`/courses/${courseUuid}`);
+                }
+                
+                const quizState = useState<Quiz | null>(`quiz-${quizUuid}`, () => null);
+                quizState.value = quiz;
+            } catch (e) {
+                    console.error("Error loading quiz:", e);
+                return navigateTo("/courses");
+            }
+        })
+    ]
 });
 
 const loggedAccount = useState<Account | null>('loggedAccount');
@@ -15,24 +63,13 @@ const { uuid, quizUuid } = useRoute().params;
 
 const isActionInProgress = ref(false);
 
-const { data: quiz, pending: quizPending, error: quizError } = await useFetch<Quiz>(() => getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}`, {
-    key: `course-${uuid}-quiz-${quizUuid}`,
-});
+const quiz = useState<Quiz | null>(`quiz-${quizUuid}`);
 
-const { data: courseSmall } = await useFetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
-    query: { full: false },
-    server: true,
-    key: `course-${uuid}-small`,
-});
+const courseSmall = useState<Course | null>(`course-${quizUuid}-small`);
 
 if (loggedAccount.value?.type !== 'admin' && (!loggedAccount.value || loggedAccount.value.uuid !== courseSmall.value?.account?.uuid)) {
     // pokud neni vlastnik kurzu, nema pravo editovat
     await navigateTo(`/courses/${uuid}/quiz/${quizUuid}`);
-}
-
-if (quizError.value) {
-    console.error("Error fetching quiz:", quizError.value);
-    await navigateTo(`/courses/${uuid}`);
 }
 
 const oldQuiz = ref<Quiz | null>(null);
@@ -166,10 +203,73 @@ const updateQuestion = (i: number, patch: Partial<Question>) => {
     recheckQuiz();
 };
 
-const updateTitle = (newTitle: string) => {
+// Helper functions to preserve cursor position
+const saveCursorPosition = (element: HTMLElement) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    
+    const range = selection.getRangeAt(0);
+    const preSelectionRange = range.cloneRange();
+    preSelectionRange.selectNodeContents(element);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    
+    return preSelectionRange.toString().length;
+};
+
+const restoreCursorPosition = (element: HTMLElement, position: number) => {
+    const selection = window.getSelection();
+    if (!selection) return;
+    
+    const createRange = (node: Node, chars: { count: number }): Range | null => {
+        if (chars.count === 0) {
+            const range = document.createRange();
+            range.setStart(node, 0);
+            range.setEnd(node, 0);
+            return range;
+        }
+        
+        if (node.nodeType === Node.TEXT_NODE) {
+            const textNode = node as Text;
+            if (textNode.length >= chars.count) {
+                const range = document.createRange();
+                range.setStart(textNode, chars.count);
+                range.setEnd(textNode, chars.count);
+                return range;
+            } else {
+                chars.count -= textNode.length;
+            }
+        } else {
+            for (let i = 0; i < node.childNodes.length; i++) {
+                const range = createRange(node.childNodes[i]!, chars);
+                if (range) return range;
+            }
+        }
+        
+        return null;
+    };
+    
+    const range = createRange(element, { count: position });
+    if (range) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+};
+
+const updateTitle = (e: Event) => {
     if (!quiz.value) return;
     
+    const element = e.target as HTMLElement;
+    const newTitle = element.innerText;
+    const cursorPos = saveCursorPosition(element);
+    
     quiz.value.title = newTitle;
+    
+    // Restore cursor position after Vue updates the DOM
+    nextTick(() => {
+        if (cursorPos !== null) {
+            restoreCursorPosition(element, cursorPos);
+        }
+    });
 };
 
 const incrementQuestion = (i: number) => {
@@ -334,12 +434,17 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
                 {{ i + 1 }}
             </li>
 
-            <li :class="$style.add" @click="addQuestion"/>
+            <li :class="$style.add"
+                @click="addQuestion"
+                @dragover.prevent="dragTo = quiz!.questions.length"
+                @dragleave="dragTo = null"
+                @drop.prevent="onDrop"
+            />
         </ul>
         <p
             :class="$style.editable"
             :contenteditable="true"
-            @input="updateTitle(($event.target as HTMLElement).innerText)"
+            @input="updateTitle($event)"
         >{{ quiz.title }}</p>
         <QuizQuestionCard
             v-if="quiz && quiz.questions[kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex] && uuid"

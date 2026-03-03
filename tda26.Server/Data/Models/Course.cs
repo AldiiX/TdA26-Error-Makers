@@ -16,7 +16,7 @@ public enum CourseStatus {
     Archived
 }
 
-public class Course : Auditable {
+public sealed class Course : Auditable {
 
     // mapovani props na sloupce v db
     [Key]
@@ -33,7 +33,7 @@ public class Course : Auditable {
 
     public CourseStatus Status { get; set; } = CourseStatus.Draft;
     
-    public DateTime? ScheduledStart { get; set; }
+    public DateTimeOffset? ScheduledStart { get; set; }
 
     public int ViewCount { get; set; } = 0;
 
@@ -52,10 +52,13 @@ public class Course : Auditable {
     public ICollection<Material> Materials { get; set; } = new List<Material>(); 
   
     public ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>(); 
+
+    public ICollection<CourseModule> Modules { get; set; } = new List<CourseModule>();
     
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
   
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
+
 
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();

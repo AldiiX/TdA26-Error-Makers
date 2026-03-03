@@ -98,8 +98,8 @@ export function useCourses() {
         hasFetchedKey: 'hasFetchedAllCourses',
         fullFetchRunningKey: 'allCoursesFullFetchRunning',
         firstFetchLimit: ALL_FIRST_FETCH_LIMIT,
-        listEndpoint: '/api/v2/courses',
-        fullEndpoint: '/api/v2/courses',
+        listEndpoint: '/api/v1/courses',
+        fullEndpoint: '/api/v1/courses',
         lazyKey: `allCourses:limit:${ALL_FIRST_FETCH_LIMIT}`,
     })
 
@@ -108,8 +108,8 @@ export function useCourses() {
         hasFetchedKey: 'hasFetchedAllMyCourses',
         fullFetchRunningKey: 'myCoursesFullFetchRunning',
         firstFetchLimit: MY_FIRST_FETCH_LIMIT,
-        listEndpoint: '/api/v2/me/courses',
-        fullEndpoint: '/api/v2/me/courses',
+        listEndpoint: '/api/v1/me/courses',
+        fullEndpoint: '/api/v1/me/courses',
         lazyKey: `myCourses:limit:${MY_FIRST_FETCH_LIMIT}`,
     })
 

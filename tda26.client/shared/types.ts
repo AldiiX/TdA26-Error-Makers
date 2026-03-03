@@ -2,6 +2,18 @@ export type WebTheme = "dark" | "light";
 
 export type CourseStatus = "draft" | "scheduled" | "live" | "paused" | "archived";
 
+export interface Module {
+    uuid: string;
+    title: string;
+    description?: string;
+    isVisible: boolean;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+    materials: Material[];
+    quizzes: Quiz[];
+}
+
 export interface Course {
     uuid: string;
     name: string;
@@ -14,6 +26,7 @@ export interface Course {
     account: Account | null;
     materials?: Material[];
     quizzes?: Quiz[];
+    modules?: Module[];
     feed?: FeedPost[];
     tags: Tag[] | null;
     likeCount: number,
@@ -24,7 +37,8 @@ export interface Course {
     category: {
         uuid: string,
         label: string,
-    }
+    },
+    scheduledStart?: string,
 }
 
 export interface Material {
@@ -36,6 +50,8 @@ export interface Material {
     createdAt: string;
     description?: string;
     faviconUrl?: string;
+    isVisible: boolean;
+    order: number;
 }
 
 export interface MaterialFormModel {
@@ -55,6 +71,8 @@ export interface Quiz {
     attemptsCount: number;
     course: Course;
     questions: Question[];
+    isVisible: boolean;
+    order: number;
 }
 
 export interface Question {
@@ -144,7 +162,17 @@ export interface FeedPost {
     author: Author | null;
     createdAt: string;
     updatedAt: string;
-    purpose: "createMaterial" | "updateMaterial" | "deleteMaterial" | "createQuiz" | "updateQuiz" | "deleteQuiz" | "default";
+    purpose: "createMaterial"
+        | "updateMaterial"
+        | "deleteMaterial"
+        | "showMaterial"
+        | "hideMaterial"
+        | "createQuiz"
+        | "updateQuiz"
+        | "deleteQuiz"
+        | "showQuiz"
+        | "hideQuiz"
+        | "default";
 }
 
 export interface FeedPostView extends FeedPost {
@@ -180,3 +208,19 @@ export type TimeOption = {
     label: string;
     values: number | "custom";
 };
+
+export interface QuizResultsSummary {
+    totalAttempts: number;
+    averageScore: number;
+    averageTimeSpent: number;
+    averageScorePercentage: number;
+    scoreDistribution: { 
+        label: string; 
+        count: number 
+    }[];
+    timeDistribution?: { 
+        label: string; 
+        count: number 
+    }[];
+}
+export type CourseModule = Material | Quiz;

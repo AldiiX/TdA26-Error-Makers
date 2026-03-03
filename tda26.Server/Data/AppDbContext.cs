@@ -1,9 +1,9 @@
-﻿using tda26.Server.Data.Models;
+﻿﻿using tda26.Server.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace tda26.Server.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
     
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
@@ -21,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Material> Materials { get; set; }
     public DbSet<FileMaterial> FileMaterials => Set<FileMaterial>();
     public DbSet<UrlMaterial> UrlMaterials => Set<UrlMaterial>();
+    
+    public DbSet<CourseModule> CourseModules { get; set; }
     
     public DbSet<Quiz> Quizzes => Set<Quiz>();
 

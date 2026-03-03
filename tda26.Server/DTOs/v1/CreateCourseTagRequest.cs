@@ -1,4 +1,4 @@
-namespace tda26.Server.DTOs.v2;
+namespace tda26.Server.DTOs.v1;
 
 public class CreateCourseTagRequest {
     public required string DisplayName { get; set; }

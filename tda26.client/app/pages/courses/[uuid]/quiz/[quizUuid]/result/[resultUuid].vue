@@ -1,24 +1,47 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {QuizResult} from "#shared/types";
+import type {Quiz, QuizResult} from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
 
 definePageMeta({
-    layout: "normal-page-layout"
+    layout: "normal-page-layout",
+    middleware: [
+        defineNuxtRouteMiddleware(async (to) => {
+            const courseUuid = to.params.uuid as string;
+            const quizUuid = to.params.quizUuid as string;
+            const resultUuid = to.params.resultUuid as string;
+
+            // pokud chybi uuid
+            if (!quizUuid || !resultUuid) {
+                return navigateTo(`/courses/${courseUuid}`);
+            }
+
+            try {
+                const result = await $fetch<QuizResult>(`${getBaseUrl()}/api/v1/courses/${courseUuid}/quizzes/${quizUuid}/results/${resultUuid}`, {
+                    query: { full: true },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
+                });
+
+                if (!result) {
+                    return navigateTo(`/courses/${courseUuid}`);
+                }
+                const resultState = useState<QuizResult | null>(`quiz-result-${resultUuid}`, () => null);
+                resultState.value = result;
+            } catch (e) {
+                console.error("Error loading result:", e);
+                return navigateTo("/courses");
+            }
+        })
+    ]
 });
 
 const { uuid, quizUuid, resultUuid } = useRoute().params;
 
-const { data: result, pending: resultPending, error: resultError } = await useFetch<QuizResult>(() => getBaseUrl() + `/api/v2/courses/${uuid}/quizzes/${quizUuid}/results/${resultUuid}`, {
-    key: `course-${uuid}-quiz-${quizUuid}`,
-});
-
-if (resultError.value) {
-    console.error("Error fetching quiz result:", resultError.value);
-    await navigateTo(`/courses/${uuid}`);
-}
+const result = useState<QuizResult | null>(`quiz-result-${resultUuid}`);
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
@@ -110,6 +133,8 @@ const setQuestionIndex = (i: number) => {
                 @click="incrementQuestionIndex(1)"
             >Další</Button>
         </div>
+
+        <NuxtLink :href="`/courses/${uuid}`"><Button style="width: 100%">Zpět na kurz</Button></NuxtLink>
     </div>
 </template>
 

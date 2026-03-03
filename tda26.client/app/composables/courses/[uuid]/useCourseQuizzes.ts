@@ -10,22 +10,35 @@ export function useCourseQuizzes(params: {
     isActionInProgress: Ref<boolean>;
     updateError: Ref<string | null>;
     deleteError: Ref<string | null>;
+    targetModuleUuid?: Ref<string | null>;
 }) {
 
     const selectedQuiz = ref<Quiz | null>(null);
 
     const handleQuizDelete = async () => {
-        if (!params.course.value || !params.course.value.quizzes) return;
+        if (!params.course.value) return;
 
         params.deleteError.value = null;
         params.isActionInProgress.value = true;
 
+        const deletedUuid = selectedQuiz.value?.uuid;
+
         try {
-            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/quizzes/${selectedQuiz.value?.uuid}`, {
+            await $fetch<void>(getBaseUrl() + `/api/v1/courses/${params.course.value.uuid}/quizzes/${deletedUuid}`, {
                 method: "DELETE"
             });
 
-            params.course.value.quizzes = params.course.value.quizzes.filter(q => q.uuid !== selectedQuiz.value?.uuid);
+            // Remove from flat list
+            if (params.course.value.quizzes) {
+                params.course.value.quizzes = params.course.value.quizzes.filter(q => q.uuid !== deletedUuid);
+            }
+
+            // Remove from any module that contains it
+            for (const mod of params.course.value.modules ?? []) {
+                if (mod.quizzes) {
+                    mod.quizzes = mod.quizzes.filter(q => q.uuid !== deletedUuid);
+                }
+            }
 
             push.success({
                 title: "Kvíz smazán",
@@ -63,9 +76,34 @@ export function useCourseQuizzes(params: {
                 `${getBaseUrl()}/api/v1/courses/${params.course.value.uuid}/quizzes`,
                 {
                     method: "POST",
-                    body: { title: quizName }
+                    body: {
+                        title: quizName,
+                        moduleUuid: params.targetModuleUuid?.value ?? undefined,
+                    }
                 }
             );
+
+            const moduleUuid = params.targetModuleUuid?.value;
+            if (params.targetModuleUuid) params.targetModuleUuid.value = null;
+
+            if (moduleUuid && params.course.value.modules) {
+                const mod = params.course.value.modules.find(m => m.uuid === moduleUuid);
+                if (mod) {
+                    mod.quizzes = mod.quizzes ?? [];
+                    newQuiz.createdAt = new Date().toISOString();
+                    mod.quizzes.push(newQuiz);
+
+                    push.success({
+                        title: "Kvíz vytvořen",
+                        message: "Kvíz byl úspěšně vytvořen.",
+                        duration: 4000
+                    });
+
+                    params.enabledModal.value = null;
+                    form.reset();
+                    return;
+                }
+            }
 
             params.course.value.quizzes = params.course.value.quizzes ?? [];
             newQuiz.createdAt = new Date().toISOString();

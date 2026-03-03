@@ -88,7 +88,7 @@ async function submitRegisterForm(event: Event) {
 
 
     try {
-        const res = await $fetch<Account | null>("/api/v2/register", {
+        const res = await $fetch<Account | null>("/api/v1/register", {
             method: "POST",
             body: formDataObj
         });

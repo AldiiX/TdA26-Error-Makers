@@ -151,7 +151,7 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
 
-                    b.Property<DateTime?>("ScheduledStart")
+                    b.Property<DateTimeOffset?>("ScheduledStart")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")
@@ -173,6 +173,49 @@ namespace tda26.Server.Migrations
                     b.HasIndex("LecturerUuid");
 
                     b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
+                {
+                    b.Property<Guid>("Uuid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("CourseUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1048)
+                        .HasColumnType("varchar(1048)");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
+
+                    b.HasKey("Uuid");
+
+                    b.HasIndex("CourseUuid");
+
+                    b.ToTable("CourseModules");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -246,10 +289,19 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(13)
                         .HasColumnType("varchar(13)");
 
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid?>("ModuleUuid")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -263,6 +315,8 @@ namespace tda26.Server.Migrations
                     b.HasKey("Uuid");
 
                     b.HasIndex("CourseUuid");
+
+                    b.HasIndex("ModuleUuid");
 
                     b.ToTable("Materials");
 
@@ -348,6 +402,15 @@ namespace tda26.Server.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
 
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid?>("ModuleUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -362,6 +425,8 @@ namespace tda26.Server.Migrations
                     b.HasKey("Uuid");
 
                     b.HasIndex("CourseUuid");
+
+                    b.HasIndex("ModuleUuid");
 
                     b.ToTable("Quizzes");
                 });
@@ -421,6 +486,12 @@ namespace tda26.Server.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalTimeSeconds")
                         .HasColumnType("int");
 
                     b.HasKey("Uuid");
@@ -672,6 +743,17 @@ namespace tda26.Server.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Course", "Course")
+                        .WithMany("Modules")
+                        .HasForeignKey("CourseUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Account", "Account")
@@ -697,7 +779,13 @@ namespace tda26.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("tda26.Server.Data.Models.CourseModule", "Module")
+                        .WithMany("Materials")
+                        .HasForeignKey("ModuleUuid");
+
                     b.Navigation("Course");
+
+                    b.Navigation("Module");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
@@ -730,7 +818,13 @@ namespace tda26.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("tda26.Server.Data.Models.CourseModule", "Module")
+                        .WithMany("Quizzes")
+                        .HasForeignKey("ModuleUuid");
+
                     b.Navigation("Course");
+
+                    b.Navigation("Module");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswer", b =>
@@ -821,9 +915,18 @@ namespace tda26.Server.Migrations
 
                     b.Navigation("Materials");
 
+                    b.Navigation("Modules");
+
                     b.Navigation("Quizzes");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
+                {
+                    b.Navigation("Materials");
+
+                    b.Navigation("Quizzes");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>

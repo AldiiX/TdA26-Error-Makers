@@ -2,7 +2,7 @@
 
 namespace tda26.Server.DTOs;
 
-public class AccountSessionDto {
+public sealed class AccountSessionDto {
     public Guid Uuid { get; set; } = Guid.NewGuid();
     [MaxLength(32)] public string Username { get; set; } = string.Empty;
     [MaxLength(512)] public string Password { get; set; } = string.Empty;

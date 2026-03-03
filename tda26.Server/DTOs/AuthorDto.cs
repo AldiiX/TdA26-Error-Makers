@@ -4,7 +4,7 @@
 /**
  *  Objekt reprezentující public informace o autorovi (např. kurzu/kvízu..., lektorovi nebo uživateli).
  */
-public class AuthorDto {
+public sealed class AuthorDto {
 	public required Guid Uuid { get; set; }
 	public required string Username { get; set; }
 	public string? PictureUrl { get; set; }

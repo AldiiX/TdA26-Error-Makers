@@ -2,12 +2,15 @@
 import type {
     Account,
     Course,
-    CourseCategory, Quiz
+    CourseCategory, CourseModule, CourseStatus,
+    Material,
+    Module,
+    Quiz, QuizResultsSummary
 } from "#shared/types";
 import formatCzechCount  from "#shared/utils/formatCzechCount";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
-import MaterialItem from "~/components/pagespecific/MaterialItem.vue";
+import MaterialItem from "~/components/courses/[uuid]/MaterialItem.vue";
 import Modal from "~/components/Modal.vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
 import MaterialFormItem from "~/components/pagespecific/MaterialFormItem.vue";
@@ -23,19 +26,30 @@ import RegisterForm from "~/components/RegisterForm.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
 import { statusToText } from "#shared/utils/statusMapper";
+import { push } from "notivue";
 
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
 import { useCourseEdit } from "~/composables/courses/[uuid]/useCourseEdit";
 import { useCourseMaterials } from "~/composables/courses/[uuid]/useCourseMaterials";
 import { useCourseQuizzes } from "~/composables/courses/[uuid]/useCourseQuizzes";
+import { useCourseModules } from "~/composables/courses/[uuid]/useCourseModules";
 import { useCourseFeed } from "~/composables/courses/[uuid]/useCourseFeed";
 import { useCourseRating } from "~/composables/courses/[uuid]/useCourseRating";
 import { useCourseDelete } from "~/composables/courses/[uuid]/useCourseDelete";
 import { useCourseViewEvent } from "~/composables/courses/[uuid]/useCourseViewEvent";
 import { useBeforeUnloadUnsavedChanges } from "~/composables/courses/[uuid]/useBeforeUnloadUnsavedChanges";
+import { useModuleVisibility } from "~/composables/courses/[uuid]/useModuleVisibility";
+import { useModuleDrag, useModuleSectionDrag, DRAG_ITEM_KEY } from "~/composables/courses/[uuid]/useModuleDrag";
 import CourseCardImageContainer from "~/components/pagespecific/CourseCardImageContainer.vue";
 import useCoursePublicationSchedule from "~/composables/courses/[uuid]/useCoursePublicationSchedule";
 import useCourseSSE from "~/composables/courses/[uuid]/useCourseSSE";
+import ContextMenuButton from "~/components/contextmenu/ContextMenuButton.vue";
+import ContextMenu from "~/components/contextmenu/ContextMenu.vue";
+import {useContextMenu} from "~/composables/useContextMenu";
+import {useCourseStatus} from "~/composables/courses/[uuid]/useCourseStatus";
+import Popover from "~/components/Popover.vue";
+import QuizResultsModal from "~/components/pagespecific/QuizResultsModal.vue";
+import CourseModuleSection from "~/components/courses/[uuid]/CourseModuleSection.vue";
 
 
 definePageMeta({
@@ -44,6 +58,7 @@ definePageMeta({
     middleware: [
         defineNuxtRouteMiddleware(async (to) => {
             const uuid = to.params.uuid as string;
+            const isEditMode = to.query.edit === "true";
 
             // pokud chybi uuid
             if (!uuid) {
@@ -56,13 +71,24 @@ definePageMeta({
             }
 
             try {
-                const course = await $fetch<Course>(`${getBaseUrl()}/api/v2/courses/${uuid}`, {
+                const course = await $fetch<Course>(`${getBaseUrl()}/api/v1/courses/${uuid}`, {
                     query: { full: false },
+                    headers: {
+                        'Cookie': useRequestHeaders(['cookie']).cookie || ''
+                    }
                 });
 
                 if (!course) {
                     return navigateTo("/courses");
                 }
+                
+                if (isEditMode)        {        
+                    // pokud je edit mode, musi byt kurz draft
+                    if (course.status !== "draft") {
+                        return navigateTo(`/courses/${uuid}`);
+                    }
+                }
+                
                 const courseSmallState = useState<Course | null>(`course-small-${uuid}`, () => null);
                 courseSmallState.value = course;
 
@@ -115,7 +141,7 @@ if (isEditMode) {
 }
 
 // client full fetch
-const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v2/courses/${uuid}`, {
+const { data: _course, pending: coursePending, error: courseError } = useFetch<Course>(() => getBaseUrl() + `/api/v1/courses/${uuid}`, {
     query: { full: true },
     server: false,
     key: `course-${uuid}-full`,
@@ -128,9 +154,31 @@ if (courseError.value) {
 const course = ref<Course | null>(_course.value ?? null);
 const originalCourse = ref<Course | null>(null);
 
+const unassignedModules = computed(() => {
+    if (!course.value) return [];
+
+    // collect all UUIDs that are already assigned to a module section
+    const assignedUuids = new Set<string>();
+    for (const mod of course.value.modules ?? []) {
+        for (const m of mod.materials ?? []) assignedUuids.add(m.uuid);
+        for (const q of mod.quizzes ?? []) assignedUuids.add(q.uuid);
+    }
+
+    const materials = (course.value.materials ?? [])
+        .filter(m => !assignedUuids.has(m.uuid))
+        .map(m => ({ ...m, moduleType: "material" as const }));
+    const quizzes = (course.value.quizzes ?? [])
+        .filter(q => !assignedUuids.has(q.uuid))
+        .map(q => ({ ...q, moduleType: "quiz" as const }));
+    return [...materials, ...quizzes].sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order; // primarni razeni podle order
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // sekundarni razeni podle createdAt
+    });
+});
+
 // categories jsou server-renderovane, aby select mel data hned
 const { data: categories } = await useFetch<CourseCategory[]>(
-    getBaseUrl() + "/api/v2/course-categories",
+    getBaseUrl() + "/api/v1/course-categories",
     { server: true }
 );
 
@@ -138,7 +186,7 @@ const { data: categories } = await useFetch<CourseCategory[]>(
 useCourseViewEvent(uuid);
 
 // edit stav + ulozeni
-const {statusOptions, editedStatus, editedStatusModel, displayedStatus, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
+const {statusOptions, editedCategoryUuid, editedTagsUuid, isDirty, ownsCourse, saveCourseChanges, clearCourseCaches, updateCourseTitle, updateCourseDescription} = useCourseEdit({uuid, isEditMode, courseSmall, course, originalCourse, courseData: _course, categories, loggedAccount, isActionInProgress,});
 
 // upozorneni pri zavirani tab
 useBeforeUnloadUnsavedChanges(isDirty);
@@ -147,7 +195,7 @@ useBeforeUnloadUnsavedChanges(isDirty);
 const {ratingLoading, isThisCourseLikedDesign, isThisCourseDislikedDesign, optimisticLikeCount, addRating,} = useCourseRating({uuid, loggedAccount, courseSmall, course, enabledModal,});
 
 // menu
-const menuItems = ["Materiály", "Kvízy", "Aktivita"];
+const menuItems = ["Moduly", "Aktivita"];
 const selectedItem = ref(menuItems[0]);
 
 const selectItem = (item: string) => {
@@ -155,22 +203,194 @@ const selectItem = (item: string) => {
 };
 
 // publication schedule
-const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ editedStatus, enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+
+// uuid modulu pro přidání materiálu/kvízu
+const targetModuleUuid = ref<string | null>(null);
 
 // materiály
-const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError,});
+const {selectedMaterial, editingMaterial, openCreateMaterialModal, openUpdateMaterialModal, openDeleteMaterialModal, handleMaterialCreate, handleMaterialUpdate, handleMaterialDelete} = useCourseMaterials({course, enabledModal, isActionInProgress, updateError, deleteError, targetModuleUuid,});
 
 // kvízy
-const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError });
+const { selectedQuiz, handleQuizCreate, handleQuizDelete } = useCourseQuizzes({ course, enabledModal, isActionInProgress, updateError, deleteError, targetModuleUuid });
+
+// moduly (nové skupiny)
+const { selectedModule, editingModule, openCreateModuleModal, openUpdateModuleModal, openDeleteModuleModal, handleModuleCreate, handleModuleUpdate, handleModuleDelete, toggleModuleVisibility, reorderModules } = useCourseModules({ course, enabledModal, isActionInProgress, updateError, deleteError });
+
+const openCreateMaterialModalForModule = (moduleUuid: string) => {
+    targetModuleUuid.value = moduleUuid;
+    openCreateMaterialModal();
+};
+
+const openCreateQuizModalForModule = (moduleUuid: string) => {
+    targetModuleUuid.value = moduleUuid;
+    enabledModal.value = "createQuiz";
+};
+
+// status kurzu
+const { updateCourseStatus, isLoading: isCourseStatusLoading, currentStatus } = useCourseStatus({ course: courseSmall });
+
+// context menu
+const { isOpen: isContextMenuOpen, position: contextMenuPosition, open: openContextMenu, close: closeContextMenu } = useContextMenu();
+
+// visibility toggling
+const moduleLoadingStates = ref<Record<string, boolean>>({});
+
+// Modules sorted by order (used by show-next / hide-current buttons)
+const sortedModules = computed(() => [...(course.value?.modules ?? [])].sort((a, b) => a.order - b.order));
+const nextHiddenModule = computed(() => sortedModules.value.filter(m => !m.isVisible).at(-1) ?? null);
+const lastVisibleModule = computed(() => sortedModules.value.filter(m => m.isVisible).at(0) ?? null);
+const isModuleVisibilityToggling = ref(false);
+
+const handleShowNextModule = async () => {
+    if (!nextHiddenModule.value || isModuleVisibilityToggling.value) return;
+    isModuleVisibilityToggling.value = true;
+    try {
+        await toggleModuleVisibility(nextHiddenModule.value);
+    } finally {
+        isModuleVisibilityToggling.value = false;
+    }
+};
+
+const handleHideCurrentModule = async () => {
+    if (!lastVisibleModule.value || isModuleVisibilityToggling.value) return;
+    isModuleVisibilityToggling.value = true;
+    try {
+        await toggleModuleVisibility(lastVisibleModule.value);
+    } finally {
+        isModuleVisibilityToggling.value = false;
+    }
+};
+
+const handleMaterialVisibilityToggle = async (material: Material) => {
+    moduleLoadingStates.value[material.uuid] = true;
+    try {
+        const moduleRef = ref(material);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!material.isVisible);
+    } finally {
+        moduleLoadingStates.value[material.uuid] = false;
+    }
+};
+
+const handleQuizVisibilityToggle = async (quiz: Quiz) => {
+    moduleLoadingStates.value[quiz.uuid] = true;
+    try {
+        const moduleRef = ref(quiz);
+        const { changeVisibility } = useModuleVisibility({ courseUuid: uuid, module: moduleRef });
+        await changeVisibility(!quiz.isVisible);
+    } finally {
+        moduleLoadingStates.value[quiz.uuid] = false;
+    }
+};
+
+// drag & drop for modules
+const {draggedModuleUuid, dragOverModuleUuid, onModuleDragStart, onModuleDragOver, onModuleDragLeave, onModuleDrop, onModuleDragEnd } = useModuleDrag({ modules: unassignedModules, course });
+
+// drag & drop for module sections (chapter-level)
+const { draggedModuleUuid: draggedSectionUuid, dragOverModuleUuid: dragOverSectionUuid, onModuleDragStart: onSectionDragStart, onModuleDragOver: onSectionDragOver, onModuleDragLeave: onSectionDragLeave, onModuleDrop: onSectionDrop, onModuleDragEnd: onSectionDragEnd } = useModuleSectionDrag({ course });
+
+// called when a flat item is dropped onto a module section
+const handleItemDropToModule = async (itemUuid: string, itemType: 'material' | 'quiz', moduleUuid: string, sourceModuleUuid?: string) => {
+    if (!course.value) return;
+
+    // Deep-clone the current course for both rollback snapshot and the optimistic update.
+    // Using JSON.parse/stringify ensures we get entirely fresh plain objects so Vue's ref
+    // setter sees genuinely new references at every level and creates new reactive proxies,
+    // reliably triggering re-renders in all affected CourseModuleSection components.
+    const snapshot = JSON.parse(JSON.stringify(course.value)) as Course;
+    const updated  = JSON.parse(JSON.stringify(course.value)) as Course;
+
+    // capture names for the notification before the optimistic update
+    const courseVal = course.value;
+    const targetModule = (courseVal.modules ?? []).find(m => m.uuid === moduleUuid);
+    const targetModuleTitle = targetModule?.title ?? 'modul';
+    let itemName: string | undefined;
+    if (itemType === 'material') {
+        itemName = courseVal.materials?.find(m => m.uuid === itemUuid)?.name
+            ?? (courseVal.modules ?? []).flatMap(m => m.materials ?? []).find(m => m.uuid === itemUuid)?.name;
+    } else {
+        itemName = courseVal.quizzes?.find(q => q.uuid === itemUuid)?.title
+            ?? (courseVal.modules ?? []).flatMap(m => m.quizzes ?? []).find(q => q.uuid === itemUuid)?.title;
+    }
+
+    // optimistically move item into target module
+    if (itemType === 'material') {
+        const flatIdx = (updated.materials ?? []).findIndex(m => m.uuid === itemUuid);
+        if (flatIdx >= 0) {
+            // Item is in the flat unassigned list
+            const [item] = (updated.materials ?? []).splice(flatIdx, 1);
+            const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                if (!targetMod.materials) targetMod.materials = [];
+                targetMod.materials.push(item);
+            }
+        } else {
+            // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
+            const srcMod = (updated.modules ?? []).find(m =>
+                sourceModuleUuid ? m.uuid === sourceModuleUuid : m.materials?.some(mat => mat.uuid === itemUuid)
+            );
+            const matIdx = srcMod?.materials?.findIndex(m => m.uuid === itemUuid) ?? -1;
+            if (srcMod && srcMod.materials && matIdx >= 0) {
+                const [item] = srcMod.materials.splice(matIdx, 1);
+                const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+                if (targetMod && item) {
+                    if (!targetMod.materials) targetMod.materials = [];
+                    targetMod.materials.push(item);
+                }
+            }
+        }
+    } else if (itemType === 'quiz') {
+        const flatIdx = (updated.quizzes ?? []).findIndex(q => q.uuid === itemUuid);
+        if (flatIdx >= 0) {
+            // Item is in the flat unassigned list
+            const [item] = (updated.quizzes ?? []).splice(flatIdx, 1);
+            const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+            if (targetMod && item) {
+                if (!targetMod.quizzes) targetMod.quizzes = [];
+                targetMod.quizzes.push(item);
+            }
+        } else {
+            // Item is inside a module — find the source module (prefer sourceModuleUuid hint)
+            const srcMod = (updated.modules ?? []).find(m =>
+                sourceModuleUuid ? m.uuid === sourceModuleUuid : m.quizzes?.some(q => q.uuid === itemUuid)
+            );
+            const qIdx = srcMod?.quizzes?.findIndex(q => q.uuid === itemUuid) ?? -1;
+            if (srcMod && srcMod.quizzes && qIdx >= 0) {
+                const [item] = srcMod.quizzes.splice(qIdx, 1);
+                const targetMod = (updated.modules ?? []).find(m => m.uuid === moduleUuid);
+                if (targetMod && item) {
+                    if (!targetMod.quizzes) targetMod.quizzes = [];
+                    targetMod.quizzes.push(item);
+                }
+            }
+        }
+    }
+    course.value = updated;
+
+    // persist to backend
+    try {
+        await $fetch(`/api/v1/courses/${courseVal.uuid}/items/assign-module`, {
+            method: 'PUT',
+            body: { itemUuid, itemType, moduleUuid },
+        });
+    } catch (err) {
+        console.error('Error assigning item to module:', err);
+        // rollback optimistic update
+        course.value = snapshot;
+        push.error({ title: 'Chyba', message: 'Nepodařilo se přiřadit položku do modulu.', duration: 4000 });
+    }
+};
 
 // feed
 const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selectedFeedPost, editingFeedPost, openCreateFeedPost, openUpdateFeedPost, openDeleteFeedPost, handleFeedPostCreate, handleFeedPostUpdate, handleFeedPostDelete } = useCourseFeed({ uuid, course, enabledModal, isActionInProgress, feedPostError });
+
 
 // delete course
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
 // obecne sse
-const { } = useCourseSSE({ course: courseSmall, editMode: isEditMode });
+const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;
@@ -189,6 +409,62 @@ function handleAuthSuccess() {
     enabledModal.value = null;
     window.location.reload();
 }
+
+const contextMenuItems = computed(() => {
+    return [
+        {
+            text: "Upravit kurz",
+            onClick: editClick,
+            iconPath: "/icons/pen.svg",
+            disabled: courseSmall.value.status !== "draft",
+        },
+        {
+            text: "Smazat kurz",
+            onClick: openDeleteCourseModal,
+            iconPath: "/icons/trash.svg",
+            disabled: courseSmall.value.status !== "draft",
+        }
+    ];
+});
+
+const selectedQuizForResults = ref<Quiz | null>(null);
+const selectedQuizResultsSummary = ref<QuizResultsSummary | null>(null);
+
+let resultsReqId = 0;
+
+function openResults(quiz: Quiz) {
+    const reqId = ++resultsReqId;
+
+    selectedQuizForResults.value = quiz;
+    selectedQuizResultsSummary.value = null; // klidně nech, ale modal ještě neotevírej
+
+    fetch(`/api/v1/courses/${courseSmall.value.uuid}/quizzes/${quiz.uuid}/results-summary`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch quiz results summary");
+            return res.json();
+        })
+        .then((data: QuizResultsSummary) => {
+            // pokud mezitím user otevřel jiný quiz / zavřel modal, ignoruj
+            if (reqId !== resultsReqId) return;
+
+            selectedQuizResultsSummary.value = data;
+            enabledModal.value = "quizResults"; // otevři až TEĎ
+        })
+        .catch(err => {
+            if (reqId !== resultsReqId) return;
+            console.error("Error fetching quiz results summary:", err);
+            // volitelně: můžeš otevřít modal s obecnou chybou, nebo nechat být
+        });
+}
+
+function closeResultsModal() {
+    resultsReqId++; // zneplatní rozjetý fetch
+    enabledModal.value = null;
+    selectedQuizForResults.value = null;
+    selectedQuizResultsSummary.value = null;
+}
+
+
 </script>
 
 <template>
@@ -244,25 +520,7 @@ function handleAuthSuccess() {
             <div :class="['liquid-glass',$style.right]">
                 <CourseCardImageContainer :course="courseSmall" :class="$style.image" />
 
-                <Input
-                    v-if="isEditMode"
-                    :key="editedStatusModel"
-                    v-model="editedStatusModel"
-                    type="select"
-                    :class="[$style.status, $style.statusSelect]"
-                    :data-status="editedStatus"
-                >
-                    <option
-                        v-for="status in statusOptions"
-                        :key="status"
-                        :value="String(status)"
-                        :selected="editedStatusModel === String(status)"
-                    >
-                        {{ statusToText(status) }}
-                    </option>
-                </Input>
-
-                <p v-else :class="$style.status" :data-status="displayedStatus">{{ statusToText(displayedStatus) }}</p>
+                <p v-if="currentStatus" :class="$style.status" :data-status="currentStatus">{{ statusToText(currentStatus) }}</p>
 
                 <div :class="$style.fields">
                     <div :class="$style.el">
@@ -309,17 +567,63 @@ function handleAuthSuccess() {
                 </Button>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
+                    <!-- Primary button -->
                     <Button
+                        v-if="courseSmall?.status === 'draft' || courseSmall?.status === 'scheduled' || courseSmall?.status === 'paused'"
                         button-style="primary"
                         accent-color="secondary"
-                        @click="editClick"
-                    >Upravit kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('live')"
+                    >Spustit</Button>
                     <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('paused')"
+                    >Pozastavit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'archived'"
+                        button-style="primary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Obnovit na návrh</Button>
+                    
+                    <!-- Secondary button -->
+                    <Button
+                        v-if="courseSmall?.status === 'draft'"
                         button-style="secondary"
                         accent-color="secondary"
-                        :style="{ /*'--color': 'var(--color-error)'*/ }"
-                        @click="openDeleteCourseModal"
-                    >Smazat kurz</Button>
+                        :loading="isCourseStatusLoading"
+                        @click="enabledModal = 'schedulePublication'"
+                    >Naplánovat</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'scheduled'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('draft')"
+                    >Vrátit</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'live'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="updateCourseStatus('archived')"
+                    >Ukončit</Button>
+
+                    <div>
+                        <ContextMenuButton @open="openContextMenu"/>
+                        <ContextMenu
+                            :items="contextMenuItems"
+
+                            :visible="isContextMenuOpen"
+                            :x="contextMenuPosition.x"
+                            :y="contextMenuPosition.y"
+                            @close="closeContextMenu"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -337,45 +641,178 @@ function handleAuthSuccess() {
                     </li>
                 </ul>
             </nav>
+
             <div :class="['liquid-glass']" style="overflow-x: auto; overflow-y: hidden;">
-                <SmoothSizeWrapper :change-width="false">
+                <SmoothSizeWrapper :change-width="false" v-if="courseSmall?.account?.uuid === loggedAccount?.uuid || loggedAccount?.type === 'admin' || courseSmall.status === 'live'">
                     <ClientOnly>
-                        <div v-if="selectedItem == 'Materiály'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="openCreateMaterialModal">
-                                Přidat nový materiál
-                            </Button>
+                        <div v-if="selectedItem == 'Moduly'" :class="$style.modulesList">
+                            <div :class="$style.modulesListHeader">
+                                <Popover teleport :disabled="courseSmall.status === 'draft'" v-if="ownsCourse">
+                                    <template #trigger>
+                                        <Button
+                                            button-style="primary"
+                                            accent-color="primary"
+                                            :class="$style.addModuleButton"
+                                            @click="openCreateModuleModal"
+                                            :disabled="courseSmall.status !== 'draft'"
+                                        >
+                                            Nový modul
+                                        </Button>
+                                    </template>
+                                    <template #content>Kurz musí být návrh</template>
+                                </Popover>
+                                <div :class="$style.showHideButtons" v-if="ownsCourse">
+                                    <Button
+                                        button-style="primary"
+                                        accent-color="primary"
+                                        :loading="isModuleVisibilityToggling"
+                                        :disabled="!nextHiddenModule || isModuleVisibilityToggling"
+                                        @click="handleShowNextModule"
+                                    >Zobrazit další</Button>
+                                    <Button
+                                        button-style="secondary"
+                                        accent-color="secondary"
+                                        :loading="isModuleVisibilityToggling"
+                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
+                                        @click="handleHideCurrentModule"
+                                    >Skrýt aktuální</Button>
+                                </div>
+                            </div>
 
-                            <p v-if="coursePending">Načítání materiálů...</p>
-                            <p v-else-if="course?.materials === undefined || course?.materials.length == 0">Tento kurz nemá žádné materiály.</p>
-                            <ul v-else>
-                                <li v-for="material in course?.materials" :key="material.uuid">
-                                    <MaterialItem
-                                        :material="material"
-                                        :course="course"
-                                        :edit-mode="ownsCourse"
-                                        @edit="openUpdateMaterialModal"
-                                        @delete="openDeleteMaterialModal"
-                                    />
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="selectedItem == 'Kvízy'" :class="$style.materials">
-                            <Button v-if="ownsCourse" button-style="primary" accent-color="primary" :class="$style.addMaterialButton" @click="enabledModal = 'createQuiz'">
-                                Přidat nový kvíz
-                            </Button>
+                            <p v-if="coursePending || !course">Načítání materiálů...</p>
 
-                            <p v-if="coursePending">Načítání kvízů...</p>
-                            <p v-else-if="course?.quizzes === undefined || course?.quizzes.length == 0">Tento kurz nemá žádné kvízy.</p>
-                            <ul v-else>
-                                <li v-for="quiz in course?.quizzes" :key="quiz.uuid">
-                                    <QuizItem
-                                        :quiz="quiz"
-                                        :course="course"
-                                        :edit-mode="ownsCourse"
-                                        @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
-                                    />
-                                </li>
-                            </ul>
+                            <!-- MODULE-BASED VIEW -->
+                            <template v-else>
+                                <ul :class="$style.moduleSectionList">
+                                    <li
+                                        v-for="mod in [...(course.modules ?? [])].filter(m => ownsCourse || m.isVisible).sort((a,b) => a.order - b.order)"
+                                        :key="mod.uuid"
+                                        :draggable="ownsCourse && courseSmall.status === 'draft'"
+                                        :class="{
+                                            [$style.dragging]: draggedSectionUuid === mod.uuid,
+                                        }"
+                                        @dragstart="ownsCourse && courseSmall.status === 'draft' && onSectionDragStart($event, mod.uuid)"
+                                        @dragover="ownsCourse && courseSmall.status === 'draft' && onSectionDragOver($event, mod.uuid)"
+                                        @dragleave="ownsCourse && courseSmall.status === 'draft' && onSectionDragLeave($event, mod.uuid)"
+                                        @drop="ownsCourse && courseSmall.status === 'draft' && onSectionDrop($event, mod.uuid)"
+                                        @dragend="onSectionDragEnd"
+                                    >
+<!--                                        <Transition name="drag-placeholder">-->
+<!--                                            <div-->
+<!--                                                v-if="dragOverSectionUuid === mod.uuid && draggedSectionUuid !== mod.uuid"-->
+<!--                                                :class="$style.dragPlaceholder"-->
+<!--                                            />-->
+<!--                                        </Transition>-->
+                                        <div :class="$style.moduleDragWrapper">
+                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                                    <circle cx="2" cy="2" r="1.5"/>
+                                                    <circle cx="8" cy="2" r="1.5"/>
+                                                    <circle cx="2" cy="8" r="1.5"/>
+                                                    <circle cx="8" cy="8" r="1.5"/>
+                                                    <circle cx="2" cy="14" r="1.5"/>
+                                                    <circle cx="8" cy="14" r="1.5"/>
+                                                </svg>
+                                            </div>
+                                            <CourseModuleSection
+                                                :module="mod"
+                                                :course="course"
+                                                :edit-mode="ownsCourse"
+                                                :item-loading-states="moduleLoadingStates"
+                                                @edit-module="openUpdateModuleModal"
+                                                @delete-module="openDeleteModuleModal"
+                                                @edit-material="openUpdateMaterialModal"
+                                                @delete-material="openDeleteMaterialModal"
+                                                @toggle-material-visibility="handleMaterialVisibilityToggle"
+                                                @delete-quiz="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                                @toggle-quiz-visibility="handleQuizVisibilityToggle"
+                                                @open-quiz-results="openResults"
+                                                @add-material="openCreateMaterialModalForModule(mod.uuid)"
+                                                @add-quiz="openCreateQuizModalForModule(mod.uuid)"
+                                                @item-dropped="(itemUuid, itemType, sourceModuleUuid) => handleItemDropToModule(itemUuid, itemType, mod.uuid, sourceModuleUuid)"
+                                            />
+                                        </div>
+                                    </li>
+                                    <li
+                                        v-if="ownsCourse && courseSmall.status === 'draft' && draggedSectionUuid"
+                                        key="__end__"
+                                        :class="$style.endDropZone"
+                                        @dragover="onSectionDragOver($event, '__end__')"
+                                        @dragleave="onSectionDragLeave($event, '__end__')"
+                                        @drop="onSectionDrop($event, '__end__')"
+                                    >
+                                        <Transition name="drag-placeholder">
+                                            <div
+                                                v-if="dragOverSectionUuid === '__end__'"
+                                                :class="$style.dragPlaceholder"
+                                            />
+                                        </Transition>
+                                    </li>
+                                </ul>
+
+                                <!-- Unassigned materials/quizzes (not in any module) - visible to owner only -->
+                                <template v-if="ownsCourse && unassignedModules.length > 0">
+                                    <div :class="$style.unassignedSection">
+                                        <div :class="$style.unassignedHeader">
+                                            <p :class="$style.unassignedLabel">Nepřiřazené položky</p>
+                                            <p :class="$style.unassignedWarning">
+                                                <span :class="$style.warningIcon">⚠</span>
+                                                Tyto položky nejsou přiřazeny do žádného modulu a nebudou viditelné pro studenty. Přetáhněte je do modulu.
+                                            </p>
+                                        </div>
+                                        <TransitionGroup tag="ul" name="module-list" :class="{ [$style.isDragging]: draggedModuleUuid }">
+                                            <li
+                                                v-for="mod in unassignedModules"
+                                                :key="mod.uuid"
+                                                :draggable="ownsCourse && courseSmall.status === 'draft'"
+                                                :class="{ [$style.dragging]: draggedModuleUuid === mod.uuid }"
+                                                @dragstart="(e) => { if (ownsCourse && courseSmall.status === 'draft') { e.dataTransfer?.setData(DRAG_ITEM_KEY, JSON.stringify({uuid: mod.uuid, itemType: mod.moduleType})); onModuleDragStart(e, mod.uuid); } }"
+                                                @dragover="ownsCourse && courseSmall.status === 'draft' && onModuleDragOver($event, mod.uuid)"
+                                                @dragleave="ownsCourse && courseSmall.status === 'draft' && onModuleDragLeave($event, mod.uuid)"
+                                                @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, mod.uuid)"
+                                                @dragend="onModuleDragEnd"
+                                            >
+                                                <div :class="$style.module">
+                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                                        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                                                            <circle cx="2" cy="2" r="1.5"/>
+                                                            <circle cx="8" cy="2" r="1.5"/>
+                                                            <circle cx="2" cy="8" r="1.5"/>
+                                                            <circle cx="8" cy="8" r="1.5"/>
+                                                            <circle cx="2" cy="14" r="1.5"/>
+                                                            <circle cx="8" cy="14" r="1.5"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div :class="$style.moduleContent">
+                                                        <template v-if="mod.moduleType === 'material'">
+                                                            <MaterialItem
+                                                                :material="mod"
+                                                                :course="course"
+                                                                :edit-mode="ownsCourse"
+                                                                :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
+                                                                @edit="openUpdateMaterialModal"
+                                                                @delete="openDeleteMaterialModal"
+                                                                @toggle-visibility="handleMaterialVisibilityToggle"
+                                                            />
+                                                        </template>
+                                                        <template v-else-if="mod.moduleType === 'quiz'">
+                                                            <QuizItem
+                                                                :quiz="mod"
+                                                                :course="course"
+                                                                :edit-mode="ownsCourse"
+                                                                :is-visibility-toggle-loading="moduleLoadingStates[mod.uuid] || false"
+                                                                @delete="(q) => { selectedQuiz = q; enabledModal = 'deleteQuiz'; }"
+                                                                @toggle-visibility="handleQuizVisibilityToggle"
+                                                                @openResults="openResults"
+                                                            />
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </TransitionGroup>
+                                    </div>
+                                </template>
+                            </template>
                         </div>
                         <div v-if="selectedItem == 'Aktivita'" :class="$style.activity">
                             <div v-if="feedData" :class="$style.activityHeader">
@@ -451,6 +888,7 @@ function handleAuthSuccess() {
                                                 <Button
                                                     button-style="secondary"
                                                     accent-color="secondary"
+                                                    v-if="feedPost.type === 'manual'"
                                                     @click="openUpdateFeedPost(feedPost)"
                                                 >
                                                     Upravit
@@ -504,6 +942,10 @@ function handleAuthSuccess() {
                             </ul>
                         </div>
                     </ClientOnly>
+                </SmoothSizeWrapper>
+
+                <SmoothSizeWrapper :change-width="false" v-else>
+                    <p>Kurz je momentálně ve stavu {{ statusToText(courseSmall?.status ?? "unknown") }}. Moduly lze vidět pouze pokud kurz probíhá.</p>
                 </SmoothSizeWrapper>
             </div>
         </div>
@@ -752,7 +1194,98 @@ function handleAuthSuccess() {
             <p v-if="updateError" class="error-text">{{ updateError }}</p>
         </Modal>
 
-        <!-- LOGIN REQUIRED MODAL -->
+        <!-- CREATE MODULE -->
+        <Modal
+            :enabled="enabledModal === 'createModule'"
+            can-be-closed-by-clicking-outside
+            :modal-style="{ maxWidth: '600px' }"
+            @close="enabledModal = null"
+        >
+            <h3 style="margin: 0 0 24px;">Vytvoření nového modulu</h3>
+            <form @submit.prevent="handleModuleCreate" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label for="moduleTitle" style="display: block; font-weight: 600; margin-bottom: 6px;">Název modulu *</label>
+                    <Input
+                        id="moduleTitle"
+                        v-model="editingModule.title"
+                        maxlength="128"
+                        required
+                        :disabled="isActionInProgress"
+                        placeholder="např. Úvod do tématu"
+                        style="width: 100%;"
+                    />
+                </div>
+                <div>
+                    <label for="moduleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis</label>
+                    <Input
+                        id="moduleDesc"
+                        v-model="editingModule.description"
+                        maxlength="1048"
+                        :disabled="isActionInProgress"
+                        placeholder="Krátký popis obsahu modulu"
+                        style="width: 100%;"
+                    />
+                </div>
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" type="button" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
+                    <Button button-style="primary" accent-color="secondary" type="submit" :disabled="isActionInProgress">Vytvořit modul</Button>
+                </div>
+            </form>
+            <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
+
+        <!-- UPDATE MODULE -->
+        <Modal
+            :enabled="enabledModal === 'updateModule'"
+            can-be-closed-by-clicking-outside
+            :modal-style="{ maxWidth: '600px' }"
+            @close="enabledModal = null"
+        >
+            <h3 style="margin: 0 0 24px;">Úprava modulu</h3>
+            <form @submit.prevent="handleModuleUpdate" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label for="editModuleTitle" style="display: block; font-weight: 600; margin-bottom: 6px;">Název modulu *</label>
+                    <Input
+                        id="editModuleTitle"
+                        v-model="editingModule.title"
+                        maxlength="128"
+                        required
+                        :disabled="isActionInProgress"
+                        style="width: 100%;"
+                    />
+                </div>
+                <div>
+                    <label for="editModuleDesc" style="display: block; font-weight: 600; margin-bottom: 6px;">Popis</label>
+                    <Input
+                        id="editModuleDesc"
+                        v-model="editingModule.description"
+                        maxlength="1048"
+                        :disabled="isActionInProgress"
+                        style="width: 100%;"
+                    />
+                </div>
+                <div :class="$style.modalButtons">
+                    <Button button-style="tertiary" type="button" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
+                    <Button button-style="primary" accent-color="secondary" type="submit" :disabled="isActionInProgress">Uložit změny</Button>
+                </div>
+            </form>
+            <p v-if="updateError" class="error-text">{{ updateError }}</p>
+        </Modal>
+
+        <!-- DELETE MODULE -->
+        <ModalDestructive
+            :enabled="enabledModal === 'deleteModule'"
+            can-be-closed-by-clicking-outside
+            title="Smazání modulu"
+            :description="`Opravdu chceš smazat modul ${selectedModule?.title ?? ''}? Materiály a kvízy v modulu budou zachovány.`"
+            :yes-action="handleModuleDelete"
+            @close="enabledModal = null"
+        >
+            <p style="margin-top: 16px; color: var(--text-color-secondary);">
+                Materiály a kvízy přiřazené do tohoto modulu budou zachovány jako nepřiřazené položky.
+            </p>
+            <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
+        </ModalDestructive>
         <Modal
             :enabled="enabledModal === 'loginRequired'"
             can-be-closed-by-clicking-outside
@@ -924,12 +1457,19 @@ function handleAuthSuccess() {
             <p v-if="deleteError" class="error-text" style="margin-top: 16px;">{{ deleteError }}</p>
         </ModalDestructive>
 
+        <QuizResultsModal
+            :enabled="enabledModal === 'quizResults'"
+            :course="courseSmall"
+            :quiz="selectedQuizForResults ?? undefined"
+            :quiz-results-summary="selectedQuizResultsSummary"
+            @close="closeResultsModal"
+        />
+
     </Teleport>
 </template>
 
 <style module lang="scss">
 @use "@/assets/variables" as app;
-
 
 .basic {
     display: flex;
@@ -1115,6 +1655,7 @@ function handleAuthSuccess() {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
 
             button {
                 flex: 1;
@@ -1594,17 +2135,138 @@ ul {
             margin-top: 16px;
         }
 
-        .materials {
-            .addMaterialButton {
-                margin-bottom: 16px;
+        .modulesList {
+            .modulesListHeader{
+                display: flex;
+                gap: 12px;
 
+                button {
+                    margin-bottom: 16px;
+                    width: fit-content;
+                }
+                
+                .showHideButtons {
+                    display: flex;
+                    gap: 12px;
+                    margin-left: auto;
+                }
             }
 
             ul {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
+
+                .module {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                &.isDragging .moduleContent {
+                    pointer-events: none;
+                }
             }
+
+            .moduleSectionList {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 8px;
+            }
+
+            .moduleDragWrapper {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+
+                > :last-child {
+                    flex: 1;
+                    min-width: 0;
+                }
+            }
+
+            .unassignedSection {
+                margin-top: 16px;
+                border: 1px dashed color-mix(in srgb, var(--color-warning, orange) 40%, transparent);
+                border-radius: 12px;
+                padding: 12px 16px;
+                background-color: color-mix(in srgb, var(--color-warning, orange) 5%, transparent);
+            }
+
+            .unassignedHeader {
+                margin-bottom: 12px;
+            }
+
+            .unassignedLabel {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-color-secondary);
+                margin: 0 0 6px;
+            }
+
+            .unassignedWarning {
+                font-size: 13px;
+                color: color-mix(in srgb, var(--color-warning, orange) 90%, var(--text-color-secondary) 10%);
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .warningIcon {
+                flex-shrink: 0;
+                font-size: 14px;
+            }
+        }
+
+        .dragHandle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            min-width: 20px;
+            height: 40px;
+            cursor: grab;
+            color: var(--text-color-secondary);
+            opacity: 0.4;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+
+            &:hover {
+                opacity: 1;
+            }
+
+            &:active {
+                cursor: grabbing;
+            }
+        }
+
+        .moduleContent {
+            flex: 1;
+            min-width: 0;
+        }
+
+
+        .dragging {
+            opacity: 0.4;
+            transition: none !important;
+        }
+
+        .dragPlaceholder {
+            border: 2px dashed var(--accent-color-secondary-theme);
+            background-color: rgb(from var(--accent-color-secondary-theme) r g b / 0.1);
+            height: 63px;
+            width: 100%;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .endDropZone {
+            min-height: 40px;
+            list-style: none;
         }
 
         .activity {
@@ -2031,5 +2693,23 @@ ul {
             }
         }
     }
+}
+</style>
+
+<style lang="scss">
+.drag-placeholder-enter-active,
+.drag-placeholder-leave-active {
+    transition: height 0.2s ease, margin-bottom 0.2s ease, opacity 0.2s ease;
+}
+
+.drag-placeholder-enter-from,
+.drag-placeholder-leave-to {
+    height: 0 !important;
+    margin-bottom: 0 !important;
+    opacity: 0;
+}
+
+.module-list-move {
+    transition: transform 0.3s ease;
 }
 </style>
