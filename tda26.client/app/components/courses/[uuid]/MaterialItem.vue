@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import type {Course, Material} from "#shared/types";
+import type {Course, gRecaptcha, Material} from "#shared/types";
 import { NuxtLink } from '#components';
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Popover from "~/components/Popover.vue";
@@ -11,21 +11,20 @@ const props = defineProps<{
     isVisibilityToggleLoading?: boolean,
 }>();
 
+declare const grecaptcha: gRecaptcha;
+
 const onUrlClick = async (e: MouseEvent) => {
-    // otevři cílový url hned
     window.open(props.material.url!, "_blank", "noopener,noreferrer");
+    grecaptcha.ready(async () => {
+        const recaptchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
 
-    // pošli tracking (fire-and-forget)
-    // preferuj navigator.sendBeacon pokud můžeš
-    const url = `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}/track-click`;
+        const url = `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}/track-click`;
 
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon(url);
-        return;
-    }
-
-    // fallback
-    fetch(url, { method: "POST", credentials: "include" }).catch(() => {});
+        await fetch(url, { method: "POST", body: JSON.stringify({ recaptchaToken }), headers: { "Content-Type": "application/json"} }).catch(() => {});
+    })
 };
 
 const emit = defineEmits<{

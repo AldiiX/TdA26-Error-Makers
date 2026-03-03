@@ -1818,11 +1818,44 @@ public sealed class APIv1(
 
 		}
 	}
-	
+
+	[Consumes("application/json")]
 	[HttpPost("courses/{courseUuid:guid}/materials/{materialUuid:guid}/track-click")]
-	public async Task<IActionResult> TrackUrlClick(Guid courseUuid, Guid materialUuid, CancellationToken ct = default) {
+	public async Task<IActionResult> TrackUrlClick(
+		Guid courseUuid,
+		Guid materialUuid,
+		[FromBody] IDictionary<string, string> body,
+		CancellationToken ct = default
+	) {
 		var acc = await auth.ReAuthAsync(ct);
 		if (acc == null) return Unauthorized();
+
+		var recaptchaToken = body.TryGetValue("recaptchaToken", out var _value) ? _value : null;
+		if(string.IsNullOrEmpty(recaptchaToken)) {
+			return BadRequest(new { error = "Invalid reCAPTCHA token." });
+		}
+
+		// overeni captchy
+		using var requestMessage = new HttpRequestMessage(
+			HttpMethod.Post,
+			"https://www.google.com/recaptcha/api/siteverify"
+		);
+
+		var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+			{ "secret", Program.ENV.GetValueOrNull("RECAPTCHA_SECRET_KEY") ?? "x" },
+			{ "response", recaptchaToken }
+		});
+
+		requestMessage.Content = formData;
+
+		var response = await HttpClient.SendAsync(requestMessage, ct);
+		var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+		// overeni captcha
+		var jsonResponse = JsonNode.Parse(responseContent);
+		if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+			return BadRequest(new { error = "Recaptcha verification failed." });
+		}
 
 		var now = DateTime.UtcNow;
 
@@ -1835,7 +1868,7 @@ public sealed class APIv1(
 				ct);
 
 		if (updated == 0) return NotFound(new { error = "URL material not found." });
-		return Ok(new { ok = true });
+		return Ok(new { success = true });
 	}
 	
 	[HttpDelete("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
