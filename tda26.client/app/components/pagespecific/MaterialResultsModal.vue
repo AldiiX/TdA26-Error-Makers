@@ -1,17 +1,92 @@
 ﻿<script setup lang="ts">
 import Modal from "~/components/Modal.vue";
-import type {MaterialResultsSummary} from "#shared/types";
+import type { MaterialResultsSummary } from "#shared/types";
 import VueApexCharts from "vue3-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { computed } from "vue";
+import { push } from "notivue";
 
 
+const APEX_FONT = "Dosis, sans-serif";
+
+const urlCurveOptions = computed<ApexOptions>(() => ({
+    chart: {
+        id: "material-url-clicks-curve",
+        type: "area",
+        width: "100%",
+        fontFamily: APEX_FONT,          // ✅ Apex celkově
+        toolbar: exportToolbar("material-url-clicks"),
+        events: {
+            dataPointSelection: (_e, _ctx, cfg) => {
+                const idx = cfg?.dataPointIndex ?? -1;
+                if (idx < 0) return;
+                const label = urlCurveCategories[idx] ?? "—";
+                const value = Number(urlCurveSeries.value?.[0]?.data?.[idx] ?? 0);
+                onPointClick(label, value);
+            },
+        },
+    },
+
+    colors: [CHART_COLORS[2]],
+    stroke: { curve: "smooth", width: 4 },
+
+    xaxis: {
+        categories: ["Start", "Teď"],
+        labels: {
+            style: {
+                fontFamily: APEX_FONT,       // ✅ Start/Teď v Dose
+                fontSize: "14px",
+                colors: "var(--text-color-secondary)",
+            } as any,
+        },
+    },
+
+    yaxis: {
+        min: 0,
+        forceNiceScale: true,
+        labels: {
+            style: {
+                fontFamily: APEX_FONT,       // ✅ osa Y v Dose
+                fontSize: "14px",
+                colors: "var(--text-color-secondary)",
+            } as any,
+        },
+    },
+
+    legend: {
+        position: "top",
+        fontFamily: APEX_FONT,          
+    },
+
+    tooltip: {
+        style: { fontFamily: APEX_FONT }, 
+        y: { formatter: (v: number) => `${Math.round(v)}` },
+    },
+
+    markers: { size: 5 },
+    dataLabels: { enabled: false },
+
+    fill: {
+        type: "gradient",
+        gradient: {
+            shadeIntensity: 0.6,
+            opacityFrom: 0.35,
+            opacityTo: 0.02,
+            stops: [0, 90, 100],
+        },
+    },
+
+    grid: {
+        borderColor: "color-mix(in srgb, var(--text-color-secondary) 12%, transparent)",
+    },
+}));
 
 const props = defineProps<{
     enabled: boolean;
     materialResultsSummary: MaterialResultsSummary | null;
 }>();
 
+const emit = defineEmits<{ (e: "close"): void }>();
 
 const CHART_COLORS = [
     "var(--accent-color-additional-1)",
@@ -22,21 +97,20 @@ const CHART_COLORS = [
     "var(--accent-color-primary)",
 ];
 
-
-
-const emit = defineEmits<{ (e: "close"): void }>();
-
 const summary = computed(() => props.materialResultsSummary);
+
 const hasInfo = computed(() => {
     if (!summary.value) return false;
     if (summary.value.type === "url") return (summary.value.clickCount ?? 0) > 0;
     return (summary.value.downloadCount ?? 0) > 0;
 });
 
+// +1h timezone fix
 function formatDateTime(dt?: string | null) {
     if (!dt) return "—";
     const d = new Date(dt);
     if (Number.isNaN(d.getTime())) return "—";
+    d.setHours(d.getHours() + 1);
     return d.toLocaleString();
 }
 
@@ -60,7 +134,9 @@ function round2(n: number) {
 
 const title = computed(() => {
     if (!summary.value) return "Statistiky materiálu";
-    return summary.value.type === "url" ? "Statistiky odkazového materiálu" : "Statistiky souborového materiálu";
+    return summary.value.type === "url"
+        ? "Statistiky odkazového materiálu"
+        : "Statistiky souborového materiálu";
 });
 
 const primaryCountLabel = computed(() => {
@@ -85,20 +161,57 @@ const lastInteractionValue = computed(() => {
         : formatDateTime(summary.value.lastDownloadedAt);
 });
 
+// ---- common helpers for chart UX ----
+function onPointClick(label: string, value: number) {
+    push.info({
+        title: "Detail",
+        message: `${label}: ${value}`,
+        duration: 2500,
+    });
+}
 
-const canRenderCharts = computed(() => hasInfo.value);
+function exportToolbar(filenameBase: string) {
+    return {
+        show: true,
+        tools: {
+            download: true,
+            selection: false,
+            zoom: false,
+            zoomin: false,
+            zoomout: false,
+            pan: false,
+            reset: false,
+        },
+        export: {
+            png: { filename: filenameBase },
+            svg: { filename: filenameBase },
+            csv: { filename: `${filenameBase}-data` },
+        },
+    } as const;
+}
+
+// ---- FILE charts ----
+// Donut: "počet stažení" – jen jako vizuální badge (bez % iluze: label ukáže count)
 const donutSeries = computed<number[]>(() => {
     const v = Number(primaryCountValue.value ?? 0) || 0;
     return v > 0 ? [v, 0] : [0, 0];
 });
 
 const donutOptions = computed<ApexOptions>(() => ({
+    chart: {
+        type: "donut",
+        toolbar: exportToolbar("material-file-downloads"),
+        events: {
+            dataPointSelection: (_e, _ctx, cfg) => {
+                const idx = cfg?.seriesIndex ?? -1;
+                if (idx !== 0) return;
+                onPointClick(primaryCountLabel.value, Number(primaryCountValue.value ?? 0));
+            },
+        },
+    },
     labels: [primaryCountLabel.value, "—"],
     legend: { position: "top" },
-    colors: [
-        "var(--accent-color-primary)",
-        "var(--accent-color-additional-1)"
-    ],
+    colors: [CHART_COLORS[5], CHART_COLORS[0]],
     stroke: { width: 0 },
     dataLabels: {
         enabled: true,
@@ -109,90 +222,66 @@ const donutOptions = computed<ApexOptions>(() => ({
         },
     },
 }));
+
 const barSeries = computed(() => {
-    if (!summary.value) return [{ name: "Hodnota", data: [0, 0] }];
+    if (!summary.value) return [{ name: "MB", data: [0, 0] }];
 
     if (summary.value.type === "file") {
         const totalMB = Number(summary.value.totalMegabytesDownloaded ?? 0) || 0;
         const avgMB = Number(summary.value.averageMegabytesPerDownload ?? 0) || 0;
-        return [{ name: "MB", data: [Math.round(totalMB * 100) / 100, Math.round(avgMB * 100) / 100] }];
+        return [
+            {
+                name: "Objem dat (MB)",
+                data: [Math.round(totalMB * 100) / 100, Math.round(avgMB * 100) / 100],
+            },
+        ];
     }
 
-    // url
-    const clicks = Number(summary.value.clickCount ?? 0) || 0;
-    return [{ name: "Kliknutí", data: [clicks, 1] }];
+    // url se sem nedostane (bar používáme jen ve file části)
+    return [{ name: "MB", data: [0, 0] }];
 });
+
+const barCategories = computed(() =>
+    summary.value?.type === "file"
+        ? ["Celkem otevřených dat (MB)", "Průměr na otevření (MB)"]
+        : ["—", "—"]
+);
 
 const barOptions = computed<ApexOptions>(() => ({
-    chart: { type: "bar", toolbar: { show: false } },
-    colors: [
-        "var(--accent-color-additional-3)",
-    ],
-    plotOptions: {
-        bar: {
-            borderRadius: 8,
-            columnWidth: "50%",
-        },
-    },
-    dataLabels: { enabled: true },
-    xaxis: {
-        categories:
-            summary.value?.type === "file"
-                ? ["Celkem MB", "Průměr / stažení (MB)"]
-                : ["Kliknutí", "Interakce"],
-    },
-    legend: { show: false },
-}));
-
-const chartColors = [
-    "var(--accent-color-additional-1)",
-    "var(--accent-color-additional-2)",
-    "var(--accent-color-additional-3)",
-    "var(--accent-color-additional-4)",
-    "var(--accent-color-primary)",
-    "var(--accent-color-secondary)",
-];
-
-const clickCount = computed(() => summary.value?.type === "url" ? (summary.value.clickCount ?? 0) : 0);
-
-const daysSinceLastClick = computed(() => {
-    if (!summary.value || summary.value.type !== "url") return 0;
-    const dt = summary.value.lastClickedAt ? new Date(summary.value.lastClickedAt).getTime() : NaN;
-    if (!Number.isFinite(dt)) return 0;
-    const diffMs = Date.now() - dt;
-    return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
-});
-
-// Graf 1: radial bar = clickCount
-const urlRadialSeries = computed<number[]>(() => [clickCount.value]);
-
-const urlRadialOptions = computed<ApexOptions>(() => ({
-    chart: { type: "radialBar", toolbar: { show: false } },
-    colors: ["var(--accent-color-additional-2)"],
-    labels: ["Kliknutí"],
-    plotOptions: {
-        radialBar: {
-            dataLabels: {
-                name: { fontSize: "14px" },
-                value: { fontSize: "24px", fontWeight: 700 },
+    chart: {
+        type: "bar",
+        toolbar: exportToolbar("material-file-transfers"),
+        events: {
+            dataPointSelection: (_e, _ctx, cfg) => {
+                const idx = cfg?.dataPointIndex ?? -1;
+                if (idx < 0) return;
+                const label = barCategories.value[idx] ?? "—";
+                const value = Number(barSeries.value?.[0]?.data?.[idx] ?? 0);
+                onPointClick(label, value);
             },
         },
     },
+    colors: [CHART_COLORS[2]],
+    plotOptions: {
+        bar: { borderRadius: 8, columnWidth: "50%" },
+    },
+    dataLabels: { enabled: true },
+    xaxis: { categories: barCategories.value },
+    legend: { show: false },
 }));
 
-// Graf 2: bar = daysSinceLastClick
-const urlDaysSeries = computed(() => [
-    { name: "Dní", data: [daysSinceLastClick.value] },
+// ---- URL chart (100% width, clickable + downloadable) ----
+const urlClickCount = computed(() => {
+    if (summary.value?.type !== "url") return 0;
+    return Number(summary.value.clickCount ?? 0) || 0;
+});
+
+const urlCurveSeries = computed(() => [
+    { name: "Kliknutí", data: [0, urlClickCount.value] },
 ]);
 
-const urlDaysOptions = computed<ApexOptions>(() => ({
-    chart: { type: "bar", toolbar: { show: false } },
-    colors: ["var(--accent-color-additional-4)"],
-    plotOptions: { bar: { borderRadius: 8, columnWidth: "45%" } },
-    xaxis: { categories: ["Od posledního kliknutí"] },
-    yaxis: { min: 0, forceNiceScale: true },
-    dataLabels: { enabled: true },
-}));
+const urlCurveCategories = ["Start", "Teď"];
+
 </script>
 
 <template>
@@ -232,24 +321,16 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
                         <div :class="$style.infoValue">Odkaz</div>
                     </div>
 
-                    <div v-if="hasInfo && summary.type === 'url'" :class="$style.chartsGrid" style="margin-top: 12px;">
-                        <div :class="$style.chartCard">
-                            <h4>Počet kliknutí</h4>
+                    <!-- URL CHART: přes celou šířku -->
+                    <div v-if="hasInfo" :class="[$style.urlChartsGrid, $style.fullRow]" style="margin-top: 12px;">
+                        <div :class="$style.chartCard" style="width: 100%;">
+                            <h4>Křivka kliknutí</h4>
                             <VueApexCharts
-                                type="radialBar"
-                                :series="urlRadialSeries"
-                                :options="urlRadialOptions"
+                                type="area"
+                                :series="urlCurveSeries"
+                                :options="urlCurveOptions"
                                 height="300"
-                            />
-                        </div>
-
-                        <div :class="$style.chartCard">
-                            <h4>Aktualita</h4>
-                            <VueApexCharts
-                                type="bar"
-                                :series="urlDaysSeries"
-                                :options="urlDaysOptions"
-                                height="300"
+                                style="width: 100%;"
                             />
                         </div>
                     </div>
@@ -263,22 +344,12 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
                     </div>
 
                     <div :class="$style.infoCard">
-                        <div :class="$style.infoLabel">Celkem staženo</div>
+                        <div :class="$style.infoLabel">Celkem otevřených dat</div>
                         <div :class="$style.infoValue">{{ formatBytes(summary.totalBytesDownloaded) }}</div>
                     </div>
 
-                    <div :class="$style.infoCard">
-                        <div :class="$style.infoLabel">Celkem přeneseno</div>
-                        <div :class="$style.infoValue">{{ round2(summary.totalMegabytesDownloaded) }} MB</div>
-                    </div>
-
-                    <div :class="$style.infoCard">
-                        <div :class="$style.infoLabel">Průměr na stažení</div>
-                        <div :class="$style.infoValue">{{ round2(summary.averageMegabytesPerDownload) }} MB</div>
-                    </div>
-
                     <!-- CHARTS -->
-                    <div v-if="hasInfo" :class="$style.chartsGrid">
+                    <div v-if="hasInfo" :class="[$style.chartsGrid, $style.fullRow]">
                         <div :class="$style.chartCard">
                             <h4>{{ primaryCountLabel }}</h4>
                             <VueApexCharts
@@ -290,7 +361,7 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
                         </div>
 
                         <div :class="$style.chartCard">
-                            <h4>{{ summary.type === "file" ? "Přenosy" : "Aktivita" }}</h4>
+                            <h4>{{ summary.type === "file" ? "Objem otevřených dat" : "Aktivita" }}</h4>
                             <VueApexCharts
                                 type="bar"
                                 :series="barSeries"
@@ -317,10 +388,24 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
     }
 }
 
+.fullRow {
+    grid-column: 1 / -1; 
+}
+
 .infoGrid {
     display: grid;
     gap: 12px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.urlChartsGrid{
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
 
     @media (max-width: 900px) {
         grid-template-columns: 1fr;
@@ -328,12 +413,13 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
 }
 
 .chartsGrid {
-    display: grid;
+    display: flex;
     gap: 16px;
-    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    align-items: stretch;
 
-    @media (max-width: 900px) {
-        grid-template-columns: 1fr;
+    @media (max-width: 600px) {
+        flex-direction: column;
     }
 }
 
@@ -343,10 +429,18 @@ const urlDaysOptions = computed<ApexOptions>(() => ({
     padding: 12px;
     background: var(--background-color-secondary, #fff);
 
+    flex: 1 1 0;
+    min-width: 0;
+
     h4 {
         margin: 0 0 10px;
         font-size: 16px;
     }
+}
+
+.chartCard :global(.apexcharts-canvas),
+.chartCard :global(.apexcharts-svg) {
+    width: 100% !important;
 }
 
 .infoCard {
