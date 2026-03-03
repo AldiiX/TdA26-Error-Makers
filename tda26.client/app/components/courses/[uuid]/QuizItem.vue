@@ -223,7 +223,7 @@ function toggleVisibility(): void {
     }
 
     .iconButtonIcon {
-        mask-image: url('/icons/views.svg');
+        mask-image: url('/icons/stats.svg');
         background-color: var(--accent-color-primary);
     }
 }
