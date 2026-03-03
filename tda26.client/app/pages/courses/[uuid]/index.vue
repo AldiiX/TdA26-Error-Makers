@@ -647,26 +647,31 @@ function closeResultsModal() {
                                             @click="openCreateModuleModal"
                                             :disabled="courseSmall.status !== 'draft'"
                                         >
+                                            <span :class="$style.addModuleButtonIcon" aria-hidden="true"/>
                                             Nový modul
                                         </Button>
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
                                 <div :class="$style.showHideButtons" v-if="ownsCourse">
-                                    <Button
-                                        button-style="primary"
-                                        accent-color="primary"
-                                        :loading="isModuleVisibilityToggling"
+                                    <button
+                                        type="button"
+                                        :class="[$style.iconButton, $style.iconButtonShow]"
                                         :disabled="!nextHiddenModule || isModuleVisibilityToggling"
                                         @click="handleShowNextModule"
-                                    >Zobrazit další</Button>
-                                    <Button
-                                        button-style="secondary"
-                                        accent-color="secondary"
-                                        :loading="isModuleVisibilityToggling"
+                                        title="Zobrazit další modul"
+                                    >
+                                        <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        :class="[$style.iconButton, $style.iconButtonHide]"
                                         :disabled="!lastVisibleModule || isModuleVisibilityToggling"
                                         @click="handleHideCurrentModule"
-                                    >Skrýt aktuální</Button>
+                                        title="Skrýt aktuální modul"
+                                    >
+                                        <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                                    </button>
                                 </div>
                             </div>
 
@@ -2134,16 +2139,89 @@ ul {
             .modulesListHeader{
                 display: flex;
                 gap: 12px;
-
-                button {
-                    margin-bottom: 16px;
-                    width: fit-content;
-                }
+                align-items: center;
                 
                 .showHideButtons {
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
                     margin-left: auto;
+                    align-items: center;
+                    margin-bottom: 16px;
+                }
+            }
+
+            .iconButton {
+                background: none;
+                border: 1px solid transparent;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 6px;
+                border-radius: 8px;
+                transition: background-color 0.2s, border-color 0.2s;
+
+                &:disabled {
+                    opacity: 0.35;
+                    cursor: not-allowed;
+                }
+
+                .iconButtonIcon {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    min-width: 20px;
+                    mask-size: cover;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                }
+            }
+
+            .iconButtonShow {
+                color: var(--accent-color-primary);
+
+                &:not(:disabled):hover {
+                    background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+                    border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+                }
+
+                .iconButtonIcon {
+                    mask-image: url('/icons/eye.svg');
+                    background-color: var(--accent-color-primary);
+                }
+            }
+
+            .iconButtonHide {
+                color: var(--accent-color-secondary-theme);
+
+                &:not(:disabled):hover {
+                    background-color: color-mix(in srgb, var(--accent-color-secondary-theme) 12%, transparent);
+                    border-color: color-mix(in srgb, var(--accent-color-secondary-theme) 30%, transparent);
+                }
+
+                .iconButtonIcon {
+                    mask-image: url('/icons/eye-slash.svg');
+                    background-color: var(--accent-color-secondary-theme);
+                }
+            }
+
+            .addModuleButton {
+                margin-bottom: 16px;
+                width: fit-content;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+
+                .addModuleButtonIcon {
+                    display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    min-width: 18px;
+                    mask-image: url('/icons/plus.svg');
+                    mask-size: cover;
+                    mask-position: center;
+                    mask-repeat: no-repeat;
+                    background-color: currentColor;
                 }
             }
 

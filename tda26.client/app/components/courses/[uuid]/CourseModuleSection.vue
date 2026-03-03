@@ -2,7 +2,6 @@
 import type { Course, Module, Material, Quiz } from "#shared/types";
 import MaterialItem from "~/components/courses/[uuid]/MaterialItem.vue";
 import QuizItem from "~/components/courses/[uuid]/QuizItem.vue";
-import Button from "~/components/Button.vue";
 import Popover from "~/components/Popover.vue";
 import { DRAG_ITEM_KEY } from "~/composables/courses/[uuid]/useModuleDrag";
 
@@ -410,20 +409,22 @@ function onItemDragEnd(event: DragEvent) {
 
                 <!-- Add items buttons (edit mode only) -->
                 <div v-if="editMode && course.status === 'draft'" :class="$style.addItemButtons">
-                    <Button
-                        accent-color="primary"
-                        :class="$style.addItemButton"
+                    <button
+                        type="button"
+                        :class="[$style.iconButton, $style.iconButtonAddMaterial]"
                         @click="emit('addMaterial')"
+                        title="Přidat materiál"
                     >
-                        Přidat materiál
-                    </Button>
-                    <Button
-                        accent-color="primary"
-                        :class="$style.addItemButton"
+                        <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                    </button>
+                    <button
+                        type="button"
+                        :class="[$style.iconButton, $style.iconButtonAddQuiz]"
                         @click="emit('addQuiz')"
+                        title="Přidat kvíz"
                     >
-                        Přidat kvíz
-                    </Button>
+                        <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                    </button>
                 </div>
             </div>
         </Transition>
@@ -729,8 +730,32 @@ function onItemDragEnd(event: DragEvent) {
     flex-wrap: wrap;
 }
 
-.addItemButton {
-    font-size: 14px;
+.iconButtonAddMaterial {
+    color: var(--accent-color-primary);
+
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/addFile.svg');
+        background-color: var(--accent-color-primary);
+    }
+}
+
+.iconButtonAddQuiz {
+    color: var(--accent-color-primary);
+
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/addQuiz.svg');
+        background-color: var(--accent-color-primary);
+    }
 }
 
 .endDropZone {
