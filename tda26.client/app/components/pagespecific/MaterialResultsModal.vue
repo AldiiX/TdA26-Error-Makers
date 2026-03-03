@@ -12,6 +12,18 @@ const props = defineProps<{
     materialResultsSummary: MaterialResultsSummary | null;
 }>();
 
+
+const CHART_COLORS = [
+    "var(--accent-color-additional-1)",
+    "var(--accent-color-additional-2)",
+    "var(--accent-color-additional-3)",
+    "var(--accent-color-additional-4)",
+    "var(--accent-color-secondary)",
+    "var(--accent-color-primary)",
+];
+
+
+
 const emit = defineEmits<{ (e: "close"): void }>();
 
 const summary = computed(() => props.materialResultsSummary);
@@ -73,6 +85,114 @@ const lastInteractionValue = computed(() => {
         : formatDateTime(summary.value.lastDownloadedAt);
 });
 
+
+const canRenderCharts = computed(() => hasInfo.value);
+const donutSeries = computed<number[]>(() => {
+    const v = Number(primaryCountValue.value ?? 0) || 0;
+    return v > 0 ? [v, 0] : [0, 0];
+});
+
+const donutOptions = computed<ApexOptions>(() => ({
+    labels: [primaryCountLabel.value, "—"],
+    legend: { position: "top" },
+    colors: [
+        "var(--accent-color-primary)",
+        "var(--accent-color-additional-1)"
+    ],
+    stroke: { width: 0 },
+    dataLabels: {
+        enabled: true,
+        formatter: (_val: number, opts: any) => {
+            const idx = opts?.seriesIndex ?? 0;
+            if (idx === 0) return `${primaryCountValue.value}`;
+            return "";
+        },
+    },
+}));
+const barSeries = computed(() => {
+    if (!summary.value) return [{ name: "Hodnota", data: [0, 0] }];
+
+    if (summary.value.type === "file") {
+        const totalMB = Number(summary.value.totalMegabytesDownloaded ?? 0) || 0;
+        const avgMB = Number(summary.value.averageMegabytesPerDownload ?? 0) || 0;
+        return [{ name: "MB", data: [Math.round(totalMB * 100) / 100, Math.round(avgMB * 100) / 100] }];
+    }
+
+    // url
+    const clicks = Number(summary.value.clickCount ?? 0) || 0;
+    return [{ name: "Kliknutí", data: [clicks, 1] }];
+});
+
+const barOptions = computed<ApexOptions>(() => ({
+    chart: { type: "bar", toolbar: { show: false } },
+    colors: [
+        "var(--accent-color-additional-3)",
+    ],
+    plotOptions: {
+        bar: {
+            borderRadius: 8,
+            columnWidth: "50%",
+        },
+    },
+    dataLabels: { enabled: true },
+    xaxis: {
+        categories:
+            summary.value?.type === "file"
+                ? ["Celkem MB", "Průměr / stažení (MB)"]
+                : ["Kliknutí", "Interakce"],
+    },
+    legend: { show: false },
+}));
+
+const chartColors = [
+    "var(--accent-color-additional-1)",
+    "var(--accent-color-additional-2)",
+    "var(--accent-color-additional-3)",
+    "var(--accent-color-additional-4)",
+    "var(--accent-color-primary)",
+    "var(--accent-color-secondary)",
+];
+
+const clickCount = computed(() => summary.value?.type === "url" ? (summary.value.clickCount ?? 0) : 0);
+
+const daysSinceLastClick = computed(() => {
+    if (!summary.value || summary.value.type !== "url") return 0;
+    const dt = summary.value.lastClickedAt ? new Date(summary.value.lastClickedAt).getTime() : NaN;
+    if (!Number.isFinite(dt)) return 0;
+    const diffMs = Date.now() - dt;
+    return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+});
+
+// Graf 1: radial bar = clickCount
+const urlRadialSeries = computed<number[]>(() => [clickCount.value]);
+
+const urlRadialOptions = computed<ApexOptions>(() => ({
+    chart: { type: "radialBar", toolbar: { show: false } },
+    colors: ["var(--accent-color-additional-2)"],
+    labels: ["Kliknutí"],
+    plotOptions: {
+        radialBar: {
+            dataLabels: {
+                name: { fontSize: "14px" },
+                value: { fontSize: "24px", fontWeight: 700 },
+            },
+        },
+    },
+}));
+
+// Graf 2: bar = daysSinceLastClick
+const urlDaysSeries = computed(() => [
+    { name: "Dní", data: [daysSinceLastClick.value] },
+]);
+
+const urlDaysOptions = computed<ApexOptions>(() => ({
+    chart: { type: "bar", toolbar: { show: false } },
+    colors: ["var(--accent-color-additional-4)"],
+    plotOptions: { bar: { borderRadius: 8, columnWidth: "45%" } },
+    xaxis: { categories: ["Od posledního kliknutí"] },
+    yaxis: { min: 0, forceNiceScale: true },
+    dataLabels: { enabled: true },
+}));
 </script>
 
 <template>
@@ -111,6 +231,28 @@ const lastInteractionValue = computed(() => {
                         <div :class="$style.infoLabel">Typ</div>
                         <div :class="$style.infoValue">Odkaz</div>
                     </div>
+
+                    <div v-if="hasInfo && summary.type === 'url'" :class="$style.chartsGrid" style="margin-top: 12px;">
+                        <div :class="$style.chartCard">
+                            <h4>Počet kliknutí</h4>
+                            <VueApexCharts
+                                type="radialBar"
+                                :series="urlRadialSeries"
+                                :options="urlRadialOptions"
+                                height="300"
+                            />
+                        </div>
+
+                        <div :class="$style.chartCard">
+                            <h4>Aktualita</h4>
+                            <VueApexCharts
+                                type="bar"
+                                :series="urlDaysSeries"
+                                :options="urlDaysOptions"
+                                height="300"
+                            />
+                        </div>
+                    </div>
                 </template>
 
                 <!-- FILE specific -->
@@ -133,6 +275,29 @@ const lastInteractionValue = computed(() => {
                     <div :class="$style.infoCard">
                         <div :class="$style.infoLabel">Průměr na stažení</div>
                         <div :class="$style.infoValue">{{ round2(summary.averageMegabytesPerDownload) }} MB</div>
+                    </div>
+
+                    <!-- CHARTS -->
+                    <div v-if="hasInfo" :class="$style.chartsGrid">
+                        <div :class="$style.chartCard">
+                            <h4>{{ primaryCountLabel }}</h4>
+                            <VueApexCharts
+                                type="donut"
+                                :series="donutSeries"
+                                :options="donutOptions"
+                                height="260"
+                            />
+                        </div>
+
+                        <div :class="$style.chartCard">
+                            <h4>{{ summary.type === "file" ? "Přenosy" : "Aktivita" }}</h4>
+                            <VueApexCharts
+                                type="bar"
+                                :series="barSeries"
+                                :options="barOptions"
+                                height="260"
+                            />
+                        </div>
                     </div>
                 </template>
             </div>
@@ -159,6 +324,28 @@ const lastInteractionValue = computed(() => {
 
     @media (max-width: 900px) {
         grid-template-columns: 1fr;
+    }
+}
+
+.chartsGrid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr 1fr;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chartCard {
+    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 10%, transparent 40%);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--background-color-secondary, #fff);
+
+    h4 {
+        margin: 0 0 10px;
+        font-size: 16px;
     }
 }
 
