@@ -556,6 +556,15 @@ function closeResultsModal() {
                         </div>
                     </div>
                 </div>
+                <Button
+                    v-if="ownsCourse && isEditMode"
+                    button-style="secondary"
+                    accent-color="secondary"
+                    :disabled="isActionInProgress"
+                    @click="openDeleteCourseModal"
+                >
+                    Smazat
+                </Button>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
                     <!-- Primary button -->
@@ -946,38 +955,27 @@ function closeResultsModal() {
     <Teleport to="#teleports">
         <!-- Edit controls -->
         <div v-if="isEditMode" :class="$style.editControls">
-            <div :class="$style.top">
-                <Button
-                    button-style="secondary"
-                    :style="{ '--color': 'var(--color-error)' }"
-                    :disabled="isActionInProgress"
-                    @click="openDeleteCourseModal"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-
-            <div :class="$style.bottom">
+            <div :class="$style.wrapper">
                 <Button
                     button-style="primary"
                     :disabled="!isDirty || isActionInProgress"
                     @click="saveCourseChanges"
                 >
-                    Uložit změny
+                    Uložit
                 </Button>
                 <Button
                     button-style="secondary"
                     :disabled="!isDirty || isActionInProgress"
                     @click="saveCourseAndExit()"
                 >
-                    Uložit a ukončit úpravy
+                    Uložit a ukončit
                 </Button>
                 <Button
                     button-style="tertiary"
                     :disabled="isActionInProgress"
                     @click="editBackClick"
                 >
-                    Ukončit úpravy
+                    Ukončit
                 </Button>
             </div>
         </div>
@@ -1835,7 +1833,7 @@ function closeResultsModal() {
     filter: drop-shadow(0 16px 28px rgb(0 0 0 / 0.15));
 
 
-    .bottom, .top {
+    .bottom, .top, .wrapper {
         display: flex;
         gap: 16px;
         z-index: 1000;
@@ -1861,6 +1859,13 @@ function closeResultsModal() {
         padding-bottom: 24px;
         margin-bottom: -24px;
         justify-content: center;
+    }
+    
+    @media (max-width: 800px) {
+        .wrapper {
+            flex-wrap: wrap;
+            width: auto;
+        }
     }
 }
 
