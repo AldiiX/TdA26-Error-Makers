@@ -141,7 +141,7 @@ const title = computed(() => {
 
 const primaryCountLabel = computed(() => {
     if (!summary.value) return "Interakce";
-    return summary.value.type === "url" ? "Počet kliknutí" : "Počet stažení";
+    return summary.value.type === "url" ? "Počet kliknutí" : "Počet otevření";
 });
 
 const primaryCountValue = computed(() => {
@@ -151,7 +151,7 @@ const primaryCountValue = computed(() => {
 
 const lastInteractionLabel = computed(() => {
     if (!summary.value) return "Poslední interakce";
-    return summary.value.type === "url" ? "Poslední kliknutí" : "Poslední stažení";
+    return summary.value.type === "url" ? "Poslední kliknutí" : "Poslední otevření";
 });
 
 const lastInteractionValue = computed(() => {

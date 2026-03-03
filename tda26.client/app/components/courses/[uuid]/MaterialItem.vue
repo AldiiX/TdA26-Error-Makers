@@ -65,7 +65,14 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button @click="emit('openMaterialResults', material)">Výsledky</Button>
+                <button
+                    type="button"
+                    :class="[$style.iconButton, $style.iconButtonResults]"
+                    @click="emit('openMaterialResults', material)"
+                    title="Výsledky"
+                >
+                    <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                </button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
@@ -119,7 +126,14 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
-                <Button @click="emit('openMaterialResults', material)">Výsledky</Button>
+                <button
+                    type="button"
+                    :class="[$style.iconButton, $style.iconButtonResults]"
+                    @click="emit('openMaterialResults', material)"
+                    title="Výsledky"
+                >
+                    <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                </button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
@@ -286,6 +300,19 @@ function toggleVisibility(): void {
     .iconButtonIcon {
         mask-image: url('/icons/pen.svg');
         background-color: var(--accent-color-secondary-theme, #2ecc71);
+    }
+    
+}
+
+.iconButtonResults {
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/stats.svg');
+        background-color: var(--accent-color-primary);
     }
 }
 
