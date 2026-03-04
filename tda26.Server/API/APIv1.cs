@@ -829,13 +829,20 @@ public sealed class APIv1(
 		var acc = await auth.ReAuthAsync(ct);
 		if (acc == null) return Unauthorized();
 
-		var existingCourse = await db.CoursesMinimalEf()
+		var existingCourse = await db.CoursesFullEf()
 			.FirstOrDefaultAsync(c => c.Uuid == uuid, ct);
 		if (existingCourse == null) return NotFound();
 
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 
 		if (existingCourse.Status != CourseStatus.Draft) return BadRequest(new { error = "Only courses in draft status can be updated." });
+
+		// Remove quizzes and materials that belong to modules first (to avoid FK constraint violations)
+		foreach (var module in existingCourse.Modules) {
+			db.Quizzes.RemoveRange(module.Quizzes);
+			db.Materials.RemoveRange(module.Materials);
+		}
+		db.CourseModules.RemoveRange(existingCourse.Modules);
 
 		existingCourse.Materials = [];
 		existingCourse.Quizzes = [];
