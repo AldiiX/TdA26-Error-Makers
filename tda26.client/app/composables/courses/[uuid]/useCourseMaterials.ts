@@ -3,6 +3,7 @@ import type { Course, Material } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 import { formatUrl } from "~/utils/course/formatUrl";
+import { push } from "notivue";
 
 export type MaterialFormModel =
     | {
@@ -170,6 +171,7 @@ export function useCourseMaterials(params: {
                 }
             }
 
+            push.success({ title: "Materiál upraven", message: "Změny materiálu byly uloženy.", duration: 4000 });
             params.enabledModal.value = null;
 
         } catch (err) {
@@ -205,6 +207,7 @@ export function useCourseMaterials(params: {
                 }
             }
 
+            push.success({ title: "Materiál smazán", message: "Materiál byl úspěšně smazán.", duration: 4000 });
             params.enabledModal.value = null;
         } catch (err) {
             console.error("Error deleting material:", err);
@@ -282,6 +285,7 @@ export function useCourseMaterials(params: {
                 if (mod) {
                     mod.materials = mod.materials ?? [];
                     mod.materials.push(createdMaterial);
+                    push.success({ title: "Materiál vytvořen", message: "Materiál byl úspěšně vytvořen.", duration: 4000 });
                     params.enabledModal.value = null;
                     return;
                 }
@@ -289,7 +293,7 @@ export function useCourseMaterials(params: {
 
             params.course.value.materials = params.course.value.materials ?? [];
             params.course.value.materials.unshift(createdMaterial);
-
+            push.success({ title: "Materiál vytvořen", message: "Materiál byl úspěšně vytvořen.", duration: 4000 });
             params.enabledModal.value = null;
 
         } catch (err) {

@@ -199,8 +199,17 @@ export function useCourseModules(params: {
                     params.course.value.modules[idx]!.isVisible = updated.isVisible;
                 }
             }
+
+            push.success({
+                title: updated.isVisible ? "Modul zobrazen" : "Modul skryt",
+                message: updated.isVisible
+                    ? "Modul je nyní viditelný pro studenty."
+                    : "Modul je nyní skrytý pro studenty.",
+                duration: 4000
+            });
         } catch (err) {
             console.error("Module visibility toggle failed:", err);
+            push.error({ title: "Chyba", message: "Nepodařilo se změnit viditelnost modulu.", duration: 4000 });
         }
     };
 

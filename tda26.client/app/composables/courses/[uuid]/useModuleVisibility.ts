@@ -1,6 +1,7 @@
 import type { CourseModule, Material, Quiz } from "../../../../shared/types";
 import type { Ref } from "vue";
 import getBaseUrl from "#shared/utils/getBaseUrl";
+import { push } from "notivue";
 
 export function useModuleVisibility(params: {
     courseUuid: string;
@@ -37,6 +38,13 @@ export function useModuleVisibility(params: {
                 });
                 
                 params.module.value.isVisible = updatedMaterial.isVisible;
+                push.success({
+                    title: updatedMaterial.isVisible ? "Materiál zobrazen" : "Materiál skryt",
+                    message: updatedMaterial.isVisible
+                        ? "Materiál je nyní viditelný pro studenty."
+                        : "Materiál je nyní skrytý pro studenty.",
+                    duration: 4000
+                });
             } else if (isQuiz(module)) {
                 // Update quiz visibility
                 
@@ -48,6 +56,13 @@ export function useModuleVisibility(params: {
                 });
                 
                 params.module.value.isVisible = updatedQuiz.isVisible;
+                push.success({
+                    title: updatedQuiz.isVisible ? "Kvíz zobrazen" : "Kvíz skryt",
+                    message: updatedQuiz.isVisible
+                        ? "Kvíz je nyní viditelný pro studenty."
+                        : "Kvíz je nyní skrytý pro studenty.",
+                    duration: 4000
+                });
             }
         } catch (err) {
             console.error("Failed to update visibility:", err);

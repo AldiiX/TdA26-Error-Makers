@@ -1,4 +1,5 @@
 import type {Course, CourseStatus} from "#shared/types";
+import { push } from "notivue";
 
 export function useCourseStatus(params: {
     course: Ref<Course>;
@@ -23,8 +24,10 @@ export function useCourseStatus(params: {
             );
 
             params.course.value.status = updated.status;
+            push.success({ title: "Status kurzu změněn", message: `Status kurzu byl změněn na „${updated.status}".`, duration: 4000 });
         } catch (err: any) {
             error.value = err?.message ?? "Failed to update course status.";
+            push.error({ title: "Chyba", message: "Nepodařilo se změnit status kurzu.", duration: 4000 });
         } finally {
             isLoading.value = false;
         }
