@@ -582,13 +582,6 @@ function closeResultsModal() {
                         :loading="isCourseStatusLoading"
                         @click="updateCourseStatus('paused')"
                     >Pozastavit</Button>
-                    <Button
-                        v-if="courseSmall?.status === 'archived'"
-                        button-style="primary"
-                        accent-color="secondary"
-                        :loading="isCourseStatusLoading"
-                        @click="updateCourseStatus('draft')"
-                    >Obnovit na návrh</Button>
                     
                     <!-- Secondary button -->
                     <Button
@@ -613,7 +606,7 @@ function closeResultsModal() {
                         @click="updateCourseStatus('archived')"
                     >Ukončit</Button>
 
-                    <div>
+                    <div v-if="courseSmall?.status !== 'archived'">
                         <ContextMenuButton @open="openContextMenu"/>
                         <ContextMenu
                             :items="contextMenuItems"
@@ -661,22 +654,29 @@ function closeResultsModal() {
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
-                                <div :class="$style.showHideButtons" v-if="ownsCourse">
-                                    <Button
-                                        button-style="primary"
-                                        accent-color="primary"
-                                        :loading="isModuleVisibilityToggling"
-                                        :disabled="!nextHiddenModule || isModuleVisibilityToggling"
-                                        @click="handleShowNextModule"
-                                    >Zobrazit další</Button>
-                                    <Button
-                                        button-style="secondary"
-                                        accent-color="secondary"
-                                        :loading="isModuleVisibilityToggling"
-                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
-                                        @click="handleHideCurrentModule"
-                                    >Skrýt aktuální</Button>
-                                </div>
+                                <Popover teleport :disabled="courseSmall.status === 'live'" v-if="ownsCourse && course?.modules && course.modules.length > 0">
+                                    <template #trigger>
+                                        <div :class="$style.showHideButtons" v-if="ownsCourse">
+                                            <Button
+                                                button-style="primary"
+                                                accent-color="primary"
+                                                :loading="isModuleVisibilityToggling"
+                                                :disabled="!nextHiddenModule || isModuleVisibilityToggling || courseSmall.status !== 'live'"
+                                                @click="handleShowNextModule"
+                                            >Zobrazit další</Button>
+                                            <Button
+                                                button-style="secondary"
+                                                accent-color="secondary"
+                                                :loading="isModuleVisibilityToggling"
+                                                :disabled="!lastVisibleModule || isModuleVisibilityToggling || courseSmall.status !== 'live'"
+                                                @click="handleHideCurrentModule"
+                                            >Skrýt aktuální</Button>
+                                        </div>
+                                    </template>
+                                    <template #content>
+                                        Kurz musí být spuštěn
+                                    </template>
+                                </Popover>
                             </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
@@ -2139,6 +2139,7 @@ ul {
             .modulesListHeader{
                 display: flex;
                 gap: 12px;
+                justify-content: space-between;
 
                 button {
                     margin-bottom: 16px;
