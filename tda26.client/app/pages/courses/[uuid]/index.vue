@@ -785,12 +785,12 @@ function closeMaterialResultsModal() {
                                         @drop="ownsCourse && courseSmall.status === 'draft' && onSectionDrop($event, mod.uuid)"
                                         @dragend="onSectionDragEnd"
                                     >
-<!--                                        <Transition name="drag-placeholder">-->
-<!--                                            <div-->
-<!--                                                v-if="dragOverSectionUuid === mod.uuid && draggedSectionUuid !== mod.uuid"-->
-<!--                                                :class="$style.dragPlaceholder"-->
-<!--                                            />-->
-<!--                                        </Transition>-->
+                                        <Transition name="drag-placeholder">
+                                            <div
+                                                v-if="dragOverSectionUuid === mod.uuid && draggedSectionUuid !== mod.uuid"
+                                                :class="$style.dragPlaceholder"
+                                            />
+                                        </Transition>
                                         <div :class="$style.moduleDragWrapper">
                                             <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
@@ -861,6 +861,12 @@ function closeMaterialResultsModal() {
                                                 @drop="ownsCourse && courseSmall.status === 'draft' && onModuleDrop($event, mod.uuid)"
                                                 @dragend="onModuleDragEnd"
                                             >
+                                                <Transition name="drag-placeholder">
+                                                    <div
+                                                        v-if="dragOverModuleUuid === mod.uuid && draggedModuleUuid !== mod.uuid"
+                                                        :class="$style.dragPlaceholder"
+                                                    />
+                                                </Transition>
                                                 <div :class="$style.module">
                                                     <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                         <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
