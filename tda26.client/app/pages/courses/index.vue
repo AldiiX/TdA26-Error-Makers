@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿<script setup lang="ts">
     import CourseCard from '~/components/pagespecific/CourseCard.vue'
     import type { Course } from '#shared/types'
     import NumberExponential from '~/components/NumberExponential.vue'
