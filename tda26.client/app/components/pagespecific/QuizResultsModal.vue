@@ -288,10 +288,11 @@ const timeBucketsHelp = computed(() => {
 }
 
 .infoLabel {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--text-color-secondary);
     font-family: "Dosis" , sans-serif;
     margin-bottom: 6px;
+    font-weight: 500;
 }
 
 .infoValue {
@@ -315,6 +316,11 @@ const timeBucketsHelp = computed(() => {
     border-radius: 12px;
     padding: 12px;
     background: var(--background-color-secondary, #fff);
+
+    :global(.apexcharts-legend-text) {
+        font-family: "Dosis", sans-serif !important;
+        font-weight: 500 !important;
+    }
 
     h4 {
         margin: 0 0 10px;
