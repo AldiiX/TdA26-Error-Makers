@@ -91,6 +91,18 @@ export default function(params: {
 
         params.updateError.value = null;
         params.deleteError.value = null;
+
+        if (val === "schedulePublication") {
+            const existingScheduledStart = params.course.value.scheduledStart;
+            if (existingScheduledStart) {
+                const date = new Date(existingScheduledStart);
+                if (!isNaN(date.getTime()) && date > new Date()) {
+                    selectedTimeOption.value = "custom";
+                    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    customDateTime.value = local.toISOString().slice(0, 16);
+                }
+            }
+        }
     });
 
     return {

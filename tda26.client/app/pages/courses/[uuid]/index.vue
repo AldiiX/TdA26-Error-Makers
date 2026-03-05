@@ -26,6 +26,7 @@ import RegisterForm from "~/components/RegisterForm.vue";
 import CategoryAndTagsSelection from "~/components/pagespecific/CategoryAndTagsSelection.vue";
 import timeAgoString from "#shared/utils/timeAgoString";
 import { statusToText } from "#shared/utils/statusMapper";
+import { formatDateTime } from "#shared/utils/timeFormatter";
 import { push } from "notivue";
 
 import { useCourseDialogs } from "~/composables/courses/[uuid]/useCourseDialogs";
@@ -522,6 +523,10 @@ function closeResultsModal() {
 
                 <p v-if="currentStatus" :class="$style.status" :data-status="currentStatus">{{ statusToText(currentStatus) }}</p>
 
+                <p v-if="currentStatus === 'scheduled' && courseSmall?.scheduledStart" :class="$style.scheduledStartInfo">
+                    {{ formatDateTime(courseSmall.scheduledStart) }}
+                </p>
+
                 <div :class="$style.fields">
                     <div :class="$style.el">
                         <NumberExponential :value="courseSmall?.viewCount ?? 0" :container-class="$style.nexp" :numberClass="$style.item" />
@@ -598,6 +603,13 @@ function closeResultsModal() {
                         :loading="isCourseStatusLoading"
                         @click="enabledModal = 'schedulePublication'"
                     >Naplánovat</Button>
+                    <Button
+                        v-if="courseSmall?.status === 'scheduled'"
+                        button-style="secondary"
+                        accent-color="secondary"
+                        :loading="isCourseStatusLoading"
+                        @click="enabledModal = 'schedulePublication'"
+                    >Přeplánovat</Button>
                     <Button
                         v-if="courseSmall?.status === 'scheduled'"
                         button-style="secondary"
@@ -1672,6 +1684,28 @@ function closeResultsModal() {
         flex-direction: column;
         gap: 24px;
 
+        .scheduledInfo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--accent-color-secondary) 12%, transparent);
+            border: 1.5px solid color-mix(in srgb, var(--accent-color-secondary) 30%, transparent);
+
+            p {
+                margin: 0;
+                &:first-child {
+                    font-size: 13px;
+                    opacity: 0.7;
+                }
+                &:last-child {
+                    font-weight: 600;
+                    font-size: 16px;
+                }
+            }
+        }
+
         .customDateWrapper {
             display: flex;
             gap: 16px;
@@ -1967,6 +2001,13 @@ ul {
     .statusSelect {
         border: none;
         cursor: pointer;
+    }
+
+    .scheduledStartInfo {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.7;
+        font-weight: 500;
     }
 
     >.info {
