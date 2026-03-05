@@ -35,16 +35,10 @@ namespace tda26.Server.Migrations
                 type: "datetime(6)",
                 nullable: true);
 
-            migrationBuilder.AddColumn<int>(
+            migrationBuilder.AddColumn<long>(
                 name: "TotalBytesDownloaded",
                 table: "Materials",
-                type: "int",
-                nullable: true);
-
-            migrationBuilder.AddColumn<int>(
-                name: "ViewCount",
-                table: "Materials",
-                type: "int",
+                type: "bigint",
                 nullable: true);
         }
 
@@ -69,10 +63,6 @@ namespace tda26.Server.Migrations
 
             migrationBuilder.DropColumn(
                 name: "TotalBytesDownloaded",
-                table: "Materials");
-
-            migrationBuilder.DropColumn(
-                name: "ViewCount",
                 table: "Materials");
         }
     }

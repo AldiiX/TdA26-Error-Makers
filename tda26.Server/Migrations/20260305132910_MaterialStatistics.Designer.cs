@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260302222515_MaterialStatistics_2")]
-    partial class MaterialStatistics_2
+    [Migration("20260305132910_MaterialStatistics")]
+    partial class MaterialStatistics
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
