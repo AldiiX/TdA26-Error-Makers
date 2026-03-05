@@ -1779,8 +1779,45 @@ public sealed class APIv1(
 				return Ok(urlMaterial.ToReadDto());
 			case FileMaterial fileMaterial:
 				try {
-					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
+					var recaptchaToken = Request.Query["recaptchaToken"].ToString();
+					if (string.IsNullOrWhiteSpace(recaptchaToken)) {
+						return BadRequest(new { error = "Missing reCAPTCHA token." });
+					}
 
+					using var requestMessage = new HttpRequestMessage(
+						HttpMethod.Post,
+						"https://www.google.com/recaptcha/api/siteverify"
+					);
+
+					var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+						{ "secret", Program.ENV.GetValueOrNull("RECAPTCHA_SECRET_KEY") ?? "x" },
+						{ "response", recaptchaToken }
+					});
+
+					requestMessage.Content = formData;
+
+					var response = await HttpClient.SendAsync(requestMessage, ct);
+					var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+					var jsonResponse = JsonNode.Parse(responseContent);
+					if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+						return BadRequest(new { error = "Recaptcha verification failed." });
+					}
+					
+					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
+					
+					var now = DateTime.UtcNow;
+
+					await db.Materials
+						.OfType<FileMaterial>()
+						.Where(m => m.Uuid == fileMaterial.Uuid && m.CourseUuid == courseUuid)
+						.ExecuteUpdateAsync(setters => setters
+								.SetProperty(m => m.DownloadCount, m => m.DownloadCount + 1)
+								.SetProperty(m => m.LastDownload, _ => now)
+								.SetProperty(m => m.TotalBytesDownloaded, m => m.TotalBytesDownloaded + m.SizeBytes),
+							ct
+						);
+					
 					var baseName = material.Name.Trim().ToLowerInvariant().Replace(" ", "-");
 
 					string extension;
@@ -1814,6 +1851,58 @@ public sealed class APIv1(
 		}
 	}
 
+	[Consumes("application/json")]
+	[HttpPost("courses/{courseUuid:guid}/materials/{materialUuid:guid}/track-click")]
+	public async Task<IActionResult> TrackUrlClick(
+		Guid courseUuid,
+		Guid materialUuid,
+		[FromBody] IDictionary<string, string> body,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var recaptchaToken = body.TryGetValue("recaptchaToken", out var _value) ? _value : null;
+		if(string.IsNullOrEmpty(recaptchaToken)) {
+			return BadRequest(new { error = "Invalid reCAPTCHA token." });
+		}
+
+		// overeni captchy
+		using var requestMessage = new HttpRequestMessage(
+			HttpMethod.Post,
+			"https://www.google.com/recaptcha/api/siteverify"
+		);
+
+		var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+			{ "secret", Program.ENV.GetValueOrNull("RECAPTCHA_SECRET_KEY") ?? "x" },
+			{ "response", recaptchaToken }
+		});
+
+		requestMessage.Content = formData;
+
+		var response = await HttpClient.SendAsync(requestMessage, ct);
+		var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+		// overeni captcha
+		var jsonResponse = JsonNode.Parse(responseContent);
+		if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+			return BadRequest(new { error = "Recaptcha verification failed." });
+		}
+
+		var now = DateTime.UtcNow;
+
+		var updated = await db.Materials
+			.OfType<UrlMaterial>()
+			.Where(m => m.CourseUuid == courseUuid && m.Uuid == materialUuid)
+			.ExecuteUpdateAsync(setters => setters
+					.SetProperty(m => m.ClickCount, m => m.ClickCount + 1)
+					.SetProperty(m => m.LastClickedAt, _ => now),
+				ct);
+
+		if (updated == 0) return NotFound(new { error = "URL material not found." });
+		return Ok(new { success = true });
+	}
+	
 	[HttpDelete("courses/{courseUuid:guid}/materials/{materialUuid:guid}")]
 	public async Task<IActionResult> DeleteCourseMaterialById([FromRoute] Guid courseUuid, [FromRoute] Guid materialUuid, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
@@ -2060,9 +2149,111 @@ public sealed class APIv1(
 
 		return Ok(new { quizUuid = material.Uuid, isVisible = material.IsVisible });
 	}
+	
+	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/url-stats")]
+	public async Task<IActionResult> GetUrlMaterialStats(
+		[FromRoute] Guid courseUuid,
+		[FromRoute] Guid materialUuid,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var course = await db.Courses
+			.AsNoTracking()
+			.FirstOrDefaultAsync(c => c.Uuid == courseUuid, ct);
+
+		if (course == null)
+			return NotFound(new { error = "Course not found." });
+
+		// jen lecturer/admin
+		if (acc is not Admin && course.LecturerUuid != acc.Uuid)
+			return Forbid();
+
+		var accessResult = ValidateRestrictedCourseAccess(course, acc);
+		if (accessResult != null)
+			return accessResult;
+
+		var urlMaterial = await db.Materials
+			.OfType<UrlMaterial>()
+			.AsNoTracking()
+			.FirstOrDefaultAsync(m => 
+				m.CourseUuid == courseUuid && 
+				m.Uuid == materialUuid, ct);
+
+		if (urlMaterial == null)
+			return NotFound(new { error = "URL material not found." });
+
+		return Ok(new {
+			materialUuid = urlMaterial.Uuid,
+			type = "url",
+			clickCount = urlMaterial.ClickCount,
+			lastClickedAt = urlMaterial.LastClickedAt
+		});
+	}
+	
+	[HttpGet("courses/{courseUuid:guid}/materials/{materialUuid:guid}/file-stats")]
+	public async Task<IActionResult> GetFileMaterialStats(
+	    [FromRoute] Guid courseUuid,
+	    [FromRoute] Guid materialUuid,
+	    CancellationToken ct = default
+	) {
+	    var acc = await auth.ReAuthAsync(ct);
+	    if (acc == null) return Unauthorized();
+
+	    var course = await db.Courses
+	        .AsNoTracking()
+	        .Where(c => c.Uuid == courseUuid)
+	        .Select(c => new { c.Uuid, c.LecturerUuid, c.Status })
+	        .FirstOrDefaultAsync(ct);
+
+	    if (course == null) return NotFound(new { error = "Course not found." });
+
+	    // jen lecturer/admin
+	    if (acc is not Admin && course.LecturerUuid != acc.Uuid) return Forbid();
+
+	    // restricted access pravidla (pokud používáš)
+	    var accessResult = ValidateRestrictedCourseAccess(await db.Courses
+	        .AsNoTracking()
+	        .FirstAsync(c => c.Uuid == courseUuid, ct), acc);
+	    if (accessResult != null) return accessResult;
+
+	    var material = await db.Materials
+	        .AsNoTracking()
+	        .Where(m => m.CourseUuid == courseUuid && m.Uuid == materialUuid)
+	        .FirstOrDefaultAsync(ct);
+
+	    if (material == null) return NotFound(new { error = "Material not found." });
+
+	    if (material is not FileMaterial fileMaterial)
+	        return BadRequest(new { error = "Material is not of type 'file'." });
+
+	    var downloads = fileMaterial.DownloadCount;
+
+	    // TotalBytesDownloaded máš jako int — radši počítat v longu
+	    long totalBytesDownloaded = fileMaterial.TotalBytesDownloaded;
+	    if (totalBytesDownloaded <= 0 && downloads > 0 && fileMaterial.SizeBytes > 0) {
+	        totalBytesDownloaded = (long)downloads * fileMaterial.SizeBytes;
+	    }
+
+	    var totalMb = totalBytesDownloaded / (1024.0 * 1024.0);
+	    var avgMbPerDownload = downloads > 0 ? totalMb / downloads : 0;
+
+	    return Ok(new {
+	        materialUuid = fileMaterial.Uuid,
+	        type = "file",
+	        sizeBytes = fileMaterial.SizeBytes,
+	        downloadCount = downloads,
+	        lastDownloadedAt = fileMaterial.LastDownload, // doporučuju přejmenovat na LastDownloadedAt
+	        totalBytesDownloaded,
+	        totalMegabytesDownloaded = totalMb,
+	        averageMegabytesPerDownload = avgMbPerDownload
+	    });
+	}
 
 	#endregion
 
+	
 	#region course Kvizy
 
 	[HttpGet("courses/{courseUuid:guid}/quizzes/{quizUuid:guid}")]

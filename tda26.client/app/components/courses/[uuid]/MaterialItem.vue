@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import type {Course, Material} from "#shared/types";
+import type {Course, gRecaptcha, Material} from "#shared/types";
 import { NuxtLink } from '#components';
 import ToggleVisibilityButton from "~/components/courses/[uuid]/ToggleVisibilityButton.vue";
 import Popover from "~/components/Popover.vue";
@@ -11,10 +11,48 @@ const props = defineProps<{
     isVisibilityToggleLoading?: boolean,
 }>();
 
+declare const grecaptcha: gRecaptcha;
+
+const onUrlClick = async (e: MouseEvent) => {
+    window.open(props.material.url!, "_blank", "noopener,noreferrer");
+    grecaptcha.ready(async () => {
+        const recaptchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" }
+        );
+
+        const url = `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}/track-click`;
+
+        await fetch(url, { method: "POST", body: JSON.stringify({ recaptchaToken }), headers: { "Content-Type": "application/json"} }).catch(() => {});
+    })
+};
+
+const onFileClick = async (e: MouseEvent) => {
+
+    if (typeof grecaptcha === "undefined") {
+        console.warn("reCAPTCHA not loaded, cannot download file");
+        return;
+    }
+
+    grecaptcha.ready(async () => {
+        const recaptchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" } 
+        );
+
+        const url =
+            `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}` +
+            `?recaptchaToken=${encodeURIComponent(recaptchaToken)}`;
+
+        window.open(url, "_blank", "noopener,noreferrer");
+    });
+};
+
 const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
     (e: "toggleVisibility", material: Material): void;
+    (e: "openMaterialResults", material: Material): void;
 }>();
 
 const getHostname = (url?: string) => {
@@ -34,7 +72,7 @@ function toggleVisibility(): void {
     <!-- FILE MATERIAL -->
     <template v-if="material.type === 'file'">
         <div :class="$style.material">
-            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer" @click.prevent="onFileClick">
                 <div :class="$style.fileIcon"/>
 
                 <div :class="$style.fileInfo">
@@ -47,6 +85,14 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <button
+                    type="button"
+                    :class="[$style.iconButton, $style.iconButtonResults]"
+                    @click="emit('openMaterialResults', material)"
+                    title="Výsledky"
+                >
+                    <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                </button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
@@ -85,7 +131,7 @@ function toggleVisibility(): void {
     <!-- URL MATERIAL -->
     <template v-else-if="material.type === 'url'">
         <div :class="$style.material">
-            <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="material.url" :class="$style.info" target="_blank" rel="noopener noreferrer" @click.prevent="onUrlClick">
                 <div :class="$style.favicon">
                     <img v-if="material.faviconUrl" :src="material.faviconUrl" alt="Favicon" >
                 </div>
@@ -100,6 +146,14 @@ function toggleVisibility(): void {
             </NuxtLink>
             
             <div v-if="editMode" :class="$style.editButtons">
+                <button
+                    type="button"
+                    :class="[$style.iconButton, $style.iconButtonResults]"
+                    @click="emit('openMaterialResults', material)"
+                    title="Výsledky"
+                >
+                    <span :class="$style.iconButtonIcon" aria-hidden="true"/>
+                </button>
 <!--                <ToggleVisibilityButton :is-visible="material.isVisible" :loading="isVisibilityToggleLoading" @toggle="toggleVisibility"/>-->
                 <Popover teleport :disabled="course.status === 'draft'">
                     <template #trigger>
@@ -266,6 +320,19 @@ function toggleVisibility(): void {
     .iconButtonIcon {
         mask-image: url('/icons/pen.svg');
         background-color: var(--accent-color-secondary-theme, #2ecc71);
+    }
+    
+}
+
+.iconButtonResults {
+    &:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--accent-color-primary) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 30%, transparent);
+    }
+
+    .iconButtonIcon {
+        mask-image: url('/icons/stats.svg');
+        background-color: var(--accent-color-primary);
     }
 }
 

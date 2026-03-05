@@ -224,3 +224,24 @@ export interface QuizResultsSummary {
     }[];
 }
 export type CourseModule = Material | Quiz;
+
+
+export interface UrlMaterialStats {
+    materialUuid: string;
+    type: "url";
+    clickCount: number;
+    lastClickedAt: string | null;
+}
+
+export interface FileMaterialStats {
+    materialUuid: string;
+    type: "file";
+    sizeBytes: number;
+    downloadCount: number;
+    lastDownloadedAt: string | null;
+    totalBytesDownloaded: number;
+    totalMegabytesDownloaded: number;
+    averageMegabytesPerDownload: number;
+}
+
+export type MaterialResultsSummary = UrlMaterialStats | FileMaterialStats;

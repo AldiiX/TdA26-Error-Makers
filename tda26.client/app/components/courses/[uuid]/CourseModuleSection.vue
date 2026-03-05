@@ -25,6 +25,7 @@ const emit = defineEmits<{
     (e: "addMaterial"): void;
     (e: "addQuiz"): void;
     (e: "itemDropped", itemUuid: string, itemType: "material" | "quiz", sourceModuleUuid?: string): void;
+    (e: "open-material-results", material: Material): void;
 }>();
 
 const isCollapsed = ref(false);
@@ -379,6 +380,7 @@ function onItemDragEnd(event: DragEvent) {
                                     @edit="emit('editMaterial', item as Material)"
                                     @delete="emit('deleteMaterial', item as Material)"
                                     @toggle-visibility="emit('toggleMaterialVisibility', item as Material)"
+                                    @openMaterialResults="emit('open-material-results', item as Material)"
                                 />
                                 <QuizItem
                                     v-else-if="item.itemType === 'quiz'"
