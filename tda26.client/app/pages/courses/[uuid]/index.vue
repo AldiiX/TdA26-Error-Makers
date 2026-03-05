@@ -204,7 +204,23 @@ const selectItem = (item: string) => {
 };
 
 // publication schedule
-const { cancelPublicationSchedule, formattedPublishTime, selectedTimeOption, timeOptions, customDateTime, maxCustomDatetime, minCustomDatetime, finalDateTime, confirmPublicationSchedule } = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
+
+const {
+    cancelPublicationSchedule,
+    formattedPublishTime,
+    confirmPublicationSchedule,
+    finalDateTime,
+
+    dateOptions,
+    selectedDateIso,
+    selectedTime,
+    isCustomDateEnabled,
+    toggleCustomDate,
+    customDateIso,
+    minCustomDateIso,
+    maxCustomDateIso,
+    scheduleError,
+} = useCoursePublicationSchedule({ enabledModal, course: courseSmall, originalCourse, updateError, deleteError });
 
 // uuid modulu pro přidání materiálu/kvízu
 const targetModuleUuid = ref<string | null>(null);
@@ -1002,36 +1018,66 @@ function closeResultsModal() {
             @close="cancelPublicationSchedule"
             can-be-closed-by-clicking-outside
             title="Naplánovat publikaci"
-            :modalStyle="{ maxWidth: '800px' }"
+            :modalStyle="{ maxWidth: '640px' }"
             :class="$style.schedulePublicationModal"
         >
             <div :class="$style.modalContent">
-
-                <label>Čas publikace</label>
 
                 <div v-if="formattedPublishTime" :class="$style.scheduledInfo">
                     <p>Publikace proběhne:</p>
                     <p>{{ formattedPublishTime }}</p>
                 </div>
 
-                <Input type="select" v-model="selectedTimeOption">
-                    <option
-                        v-for="option in timeOptions"
-                        :key="option.label"
-                        :value="option.values"
-                    >
-                        {{ option.label }}
-                    </option>
-                </Input>
+                <div :class="$style.section">
+                    <div :class="$style.sectionHeader">
+                        <label :class="$style.label">Datum</label>
 
-                <div v-if="selectedTimeOption === 'custom'" :class="$style.customDateWrapper">
-                    <Input
-                        type="datetime-local"
-                        v-model="customDateTime"
-                        :maxDate="maxCustomDatetime"
-                        :minDate="minCustomDatetime"
-                    >
-                    </Input>
+                        <button
+                            type="button"
+                            :class="[$style.customToggle, isCustomDateEnabled && $style.active]"
+                            @click="toggleCustomDate"
+                        >
+                            <span :class="$style.customPlus">+</span>
+                            Vlastní datum
+                        </button>
+                    </div>
+
+                    <div v-if="!isCustomDateEnabled" :class="$style.dateChips">
+                        <button
+                            v-for="d in dateOptions"
+                            :key="d.iso"
+                            type="button"
+                            :class="[$style.dateChip, selectedDateIso === d.iso && $style.active]"
+                            @click="selectedDateIso = d.iso"
+                        >
+                            <span :class="$style.dow">{{ d.dow }}</span>
+                            <span :class="$style.dom">{{ d.dom }}</span>
+                            <span :class="$style.mon">{{ d.mon }}</span>
+                        </button>
+                    </div>
+
+                    <div v-else :class="$style.customDateRow">
+                        <Input
+                            type="date"
+                            v-model="customDateIso"
+                            :minDate="minCustomDateIso"
+                            :maxDate="maxCustomDateIso"
+                        />
+                    </div>
+                </div>
+
+                <div :class="$style.section">
+                    <label :class="$style.label">Čas</label>
+
+                    <div :class="$style.timeRow">
+                        <Input
+                            type="time"
+                            v-model="selectedTime"
+                            :class="$style.timeInput"
+                        />
+                    </div>
+
+                    <p v-if="scheduleError" :class="$style.helperError">{{ scheduleError }}</p>
                 </div>
 
                 <div :class="$style.modalButtons">
@@ -1682,48 +1728,190 @@ function closeResultsModal() {
     .modalContent {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 18px;
+    }
 
-        .scheduledInfo {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            padding: 12px 20px;
-            border-radius: 12px;
-            background: color-mix(in srgb, var(--accent-color-secondary) 12%, transparent);
-            border: 1.5px solid color-mix(in srgb, var(--accent-color-secondary) 30%, transparent);
+    .scheduledInfo {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--accent-color-secondary) 12%, transparent);
+        border: 1.5px solid color-mix(in srgb, var(--accent-color-secondary) 30%, transparent);
 
-            p {
-                margin: 0;
-                &:first-child {
-                    font-size: 13px;
-                    opacity: 0.7;
-                }
-                &:last-child {
-                    font-weight: 600;
-                    font-size: 16px;
-                }
+        p {
+            margin: 0;
+
+            &:first-child {
+                font-size: 13px;
+                opacity: 0.7;
+            }
+            &:last-child {
+                font-weight: 700;
+                font-size: 16px;
             }
         }
+    }
 
-        .customDateWrapper {
-            display: flex;
-            gap: 16px;
+    .section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-            input {
-                flex: 1;
-            }
+    .sectionHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .label {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-color-secondary);
+        margin: 0;
+    }
+
+    .customToggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+
+        border: 1px solid var(--border-color-secondary);
+        background: var(--background-color-secondary);
+        color: var(--text-color-secondary);
+
+        padding: 8px 12px;
+        border-radius: 999px;
+
+        cursor: pointer;
+        user-select: none;
+        transition: 0.2s ease;
+
+        &:hover {
+            filter: brightness(0.9);
+            border-color: color-mix(in srgb, var(--accent-color-secondary-theme) 40%, var(--border-color-secondary));
         }
 
-        .modalButtons {
-            display: flex;
-            gap: 16px;
-            margin-top: 32px;
-            justify-content: flex-end;
+        &.active {
+            color: var(--accent-color-primary);
+            border-color: color-mix(in srgb, var(--accent-color-primary) 55%, var(--border-color-secondary));
+            background: rgb(from var(--accent-color-primary) r g b / 0.12);
+            box-shadow: inset 0 0 10px rgb(from var(--accent-color-primary) r g b / 0.25);
+        }
+    }
 
-            button {
-                width: 164px;
-            }
+    .customPlus {
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .dateChips {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+
+        // jemné „maskování“ scrollu jako v moderních UI
+        scrollbar-width: thin;
+
+        &::-webkit-scrollbar {
+            height: 8px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: color-mix(in srgb, var(--text-color-secondary) 20%, transparent);
+            border-radius: 999px;
+        }
+    }
+
+    .dateChip {
+        min-width: 74px;
+        height: 66px;
+
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 2px;
+
+        border-radius: 14px;
+        border: 1px solid var(--border-color-secondary);
+        background: var(--background-color-secondary);
+
+        cursor: pointer;
+        user-select: none;
+
+        transition: 0.2s ease;
+
+        &:hover {
+            filter: brightness(0.92);
+            border-color: color-mix(in srgb, var(--accent-color-secondary-theme) 40%, var(--border-color-secondary));
+        }
+
+        &.active {
+            border-color: color-mix(in srgb, var(--accent-color-primary) 60%, var(--border-color-secondary));
+            background: rgb(from var(--accent-color-primary) r g b / 0.12);
+            box-shadow: inset 0 0 10px rgb(from var(--accent-color-primary) r g b / 0.25);
+        }
+    }
+
+    .dow {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-color-secondary);
+        opacity: 0.8;
+        text-transform: capitalize;
+    }
+
+    .dom {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text-color-primary);
+        line-height: 1.05;
+    }
+
+    .mon {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-color-secondary);
+        opacity: 0.8;
+        text-transform: capitalize;
+    }
+
+    .customDateRow {
+        display: flex;
+        gap: 12px;
+
+        :global(input) {
+            width: 100%;
+        }
+    }
+
+    .timeRow {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+
+        .timeInput {
+            width: 100%;
+        }
+    }
+
+    .helperError {
+        margin: 0;
+        font-size: 13px;
+        color: var(--color-error, #ff4d4f);
+    }
+
+    .modalButtons {
+        display: flex;
+        gap: 16px;
+        margin-top: 18px;
+        justify-content: flex-end;
+
+        button {
+            width: 164px;
         }
     }
 }
