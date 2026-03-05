@@ -11,11 +11,11 @@ const props = defineProps<{
 }>();
 
 const CHART_COLORS = [
+    "var(--accent-color-secondary)",
     "var(--accent-color-additional-1)",
     "var(--accent-color-additional-2)",
     "var(--accent-color-additional-3)",
     "var(--accent-color-additional-4)",
-    "var(--accent-color-secondary)",
     "var(--accent-color-primary)",
 ];
 
