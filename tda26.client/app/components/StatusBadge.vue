@@ -92,16 +92,16 @@ const props = defineProps<{
     }
 
     &.live {
-        background-color: var(--accent-color-additional-2-bg);
+        background-color: var(--accent-color-secondary-theme-bg);
         //padding: 2px;
 
         div {
             mask-image: url("../../public/icons/access_point.svg");
-            background-color: var(--accent-color-additional-2);
+            background-color: var(--accent-color-secondary-theme);
         }
         
         p {
-            color: var(--accent-color-additional-2);
+            color: var(--accent-color-secondary-theme);
         }
     }
 

@@ -2015,8 +2015,8 @@ ul {
 
         // Live
         &[data-status="live"] {
-            color: var(--accent-color-additional-2);
-            background: var(--accent-color-additional-2-bg);
+            color: var(--accent-color-secondary-theme);
+            background: var(--accent-color-secondary-theme-bg);
         }
 
         // Paused 
