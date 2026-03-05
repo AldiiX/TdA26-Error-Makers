@@ -25,6 +25,7 @@ const emit = defineEmits<{
     (e: "addMaterial"): void;
     (e: "addQuiz"): void;
     (e: "itemDropped", itemUuid: string, itemType: "material" | "quiz", sourceModuleUuid?: string): void;
+    (e: "open-material-results", material: Material): void;
 }>();
 
 const isCollapsed = ref(false);
@@ -359,7 +360,7 @@ function onItemDragEnd(event: DragEvent) {
                             />
                         </Transition>
                         <div :class="$style.item">
-                            <div v-if="isDraggingEnabled" :class="$style.itemDragHandle">
+                            <div v-if="isDraggingEnabled" :class="$style.itemDragHandle" data-drag-handle>
                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                     <circle cx="2" cy="2" r="1.5"/>
                                     <circle cx="8" cy="2" r="1.5"/>
@@ -379,6 +380,7 @@ function onItemDragEnd(event: DragEvent) {
                                     @edit="emit('editMaterial', item as Material)"
                                     @delete="emit('deleteMaterial', item as Material)"
                                     @toggle-visibility="emit('toggleMaterialVisibility', item as Material)"
+                                    @openMaterialResults="emit('open-material-results', item as Material)"
                                 />
                                 <QuizItem
                                     v-else-if="item.itemType === 'quiz'"
@@ -707,6 +709,7 @@ function onItemDragEnd(event: DragEvent) {
     opacity: 0.4;
     flex-shrink: 0;
     transition: opacity 0.2s;
+    touch-action: none;
 
     &:hover {
         opacity: 0.8;
