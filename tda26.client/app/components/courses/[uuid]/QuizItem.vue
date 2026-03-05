@@ -28,9 +28,7 @@ function toggleVisibility(): void {
 <template>
     <div :class="$style.element">
         <NuxtLink :href="`/courses/${course.uuid}/quiz/${quiz.uuid}`" :class="$style.info">
-<!--                <div :class="$style.favicon">-->
-<!--                    <img v-if="quiz.faviconUrl" :src="quiz.faviconUrl" alt="Favicon" />-->
-<!--                </div>-->
+            <div :class="$style.quizIcon"/>
 
             <div :class="$style.specificInfo">
                 <p :title="quiz.title">{{ quiz.title }}</p>
@@ -142,11 +140,25 @@ function toggleVisibility(): void {
             opacity: 0.6;
         }
 
+        .quizIcon {
+            mask-image: url('/icons/question.svg');
+            mask-size: contain;
+            mask-position: center;
+            mask-repeat: no-repeat;
+
+            width: 28px;
+            height: 28px;
+            margin: 2px;
+            min-width: 28px;
+            background-color: var(--text-color-secondary);
+            opacity: 0.6;
+        }
+
         .specificInfo {
             display: flex;
             gap: 4px;
             flex-direction: column;
-            //width: clamp(150px, 25%, 250px);
+            width: clamp(150px, 25%, 250px);
 
             p {
                 margin: 0;

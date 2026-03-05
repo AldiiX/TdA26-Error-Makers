@@ -198,6 +198,15 @@ function toggleVisibility(): void {
             }
         }
 
+        .favicon {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .favicon img {
             border-radius: 4px;
             overflow: hidden;
