@@ -63,7 +63,7 @@ const props = defineProps<{
 
         div {
             mask-image: url("../../public/icons/file-full.svg");
-            background-color: var(--status-draft-text);
+            background-color: var(--color-gray);
 
             width: 18px;
             height: 18px;
@@ -72,65 +72,65 @@ const props = defineProps<{
         }
 
         p {
-            color: var(--status-draft-text);
+            color: var(--color-gray);
         }
     }
 
     &.scheduled {
-        background-color: var(--status-scheduled-bg);
+        background-color: var(--accent-color-primary-transparent-01);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/clock.svg");
-            background-color: var(--status-scheduled-text);
+            background-color: var(--accent-color-primary);
 
         }
 
         p {
-            color: var(--status-scheduled-text);
+            color: var(--accent-color-primary);
         }
     }
 
     &.live {
-        background-color: var(--status-live-bg);
+        background-color: var(--accent-color-secondary-transparent-01);
         //padding: 2px;
 
         div {
             mask-image: url("../../public/icons/access_point.svg");
-            background-color: var(--status-live-text);
+            background-color: var(--accent-color-secondary-theme);
         }
         
         p {
-            color: var(--status-live-text);
+            color: var(--accent-color-secondary-theme);
         }
     }
 
     &.paused {
-        background-color: var(--status-paused-bg);
+        background-color: rgb(from var(--accent-color-additional-2) r g b / 0.14);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/pause.svg");
-            background-color: var(--status-paused-text);
+            background-color: var(--accent-color-additional-2);
         }
         
         p {
-            color: var(--status-paused-text);
+            color: var(--accent-color-additional-2);
         }
     }
 
     &.archived {
-        background-color: var(--status-archived-bg);
+        background-color: rgb(from var(--accent-color-additional-4) r g b / 0.12);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/box-archive.svg");
-            background-color: var(--status-archived-text);
+            background-color: var(--accent-color-additional-4);
 
         }
 
         p {
-            color: var(--status-archived-text);
+            color: var(--accent-color-additional-4);
         }
     }
 }
