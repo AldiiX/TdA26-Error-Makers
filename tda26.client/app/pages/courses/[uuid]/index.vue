@@ -99,8 +99,8 @@ definePageMeta({
                 const isAdmin = loggedAccount.value?.type === "admin";
                 const isAuthor = loggedAccount.value?.uuid === course.account?.uuid;
                 
-                // pokud se jedna o draft/scheduled/archived kurz a uzivatel neni admin ani autor, presmeruje na /courses
-                if (["draft", "scheduled", "archived"].includes(course.status) && !(isAdmin || isAuthor)) {
+                // pokud se jedna o draft/scheduled/archived/paused kurz a uzivatel neni admin ani autor, presmeruje na /courses
+                if (["draft", "scheduled", "archived", "paused"].includes(course.status) && !(isAdmin || isAuthor)) {
                     return navigateTo("/courses");
                 }
             } catch (e) {
@@ -408,7 +408,7 @@ const { selectedFeedFilter, feedData, feedPending, feedError, feedPosts, selecte
 const {openDeleteCourseModal, handleCourseDelete,} = useCourseDelete({courseSmall, enabledModal, isActionInProgress, deleteError, clearCourseCaches,});
 
 // obecne sse
-const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode });
+const { } = useCourseSSE({ course: courseSmall, courseFullData: course, editMode: isEditMode, loggedAccount });
 
 function editBackClick() {
     window.location.href = `/courses/${courseSmall.value?.uuid}`;

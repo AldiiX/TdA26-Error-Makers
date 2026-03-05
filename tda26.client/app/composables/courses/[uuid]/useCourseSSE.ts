@@ -1,12 +1,14 @@
 ﻿import {onBeforeUnmount, onMounted} from "vue";
 import getBaseUrl from "#shared/utils/getBaseUrl";
-import type {Course} from "#shared/types";
+import type {Account, Course} from "#shared/types";
 import { push } from "notivue";
+import { useCourses } from "~/composables/useCourses";
 
 export default function(params: {
     course: Ref<Course>;
     courseFullData: Ref<Course | null>;
     editMode: boolean;
+    loggedAccount: Ref<Account | null>;
 }) {
     // propy
     let eventSource: EventSource | null = null;
@@ -16,10 +18,32 @@ export default function(params: {
         const data = JSON.parse(event.data);
 
         if (data.status !== params.course.value.status && !params.editMode) {
-            const promise = push.promise({
+            // pokud se kurz pauznul, vykopnout neadmina/ne-autora
+            if (data.status === "paused") {
+                const acc = params.loggedAccount.value;
+                const isAdmin = acc?.type === "admin";
+                const isAuthor = acc?.uuid === params.course.value.account?.uuid;
+
+                if (!isAdmin && !isAuthor) {
+                    push.warning({
+                        title: "Kurz pozastaven",
+                        message: "Tento kurz byl pozastaven a není momentálně dostupný.",
+                        duration: 5000,
+                    });
+
+                    setTimeout(async () => {
+                        const { invalidateCoursesState } = useCourses();
+                        invalidateCoursesState();
+                        await navigateTo("/courses");
+                    }, 1500);
+                    return;
+                }
+            }
+
+            push.info({
                 title: "Upozornění",
                 message: `Kurz změnil status na ${data.status}. Stránka se obnovuje...`,
-                duration: Infinity
+                duration: 3000,
             });
 
             setTimeout(() => {

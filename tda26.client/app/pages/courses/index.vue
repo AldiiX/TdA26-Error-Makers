@@ -113,7 +113,7 @@
         if(course.account?.uuid === loggedAccount.value?.uuid) return true;
         if(loggedAccount.value?.type === "admin") return true;
 
-        return course.status === "live" || course.status === "paused";
+        return course.status === "live";
     }
 </script>
 
