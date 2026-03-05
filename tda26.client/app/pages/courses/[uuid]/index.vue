@@ -704,7 +704,7 @@ function closeResultsModal() {
 <!--                                            />-->
 <!--                                        </Transition>-->
                                         <div :class="$style.moduleDragWrapper">
-                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                                     <circle cx="2" cy="2" r="1.5"/>
                                                     <circle cx="8" cy="2" r="1.5"/>
@@ -773,7 +773,7 @@ function closeResultsModal() {
                                                 @dragend="onModuleDragEnd"
                                             >
                                                 <div :class="$style.module">
-                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                         <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                                             <circle cx="2" cy="2" r="1.5"/>
                                                             <circle cx="8" cy="2" r="1.5"/>
@@ -2232,6 +2232,7 @@ ul {
             opacity: 0.4;
             transition: opacity 0.2s;
             flex-shrink: 0;
+            touch-action: none;
 
             &:hover {
                 opacity: 1;
