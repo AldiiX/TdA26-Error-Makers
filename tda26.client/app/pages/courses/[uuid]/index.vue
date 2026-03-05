@@ -616,6 +616,15 @@ function closeMaterialResultsModal() {
                         </div>
                     </div>
                 </div>
+                <Button
+                    v-if="ownsCourse && isEditMode"
+                    button-style="secondary"
+                    accent-color="secondary"
+                    :disabled="isActionInProgress"
+                    @click="openDeleteCourseModal"
+                >
+                    Smazat
+                </Button>
 
                 <div v-if="ownsCourse && !isEditMode" :class="$style.courseActions">
                     <!-- Primary button -->
@@ -633,13 +642,6 @@ function closeMaterialResultsModal() {
                         :loading="isCourseStatusLoading"
                         @click="updateCourseStatus('paused')"
                     >Pozastavit</Button>
-                    <Button
-                        v-if="courseSmall?.status === 'archived'"
-                        button-style="primary"
-                        accent-color="secondary"
-                        :loading="isCourseStatusLoading"
-                        @click="updateCourseStatus('draft')"
-                    >Obnovit na návrh</Button>
                     
                     <!-- Secondary button -->
                     <Button
@@ -664,7 +666,7 @@ function closeMaterialResultsModal() {
                         @click="updateCourseStatus('archived')"
                     >Ukončit</Button>
 
-                    <div>
+                    <div v-if="courseSmall?.status !== 'archived'">
                         <ContextMenuButton @open="openContextMenu"/>
                         <ContextMenu
                             :items="contextMenuItems"
@@ -712,22 +714,29 @@ function closeMaterialResultsModal() {
                                     </template>
                                     <template #content>Kurz musí být návrh</template>
                                 </Popover>
-                                <div :class="$style.showHideButtons" v-if="ownsCourse">
-                                    <Button
-                                        button-style="primary"
-                                        accent-color="primary"
-                                        :loading="isModuleVisibilityToggling"
-                                        :disabled="!nextHiddenModule || isModuleVisibilityToggling"
-                                        @click="handleShowNextModule"
-                                    >Zobrazit další</Button>
-                                    <Button
-                                        button-style="secondary"
-                                        accent-color="secondary"
-                                        :loading="isModuleVisibilityToggling"
-                                        :disabled="!lastVisibleModule || isModuleVisibilityToggling"
-                                        @click="handleHideCurrentModule"
-                                    >Skrýt aktuální</Button>
-                                </div>
+                                <Popover teleport :disabled="courseSmall.status === 'live'" v-if="ownsCourse && course?.modules && course.modules.length > 0">
+                                    <template #trigger>
+                                        <div :class="$style.showHideButtons" v-if="ownsCourse">
+                                            <Button
+                                                button-style="primary"
+                                                accent-color="primary"
+                                                :loading="isModuleVisibilityToggling"
+                                                :disabled="!nextHiddenModule || isModuleVisibilityToggling || courseSmall.status !== 'live'"
+                                                @click="handleShowNextModule"
+                                            >Zobrazit další</Button>
+                                            <Button
+                                                button-style="secondary"
+                                                accent-color="secondary"
+                                                :loading="isModuleVisibilityToggling"
+                                                :disabled="!lastVisibleModule || isModuleVisibilityToggling || courseSmall.status !== 'live'"
+                                                @click="handleHideCurrentModule"
+                                            >Skrýt aktuální</Button>
+                                        </div>
+                                    </template>
+                                    <template #content>
+                                        Kurz musí být spuštěn
+                                    </template>
+                                </Popover>
                             </div>
 
                             <p v-if="coursePending || !course">Načítání materiálů...</p>
@@ -755,7 +764,7 @@ function closeMaterialResultsModal() {
 <!--                                            />-->
 <!--                                        </Transition>-->
                                         <div :class="$style.moduleDragWrapper">
-                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                            <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                                     <circle cx="2" cy="2" r="1.5"/>
                                                     <circle cx="8" cy="2" r="1.5"/>
@@ -825,7 +834,7 @@ function closeMaterialResultsModal() {
                                                 @dragend="onModuleDragEnd"
                                             >
                                                 <div :class="$style.module">
-                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle">
+                                                    <div v-if="ownsCourse && courseSmall.status === 'draft'" :class="$style.dragHandle" data-drag-handle>
                                                         <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                                             <circle cx="2" cy="2" r="1.5"/>
                                                             <circle cx="8" cy="2" r="1.5"/>
@@ -1008,38 +1017,27 @@ function closeMaterialResultsModal() {
     <Teleport to="#teleports">
         <!-- Edit controls -->
         <div v-if="isEditMode" :class="$style.editControls">
-            <div :class="$style.top">
-                <Button
-                    button-style="secondary"
-                    :style="{ '--color': 'var(--color-error)' }"
-                    :disabled="isActionInProgress"
-                    @click="openDeleteCourseModal"
-                >
-                    Smazat kurz
-                </Button>
-            </div>
-
-            <div :class="$style.bottom">
+            <div :class="$style.wrapper">
                 <Button
                     button-style="primary"
                     :disabled="!isDirty || isActionInProgress"
                     @click="saveCourseChanges"
                 >
-                    Uložit změny
+                    Uložit
                 </Button>
                 <Button
                     button-style="secondary"
                     :disabled="!isDirty || isActionInProgress"
                     @click="saveCourseAndExit()"
                 >
-                    Uložit a ukončit úpravy
+                    Uložit a ukončit
                 </Button>
                 <Button
                     button-style="tertiary"
                     :disabled="isActionInProgress"
                     @click="editBackClick"
                 >
-                    Ukončit úpravy
+                    Ukončit
                 </Button>
             </div>
         </div>
@@ -1903,7 +1901,7 @@ function closeMaterialResultsModal() {
     filter: drop-shadow(0 16px 28px rgb(0 0 0 / 0.15));
 
 
-    .bottom, .top {
+    .bottom, .top, .wrapper {
         display: flex;
         gap: 16px;
         z-index: 1000;
@@ -1929,6 +1927,13 @@ function closeMaterialResultsModal() {
         padding-bottom: 24px;
         margin-bottom: -24px;
         justify-content: center;
+    }
+    
+    @media (max-width: 800px) {
+        .wrapper {
+            flex-wrap: wrap;
+            width: auto;
+        }
     }
 }
 
@@ -2202,6 +2207,7 @@ ul {
             .modulesListHeader{
                 display: flex;
                 gap: 12px;
+                justify-content: space-between;
 
                 button {
                     margin-bottom: 16px;
@@ -2295,6 +2301,7 @@ ul {
             opacity: 0.4;
             transition: opacity 0.2s;
             flex-shrink: 0;
+            touch-action: none;
 
             &:hover {
                 opacity: 1;
