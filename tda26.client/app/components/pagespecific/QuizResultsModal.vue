@@ -10,6 +10,16 @@ const props = defineProps<{
     quizResultsSummary: QuizResultsSummary | null;
 }>();
 
+const isHelpOpen = ref(false);
+
+function openHelp() {
+    isHelpOpen.value = true;
+}
+
+function closeHelp() {
+    isHelpOpen.value = false;
+}
+
 const CHART_COLORS = [
     "var(--accent-color-secondary)",
     "var(--accent-color-additional-1)",
@@ -115,7 +125,7 @@ const lineSeries = computed(() => [
 // vysvětlivky – čistě text, žádná vymyšlená data
 const scoreBucketsHelp = computed(() => {
     return "Intervaly skóre udávají, kolik % otázek bylo v jednom pokusu zodpovězeno správně. " +
-        "Např. „20–40 %“ znamená pokusy s úspěšností alespoň 20 % a menší než 40 % (dle logiky na backendu).";
+        "Např. „20–40%“ znamená pokusy s úspěšností alespoň 20% a menší než 40% (dle logiky na backendu).";
 });
 
 const timeBucketsHelp = computed(() => {
@@ -138,7 +148,11 @@ const timeBucketsHelp = computed(() => {
 
         <div v-else :class="$style.quizResultsModal">
             <h3>Výsledky kvízu</h3>
-
+            <div :class="$style.helpRow">
+                <button type="button" :class="$style.helpButton" @click="openHelp">
+                    <div :class="$style.helpIcon"></div>
+                </button>
+            </div>
             <!-- INFO -->
             <div :class="$style.infoGrid">
                 <div :class="$style.infoCard">
@@ -177,14 +191,7 @@ const timeBucketsHelp = computed(() => {
                 Pozn.: Součet rozložení skóre ({{ scoreBucketsTotal }}) neodpovídá počtu pokusů ({{ totalAttempts }}).
                 To typicky znamená, že některé výsledky nespadly do žádného intervalu (např. 100% úspěšnost).
             </p>
-
-            <!-- Vysvětlivky -->
-            <div style="opacity: .85;">
-                <p style="margin: 8px 0 0;"><strong>Co znamenají intervaly?</strong></p>
-                <p style="margin: 4px 0 0;">{{ scoreBucketsHelp }}</p>
-                <p style="margin: 4px 0 0;">{{ timeBucketsHelp }}</p>
-            </div>
-
+            
             <!-- CHARTS -->
             <div :class="$style.chartsGrid" style="margin-top: 12px;">
                 <div :class="$style.chartCard">
@@ -218,22 +225,34 @@ const timeBucketsHelp = computed(() => {
                         height="320"
                     />
                 </div>
+            </div>
+        </div>
+    </Modal>
 
-<!--                <div :class="$style.chartCard">-->
-<!--                    <h4>Rozložení skóre (100% skládaný graf)</h4>-->
+    <Modal
+        v-if="enabled && isHelpOpen"
+        :enabled="enabled && isHelpOpen"
+        can-be-closed-by-clicking-outside
+        :modal-style="{ maxWidth: '720px' }"
+        @close="closeHelp"
+    >
+        <div :class="$style.helpModal">
+            <div :class="$style.helpModalBody">
+                <div :class="$style.helpSection">
+                    <div :class="$style.helpSectionTitle">Intervaly skóre</div>
+                    <p :class="$style.helpText">{{ scoreBucketsHelp }}</p>
+                </div>
 
-<!--                    <div v-if="!canRenderScoreCharts" style="opacity:.8; font-family: Dosis, sans-serif;">-->
-<!--                        100% skládaný graf nelze vykreslit, když je součet 0.-->
-<!--                    </div>-->
+                <div :class="$style.helpSection">
+                    <div :class="$style.helpSectionTitle">Intervaly času</div>
+                    <p :class="$style.helpText">{{ timeBucketsHelp }}</p>
+                </div>
 
-<!--                    <VueApexCharts-->
-<!--                        v-else-->
-<!--                        type="bar"-->
-<!--                        :series="stackedSeries"-->
-<!--                        :options="stackedOptions"-->
-<!--                        height="220"-->
-<!--                    />-->
-<!--                </div>-->
+                <div :class="$style.helpFooter">
+                    <button type="button" :class="$style.helpButtonSecondary" @click="closeHelp">
+                        Zavřít
+                    </button>
+                </div>
             </div>
         </div>
     </Modal>
@@ -300,6 +319,138 @@ const timeBucketsHelp = computed(() => {
     h4 {
         margin: 0 0 10px;
         font-size: 16px;
+    }
+}
+
+.helpRow {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: -6px;
+}
+
+.helpButton {
+    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 14%, transparent 40%);
+    background: color-mix(in srgb, var(--background-color-secondary) 80%, transparent);
+    border-radius: 999px;
+    padding: 6px;
+    font-family: "Dosis", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color .2s, border-color .2s;
+    color: var(--text-color);
+    justify-self: right;
+
+    &:hover {
+        background: color-mix(in srgb, var(--accent-color-primary) 8%, var(--background-color-secondary) 92%);
+        border-color: color-mix(in srgb, var(--accent-color-primary) 25%, transparent);
+    }
+}
+
+/* --- Help modal --- */
+.helpModal {
+    padding: 14px 14px 12px;
+}
+
+.helpIcon {
+    width: 28px;
+    height: 28px;
+    background-color: var(--color-gray);
+    mask-image: url('/icons/info.svg');
+    mask-size: cover;
+    mask-position: center;
+    mask-repeat: no-repeat;
+}
+
+.helpModalTitle {
+    margin: 0;
+    font-size: 20px;
+    font-family: "Dosis", sans-serif;
+}
+
+.helpClose {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 16px;
+    line-height: 1;
+    opacity: .8;
+
+    &:hover {
+        opacity: 1;
+        background: color-mix(in srgb, var(--text-color-secondary) 10%, transparent);
+        border-color: color-mix(in srgb, var(--text-color-secondary) 20%, transparent);
+    }
+}
+
+.helpModalBody {
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.helpSection {
+    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 10%, transparent 40%);
+    border-radius: 12px;
+    padding: 12px;
+    background: var(--background-color-secondary, #fff);
+}
+
+.helpSectionTitle {
+    font-family: "Dosis", sans-serif;
+    font-weight: 800;
+    font-size: 24px;
+    margin-bottom: 6px;
+}
+
+.helpText {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--text-color);
+    white-space: pre-wrap;
+}
+
+.helpFooter {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 2px;
+}
+
+.helpButtonSecondary {
+    border: 1px solid color-mix(in srgb, var(--text-color-secondary) 14%, transparent 40%);
+    background: transparent;
+    border-radius: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: "Dosis", sans-serif;
+    font-weight: 800;
+}
+
+/* --- Mobile design --- */
+@media (max-width: 900px) {
+    .helpRow {
+        justify-content: stretch;
+    }
+
+    .helpButton {
+        text-align: center;
+        font-size: 15px;
+    }
+
+    .helpModal {
+        padding: 10px;
+    }
+
+    .helpModalTitle {
+        font-size: 18px;
+    }
+
+    .helpSection {
+        padding: 10px;
     }
 }
 </style>
