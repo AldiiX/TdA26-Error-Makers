@@ -121,12 +121,19 @@ function toggleVisibility(): void {
     
     .info {
         display: flex;
+        padding: 12px 16px;
         align-items: center;
-        gap: 6px;
         color: var(--text-color);
         text-decoration: none;
-        padding: 12px 16px;
         flex: 1;
+
+        &::before {
+            content: "";
+            width: 36px;     
+            height: 36px;    
+            flex: 0 0 36px;  
+            display: block;
+        }
         
         .fileIcon {
             mask-image: url('../../../../public/icons/file.svg');
@@ -146,6 +153,7 @@ function toggleVisibility(): void {
             display: flex;
             gap: 4px;
             flex-direction: column;
+            width: clamp(150px, 25%, 250px);
             //width: clamp(150px, 25%, 250px);
 
             p {
@@ -173,7 +181,7 @@ function toggleVisibility(): void {
         }
 
         .description {
-            margin-left: 10px;
+            margin-left: 24px;
             p {
                 margin: 0;
                 font-size: 14px;
