@@ -359,7 +359,7 @@ function onItemDragEnd(event: DragEvent) {
                             />
                         </Transition>
                         <div :class="$style.item">
-                            <div v-if="isDraggingEnabled" :class="$style.itemDragHandle">
+                            <div v-if="isDraggingEnabled" :class="$style.itemDragHandle" data-drag-handle>
                                 <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
                                     <circle cx="2" cy="2" r="1.5"/>
                                     <circle cx="8" cy="2" r="1.5"/>
@@ -707,6 +707,7 @@ function onItemDragEnd(event: DragEvent) {
     opacity: 0.4;
     flex-shrink: 0;
     transition: opacity 0.2s;
+    touch-action: none;
 
     &:hover {
         opacity: 0.8;
