@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿<script setup lang="ts">
     import CourseCard from '~/components/pagespecific/CourseCard.vue'
     import type { Course } from '#shared/types'
     import NumberExponential from '~/components/NumberExponential.vue'
@@ -14,9 +14,10 @@
 
     import { useCourses } from '~/composables/useCourses'
     import { useSearchQuery } from '~/composables/courses/useSearchQuery'
-    import { useCourseFiltering } from '~/composables/courses/useCourseFiltering'
+    import { useCourseListSSE } from '~/composables/courses/useCourseListSSE'
     import { usePagination } from '~/composables/courses/usePagination'
     import useAuth from "~/composables/useAuth";
+    import {useCourseFiltering} from "~/composables/courses/useCourseFiltering";
 
     definePageMeta({
         layout: 'normal-page-layout'
@@ -32,6 +33,9 @@
     const { allCourses: courses } = useCourses();
     const { searchQuery, debouncedQuery } = useSearchQuery();
     const { loggedAccount } = useAuth();
+
+    // live update statusu kurzů přes SSE
+    useCourseListSSE(courses);
 
     const {
         filteredCourses,
@@ -113,7 +117,7 @@
         if(course.account?.uuid === loggedAccount.value?.uuid) return true;
         if(loggedAccount.value?.type === "admin") return true;
 
-        return course.status === "live" || course.status === "paused";
+        return course.status === "live";
     }
 </script>
 
