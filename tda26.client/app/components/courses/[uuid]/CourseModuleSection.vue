@@ -42,6 +42,7 @@ function resetDragOver() {
     isDragOver.value = false;
     draggedItemUuid.value = null;
     dragOverItemUuid.value = null;
+    dragOverStartZone.value = false;
     dragOverEndZone.value = false;
 }
 
@@ -103,6 +104,8 @@ const moduleItems = computed<ModuleItem[]>(() => {
 
 const draggedItemUuid = ref<string | null>(null);
 const dragOverItemUuid = ref<string | null>(null);
+// true when cursor is over the start-zone drop target (drop before first item)
+const dragOverStartZone = ref(false);
 // true when cursor is over the end-zone drop target (drop after last item)
 const dragOverEndZone = ref(false);
 // true when the drag was handled as a within-module reorder (so we don't remove the item on dragend)
@@ -135,6 +138,7 @@ function onItemDragOver(event: DragEvent, uuid: string) {
     event.stopPropagation();
     dragOverItemUuid.value = uuid;
     dragOverEndZone.value = false;
+    dragOverStartZone.value = false;
 }
 
 function onItemDragLeave(event: DragEvent, uuid: string) {
@@ -142,6 +146,23 @@ function onItemDragLeave(event: DragEvent, uuid: string) {
     const current = event.currentTarget as HTMLElement | null;
     if (current && related && current.contains(related)) return;
     if (dragOverItemUuid.value === uuid) dragOverItemUuid.value = null;
+}
+
+function onStartZoneDragOver(event: DragEvent) {
+    // Only show within-module start-zone hint when the drag originated from THIS module
+    if (!draggedItemUuid.value) return;
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverStartZone.value = true;
+    dragOverItemUuid.value = null;
+}
+
+function onStartZoneDragLeave(event: DragEvent) {
+    const related = event.relatedTarget as Node | null;
+    const current = event.currentTarget as HTMLElement | null;
+    if (current && related && current.contains(related)) return;
+    dragOverStartZone.value = false;
 }
 
 function onEndZoneDragOver(event: DragEvent) {
@@ -161,7 +182,7 @@ function onEndZoneDragLeave(event: DragEvent) {
     dragOverEndZone.value = false;
 }
 
-async function performReorder(targetUuid: string | '__end__') {
+async function performReorder(targetUuid: string | '__start__' | '__end__') {
     const dragged = draggedItemUuid.value;
     draggedItemUuid.value = null;
 
@@ -176,6 +197,8 @@ async function performReorder(targetUuid: string | '__end__') {
 
     if (targetUuid === '__end__') {
         items.push(moved);
+    } else if (targetUuid === '__start__') {
+        items.unshift(moved);
     } else {
         if (dragged === targetUuid) { items.splice(fromIdx, 0, moved); return; }
         const toIdx = items.findIndex(i => i.uuid === targetUuid);
@@ -237,11 +260,26 @@ async function onEndZoneDrop(event: DragEvent) {
     await performReorder('__end__');
 }
 
+async function onStartZoneDrop(event: DragEvent) {
+    if (!event.dataTransfer?.types.includes(MODULE_ITEM_KEY)) return;
+
+    // Check if the dragged item belongs to THIS module; if not, let the event bubble
+    const draggedUuid = event.dataTransfer?.getData(MODULE_ITEM_KEY);
+    if (draggedUuid && !moduleItems.value.some(i => i.uuid === draggedUuid)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragOverStartZone.value = false;
+    droppedWithinModule.value = true;
+
+    await performReorder('__start__');
+}
+
 function onItemDragEnd(event: DragEvent) {
     const uuid = draggedItemUuid.value;
     const wasWithinModule = droppedWithinModule.value;
     draggedItemUuid.value = null;
     dragOverItemUuid.value = null;
+    dragOverStartZone.value = false;
     dragOverEndZone.value = false;
     droppedWithinModule.value = false;
 
@@ -337,6 +375,18 @@ function onItemDragEnd(event: DragEvent) {
                 </p>
 
                 <ul v-else :class="$style.itemList">
+                    <!-- Start-zone: drop target to place item before the first one -->
+                    <li
+                        v-if="isDraggingEnabled && draggedItemUuid"
+                        :class="[$style.startDropZone, dragOverStartZone && $style.startDropZoneActive]"
+                        @dragover="onStartZoneDragOver"
+                        @dragleave="onStartZoneDragLeave"
+                        @drop="onStartZoneDrop"
+                    >
+                        <Transition name="drag-placeholder">
+                            <div v-if="dragOverStartZone" :class="$style.dragPlaceholder" />
+                        </Transition>
+                    </li>
                     <li
                         v-for="item in moduleItems"
                         :key="item.uuid"
@@ -743,6 +793,18 @@ function onItemDragEnd(event: DragEvent) {
     transition: min-height 0.2s;
 
     &.endDropZoneActive {
+        min-height: 20px;
+    }
+}
+
+.startDropZone {
+    min-height: 16px;
+    width: 100%;
+    border-radius: 10px;
+    transition: min-height 0.2s;
+    list-style: none;
+
+    &.startDropZoneActive {
         min-height: 20px;
     }
 }

@@ -68,6 +68,8 @@ export function useModuleDrag(params: {
 
         if (targetModuleUuid === '__end__') {
             currentModules.push(draggedItem);
+        } else if (targetModuleUuid === '__start__') {
+            currentModules.unshift(draggedItem);
         } else {
             const targetIndex = currentModules.findIndex(m => m.uuid === targetModuleUuid);
             if (targetIndex === -1) {
@@ -195,6 +197,8 @@ export function useModuleSectionDrag(params: {
 
         if (targetUuid === '__end__') {
             mods.push(dragged);
+        } else if (targetUuid === '__start__') {
+            mods.splice(0, 0, dragged);
         } else {
             const targetIdx = mods.findIndex(m => m.uuid === targetUuid);
             if (targetIdx === -1) { draggedModuleUuid.value = null; return; }
