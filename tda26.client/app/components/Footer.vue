@@ -50,7 +50,7 @@
             </div>
             <div :class="$style.bottom">
                 <p>© Think different Academy 2025-2026</p>
-                <p>Vytvořeno týmem Error Makers ze školy <a href="https://educhem.cz" target="_blank">Střední škola EDUCHEM, a.s.</a> pro <a href="https://tourdeapp.cz/" target="_blank">Tour de App</a>.</p>
+                <p>Vytvořeno týmem Error Makers ze školy <a href="https://educhem.cz" target="_blank" :class="$style.educhemEasterEgg">Střední škola EDUCHEM, a.s.</a> pro <a href="https://tourdeapp.cz/" target="_blank">Tour de App</a>.</p>
             </div>
         </div>
     </footer>
@@ -158,7 +158,49 @@
             padding: 16px 0;
             padding-top: 48px;
             font-size: 14px;
-            
+            position: relative;
+
+            .educhemEasterEgg:hover {
+                &::after {
+                    content: "";
+                    background-image: url(../../public/images/karel.png);
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    position: fixed;
+                    width: 900px;
+                    aspect-ratio: 1/3;
+                    top: -20vh;
+                    animation: sdopkfposdkfd 6s ease infinite;
+                    z-index: 2;
+
+                    @keyframes sdopkfposdkfd {
+                        0% {
+                            left: -100vw;
+                            rotate: 0deg;
+                        }
+
+                        35% {
+                            left: -700px;
+                            rotate: 0deg;
+                        }
+
+                        55% {
+                            left: -700px;
+                            rotate: 0deg;
+                        }
+
+                        70% {
+                            left: -700px;
+                            rotate: 10deg;
+                        }
+
+                        100% {
+                            left: -100vw;
+                            rotate: 0deg;
+                        }
+                    }
+                }
+            }
 
             p {
                 margin: 0;
