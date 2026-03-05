@@ -116,6 +116,24 @@ export function mapFeedPurpose(
                 background: "--color-error",
             };
 
+        case "showModule":
+            return {
+                label: "Zobrazen modul",
+                type: "quiz",
+                icon: "/icons/addQuiz.svg",
+                color: "--accent-color-primary",
+                background: "--accent-color-primary",
+            };
+
+        case "hideModule":
+            return {
+                label: "Skryt modul",
+                type: "quiz",
+                icon: "/icons/deleteQuiz.svg",
+                color: "--color-error",
+                background: "--color-error",
+            };
+
         // ===== fallback =====
         default:
             return {

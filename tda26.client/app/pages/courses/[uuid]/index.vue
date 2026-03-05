@@ -1006,7 +1006,7 @@ function closeMaterialResultsModal() {
                                                 </div>
                                                 <div :class="$style.feedTimestamp">{{ timeAgoString(feedPost.createdAt) }}</div>
                                             </div>
-                                            <div v-if="feedPost.author !== null " :class="$style.feedPostAuthor">
+                                            <div v-if="feedPost.author !== null" :class="$style.feedPostAuthor">
                                                 <Avatar
                                                     :class="$style.feedAvatar"
                                                     :letter-style="{ color: 'var(--accent-color-secondary-theme-text)' }"
