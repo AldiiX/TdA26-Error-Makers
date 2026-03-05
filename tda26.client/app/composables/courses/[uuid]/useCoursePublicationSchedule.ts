@@ -64,7 +64,7 @@ export default function (params: {
         const fmtDow = new Intl.DateTimeFormat("cs-CZ", { weekday: "short" });
         const fmtMon = new Intl.DateTimeFormat("cs-CZ", { month: "short" });
 
-        return Array.from({ length: 7 }).map((_, i) => {
+        return Array.from({ length: 8 }).map((_, i) => {
             const d = new Date(base);
             d.setDate(base.getDate() + i);
 
@@ -105,8 +105,8 @@ export default function (params: {
 
         if (isNaN(candidate.getTime())) return null;
 
-        const min = new Date(Date.now() + 60_000);
-        if (candidate.getTime() < min.getTime()) {
+        const now = Date.now();
+        if (candidate.getTime() <= now) {
             scheduleError.value = "Zvolený datum a čas musí být v budoucnosti.";
             return null;
         }

@@ -1984,6 +1984,68 @@ function closeMaterialResultsModal() {
             width: 164px;
         }
     }
+
+    @media (max-width: 520px) {
+        .modalContent {
+            gap: 64px;
+        }
+
+        .section {
+            gap: 16px;
+        }
+
+        .scheduledInfo {
+            padding: 18px 18px;
+            gap: 8px;
+
+            p:last-child {
+                font-size: 17px;
+            }
+        }
+
+        .helperError {
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--color-error, #ff4d4f) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--color-error, #ff4d4f) 25%, transparent);
+        }
+
+        .sectionHeader {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .dateChips {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            overflow: visible;
+            padding-bottom: 0;
+        }
+
+        .dateChip {
+            min-width: 0;
+            width: 100%;
+            height: 62px;
+        }
+
+        .modalButtons {
+            margin-top: 10px;
+            flex-direction: column-reverse;
+            align-items: stretch;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
+
+    @media (max-width: 380px) {
+        .dateChips {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
 }
 
 
