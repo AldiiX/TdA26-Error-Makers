@@ -1085,6 +1085,8 @@ function closeMaterialResultsModal() {
         >
             <div :class="$style.modalContent">
 
+                <h3 style="margin:0">Čas publikace</h3>
+
                 <div v-if="formattedPublishTime" :class="$style.scheduledInfo">
                     <p>Publikace proběhne:</p>
                     <p>{{ formattedPublishTime }}</p>
@@ -2486,10 +2488,10 @@ ul {
 
             .unassignedSection {
                 margin-top: 16px;
-                border: 1px dashed color-mix(in srgb, var(--color-warning, orange) 40%, transparent);
+                border: 1px dashed color-mix(in srgb, var(--accent-color-additional-2) 40%, transparent);
                 border-radius: 12px;
                 padding: 12px 16px;
-                background-color: color-mix(in srgb, var(--color-warning, orange) 5%, transparent);
+                background-color: color-mix(in srgb, var(--accent-color-additional-2) 5%, transparent);
             }
 
             .unassignedHeader {
@@ -2505,7 +2507,7 @@ ul {
 
             .unassignedWarning {
                 font-size: 13px;
-                color: color-mix(in srgb, var(--color-warning, orange) 90%, var(--text-color-secondary) 10%);
+                color: color-mix(in srgb, var(--accent-color-additional-2) 90%, var(--text-color-secondary) 10%);
                 margin: 0;
                 display: flex;
                 align-items: center;
