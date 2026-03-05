@@ -1,4 +1,4 @@
-﻿using System.Reactive.Linq;
+﻿﻿using System.Reactive.Linq;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
@@ -105,17 +105,7 @@ public sealed class MaterialAccessService(
 
 		foreach (var item in items) {
 			var targetKey = targetPrefix + item.Key[sourcePrefix.Length..];
-
-			var copySourceArgs = new CopySourceObjectArgs()
-				.WithBucket(minioOptions.Value.BucketName)
-				.WithObject(item.Key);
-
-			var copyArgs = new CopyObjectArgs()
-				.WithBucket(minioOptions.Value.BucketName)
-				.WithObject(targetKey)
-				.WithCopyObjectSource(copySourceArgs);
-
-			await minioClient.CopyObjectAsync(copyArgs, ct);
+			await CopyObjectWithRetryAsync(item.Key, targetKey, ct);
 		}
 	}
 
@@ -128,18 +118,32 @@ public sealed class MaterialAccessService(
 			throw new ArgumentException("Target key is required.", nameof(targetKey));
 		}
 
-		var copySourceArgs = new CopySourceObjectArgs()
-			.WithBucket(minioOptions.Value.BucketName)
-			.WithObject(sourceKey);
-
-		var copyArgs = new CopyObjectArgs()
-			.WithBucket(minioOptions.Value.BucketName)
-			.WithObject(targetKey)
-			.WithCopyObjectSource(copySourceArgs);
-
-		await minioClient.CopyObjectAsync(copyArgs, ct);
+		await CopyObjectWithRetryAsync(sourceKey, targetKey, ct);
 
 		return targetKey;
+	}
+
+	private async Task CopyObjectWithRetryAsync(string sourceKey, string targetKey, CancellationToken ct = default) {
+		var retries = 3;
+		var delay = TimeSpan.FromMilliseconds(150);
+
+		while (true)
+			try {
+				var copySourceArgs = new CopySourceObjectArgs()
+					.WithBucket(minioOptions.Value.BucketName)
+					.WithObject(sourceKey);
+
+				var copyArgs = new CopyObjectArgs()
+					.WithBucket(minioOptions.Value.BucketName)
+					.WithObject(targetKey)
+					.WithCopyObjectSource(copySourceArgs);
+
+				await minioClient.CopyObjectAsync(copyArgs, ct);
+				return;
+			} catch (Minio.Exceptions.AccessDeniedException) when (retries-- > 0) {
+				await Task.Delay(delay, ct);
+				delay += delay;
+			}
 	}
 
 }

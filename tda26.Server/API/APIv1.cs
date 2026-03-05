@@ -3049,7 +3049,7 @@ public sealed class APIv1(
 			? new List<Tag>()
 			: await db.Tags.Where(t => tagUuids.Contains(t.Uuid)).ToListAsync(ct);
 
-		var duplicateName = sourceCourse.Name + " (copy)";
+		var duplicateName = sourceCourse.Name + " (kopie)";
 		if (duplicateName.Length > 128) duplicateName = duplicateName[..128];
 
 		var newCourse = new Course {
