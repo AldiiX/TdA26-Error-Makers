@@ -10,6 +10,7 @@
         allowedFileTypes?: string[] | null,
         maxFileSize?: number | null,
         maxDate?: string | null,
+        minDate?: string | null,
     }>(), {
         modelValue: '',
         type: 'text',
@@ -107,6 +108,7 @@
         :required="required"
         :value="modelValue"
         :max="isDateType ? props.maxDate ?? undefined : undefined"
+        :min="isDateType ? props.minDate ?? undefined : undefined"
         @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
     >
 </template>
