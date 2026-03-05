@@ -2003,32 +2003,32 @@ ul {
 
         // Draft
         &[data-status="draft"] {
-            color: var(--color-gray);
+            color: var(--status-draft-text);
             background: var(--status-draft-bg);
         }
 
         // Scheduled 
         &[data-status="scheduled"] {
-            color: var(--accent-color-primary);
-            background: var(--accent-color-primary-transparent-01);
+            color: var(--status-scheduled-text);
+            background: var(--status-scheduled-bg);
         }
 
         // Live
         &[data-status="live"] {
-            color: var(--accent-color-secondary-theme);
-            background: var(--accent-color-secondary-transparent-01);
+            color: var(--status-live-text);
+            background: var(--status-live-bg);
         }
 
         // Paused 
         &[data-status="paused"] {
-            color: var(--accent-color-additional-2);
-            background: rgb(from var(--accent-color-additional-2) r g b / 0.14);
+            color: var(--status-paused-text);
+            background: var(--status-paused-bg);
         }
 
         // Archived 
         &[data-status="archived"] {
-            color: var(--accent-color-additional-4);
-            background: rgb(from var(--accent-color-additional-4) r g b / 0.12);
+            color: var(--status-archived-text);
+            background: var(--status-archived-bg);
         }
     }
 
