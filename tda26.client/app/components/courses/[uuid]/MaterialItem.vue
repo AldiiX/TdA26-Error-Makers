@@ -261,7 +261,7 @@ function toggleVisibility(): void {
         }
 
         .description {
-            margin-left: 10px;
+            margin-left: 24px;
             height: 100%;
             font-size: 14px;
             color: var(--text-color-secondary);

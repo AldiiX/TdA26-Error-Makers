@@ -181,7 +181,7 @@ function toggleVisibility(): void {
         }
 
         .description {
-            margin-left: 10px;
+            margin-left: 24px;
             p {
                 margin: 0;
                 font-size: 14px;
