@@ -1,4 +1,4 @@
-﻿﻿﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿﻿<script setup lang="ts">
     import CourseCard from '~/components/pagespecific/CourseCard.vue'
     import type { Course } from '#shared/types'
     import NumberExponential from '~/components/NumberExponential.vue'
@@ -34,7 +34,7 @@
     const { searchQuery, debouncedQuery } = useSearchQuery();
     const { loggedAccount } = useAuth();
 
-    // live update statusu kurzů přes SSE
+    // live update statusu kurzů přes jediný globální SSE stream
     useCourseListSSE(courses);
 
     const {

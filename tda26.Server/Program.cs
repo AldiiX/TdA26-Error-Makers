@@ -293,6 +293,7 @@ public static class Program {
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
+        builder.Services.AddSingleton<IGlobalStreamBroker, InMemoryGlobalStreamBroker>();
         builder.Services.AddSingleton<IStreamBroker, InMemoryStreamBroker>();
         builder.Services.AddHostedService<CourseSchedulingHostedService>();
 
