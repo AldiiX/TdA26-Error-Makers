@@ -27,6 +27,27 @@ const onUrlClick = async (e: MouseEvent) => {
     })
 };
 
+const onFileClick = async (e: MouseEvent) => {
+
+    if (typeof grecaptcha === "undefined") {
+        console.warn("reCAPTCHA not loaded, cannot download file");
+        return;
+    }
+
+    grecaptcha.ready(async () => {
+        const recaptchaToken = await grecaptcha.execute(
+            "6LfDQhksAAAAAEz_ujbJNian3-e-TfyKx8gzRaCL",
+            { action: "submit" } 
+        );
+
+        const url =
+            `/api/v1/courses/${props.course.uuid}/materials/${props.material.uuid}` +
+            `?recaptchaToken=${encodeURIComponent(recaptchaToken)}`;
+
+        window.open(url, "_blank", "noopener,noreferrer");
+    });
+};
+
 const emit = defineEmits<{
     (e: "edit", material: Material): void;
     (e: "delete", material: Material): void;
@@ -51,7 +72,7 @@ function toggleVisibility(): void {
     <!-- FILE MATERIAL -->
     <template v-if="material.type === 'file'">
         <div :class="$style.material">
-            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer">
+            <NuxtLink :href="`/api/v1/courses/${course.uuid}/materials/${material.uuid}`" :class="$style.info" target="_blank" rel="noopener noreferrer" @click.prevent="onFileClick">
                 <div :class="$style.fileIcon"/>
 
                 <div :class="$style.fileInfo">

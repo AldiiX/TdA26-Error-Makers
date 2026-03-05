@@ -1772,8 +1772,33 @@ public sealed class APIv1(
 				return Ok(urlMaterial.ToReadDto());
 			case FileMaterial fileMaterial:
 				try {
-					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
+					var recaptchaToken = Request.Query["recaptchaToken"].ToString();
+					if (string.IsNullOrWhiteSpace(recaptchaToken)) {
+						return BadRequest(new { error = "Missing reCAPTCHA token." });
+					}
 
+					using var requestMessage = new HttpRequestMessage(
+						HttpMethod.Post,
+						"https://www.google.com/recaptcha/api/siteverify"
+					);
+
+					var formData = new FormUrlEncodedContent(new Dictionary<string, string> {
+						{ "secret", Program.ENV.GetValueOrNull("RECAPTCHA_SECRET_KEY") ?? "x" },
+						{ "response", recaptchaToken }
+					});
+
+					requestMessage.Content = formData;
+
+					var response = await HttpClient.SendAsync(requestMessage, ct);
+					var responseContent = await response.Content.ReadAsStringAsync(ct);
+
+					var jsonResponse = JsonNode.Parse(responseContent);
+					if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
+						return BadRequest(new { error = "Recaptcha verification failed." });
+					}
+					
+					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
+					
 					var now = DateTime.UtcNow;
 
 					await db.Materials
