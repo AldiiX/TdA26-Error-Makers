@@ -10,6 +10,15 @@ const props = defineProps<{
     quizResultsSummary: QuizResultsSummary | null;
 }>();
 
+const CHART_COLORS = [
+    "var(--accent-color-secondary)",
+    "var(--accent-color-additional-1)",
+    "var(--accent-color-additional-2)",
+    "var(--accent-color-additional-3)",
+    "var(--accent-color-additional-4)",
+    "var(--accent-color-primary)",
+];
+
 const emit = defineEmits<{ (e: "close"): void }>();
 
 const summary = computed(() => props.quizResultsSummary);
@@ -68,17 +77,13 @@ const pieSeries = computed<number[]>(() => scoreDist.value.map(x => Number(x.cou
 const pieOptions = computed<ApexOptions>(() => ({
     labels: scoreDist.value.map(x => x.label),
     legend: { position: "top" },
+    colors: CHART_COLORS,
     dataLabels: {
         enabled: true,
-        // v pie/donut jsou dataLabels procenta výseče (ne count) citeturn0search0
         formatter: (val: number) => `${Math.round(val)}%`,
     },
+    theme: { mode: "light" }, // pokud máš dark mode, můžeš dát computed podle theme
 }));
-
-// 100% stacked bar (skóre) – chart.stacked + stackType 100% citeturn0search1
-const stackedSeries = computed(() =>
-    scoreDist.value.map(d => ({ name: d.label, data: [Number(d.count) || 0] }))
-);
 
 const stackedOptions = computed<ApexOptions>(() => ({
     chart: {
@@ -87,27 +92,25 @@ const stackedOptions = computed<ApexOptions>(() => ({
         stackType: "100%",
         toolbar: { show: false },
     },
-    plotOptions: {
-        bar: { horizontal: true, barHeight: "40%" },
-    },
+    colors: CHART_COLORS,
+    plotOptions: { bar: { horizontal: true, barHeight: "40%" } },
     xaxis: { categories: ["Rozložení skóre"], labels: { show: false } },
     yaxis: { labels: { show: false } },
     legend: { position: "top" },
     dataLabels: { enabled: true, formatter: (val: number) => `${Math.round(val)}%` },
 }));
 
-// čas – tvoje “timeDistribution” je bucketované, bar by byl často čitelnější,
-// ale line nechám (jen český popisek)
-const lineSeries = computed(() => [
-    { name: "Počet pokusů", data: timeDist.value.map(x => Number(x.count) || 0) },
-]);
-
 const lineOptions = computed<ApexOptions>(() => ({
-    chart: { type: "line" },
+    chart: { type: "line", toolbar: { show: false } },
+    colors: ["var(--accent-color-primary)"],
     stroke: { curve: "smooth", width: 4 },
     xaxis: { categories: timeDist.value.map(x => x.label) },
     legend: { position: "top" },
 }));
+const lineSeries = computed(() => [
+    { name: "Počet pokusů", data: timeDist.value.map(x => Number(x.count) || 0) },
+]);
+
 
 // vysvětlivky – čistě text, žádná vymyšlená data
 const scoreBucketsHelp = computed(() => {

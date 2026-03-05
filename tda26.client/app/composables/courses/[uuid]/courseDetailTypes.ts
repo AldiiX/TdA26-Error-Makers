@@ -14,4 +14,5 @@ export type CourseDetailModal =
     | "createModule"
     | "updateModule"
     | "deleteModule"
+    | "materialResults"
     | null;
