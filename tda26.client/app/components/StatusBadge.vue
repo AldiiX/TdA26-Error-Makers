@@ -77,60 +77,60 @@ const props = defineProps<{
     }
 
     &.scheduled {
-        background-color: var(--status-scheduled-bg);
+        background-color: var(--accent-color-additional-1-bg);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/clock.svg");
-            background-color: var(--status-scheduled-text);
+            background-color: var(--accent-color-additional-1);
 
         }
 
         p {
-            color: var(--status-scheduled-text);
+            color: var(--accent-color-additional-1);
         }
     }
 
     &.live {
-        background-color: var(--status-live-bg);
+        background-color: var(--accent-color-additional-2-bg);
         //padding: 2px;
 
         div {
             mask-image: url("../../public/icons/access_point.svg");
-            background-color: var(--status-live-text);
+            background-color: var(--accent-color-additional-2);
         }
         
         p {
-            color: var(--status-live-text);
+            color: var(--accent-color-additional-2);
         }
     }
 
     &.paused {
-        background-color: var(--status-paused-bg);
+        background-color: var(--accent-color-additional-3-bg);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/pause.svg");
-            background-color: var(--status-paused-text);
+            background-color: var(--accent-color-additional-3);
         }
         
         p {
-            color: var(--status-paused-text);
+            color: var(--accent-color-additional-3);
         }
     }
 
     &.archived {
-        background-color: var(--status-archived-bg);
+        background-color: var(--accent-color-additional-4-bg);
         //padding: 4px;
 
         div {
             mask-image: url("../../public/icons/box-archive.svg");
-            background-color: var(--status-archived-text);
+            background-color: var(--accent-color-additional-4);
 
         }
 
         p {
-            color: var(--status-archived-text);
+            color: var(--accent-color-additional-4);
         }
     }
 }
