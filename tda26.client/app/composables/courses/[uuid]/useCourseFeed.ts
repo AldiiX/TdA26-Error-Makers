@@ -219,6 +219,17 @@ export function useCourseFeed(params: {
                 return;
             }
 
+            // pokud se jedna o prispevek od lektora, zobrazi se toast
+            if (post.type === "manual") {
+                console.log(post);
+
+                push.info({
+                    title: "Nový příspěvek od uživatele " + post.author?.fullNameWithoutTitles,
+                    message: post.message,
+                    duration: 5000,
+                });
+            }
+
             feedData.value = feedData.value
                 ? [post, ...feedData.value]
                 : [post];

@@ -3254,9 +3254,19 @@ public sealed class APIv1(
 
 		db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
-		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost), ct);
 
-		return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid }, newFeedPost);
+		var feedPost = await db.FeedPostsEf()
+			.AsNoTracking()
+			.Where(fp => fp.Uuid == newFeedPost.Uuid)
+			.FirstOrDefaultAsync(ct);
+
+		if(feedPost == null) {
+			return NotFound(new { error = "Feed post not found after creation." });
+		}
+
+		await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", feedPost), ct);
+
+		return CreatedAtAction(nameof(GetFeedPostsByCourseId), new { courseUuid }, feedPost);
 	}
 
 
