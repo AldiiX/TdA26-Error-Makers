@@ -1975,7 +1975,7 @@ public sealed class APIv1(
 					urlMaterial.Name = body.Name;
 				}
 
-				if (!string.IsNullOrEmpty(body.Description)) {
+				if (body.Description != null) {
 					urlMaterial.Description = body.Description;
 				}
 
@@ -2012,7 +2012,7 @@ public sealed class APIv1(
 					fileMaterial.Name = body.Name;
 				}
 
-				if (!string.IsNullOrEmpty(body.Description)) {
+				if (body.Description != null) {
 					fileMaterial.Description = body.Description;
 				}
 
@@ -2067,9 +2067,9 @@ public sealed class APIv1(
 		if (!string.IsNullOrEmpty(body.Name)) {
 			fileMaterial.Name = body.Name;
 		}
-
-		if (!string.IsNullOrEmpty(body.Description)) {
-			fileMaterial.Description = body.Description;
+		
+		if (Request.Form.ContainsKey("Description")) {
+			fileMaterial.Description = string.IsNullOrWhiteSpace(body.Description) ? null : body.Description;
 		}
 
 		if (body.IsVisible.HasValue) {
