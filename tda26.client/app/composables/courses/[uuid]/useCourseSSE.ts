@@ -77,7 +77,7 @@ export default function(params: {
     }
 
     async function onModuleVisibilityChanged(event: MessageEvent) {
-        const data: { moduleUuid: string; isVisible: boolean } = JSON.parse(event.data);
+        const data: { moduleUuid: string; isVisible: boolean, moduleTitle: string } = JSON.parse(event.data);
         const fullCourse = params.courseFullData.value;
         if (!fullCourse) return;
 
@@ -91,6 +91,11 @@ export default function(params: {
             // show: re-fetch modules to get the newly visible module
             await refreshFullCourse(fullCourse, "modules");
         }
+
+        push.info({
+            title: "Viditelnost modulu změněna",
+            message: `Modul ${data.moduleTitle} je nyní ${data.isVisible ? "viditelný" : "skrytý"}.`
+        })
     }
 
     // ostantni

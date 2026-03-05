@@ -1223,7 +1223,21 @@ public sealed class APIv1(
 		await db.SaveChangesAsync(ct);
 
 		if (body.IsVisible.HasValue) {
-			await sb.PublishAsync(courseUuid, new StreamMessage("module_visibility_changed", new { moduleUuid = module.Uuid, isVisible = module.IsVisible }), ct);
+			var newFeedPost = new FeedPost {
+				Uuid = Guid.NewGuid(),
+				CourseUuid = courseUuid,
+				Type = FeedPost.FeedPostType.System,
+				Message = $"Viditelnost modulu '{module.Title}' byla změněna na {(body.IsVisible == true ? "viditelný" : "skrytý")}.",
+				CreatedAt = DateTime.UtcNow,
+				UpdatedAt = DateTime.UtcNow,
+				Purpose = body.IsVisible == true ? FeedPost.FeedPurpose.ShowModule : FeedPost.FeedPurpose.HideModule
+			};
+
+			await fsb.PublishAsync(courseUuid, new FeedStreamMessage("new_post", newFeedPost), ct);
+			await db.FeedPosts.AddAsync(newFeedPost, ct);
+			await db.SaveChangesAsync(ct);
+
+			await sb.PublishAsync(courseUuid, new StreamMessage("module_visibility_changed", new { moduleUuid = module.Uuid, isVisible = module.IsVisible, moduleTitle = module.Title }), ct);
 		}
 
 		return Ok(new ReadModuleResponse {
@@ -1638,7 +1652,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.CreateMaterial
 		};
 
-		db.FeedPosts.Add(post);
+		//db.FeedPosts.Add(post);
 		await db.SaveChangesAsync(ct);
 
 		return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, obj);
@@ -1738,7 +1752,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.CreateMaterial
 		};
 
-		db.FeedPosts.Add(post);
+		//db.FeedPosts.Add(post);
 		await db.SaveChangesAsync(ct);
 
 		return CreatedAtAction(nameof(GetCourseById), new { uuid = course.Uuid }, responseObj);
@@ -1935,7 +1949,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.DeleteMaterial
 		};
 
-		db.FeedPosts.Add(newFeedPost);
+		//db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
 
 		db.Materials.Remove(material);
@@ -2002,7 +2016,7 @@ public sealed class APIv1(
 					Purpose = FeedPost.FeedPurpose.UpdateMaterial
 				};
 
-				db.FeedPosts.Add(newFeedPost);
+				//db.FeedPosts.Add(newFeedPost);
 				await db.SaveChangesAsync(ct);
 
 				return Ok(urlMaterial.ToReadDto());
@@ -2106,7 +2120,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.UpdateMaterial
 		};
 
-		db.FeedPosts.Add(newFeedPost);
+		//db.FeedPosts.Add(newFeedPost);
 		await db.SaveChangesAsync(ct);
 
 		return Ok(fileMaterial.ToReadDto());
@@ -2402,7 +2416,7 @@ public sealed class APIv1(
             Purpose = FeedPost.FeedPurpose.CreateQuiz
         };
 
-        db.FeedPosts.Add(newFeedPost);
+        //db.FeedPosts.Add(newFeedPost);
 
         await db.SaveChangesAsync(ct);
 
@@ -2601,7 +2615,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.UpdateQuiz
 		};
 
-		db.FeedPosts.Add(newFeedPost);
+		//db.FeedPosts.Add(newFeedPost);
 
 		await db.SaveChangesAsync();
 
@@ -2693,7 +2707,7 @@ public sealed class APIv1(
 			Purpose = FeedPost.FeedPurpose.DeleteQuiz
 		};
 
-		db.FeedPosts.Add(newFeedPost);
+		//db.FeedPosts.Add(newFeedPost);
 
 		await db.SaveChangesAsync();
 
