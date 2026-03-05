@@ -3058,12 +3058,20 @@ public sealed class APIv1(
 			.Where(q => q.CourseUuid == uuid)
 			.ToListAsync(ct);
 
+		var sourceModules = await db.CourseModules
+			.AsNoTracking()
+			.Where(m => m.CourseUuid == uuid)
+			.OrderBy(m => m.Order)
+			.Include(m => m.Materials)
+			.Include(m => m.Quizzes)
+			.ToListAsync(ct);
+
 		var tagUuids = sourceCourse.Tags.Select(t => t.Uuid).ToList();
 		var tags = tagUuids.Count == 0
 			? new List<Tag>()
 			: await db.Tags.Where(t => tagUuids.Contains(t.Uuid)).ToListAsync(ct);
 
-		var duplicateName = sourceCourse.Name + " (copy)";
+		var duplicateName = sourceCourse.Name + " (kopie)";
 		if (duplicateName.Length > 128) duplicateName = duplicateName[..128];
 
 		var newCourse = new Course {
@@ -3092,41 +3100,58 @@ public sealed class APIv1(
 		var targetMaterialsPrefix = $"materials/{newCourse.Uuid}/";
 		await materialAccessService.CopyCourseMaterialsDirectoryAsync(uuid, newCourse.Uuid, ct);
 
+		// oldMaterialUuid → new Material (needed for module item assignment)
+		var materialMap = new Dictionary<Guid, Material>();
+
 		foreach (var material in materials) {
+			Material newMaterial;
 			switch (material) {
 				case UrlMaterial urlMaterial:
-					newCourse.Materials.Add(new UrlMaterial {
+					newMaterial = new UrlMaterial {
 						Name = urlMaterial.Name,
 						Description = urlMaterial.Description,
 						Type = Material.MaterialType.Url,
 						CourseUuid = newCourse.Uuid,
 						Url = urlMaterial.Url,
-						FaviconUrl = urlMaterial.FaviconUrl
-					});
+						FaviconUrl = urlMaterial.FaviconUrl,
+						IsVisible = urlMaterial.IsVisible,
+						Order = urlMaterial.Order
+					};
 					break;
 				case FileMaterial fileMaterial:
 					var newFileUrl = fileMaterial.FileUrl.StartsWith(sourceMaterialsPrefix, StringComparison.Ordinal)
 						? targetMaterialsPrefix + fileMaterial.FileUrl[sourceMaterialsPrefix.Length..]
 						: fileMaterial.FileUrl;
 
-					newCourse.Materials.Add(new FileMaterial {
+					newMaterial = new FileMaterial {
 						Name = fileMaterial.Name,
 						Description = fileMaterial.Description,
 						Type = Material.MaterialType.File,
 						CourseUuid = newCourse.Uuid,
 						FileUrl = newFileUrl,
 						MimeType = fileMaterial.MimeType,
-						SizeBytes = fileMaterial.SizeBytes
-					});
+						SizeBytes = fileMaterial.SizeBytes,
+						IsVisible = fileMaterial.IsVisible,
+						Order = fileMaterial.Order
+					};
 					break;
+				default:
+					continue;
 			}
+			materialMap[material.Uuid] = newMaterial;
+			newCourse.Materials.Add(newMaterial);
 		}
+
+		// oldQuizUuid → new Quiz (needed for module item assignment)
+		var quizMap = new Dictionary<Guid, Quiz>();
 
 		foreach (var quiz in quizzes) {
 			var newQuiz = new Quiz {
 				Title = quiz.Title,
 				AttemptsCount = 0,
-				CourseUuid = newCourse.Uuid
+				CourseUuid = newCourse.Uuid,
+				IsVisible = quiz.IsVisible,
+				Order = quiz.Order
 			};
 
 			foreach (var question in quiz.Questions) {
@@ -3152,7 +3177,31 @@ public sealed class APIv1(
 				newQuiz.Questions.Add(newQuestion);
 			}
 
+			quizMap[quiz.Uuid] = newQuiz;
 			newCourse.Quizzes.Add(newQuiz);
+		}
+
+		// Copy modules and re-assign their materials/quizzes using the maps built above
+		foreach (var sourceModule in sourceModules) {
+			var newModule = new CourseModule {
+				Title = sourceModule.Title,
+				Description = sourceModule.Description,
+				IsVisible = sourceModule.IsVisible,
+				Order = sourceModule.Order,
+				CourseUuid = newCourse.Uuid
+			};
+
+			foreach (var modMaterial in sourceModule.Materials) {
+				if (materialMap.TryGetValue(modMaterial.Uuid, out var newMat))
+					newModule.Materials.Add(newMat);
+			}
+
+			foreach (var modQuiz in sourceModule.Quizzes) {
+				if (quizMap.TryGetValue(modQuiz.Uuid, out var newQuiz))
+					newModule.Quizzes.Add(newQuiz);
+			}
+
+			newCourse.Modules.Add(newModule);
 		}
 
 		foreach (var post in feedPosts) {
