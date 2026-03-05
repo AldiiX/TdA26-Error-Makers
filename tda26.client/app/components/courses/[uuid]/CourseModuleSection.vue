@@ -731,6 +731,8 @@ function onItemDragEnd(event: DragEvent) {
 
 .addItemButton {
     font-size: 14px;
+    flex: 1;
+    min-width: 120px;
 }
 
 .endDropZone {
@@ -741,6 +743,16 @@ function onItemDragEnd(event: DragEvent) {
 
     &.endDropZoneActive {
         min-height: 20px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .moduleHeader {
+        padding: 12px;
+    }
+
+    .moduleItems {
+        padding: 8px 12px 12px;
     }
 }
 </style>

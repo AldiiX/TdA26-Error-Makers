@@ -2139,6 +2139,7 @@ ul {
             .modulesListHeader{
                 display: flex;
                 gap: 12px;
+                flex-wrap: wrap;
 
                 button {
                     margin-bottom: 16px;
@@ -2690,6 +2691,28 @@ ul {
 
             .iconWrapper {
                 display: none !important;
+            }
+        }
+    }
+
+    .modules {
+        >div {
+            padding: 16px;
+        }
+
+        .modulesListHeader {
+            button {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .showHideButtons {
+                margin-left: 0;
+                width: 100%;
+
+                button {
+                    flex: 1;
+                }
             }
         }
     }
