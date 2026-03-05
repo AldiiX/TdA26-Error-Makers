@@ -65,7 +65,12 @@ wait_for_deps() {
 
 # decode backend dotenv from env var if provided (runtime only)
 # pokud .env uz existuje, tak ho nahravanim z DOTENV_B64 neprepisuj
+if ! command -v log >/dev/null 2>&1; then
+  log() { printf '%s\n' "$*"; }
+fi
+
 read_b64() {
+  if [ -n "${DOTNET_B64:-}" ]; then printf '%s' "$DOTNET_B64"; return 0; fi
   if [ -n "${DOTENV_B64:-}" ]; then printf '%s' "$DOTENV_B64"; return 0; fi
   if [ -n "${BACKEND_ENV_B64:-}" ]; then printf '%s' "$BACKEND_ENV_B64"; return 0; fi
   if [ -f "/run/secrets/BACKEND_ENV_B64" ]; then cat /run/secrets/BACKEND_ENV_B64; return 0; fi
@@ -75,12 +80,12 @@ read_b64() {
 if [ -f "/app/.env" ]; then
   log "/app/.env already exists, skipping generation"
 elif b64="$(read_b64)"; then
-  log "writing /app/.env from base64 secret/env"
+  log "writing /app/.env from base64"
   umask 077
   printf '%s' "$b64" | base64 -d > /app/.env
   chmod 600 /app/.env
 else
-  log "no DOTENV_B64/BACKEND_ENV_B64 provided and /app/.env not found; continuing without it"
+  log "no base64 provided and /app/.env not found; continuing without it"
 fi
 
 

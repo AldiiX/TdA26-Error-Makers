@@ -1,4 +1,4 @@
-#ARG APP_UID=1000
+ARG APP_UID=1000
 
 # base stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
@@ -29,10 +29,20 @@ RUN dotnet publish "./tda26.Server.csproj" -c $BUILD_CONFIGURATION -o /app/publi
 
 # final stage
 FROM base AS final
+ARG APP_UID=1000
+
 WORKDIR /app
 COPY --from=publish /app/publish .
 
 USER root
+
+# pokud je predany build secret BACKEND_ENV_B64, vytvori /app/.env uz pri buildu
+RUN --mount=type=secret,id=BACKEND_ENV_B64,required=false \
+    if [ ! -f /app/.env ] && [ -f /run/secrets/BACKEND_ENV_B64 ]; then \
+      umask 077; \
+      base64 -d /run/secrets/BACKEND_ENV_B64 > /app/.env; \
+      chmod 600 /app/.env; \
+    fi
 
 # instalace nginx + nodejs
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -43,7 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # frontend build
 COPY ["tda26.client/", "/app/client/"]
-RUN chown -R $APP_UID:$APP_UID /app/client
+RUN chown -R ${APP_UID}:${APP_UID} /app/client
 WORKDIR /app/client
 RUN npm config set cache /app/.npm
 RUN npm install --unsafe-perm
