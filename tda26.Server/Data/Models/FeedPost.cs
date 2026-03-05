@@ -59,6 +59,8 @@ public sealed class FeedPost : Auditable {
         DeleteQuiz,
         ShowQuiz,
         HideQuiz,
+        ShowModule,
+        HideModule,
         Default
     }
 

@@ -172,6 +172,8 @@ export interface FeedPost {
         | "deleteQuiz"
         | "showQuiz"
         | "hideQuiz"
+        | "hideModule"
+        | "showModule"
         | "default";
 }
 
