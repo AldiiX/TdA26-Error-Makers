@@ -2941,6 +2941,7 @@ ul {
         .right {
             width: 100%;
             max-width: none;
+            min-width: unset;
             margin-top: -32px;
             margin-bottom: 16px;
 
@@ -3001,11 +3002,39 @@ ul {
 /* Mobile */
 @media screen and (max-width: app.$mobileBreakpoint) {
     .basic {
-        .right {}
+        .right {
+            box-sizing: border-box;
+
+            .authorAndRating {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
 
         .left {
             .title {
                 font-size: clamp(40px,8vw,64px);
+            }
+        }
+    }
+
+    .modules {
+        .modulesList {
+            .modulesListHeader {
+                flex-wrap: wrap;
+
+                button {
+                    flex: 1;
+                }
+
+                .showHideButtons {
+                    width: 100%;
+                    margin-left: 0;
+
+                    button {
+                        flex: 1;
+                    }
+                }
             }
         }
     }
