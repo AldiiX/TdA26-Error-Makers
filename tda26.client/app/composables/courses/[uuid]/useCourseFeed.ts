@@ -221,7 +221,7 @@ export function useCourseFeed(params: {
 
             // pokud se jedna o prispevek od lektora, zobrazi se toast
             if (post.type === "manual") {
-                console.log(post);
+                // console.log(post);
 
                 push.info({
                     title: "Nový příspěvek od uživatele " + post.author?.fullNameWithoutTitles,
