@@ -112,7 +112,7 @@ export function useModuleDrag(params: {
             order: index,
         }));
 
-        console.log('New module order:', newOrder);
+        // console.log('New module order:', newOrder);
 
         draggedModuleUuid.value = null;
 

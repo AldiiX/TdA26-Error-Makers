@@ -3,7 +3,7 @@
 export default function timeToString(input: Date | string | number): string {
     const target = new Date(input).getTime();
     const now = Date.now();
-    console.log(`target: ${target}, now: ${now}, diff: ${target - now}`);
+    // console.log(`target: ${target}, now: ${now}, diff: ${target - now}`);
 
     let diffMs = target - now;
     if (diffMs <= 0) {
