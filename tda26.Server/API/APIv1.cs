@@ -797,6 +797,11 @@ public sealed class APIv1(
 		}
 
 		var imageStream = await materialAccessService.DownloadFileMaterialAsync(courseImageData.ImageUrl, ct);
+		
+		if (imageStream == null) {
+			return NotFound(new { error = "Course image not found." });
+		}
+		
 		imageStream.Position = 0;
 
 		// Determine content type based on file extension
@@ -1770,23 +1775,37 @@ public sealed class APIv1(
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
 		}
+		
+		var isOwnerOrAdmin = acc != null && (course.LecturerUuid == acc.Uuid || acc is Admin);
+
+		Material? material = null;
 
 		var module = course.Modules.FirstOrDefault(m => m.Materials.Any(mat => mat.Uuid == materialUuid));
-		var material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
-
-		if (module == null || material == null) {
-			return NotFound(new { error = "Material not found." });
+		
+		if (isOwnerOrAdmin) {
+			material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid) ?? course.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
 		}
+		else {
+			material = module?.Materials.FirstOrDefault(m => m.Uuid == materialUuid);
+		
 
-		if (!module.IsVisible) {
-			if (acc == null) return Unauthorized();
-			if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+			if (module == null && !isOwnerOrAdmin || material == null || module == null) {
+				return NotFound(new { error = "Material not found." });
+			}
+
+			if (!module.IsVisible) {
+				if (acc == null) return Unauthorized();
+				if (course.LecturerUuid != acc.Uuid && acc is not Admin) return Forbid();
+			}
 		}
 
 		var accessResult = ValidateRestrictedCourseAccess(course, acc);
 		if (accessResult != null) {
 			return accessResult;
 		}
+		
+		if (material == null)
+			return NotFound(new { error = "Material not found." });
 
 		switch (material) {
 			case UrlMaterial urlMaterial:
@@ -1819,6 +1838,10 @@ public sealed class APIv1(
 					}
 					
 					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
+					
+					if (memoryStream == null) {
+						return StatusCode(500, new { error = "Error fetching file from storage." });
+					}
 					
 					var now = DateTime.UtcNow;
 
