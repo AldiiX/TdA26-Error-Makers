@@ -62,12 +62,12 @@ public sealed class MaterialAccessService(
 		);
 	}
 
-	public async Task<MemoryStream> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
+	public async Task<MemoryStream?> DownloadFileMaterialAsync(string fileUrl, CancellationToken ct = default) {
 		// Retry logic for transient access denied errors (for some reason after upload it doesn't have access for the first access)
 		var retries = 3;
 		var delay = TimeSpan.FromMilliseconds(150);
 
-		while (true)
+		while (true) {
 			try {
 				var ms = new MemoryStream();
 
@@ -86,7 +86,9 @@ public sealed class MaterialAccessService(
 				delay += delay;
 			} catch (Minio.Exceptions.ObjectNotFoundException) {
 				Console.WriteLine("Object not found in MinIO: " + fileUrl);
+				return null;
 			}
+		}
 	}
 
 	public async Task CopyCourseMaterialsDirectoryAsync(Guid sourceCourseUuid, Guid targetCourseUuid, CancellationToken ct = default) {
