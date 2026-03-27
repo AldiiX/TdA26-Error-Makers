@@ -159,17 +159,23 @@ export default function (params: {
     async function confirmPublicationSchedule() {
         if (!finalDateTime.value || !params.course.value) return;
 
-        await $fetch(`/api/v1/courses/${params.course.value.uuid}/status`, {
-            method: "PUT",
-            body: {
-                status: "scheduled",
-                scheduledStart: finalDateTime.value.toISOString(),
-            },
-        });
+        try {
+            params.updateError.value = null;
 
-        params.enabledModal.value = null;
-        params.course.value.status = "scheduled";
-        params.course.value.scheduledStart = finalDateTime.value.toISOString();
+            await $fetch(`/api/v1/courses/${params.course.value.uuid}/status`, {
+                method: "PUT",
+                body: {
+                    status: "scheduled",
+                    scheduledStart: finalDateTime.value.toISOString(),
+                },
+            });
+
+            params.enabledModal.value = null;
+            params.course.value.status = "scheduled";
+            params.course.value.scheduledStart = finalDateTime.value.toISOString();
+        } catch (error: any) {
+            params.updateError.value = error?.data?.error ?? error?.message ?? "Nepodařilo se naplánovat kurz.";
+        }
     }
 
     function cancelPublicationSchedule() {

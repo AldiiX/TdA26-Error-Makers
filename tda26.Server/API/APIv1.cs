@@ -1006,7 +1006,7 @@ public sealed class APIv1(
 		
 		if (acc is not Admin && existingCourse.LecturerUuid != acc.Uuid) return Forbid();
 		
-		if (body.Status.HasValue && existingCourse.Status == body.Status.Value) {
+		if (body.Status.HasValue && existingCourse.Status == body.Status.Value && body.ScheduledStart == existingCourse.ScheduledStart) {
 			return BadRequest(new { error = "Course is already in the specified status." });
 		}
 		
