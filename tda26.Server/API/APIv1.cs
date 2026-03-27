@@ -1812,7 +1812,7 @@ public sealed class APIv1(
 				return Ok(urlMaterial.ToReadDto());
 			case FileMaterial fileMaterial:
 				try {
-					var recaptchaToken = Request.Query["recaptchaToken"].ToString();
+					/*var recaptchaToken = Request.Query["recaptchaToken"].ToString();
 					if (string.IsNullOrWhiteSpace(recaptchaToken)) {
 						return BadRequest(new { error = "Missing reCAPTCHA token." });
 					}
@@ -1835,7 +1835,7 @@ public sealed class APIv1(
 					var jsonResponse = JsonNode.Parse(responseContent);
 					if (jsonResponse == null || jsonResponse["success"]?.GetValue<bool>() != true) {
 						return BadRequest(new { error = "Recaptcha verification failed." });
-					}
+					}*/
 					
 					var memoryStream = await materialAccessService.DownloadFileMaterialAsync(fileMaterial.FileUrl, ct);
 					
