@@ -58,6 +58,10 @@ public sealed class Course : Auditable {
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
   
     public ICollection<FeedPost> Feed { get; set; } = new List<FeedPost>();
+    
+    public Guid OrganizationUuid { get; set; }
+    [ForeignKey(nameof(OrganizationUuid))]
+    public Organization? Organization { get; set; }
 
 
     [JsonIgnore]

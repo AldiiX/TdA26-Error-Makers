@@ -153,10 +153,10 @@ public sealed class APIv1(
 	private async Task<Guid?> GetStudentOrganizationUuidAsync(Account? acc, CancellationToken ct) {
 		if (acc is not Student) return null;
 
-		return await db.Organizations
+		return await db.Students
 			.AsNoTracking()
-			.Where(o => o.Students.Any(s => s.Uuid == acc.Uuid))
-			.Select(o => (Guid?)o.Uuid)
+			.Where(s => s.Uuid == acc.Uuid)
+			.Select(s => s.OrganizationUuid)
 			.FirstOrDefaultAsync(ct);
 	}
 
@@ -178,7 +178,7 @@ public sealed class APIv1(
 		var query = db.Lecturers.AsQueryable();
 		if (studentOrganizationUuid.HasValue) {
 			var orgUuid = studentOrganizationUuid.Value;
-			query = query.Where(l => l.Organizations.Any(o => o.Uuid == orgUuid));
+			query = query.Where(l => l.OrganizationUuid == orgUuid);
 		}
 
 		var all = await query
@@ -239,12 +239,11 @@ public sealed class APIv1(
 
 		var lecturer = await db.Lecturers
 			.Where(l => l.Uuid == uuid)
-			.Include(l => l.Organizations)
 			.AsNoTracking()
 			.FirstOrDefaultAsync(ct);
 		if (lecturer == null) return new NotFoundObjectResult(new { message = "Lektor nenalezen." });
 
-		if (studentOrganizationUuid.HasValue && !lecturer.Organizations.Any(o => o.Uuid == studentOrganizationUuid.Value)) {
+		if (studentOrganizationUuid.HasValue && lecturer.OrganizationUuid != studentOrganizationUuid.Value) {
 			return NotFound(new { message = "Lektor nenalezen." });
 		}
 
@@ -252,6 +251,22 @@ public sealed class APIv1(
 	}
 
 	#endregion
+
+	private async Task<ReadOrganizationResponse> BuildOrganizationReadDtoAsync(Organization organization, CancellationToken ct) {
+		var lecturerUuids = await db.Lecturers
+			.AsNoTracking()
+			.Where(l => l.OrganizationUuid == organization.Uuid)
+			.Select(l => l.Uuid)
+			.ToListAsync(ct);
+
+		var studentUuids = await db.Students
+			.AsNoTracking()
+			.Where(s => s.OrganizationUuid == organization.Uuid)
+			.Select(s => s.Uuid)
+			.ToListAsync(ct);
+
+		return organization.ToReadDto(lecturerUuids, studentUuids);
+	}
 
 
 
@@ -295,13 +310,16 @@ public sealed class APIv1(
 		if (acc is not Admin) return Forbid();
 
 		var organizations = await db.Organizations
-			.Include(o => o.Lecturers)
-			.Include(o => o.Students)
 			.OrderBy(o => o.DisplayName)
 			.AsNoTracking()
 			.ToListAsync(ct);
 
-		return Ok(organizations.Select(o => o.ToReadDto()).ToList());
+		var result = new List<ReadOrganizationResponse>(organizations.Count);
+		foreach (var organization in organizations) {
+			result.Add(await BuildOrganizationReadDtoAsync(organization, ct));
+		}
+
+		return Ok(result);
 	}
 
 	[HttpGet("organizations/registration-options")]
@@ -356,10 +374,9 @@ public sealed class APIv1(
 			return BadRequest(new { error = "One or more lecturer UUIDs are invalid." });
 		}
 
-		var alreadyAssignedLecturer = await db.Organizations
+		var alreadyAssignedLecturer = await db.Lecturers
 			.AsNoTracking()
-			.Where(o => o.Lecturers.Any(l => lecturerUuids.Contains(l.Uuid)))
-			.SelectMany(o => o.Lecturers)
+			.Where(l => lecturerUuids.Contains(l.Uuid) && l.OrganizationUuid != null)
 			.Select(l => l.Uuid)
 			.FirstOrDefaultAsync(ct);
 		if (alreadyAssignedLecturer != Guid.Empty) {
@@ -374,10 +391,9 @@ public sealed class APIv1(
 			return BadRequest(new { error = "One or more student UUIDs are invalid." });
 		}
 
-		var alreadyAssignedStudent = await db.Organizations
+		var alreadyAssignedStudent = await db.Students
 			.AsNoTracking()
-			.Where(o => o.Students.Any(s => studentUuids.Contains(s.Uuid)))
-			.SelectMany(o => o.Students)
+			.Where(s => studentUuids.Contains(s.Uuid) && s.OrganizationUuid != null)
 			.Select(s => s.Uuid)
 			.FirstOrDefaultAsync(ct);
 		if (alreadyAssignedStudent != Guid.Empty) {
@@ -392,19 +408,26 @@ public sealed class APIv1(
 			PostalCode = body.PostalCode,
 			Region = body.Region,
 			Type = body.Type,
-			Status = body.Status,
-			Lecturers = lecturers,
-			Students = students
+			Status = body.Status
 		};
 
 		db.Organizations.Add(organization);
+
+		foreach (var lecturer in lecturers) {
+			lecturer.OrganizationUuid = organization.Uuid;
+		}
+
+		foreach (var student in students) {
+			student.OrganizationUuid = organization.Uuid;
+		}
+
 		await db.SaveChangesAsync(ct);
 
 		return new CreatedAtActionResult(
 			nameof(GetOrganizationById),
 			"APIv1",
 			new { uuid = organization.Uuid },
-			organization.ToReadDto()
+			await BuildOrganizationReadDtoAsync(organization, ct)
 		);
 	}
 
@@ -412,14 +435,12 @@ public sealed class APIv1(
 	public async Task<IActionResult> GetOrganizationById([FromRoute] Guid uuid, CancellationToken ct = default) {
 		var organization = await db.Organizations
 			.Where(o => o.Uuid == uuid)
-			.Include(o => o.Lecturers)
-			.Include(o => o.Students)
 			.AsNoTracking()
 			.FirstOrDefaultAsync(ct);
 
 		if (organization == null) return NotFound(new { error = "Organization not found." });
 
-		return Ok(organization.ToReadDto());
+		return Ok(await BuildOrganizationReadDtoAsync(organization, ct));
 	}
 
 	[HttpPut("organizations/{uuid:guid}")]
@@ -431,8 +452,6 @@ public sealed class APIv1(
 
 		var organization = await db.Organizations
 			.Where(o => o.Uuid == uuid)
-			.Include(o => o.Lecturers)
-			.Include(o => o.Students)
 			.FirstOrDefaultAsync(ct);
 		if (organization == null) return NotFound(new { error = "Organization not found." });
 
@@ -476,7 +495,7 @@ public sealed class APIv1(
 
 		await db.SaveChangesAsync(ct);
 
-		return Ok(organization.ToReadDto());
+		return Ok(await BuildOrganizationReadDtoAsync(organization, ct));
 	}
 
 	[HttpDelete("organizations/{uuid:guid}")]
@@ -516,8 +535,7 @@ public sealed class APIv1(
 
 		if (studentOrganizationUuid.HasValue) {
 			var orgUuid = studentOrganizationUuid.Value;
-			query = query.Where(c => c.LecturerUuid != null && db.Organizations
-				.Any(o => o.Uuid == orgUuid && o.Lecturers.Any(l => l.Uuid == c.LecturerUuid)));
+			query = query.Where(c => c.OrganizationUuid == orgUuid);
 		}
 
 		if (acc is Student && studentOrganizationUuid == null) {
@@ -719,16 +737,7 @@ public sealed class APIv1(
 
 		if (studentOrganizationUuid.HasValue) {
 			var orgUuid = studentOrganizationUuid.Value;
-			var lecturerUuid = course.LecturerUuid;
-			if (lecturerUuid == null) {
-				return NotFound(new { error = "Course not found." });
-			}
-
-			var allowedForStudent = await db.Organizations
-				.AsNoTracking()
-				.AnyAsync(o => o.Uuid == orgUuid && o.Lecturers.Any(l => l.Uuid == lecturerUuid), ct);
-
-			if (!allowedForStudent) {
+			if (course.OrganizationUuid != orgUuid) {
 				return NotFound(new { error = "Course not found." });
 			}
 		}

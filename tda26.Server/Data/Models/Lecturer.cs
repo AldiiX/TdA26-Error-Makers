@@ -19,7 +19,6 @@ public sealed class Lecturer : Account {
     public ICollection<string> MobileNumbers { get; set; } = new List<string>();
     public ICollection<string> Emails { get; set; } =  new List<string>();
     public ICollection<string> Tags { get; set; } =  new List<string>();
-    public ICollection<Organization> Organizations { get; set; } = new List<Organization>();
 
 
 

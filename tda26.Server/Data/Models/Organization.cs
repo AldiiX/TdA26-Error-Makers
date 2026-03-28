@@ -55,7 +55,4 @@ public sealed class Organization {
 
     public OrganizationStatus Status { get; set; } = OrganizationStatus.Onboarding;
 
-    public ICollection<Lecturer> Lecturers { get; set; } = new List<Lecturer>();
-
-    public ICollection<Student> Students { get; set; } = new List<Student>();
 }

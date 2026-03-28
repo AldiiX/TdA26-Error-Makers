@@ -4,7 +4,7 @@ using tda26.Server.DTOs.v1;
 namespace tda26.Server.DTOs.Mapping;
 
 public static class OrganizationMapper {
-    public static ReadOrganizationResponse ToReadDto(this Organization organization) {
+    public static ReadOrganizationResponse ToReadDto(this Organization organization, ICollection<Guid>? lecturerUuids = null, ICollection<Guid>? studentUuids = null) {
         return new ReadOrganizationResponse {
             Uuid = organization.Uuid,
             DisplayName = organization.DisplayName,
@@ -15,8 +15,8 @@ public static class OrganizationMapper {
             Region = organization.Region,
             Type = organization.Type,
             Status = organization.Status,
-            LecturerUuids = organization.Lecturers.Select(l => l.Uuid).ToList(),
-            StudentUuids = organization.Students.Select(s => s.Uuid).ToList()
+            LecturerUuids = lecturerUuids ?? [],
+            StudentUuids = studentUuids ?? []
         };
     }
 }

@@ -85,9 +85,10 @@ public sealed class AuthService(
             .FirstOrDefaultAsync(a => a.Username.ToLower() == username.ToLower(), ct);
         if (existing != null) return null;
 
-        var organization = await db.Organizations
-            .FirstOrDefaultAsync(o => o.Uuid == organizationUuid, ct);
-        if (organization == null) return null;
+        var organizationExists = await db.Organizations
+            .AsNoTracking()
+            .AnyAsync(o => o.Uuid == organizationUuid, ct);
+        if (!organizationExists) return null;
 
         var hashedPassword = Utilities.HashPassword(plainPassword);
 
@@ -102,7 +103,7 @@ public sealed class AuthService(
             IsPremium = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            Organizations = [organization]
+            OrganizationUuid = organizationUuid
         };
 
         db.Accounts.Add(student);

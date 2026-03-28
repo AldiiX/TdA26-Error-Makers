@@ -24,6 +24,12 @@ public class Account : Auditable {
     public bool IsPremium { get; set; } = false;
 
     [JsonIgnore]
+    public Guid? OrganizationUuid { get; set; }
+
+    [ForeignKey(nameof(OrganizationUuid))]
+    public Organization? Organization { get; set; }
+
+    [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
     // nemapovany props (pouze pro serializaci)

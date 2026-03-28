@@ -92,6 +92,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
 
+        // Ensure legacy join-table mappings are never reintroduced by conventions.
+        modelBuilder.Ignore("OrganizationStudents");
+        modelBuilder.Ignore("OrganizationLecturers");
+
         // Share profile columns across Lecturer/Student in the Accounts TPH table.
         modelBuilder.Entity<Lecturer>().Property(l => l.FirstName).HasColumnName("FirstName");
         modelBuilder.Entity<Lecturer>().Property(l => l.MiddleName).HasColumnName("MiddleName");
@@ -105,31 +109,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<Student>().Property(s => s.Bio).HasColumnName("Bio");
         modelBuilder.Entity<Student>().Property(s => s.PictureUrl).HasColumnName("PictureUrl");
 
-        modelBuilder.Entity<Organization>()
-            .HasMany(o => o.Lecturers)
-            .WithMany(l => l.Organizations)
-            .UsingEntity<Dictionary<string, object>>(
-                "OrganizationLecturers",
-                right => right.HasOne<Lecturer>().WithMany().HasForeignKey("LecturerUuid"),
-                left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
-                join => {
-                    join.HasKey("OrganizationUuid", "LecturerUuid");
-                    join.HasIndex("LecturerUuid").IsUnique();
-                }
-            );
-
-        modelBuilder.Entity<Organization>()
-            .HasMany(o => o.Students)
-            .WithMany(s => s.Organizations)
-            .UsingEntity<Dictionary<string, object>>(
-                "OrganizationStudents",
-                right => right.HasOne<Student>().WithMany().HasForeignKey("StudentUuid"),
-                left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
-                join => {
-                    join.HasKey("OrganizationUuid", "StudentUuid");
-                    join.HasIndex("StudentUuid").IsUnique();
-                }
-            );
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.Organization)
+            .WithMany()
+            .HasForeignKey(a => a.OrganizationUuid)
+            .OnDelete(DeleteBehavior.SetNull);
 
         /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)
