@@ -24,11 +24,9 @@ public class Account : Auditable {
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
-
-
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
-    public enum AccountType { Account, Lecturer, Admin }
+    public enum AccountType { Account, Lecturer, Admin, Student }
 
     [NotMapped]
     public IEnumerable<Like> Likes => Ratings.OfType<Like>();

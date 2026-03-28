@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260328102222_AddIsPremium")]
+    partial class AddIsPremium
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -647,59 +650,6 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(10)");
 
                     b.HasDiscriminator().HasValue("Lecturer");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Student", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.Account");
-
-                    b.Property<string>("Bio")
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<bool>("IsPremium")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("MiddleName")
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("PictureUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
-
-                    b.ToTable("Accounts", t =>
-                        {
-                            t.Property("Bio")
-                                .HasColumnName("Student_Bio");
-
-                            t.Property("FirstName")
-                                .HasColumnName("Student_FirstName");
-
-                            t.Property("IsPremium")
-                                .HasColumnName("Student_IsPremium");
-
-                            t.Property("LastName")
-                                .HasColumnName("Student_LastName");
-
-                            t.Property("MiddleName")
-                                .HasColumnName("Student_MiddleName");
-
-                            t.Property("PictureUrl")
-                                .HasColumnName("Student_PictureUrl");
-                        });
-
-                    b.HasDiscriminator().HasValue("Student");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FileMaterial", b =>

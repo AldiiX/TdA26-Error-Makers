@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
+using tda26.Server.Data.Models;
 using tda26.Server.DTOs;
 using tda26.Server.Infrastructure;
 using Account = tda26.Server.Data.Models.Account;
@@ -77,7 +78,7 @@ public sealed class AuthService(
             .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
     }
 
-    public async Task<Account?> RegisterAsync(string username, string email, string plainPassword,  CancellationToken ct = default)
+    public async Task<Account?> RegisterAsync(string username, string email, string plainPassword, string firstName, string? middleName, string lastName, CancellationToken ct = default)
     {
         var existing = await db.Accounts
             .AsNoTracking()
@@ -86,31 +87,35 @@ public sealed class AuthService(
 
         var hashedPassword = Utilities.HashPassword(plainPassword);
 
-        var acc = new Account {
+        var student = new Student {
             Uuid = Guid.NewGuid(),
             Username = username,
             PrimaryEmail = email,
             Password = hashedPassword,
+            FirstName = firstName,
+            MiddleName = middleName,
+            LastName = lastName,
+            IsPremium = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        db.Accounts.Add(acc);
+        db.Accounts.Add(student);
         await db.SaveChangesAsync(ct);
 
         var json = new AccountSessionDto {
-            Uuid = acc.Uuid,
-            Username = acc.Username,
-            Password = acc.Password,
-            CreatedAt = acc.CreatedAt,
-            UpdatedAt = acc.UpdatedAt
+            Uuid = student.Uuid,
+            Username = student.Username,
+            Password = student.Password,
+            CreatedAt = student.CreatedAt,
+            UpdatedAt = student.UpdatedAt
         };
 
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
         http.HttpContext.Items["loggedaccount"] = json;
 
         // For newly registered accounts, there are no relationships yet, so return the created entity
-        return acc;
+        return student;
     }
 
 
