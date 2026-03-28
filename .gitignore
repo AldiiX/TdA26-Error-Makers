@@ -8,4 +8,3 @@ bin
 .env.prod
 node_modules
 dist
-tda26.client/obj/
