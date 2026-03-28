@@ -239,6 +239,200 @@ public sealed class APIv1(
 
 
 
+	#region organizations
+
+	[HttpPost("organizations")]
+	public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		body.DisplayName = body.DisplayName?.Trim() ?? string.Empty;
+		body.Country = body.Country?.Trim() ?? string.Empty;
+		body.City = body.City?.Trim() ?? string.Empty;
+		body.Address = body.Address?.Trim() ?? string.Empty;
+		body.PostalCode = body.PostalCode?.Trim() ?? string.Empty;
+
+		if (string.IsNullOrWhiteSpace(body.DisplayName)) return BadRequest(new { error = "DisplayName is required." });
+		if (string.IsNullOrWhiteSpace(body.Country)) return BadRequest(new { error = "Country is required." });
+		if (string.IsNullOrWhiteSpace(body.City)) return BadRequest(new { error = "City is required." });
+		if (string.IsNullOrWhiteSpace(body.Address)) return BadRequest(new { error = "Address is required." });
+		if (string.IsNullOrWhiteSpace(body.PostalCode)) return BadRequest(new { error = "PostalCode is required." });
+
+		var lecturerUuids = body.LecturerUuids
+			.Where(uuid => uuid != Guid.Empty)
+			.Distinct()
+			.ToList();
+		var studentUuids = body.StudentUuids
+			.Where(uuid => uuid != Guid.Empty)
+			.Distinct()
+			.ToList();
+
+		var lecturers = await db.Lecturers
+			.Where(l => lecturerUuids.Contains(l.Uuid))
+			.ToListAsync(ct);
+
+		if (lecturers.Count != lecturerUuids.Count) {
+			return BadRequest(new { error = "One or more lecturer UUIDs are invalid." });
+		}
+
+		var students = await db.Students
+			.Where(s => studentUuids.Contains(s.Uuid))
+			.ToListAsync(ct);
+
+		if (students.Count != studentUuids.Count) {
+			return BadRequest(new { error = "One or more student UUIDs are invalid." });
+		}
+
+		var organization = new Organization {
+			DisplayName = body.DisplayName,
+			Country = body.Country,
+			City = body.City,
+			Address = body.Address,
+			PostalCode = body.PostalCode,
+			Region = body.Region,
+			Type = body.Type,
+			Status = body.Status,
+			Lecturers = lecturers,
+			Students = students
+		};
+
+		db.Organizations.Add(organization);
+		await db.SaveChangesAsync(ct);
+
+		return new CreatedAtActionResult(
+			nameof(GetOrganizationById),
+			"APIv1",
+			new { uuid = organization.Uuid },
+			organization.ToReadDto()
+		);
+	}
+
+	[HttpGet("organizations/{uuid:guid}")]
+	public async Task<IActionResult> GetOrganizationById([FromRoute] Guid uuid, CancellationToken ct = default) {
+		var organization = await db.Organizations
+			.Where(o => o.Uuid == uuid)
+			.Include(o => o.Lecturers)
+			.Include(o => o.Students)
+			.AsNoTracking()
+			.FirstOrDefaultAsync(ct);
+
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		return Ok(organization.ToReadDto());
+	}
+
+	[HttpPut("organizations/{uuid:guid}")]
+	public async Task<IActionResult> UpdateOrganization([FromRoute] Guid uuid, [FromBody] UpdateOrganizationRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organization = await db.Organizations
+			.Where(o => o.Uuid == uuid)
+			.Include(o => o.Lecturers)
+			.Include(o => o.Students)
+			.FirstOrDefaultAsync(ct);
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		if (body.DisplayName != null) {
+			var displayName = body.DisplayName.Trim();
+			if (string.IsNullOrWhiteSpace(displayName)) return BadRequest(new { error = "DisplayName cannot be empty." });
+			organization.DisplayName = displayName;
+		}
+
+		if (body.Country != null) {
+			var country = body.Country.Trim();
+			if (string.IsNullOrWhiteSpace(country)) return BadRequest(new { error = "Country cannot be empty." });
+			organization.Country = country;
+		}
+
+		if (body.City != null) {
+			var city = body.City.Trim();
+			if (string.IsNullOrWhiteSpace(city)) return BadRequest(new { error = "City cannot be empty." });
+			organization.City = city;
+		}
+
+		if (body.Address != null) {
+			var address = body.Address.Trim();
+			if (string.IsNullOrWhiteSpace(address)) return BadRequest(new { error = "Address cannot be empty." });
+			organization.Address = address;
+		}
+
+		if (body.PostalCode != null) {
+			var postalCode = body.PostalCode.Trim();
+			if (string.IsNullOrWhiteSpace(postalCode)) return BadRequest(new { error = "PostalCode cannot be empty." });
+			organization.PostalCode = postalCode;
+		}
+
+		if (body.Region.HasValue) organization.Region = body.Region.Value;
+		if (body.Type.HasValue) organization.Type = body.Type.Value;
+		if (body.Status.HasValue) organization.Status = body.Status.Value;
+
+		if (body.LecturerUuids != null) {
+			var lecturerUuids = body.LecturerUuids
+				.Where(id => id != Guid.Empty)
+				.Distinct()
+				.ToList();
+
+			var lecturers = await db.Lecturers
+				.Where(l => lecturerUuids.Contains(l.Uuid))
+				.ToListAsync(ct);
+
+			if (lecturers.Count != lecturerUuids.Count) {
+				return BadRequest(new { error = "One or more lecturer UUIDs are invalid." });
+			}
+
+			organization.Lecturers = lecturers;
+		}
+
+		if (body.StudentUuids != null) {
+			var studentUuids = body.StudentUuids
+				.Where(id => id != Guid.Empty)
+				.Distinct()
+				.ToList();
+
+			var students = await db.Students
+				.Where(s => studentUuids.Contains(s.Uuid))
+				.ToListAsync(ct);
+
+			if (students.Count != studentUuids.Count) {
+				return BadRequest(new { error = "One or more student UUIDs are invalid." });
+			}
+
+			organization.Students = students;
+		}
+
+		await db.SaveChangesAsync(ct);
+
+		return Ok(organization.ToReadDto());
+	}
+
+	[HttpDelete("organizations/{uuid:guid}")]
+	public async Task<IActionResult> DeleteOrganization([FromRoute] Guid uuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organization = await db.Organizations
+			.FirstOrDefaultAsync(o => o.Uuid == uuid, ct);
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		db.Organizations.Remove(organization);
+		await db.SaveChangesAsync(ct);
+
+		return NoContent();
+	}
+
+	#endregion
+
+
+
+
+
 	#region courses
 
 	[HttpGet("courses")]
