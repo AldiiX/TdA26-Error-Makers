@@ -5,11 +5,18 @@
 namespace tda26.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddStudentFields : Migration
+    public partial class AddPremiumAccounts : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<bool>(
+                name: "IsPremium",
+                table: "Accounts",
+                type: "tinyint(1)",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.AddColumn<string>(
                 name: "Student_Bio",
                 table: "Accounts",
@@ -25,12 +32,6 @@ namespace tda26.Server.Migrations
                 maxLength: 32,
                 nullable: true)
                 .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.AddColumn<bool>(
-                name: "Student_IsPremium",
-                table: "Accounts",
-                type: "tinyint(1)",
-                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Student_LastName",
@@ -61,15 +62,15 @@ namespace tda26.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
+                name: "IsPremium",
+                table: "Accounts");
+
+            migrationBuilder.DropColumn(
                 name: "Student_Bio",
                 table: "Accounts");
 
             migrationBuilder.DropColumn(
                 name: "Student_FirstName",
-                table: "Accounts");
-
-            migrationBuilder.DropColumn(
-                name: "Student_IsPremium",
                 table: "Accounts");
 
             migrationBuilder.DropColumn(
