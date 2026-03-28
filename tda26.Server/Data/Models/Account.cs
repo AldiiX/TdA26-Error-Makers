@@ -21,14 +21,14 @@ public class Account : Auditable {
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
 
+    public bool IsPremium { get; set; } = false;
+
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
-
-
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
-    public enum AccountType { Account, Lecturer, Admin }
+    public enum AccountType { Account, Lecturer, Admin, Student }
 
     [NotMapped]
     public IEnumerable<Like> Likes => Ratings.OfType<Like>();
