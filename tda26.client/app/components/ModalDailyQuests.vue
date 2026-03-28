@@ -226,7 +226,7 @@ const toggleQuest = (id: number) => {
     align-items: center;
     justify-content: center;
     aspect-ratio: 1 / 1;
-    border-radius: 50%;
+    border-radius: 8px;
     font-size: 14px;
     user-select: none;
 }

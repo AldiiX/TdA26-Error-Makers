@@ -8,7 +8,6 @@ import Modal from "~/components/Modal.vue";
 import CourseForm from "~/components/pagespecific/CourseForm.vue";
 import {computed, ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 import ModalDestructive from "~/components/ModalDestructive.vue";
-import ModalDailyQuests from "~/components/ModalDailyQuests.vue";
 
 import { useSeo } from "~/composables/useSeo";
 import { push } from "notivue"
@@ -35,7 +34,7 @@ const loggedAccount = useState<Account | null>('loggedAccount');
 
 const isActionInProgress = ref(false);
 
-const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | "dailyQuests" | null>(null);
+const enabledModal = ref<"createCourse" | "updateCourse" | "deleteCourse" | null>(null);
 const editingCourseId = ref<string | null>(null);
 const courseList = ref<HTMLElement | null>(null);
 
@@ -138,9 +137,6 @@ const deleteCourse = async () => {
             <div :class="$style.createCourse" @click="enabledModal = 'createCourse'">
                 <Button button-style="primary" accent-color="primary"><div><span :class="$style.icon"/><p>Vytvořit nový kurz</p></div></Button>
             </div>
-            <div :class="$style.dailyQuests" @click="enabledModal = 'dailyQuests'">
-                <Button button-style="secondary" accent-color="primary"><div><span :class="$style.iconQuest"/><p>Daily questy</p></div></Button>
-            </div>
         </div>
 
         <div :class="[$style.courses]">
@@ -170,12 +166,6 @@ const deleteCourse = async () => {
     </section>
 
     <Teleport to="#teleports">
-        <!-- DAILY QUESTS -->
-        <ModalDailyQuests
-            :enabled="enabledModal === 'dailyQuests'"
-            @close="enabledModal = null"
-        />
-
         <!-- CREATE -->
         <Modal 
             :enabled="enabledModal === 'createCourse'" 
@@ -255,39 +245,6 @@ const deleteCourse = async () => {
             margin-top: 4px;
             gap: 8px;
             
-            p {
-                font-size: 24px;
-            }
-        }
-    }
-
-    .dailyQuests {
-        text-decoration: none;
-
-        div {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .iconQuest {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            mask-image: url('../../../public/icons/star.svg');
-            mask-size: cover;
-            background-color: var(--accent-color-primary);
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-
-        button {
-            display: flex;
-            align-items: center;
-            padding: 8px 32px;
-            margin-top: 4px;
-            gap: 8px;
-
             p {
                 font-size: 24px;
             }
@@ -429,21 +386,6 @@ const deleteCourse = async () => {
                 }
                 
                 .icon {
-                    width: 32px;
-                    height: 32px;
-                }
-            }
-        }
-
-        .dailyQuests {
-            button {
-                padding: 4px 16px;
-
-                p {
-                    font-size: 20px;
-                }
-
-                .iconQuest {
                     width: 32px;
                     height: 32px;
                 }

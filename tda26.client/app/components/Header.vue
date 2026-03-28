@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { onMounted, onUnmounted, inject, type Ref } from 'vue';
+    import { onMounted, onUnmounted, inject, type Ref, ref } from 'vue';
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
@@ -7,6 +7,7 @@
     import Avatar from "~/components/Avatar.vue";
     import Popover from "~/components/Popover.vue";
     import useAuth from "~/composables/useAuth";
+    import ModalDailyQuests from "~/components/ModalDailyQuests.vue";
     
     const $style = useCssModule();
     
@@ -20,6 +21,7 @@
     const { logout } = useAuth();
     const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
     const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
+    const dailyQuestsOpen = ref(false);
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -116,6 +118,13 @@
                                         </div>
                                         <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
                                     </button>
+
+                                    <button :class="$style.actionButton" @click="dailyQuestsOpen = true">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.questIcon]"/>
+                                        </div>
+                                        <p>Daily questy</p>
+                                    </button>
                                     
                                     <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
                                         <div :class="$style.iconWrapper">
@@ -139,6 +148,10 @@
         <div class="smallDevice"/>
         <div class="Header-Logo-Small" onclick="location.href='/'"/>
     </header>
+
+    <Teleport to="#teleports">
+        <ModalDailyQuests :enabled="dailyQuestsOpen" @close="dailyQuestsOpen = false" />
+    </Teleport>
 </template>
 
 <style module lang="scss">
@@ -411,6 +424,10 @@
 
                     &.logoutIcon {
                         mask-image: url('/icons/logout.svg');
+                    }
+
+                    &.questIcon {
+                        mask-image: url('/icons/star.svg');
                     }
                 }
 
