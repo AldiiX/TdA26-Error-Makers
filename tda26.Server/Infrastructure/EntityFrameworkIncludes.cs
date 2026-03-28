@@ -40,6 +40,11 @@ public static class EntityFrameworkIncludes {
 				.ThenInclude(r => r.Course);
 	}
 
+	public static IQueryable<Student> StudentsEf(this AppDbContext db) {
+		return db.Students
+			.Include(s => s.ShopItems);
+	}
+
 	public static IQueryable<Quiz> QuizzesEf(this AppDbContext db) {
 		return db.Quizzes
 			.Include(q => q.Questions
