@@ -12,4 +12,6 @@ public class AuthRegisterRequest {
     [Required] [MaxLength(32)] public string FirstName { get; set; } = string.Empty;
     [MaxLength(32)] public string? MiddleName { get; set; }
     [Required] [MaxLength(32)] public string LastName { get; set; } = string.Empty;
+
+    [Required] public Guid OrganizationUuid { get; set; }
 }

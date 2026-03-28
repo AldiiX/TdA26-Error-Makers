@@ -44,6 +44,13 @@ export interface CreateOrganizationPayload {
     studentUuids: string[];
 }
 
+export interface OrganizationRegistrationOption {
+    uuid: string;
+    displayName: string;
+    city: string;
+    country: string;
+}
+
 export interface Module {
     uuid: string;
     title: string;

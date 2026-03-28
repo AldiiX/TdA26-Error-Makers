@@ -114,6 +114,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
                 join => {
                     join.HasKey("OrganizationUuid", "LecturerUuid");
+                    join.HasIndex("LecturerUuid").IsUnique();
                 }
             );
 
@@ -126,6 +127,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
                 join => {
                     join.HasKey("OrganizationUuid", "StudentUuid");
+                    join.HasIndex("StudentUuid").IsUnique();
                 }
             );
 

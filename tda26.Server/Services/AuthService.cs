@@ -78,12 +78,16 @@ public sealed class AuthService(
             .FirstOrDefaultAsync(a => a.Uuid == sessionAcc.Uuid, ct);
     }
 
-    public async Task<Account?> RegisterAsync(string username, string email, string plainPassword, string firstName, string? middleName, string lastName, CancellationToken ct = default)
+    public async Task<Account?> RegisterAsync(string username, string email, string plainPassword, string firstName, string? middleName, string lastName, Guid organizationUuid, CancellationToken ct = default)
     {
         var existing = await db.Accounts
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Username.ToLower() == username.ToLower(), ct);
         if (existing != null) return null;
+
+        var organization = await db.Organizations
+            .FirstOrDefaultAsync(o => o.Uuid == organizationUuid, ct);
+        if (organization == null) return null;
 
         var hashedPassword = Utilities.HashPassword(plainPassword);
 
@@ -97,7 +101,8 @@ public sealed class AuthService(
             LastName = lastName,
             IsPremium = false,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            Organizations = [organization]
         };
 
         db.Accounts.Add(student);
@@ -114,8 +119,11 @@ public sealed class AuthService(
         http.HttpContext!.Session.SetString("loggedaccount", JsonSerializer.Serialize(json));
         http.HttpContext.Items["loggedaccount"] = json;
 
-        // For newly registered accounts, there are no relationships yet, so return the created entity
-        return student;
+        // Return a fresh, no-tracking projection to avoid serializing tracked navigation cycles.
+        return await db.AccountsEf()
+            .AsNoTracking()
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(a => a.Uuid == student.Uuid, ct);
     }
 
 
