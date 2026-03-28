@@ -168,6 +168,8 @@ export interface ProfilePayload {
     inventory: ShopItem[];
     type: AccountType;
     isPremium: boolean;
+    dailyRewardXp?: number;
+    dailyRewardDucks?: number;
 }
 
 interface Rating {
@@ -275,6 +277,36 @@ export interface QuizResultsSummary {
     }[];
 }
 export type CourseModule = Material | Quiz;
+
+export interface DailyRewardTask {
+    taskCode: string;
+    title: string;
+    description: string;
+    currentValue: number;
+    targetValue: number;
+    isCompleted: boolean;
+    completedAt: string | null;
+    rewardXp: number;
+    rewardDuck: number;
+}
+
+export interface DailyRewardDay {
+    date: string;
+    isClaimed: boolean;
+    claimedAt: string | null;
+    canClaim: boolean;
+    isCompleted: boolean;
+    tasks: DailyRewardTask[];
+}
+
+export interface DailyRewardsMonthResponse {
+    year: number;
+    month: number;
+    daysInMonth: number;
+    totalXp: number;
+    totalDucks: number;
+    days: DailyRewardDay[];
+}
 
 
 export interface UrlMaterialStats {

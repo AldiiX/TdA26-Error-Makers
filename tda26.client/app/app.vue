@@ -125,3 +125,11 @@ useSeo({
     pointer-events: none;
 }
 </style>
+
+<style lang="scss">
+html,
+body,
+#__nuxt {
+    font-family: "Dosis", sans-serif;
+}
+</style>

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public sealed class APIv1(
 	AppDbContext db,
 	IFeedStreamBroker fsb,
 	IStreamBroker sb,
+	IDailyRewardsService dailyRewards,
 	ILogger<APIv1> logger
 ) : Controller {
 
@@ -66,6 +68,14 @@ public sealed class APIv1(
 			like.Course.Account = null;
 		}
 
+		try {
+			var wallet = await dailyRewards.GetWalletAsync(acc.Uuid, ct);
+			acc.DailyRewardXp = wallet.TotalXp;
+			acc.DailyRewardDucks = wallet.TotalDucks;
+		} catch (Exception ex) {
+			logger.LogWarning(ex, "Daily rewards wallet loading failed for /me.");
+		}
+
 		return Ok(acc);
 	}
 
@@ -82,9 +92,10 @@ public sealed class APIv1(
 		var acc = await auth.LoginAsync(body.Username, body.Password, ct);
 
 		if (acc == null) return new UnauthorizedObjectResult(new { message = "Neplatné uživatelské jméno nebo heslo." });
+		var account = acc;
 
 		// odstraneni policek
-		foreach (var like in acc?.Ratings ?? []) {
+		foreach (var like in account.Ratings) {
 			like.Account = null;
 			like.Course.Account = null;
 		}
@@ -92,6 +103,21 @@ public sealed class APIv1(
 		if(acc != null) acc.ShopItems = [];
 
 		return Ok(acc);
+		try {
+			await dailyRewards.TrackEventAsync(account.Uuid, DailyRewardEventType.Login, ct);
+		} catch (Exception ex) {
+			logger.LogWarning(ex, "Daily rewards tracking failed for login.");
+		}
+
+		try {
+			var wallet = await dailyRewards.GetWalletAsync(account.Uuid, ct);
+			account.DailyRewardXp = wallet.TotalXp;
+			account.DailyRewardDucks = wallet.TotalDucks;
+		} catch (Exception ex) {
+			logger.LogWarning(ex, "Daily rewards wallet loading failed for login.");
+		}
+
+		return Ok(account);
 	}
 
 	[HttpPost("auth/logout")]
@@ -135,6 +161,47 @@ public sealed class APIv1(
 			new { uuid = acc?.Uuid },
 			acc
 		);
+	}
+
+	[HttpGet("rewards/daily")]
+	public async Task<IActionResult> GetDailyRewards(
+		[FromQuery] int? year,
+		[FromQuery] int? month,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		var now = DateTime.UtcNow;
+		var targetYear = year ?? now.Year;
+		var targetMonth = month ?? now.Month;
+
+		if (targetYear < 2000 || targetYear > 2200 || targetMonth < 1 || targetMonth > 12) {
+			return BadRequest(new { error = "Neplatný rozsah roku nebo měsíce." });
+		}
+
+		var data = await dailyRewards.GetMonthAsync(acc.Uuid, targetYear, targetMonth, ct);
+		return Ok(data);
+	}
+
+	[HttpPost("rewards/daily/{date}")]
+	public async Task<IActionResult> ClaimDailyReward(
+		[FromRoute] string date,
+		CancellationToken ct = default
+	) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate)) {
+			return BadRequest(new { error = "Datum musí být ve formátu yyyy-MM-dd." });
+		}
+
+		var result = await dailyRewards.ClaimDayAsync(acc.Uuid, parsedDate, ct);
+		if (!result.Success) {
+			return BadRequest(new { error = result.Error ?? "Nepodařilo se odemknout odměnu." });
+		}
+
+		return Ok(result.Day);
 	}
 
 
@@ -224,7 +291,7 @@ public sealed class APIv1(
 		if (account == null) return new NotFoundObjectResult(new { message = "Účet nenalezen." });
 
 		// odstraneni policek
-		foreach (var like in account?.Ratings ?? []) {
+		foreach (var like in account.Ratings) {
 			like.Account = null;
 			like.Course.Account = null;
 		}
@@ -993,6 +1060,14 @@ public sealed class APIv1(
 			db.Courses.Update(course);
 		}
 		await db.SaveChangesAsync(ct);
+
+		if (acc != null) {
+			try {
+				await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.CourseView, ct);
+			} catch (Exception ex) {
+				logger.LogWarning(ex, "Daily rewards tracking failed for course view.");
+			}
+		}
 
 		return NoContent();
 	}
@@ -1815,6 +1890,13 @@ public sealed class APIv1(
 
 		switch (material) {
 			case UrlMaterial urlMaterial:
+				if (acc != null) {
+					try {
+						await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.MaterialView, ct);
+					} catch (Exception ex) {
+						logger.LogWarning(ex, "Daily rewards tracking failed for material view.");
+					}
+				}
 				return Ok(urlMaterial.ToReadDto());
 			case FileMaterial fileMaterial:
 				try {
@@ -1883,6 +1965,14 @@ public sealed class APIv1(
 
 					Response.Headers.ContentDisposition = "inline";
 
+					if (acc != null) {
+						try {
+							await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.MaterialView, ct);
+						} catch (Exception ex) {
+							logger.LogWarning(ex, "Daily rewards tracking failed for material download.");
+						}
+					}
+
 					// If mime type can be shown in browser, do not force download
 					return File(memoryStream, fileMaterial.MimeType ?? "application/octet-stream", fileMaterial.MimeType == null || fileMaterial.MimeType == "application/octet-stream" ? fileName : null);
 				} catch (Minio.Exceptions.MinioException e) {
@@ -1943,6 +2033,13 @@ public sealed class APIv1(
 				ct);
 
 		if (updated == 0) return NotFound(new { error = "URL material not found." });
+
+		try {
+			await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.MaterialView, ct);
+		} catch (Exception ex) {
+			logger.LogWarning(ex, "Daily rewards tracking failed for URL material click.");
+		}
+
 		return Ok(new { success = true });
 	}
 	
@@ -2747,15 +2844,16 @@ public sealed class APIv1(
 	public async Task<IActionResult> SubmitQuiz(
 		[FromRoute] Guid courseUuid,
 		[FromRoute] Guid quizUuid,
-		[FromBody] CreateQuizSubmissionRequest body
+		[FromBody] CreateQuizSubmissionRequest body,
+		CancellationToken ct = default
 	) {
-		var acc = await auth.ReAuthAsync();
+		var acc = await auth.ReAuthAsync(ct);
 
 		var course = await db.Courses
 			.AsNoTracking()
 			.AsSplitQuery()
 			.Where(c => c.Uuid == courseUuid)
-			.FirstOrDefaultAsync();
+			.FirstOrDefaultAsync(ct);
 
 		if (course == null) {
 			return NotFound(new { error = "Course not found." });
@@ -2770,7 +2868,7 @@ public sealed class APIv1(
 			.AsNoTracking()
 			.Where(q => q.CourseUuid == courseUuid)
 			.Where(q => q.Uuid == quizUuid)
-			.FirstOrDefaultAsync();
+			.FirstOrDefaultAsync(ct);
 
 		if (quiz == null) {
 			return NotFound(new { error = "Quiz not found." });
@@ -2859,7 +2957,15 @@ public sealed class APIv1(
 		quiz.AttemptsCount++;
 
 		db.QuizResults.Add(quizResult);
-		await db.SaveChangesAsync();
+		await db.SaveChangesAsync(ct);
+
+		if (acc != null) {
+			try {
+				await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.QuizSubmit, ct);
+			} catch (Exception ex) {
+				logger.LogWarning(ex, "Daily rewards tracking failed for quiz submit.");
+			}
+		}
 
 		return Ok(new {
 			resultUuid = quizResult.Uuid

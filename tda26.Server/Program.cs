@@ -183,16 +183,41 @@ public static class Program {
 
 
 
-        // ----------------------
-        // MINIO STORAGE
-        // ----------------------
-        
-        // Minio with fallback support
-        string? minioEndpoint = null;
-        string? minioAccessKey = null;
-        string? minioSecretKey = null;
-        string? minioConnectionName = null;
-        bool minioUseSSL = false;
+    // ----------------------
+    // MINIO STORAGE
+    // ----------------------
+
+    // Minio with fallback support
+    string? GetConfig(string key)
+{
+    return Environment.GetEnvironmentVariable(key) ?? ENV.GetValueOrNull(key);
+}
+
+void TryMinioHealthCheck(string endpoint, string accessKey, string secretKey, bool useSsl, string label)
+{
+    try
+    {
+        var client = new MinioClient()
+            .WithEndpoint(endpoint)
+            .WithCredentials(accessKey, secretKey)
+            .WithSSL(useSsl)
+            .Build();
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        client.ListBucketsAsync(cts.Token).GetAwaiter().GetResult();
+        Console.WriteLine($"MinIO health-check OK ({label}): {endpoint}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"MinIO health-check failed ({label}: {endpoint}). Error: {ex.Message}");
+    }
+}
+
+string? minioEndpoint = null;
+string? minioAccessKey = null;
+string? minioSecretKey = null;
+string? minioConnectionName = null;
+bool minioUseSSL = false;
 
         // Try primary MinIO from environment variables
         var primaryEndpoint = ENV.GetValueOrNull("MINIO_ENDPOINT");
@@ -293,6 +318,7 @@ public static class Program {
         // repozitare a service
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
+        builder.Services.AddScoped<IDailyRewardsService, DailyRewardsService>();
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
         builder.Services.AddSingleton<IGlobalStreamBroker, InMemoryGlobalStreamBroker>();
         builder.Services.AddSingleton<IStreamBroker, InMemoryStreamBroker>();
@@ -301,6 +327,7 @@ public static class Program {
         // Nastaveni
         builder.Services.Configure<CustomMinioOptions>(options => {
             options.BucketName = ENV.GetValueOrNull("MINIO_BUCKET_NAME") ?? "tda26";
+            options.BucketName = GetConfig("MINIO_BUCKET_NAME") ?? GetConfig("MINIO_BUCKET") ?? "tda26";
         });
 
         builder.Services.AddHttpContextAccessor();

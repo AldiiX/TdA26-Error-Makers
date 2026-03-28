@@ -73,4 +73,10 @@ public class Account : Auditable {
 
     [NotMapped]
     public AccountType Type => AccountType.Account;
+
+    [NotMapped]
+    public int DailyRewardXp { get; set; }
+
+    [NotMapped]
+    public int DailyRewardDucks { get; set; }
 }
