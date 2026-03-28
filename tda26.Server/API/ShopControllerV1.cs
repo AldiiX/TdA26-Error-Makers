@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
+using tda26.Server.Infrastructure;
 using tda26.Server.Services;
 
 namespace tda26.Server.API;
@@ -22,14 +23,17 @@ public class ShopControllerV1(AppDbContext db, IAuthService auth) {
 		var loggedAccount = await auth.ReAuthAsync();
 		if (loggedAccount == null) return new UnauthorizedResult();
 
-		db.ShopItems.Add(new BannerShopItem() {
-			Name = "Test Banner Item",
-			Description = "This is a test item.",
+		var entity = db.AccountsEf().FirstOrDefault(a => a.Uuid == loggedAccount.Uuid);
+		if (entity == null) return new UnauthorizedResult();
+
+		entity.ShopItems.Add(new AvatarShopItem() {
+			Name = "Cool avatar",
+			Description = "A really cool avatar for your profile.",
 			PriceInDucks = 100,
-			ImageUrl = "https://placehold.co/192x108"
+			ImageUrl = "https://example.com/cool-avatar.png"
 		});
 
 		await db.SaveChangesAsync();
-		return new OkObjectResult(loggedAccount);
+		return new OkResult();
 	}
 }

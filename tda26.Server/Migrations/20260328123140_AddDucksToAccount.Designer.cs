@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260328123140_AddDucksToAccount")]
+    partial class AddDucksToAccount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace tda26.Server.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
-
-            modelBuilder.Entity("AccountShopItem", b =>
-                {
-                    b.Property<Guid>("OwnedByAccountsUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("ShopItemsUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("OwnedByAccountsUuid", "ShopItemsUuid");
-
-                    b.HasIndex("ShopItemsUuid");
-
-                    b.ToTable("AccountShopItem");
-                });
 
             modelBuilder.Entity("CourseTag", b =>
                 {
@@ -574,6 +562,9 @@ namespace tda26.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid?>("AccountUuid")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
@@ -605,6 +596,8 @@ namespace tda26.Server.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
 
                     b.HasKey("Uuid");
+
+                    b.HasIndex("AccountUuid");
 
                     b.ToTable("ShopItems");
 
@@ -872,21 +865,6 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("BannerShopItem");
                 });
 
-            modelBuilder.Entity("AccountShopItem", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Account", null)
-                        .WithMany()
-                        .HasForeignKey("OwnedByAccountsUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.ShopItem", null)
-                        .WithMany()
-                        .HasForeignKey("ShopItemsUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("CourseTag", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Course", null)
@@ -1069,6 +1047,13 @@ namespace tda26.Server.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.ShopItem", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Account", null)
+                        .WithMany("ShopItems")
+                        .HasForeignKey("AccountUuid");
+                });
+
             modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Category", "Category")
@@ -1081,6 +1066,8 @@ namespace tda26.Server.Migrations
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
                     b.Navigation("Ratings");
+
+                    b.Navigation("ShopItems");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>

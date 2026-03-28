@@ -21,11 +21,14 @@ public class Account : Auditable {
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
 
-    [JsonIgnore]
 	public ICollection<ShopItem> ShopItems { get; set; } = new List<ShopItem>();
 
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
+    public int Ducks  { get; set; }
+    public int Xp { get; set; }
+    public int Level { get; set; }
 
 
 

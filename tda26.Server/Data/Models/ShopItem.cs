@@ -18,4 +18,6 @@ public class ShopItem : Auditable {
 	public required string Description { get; set; }
 
 	public required int PriceInDucks { get; set; }
+
+	public ICollection<Account> OwnedByAccounts { get; set; } = new List<Account>();
 }
