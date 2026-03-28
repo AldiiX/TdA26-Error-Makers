@@ -8,59 +8,49 @@ log() {
 wait_for_tcp() {
   local host="$1"
   local port="$2"
-  local tries="${3:-60}"
 
-  for i in $(seq 1 "$tries"); do
-    if (echo >"/dev/tcp/${host}/${port}") >/dev/null 2>&1; then
-      return 0
-    fi
-    sleep 1
-  done
+  if (echo >"/dev/tcp/${host}/${port}") >/dev/null 2>&1; then
+    return 0
+  fi
 
   return 1
 }
 
 wait_for_deps() {
   local host="127.0.0.1"
+  local timeout="${1:-10}"
+  local elapsed=0
 
-  log "waiting for mysql on ${host}:3306..."
-  if ! wait_for_tcp "$host" "3306" "120"; then
-    log "mysql not reachable on ${host}:3306"
-    exit 1
-  fi
+  log "waiting up to ${timeout}s for mysql:${host}:3306, redis:${host}:6379, minio:${host}:9000..."
 
-  log "waiting for redis on ${host}:6379..."
-  if ! wait_for_tcp "$host" "6379" "120"; then
-    log "redis not reachable on ${host}:6379"
-    exit 1
-  fi
+  while [ "$elapsed" -lt "$timeout" ]; do
+    local mysql_ready=1
+    local redis_ready=1
+    local minio_ready=1
 
-  log "waiting for minio on ${host}:9000..."
-  if ! wait_for_tcp "$host" "9000" "120"; then
-    log "minio not reachable on ${host}:9000"
-    exit 1
-  fi
+    if wait_for_tcp "$host" "3306"; then
+      mysql_ready=0
+    fi
 
-  # optional: zkus i http ready endpoint, kdyz mas v image curl/wget
-  if command -v curl >/dev/null 2>&1; then
-    log "waiting for minio http readiness..."
-    for i in $(seq 1 120); do
-      if curl -fsS "http://${host}:9000/minio/health/ready" >/dev/null 2>&1; then
-        break
-      fi
-      sleep 1
-    done
-  elif command -v wget >/dev/null 2>&1; then
-    log "waiting for minio http readiness..."
-    for i in $(seq 1 120); do
-      if wget -qO- "http://${host}:9000/minio/health/ready" >/dev/null 2>&1; then
-        break
-      fi
-      sleep 1
-    done
-  fi
+    if wait_for_tcp "$host" "6379"; then
+      redis_ready=0
+    fi
 
-  log "all dependencies are reachable"
+    if wait_for_tcp "$host" "9000"; then
+      minio_ready=0
+    fi
+
+    if [ "$mysql_ready" -eq 0 ] && [ "$redis_ready" -eq 0 ] && [ "$minio_ready" -eq 0 ]; then
+      log "all dependencies are reachable"
+      return 0
+    fi
+
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  log "dependencies not fully reachable within ${timeout}s, starting backend anyway"
+  return 0
 }
 
 # decode backend dotenv from env var if provided (runtime only)
@@ -88,16 +78,12 @@ else
   log "no base64 provided and /app/.env not found; continuing without it"
 fi
 
-
-
 shutdown() {
   log "shutting down..."
 
-  # kill app processes first
   kill "${API_PID:-0}" >/dev/null 2>&1 || true
   kill "${FRONT_PID:-0}" >/dev/null 2>&1 || true
 
-  # nginx je foreground proces, ukonci se spolu s kontejnerem
   exit 0
 }
 
@@ -106,7 +92,7 @@ trap shutdown SIGINT SIGTERM
 # -------------------------
 # wait for mysql/minio/redis
 # -------------------------
-#wait_for_deps
+wait_for_deps 10
 
 # -------------------------
 # app + frontend + nginx
