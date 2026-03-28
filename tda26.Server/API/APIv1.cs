@@ -100,6 +100,9 @@ public sealed class APIv1(
 			like.Course.Account = null;
 		}
 
+		if(acc != null) acc.ShopItems = [];
+
+		return Ok(acc);
 		try {
 			await dailyRewards.TrackEventAsync(account.Uuid, DailyRewardEventType.Login, ct);
 		} catch (Exception ex) {
@@ -836,7 +839,6 @@ public sealed class APIv1(
 			db.Courses.Update(existingCourse);
 		}
 		await db.SaveChangesAsync(ct);
-
 
 		return NoContent();
 	}

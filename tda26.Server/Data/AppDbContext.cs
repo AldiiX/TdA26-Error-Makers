@@ -1,11 +1,13 @@
-﻿﻿using tda26.Server.Data.Models;
+﻿using tda26.Server.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace tda26.Server.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
-    
+
+    public DbSet<Student> Students { get; set; }
+
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
     public DbSet<Admin> Admins => Set<Admin>();
@@ -40,7 +42,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     
     public DbSet<Tag> Tags => Set<Tag>();
 
-    public DbSet<Student> Students => Set<Student>();
+    public DbSet<ShopItem> ShopItems { get; set; }
+    public DbSet<BannerShopItem> BannerShopItems { get; set; }
+    public DbSet<AvatarShopItem> AvatarShopItems { get; set; }
+    public DbSet<EffectShopItem> EffectShopItems { get; set; }
+    public DbSet<BadgeShopItem> BadgeShopItems { get; set; }
+    public DbSet<TitleShopItem> TitleShopItems { get; set; }
 
     public DbSet<DailyRewardDay> DailyRewardDays => Set<DailyRewardDay>();
     public DbSet<DailyRewardTaskState> DailyRewardTaskStates => Set<DailyRewardTaskState>();
@@ -92,6 +99,36 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedAvatar)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedAvatarUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedBanner)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedBannerUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedEffect)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedEffectUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedBadge)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedBadgeUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedTitle)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedTitleUuid)
+            .OnDelete(DeleteBehavior.Restrict);
 
         /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)
