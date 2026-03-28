@@ -217,6 +217,7 @@ const toggleQuest = (id: number) => {
 /* ── Calendar grid ── */
 .calGrid {
     display: grid;
+    font-family: "Dosis", sans-serif;
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
 }
@@ -242,6 +243,7 @@ const toggleQuest = (id: number) => {
 .dayCell {
     cursor: default;
     transition: background-color 0.15s;
+    font-family: "Dosis", sans-serif;
 
     &:not(.empty):hover {
         background-color: var(--accent-color-primary-transparent-01);
