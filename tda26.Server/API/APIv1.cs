@@ -126,7 +126,22 @@ public sealed class APIv1(
 			});
 		}
 
-		var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, body.FirstName, body.MiddleName, body.LastName, ct);
+		if (body.OrganizationUuid == Guid.Empty) {
+			return new BadRequestObjectResult(new {
+				message = "Organizace je povinná."
+			});
+		}
+
+		var organizationExists = await db.Organizations
+			.AsNoTracking()
+			.AnyAsync(o => o.Uuid == body.OrganizationUuid, ct);
+		if (!organizationExists) {
+			return new BadRequestObjectResult(new {
+				message = "Vybraná organizace neexistuje."
+			});
+		}
+
+		var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, body.FirstName, body.MiddleName, body.LastName, body.OrganizationUuid, ct);
 
 		if (acc == null) {
 			return new ConflictObjectResult(new {
@@ -188,6 +203,36 @@ public sealed class APIv1(
 		return Ok(result.Day);
 	}
 
+	private async Task<Guid?> GetStudentOrganizationUuidAsync(Account? acc, CancellationToken ct) {
+		if (acc is not Student) return null;
+
+		return await db.Students
+			.AsNoTracking()
+			.Where(s => s.Uuid == acc.Uuid)
+			.Select(s => s.OrganizationUuid)
+			.FirstOrDefaultAsync(ct);
+	}
+
+	private async Task<Guid?> GetCourseScopeOrganizationUuidAsync(Account? acc, CancellationToken ct) {
+		if (acc is not Student and not Lecturer) return null;
+
+		return await db.Accounts
+			.AsNoTracking()
+			.Where(a => a.Uuid == acc.Uuid)
+			.Select(a => a.OrganizationUuid)
+			.FirstOrDefaultAsync(ct);
+	}
+
+	private async Task<Guid?> ResolveCourseOrganizationUuidForCreateAsync(Account acc, CancellationToken ct) {
+		var creatorOrganizationUuid = await db.Accounts
+			.AsNoTracking()
+			.Where(a => a.Uuid == acc.Uuid)
+			.Select(a => a.OrganizationUuid)
+			.FirstOrDefaultAsync(ct);
+
+		return creatorOrganizationUuid;
+	}
+
 
 
 	#region lecturers
@@ -196,8 +241,20 @@ public sealed class APIv1(
 	[HttpGet("lecturers")]
 	public async Task<IActionResult> GetLecturers([FromQuery] uint limit = 0, CancellationToken ct = default) {
 		var isLimited = limit > 0;
+		var acc = await auth.ReAuthAsync(ct);
+		var studentOrganizationUuid = await GetStudentOrganizationUuidAsync(acc, ct);
 
-		var all = await db.Lecturers
+		if (acc is Student && studentOrganizationUuid == null) {
+			return Ok(new List<Lecturer>());
+		}
+
+		var query = db.Lecturers.AsQueryable();
+		if (studentOrganizationUuid.HasValue) {
+			var orgUuid = studentOrganizationUuid.Value;
+			query = query.Where(l => l.OrganizationUuid == orgUuid);
+		}
+
+		var all = await query
 			.OrderBy(l => l.CreatedAt)
 			.Take(isLimited ? (int)limit : int.MaxValue)
 			.AsNoTracking()
@@ -250,15 +307,39 @@ public sealed class APIv1(
 
 	[HttpGet("lecturers/{uuid:guid}")]
 	public async Task<IActionResult> GetLecturer([FromRoute] Guid uuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		var studentOrganizationUuid = await GetStudentOrganizationUuidAsync(acc, ct);
+
 		var lecturer = await db.Lecturers
+			.Where(l => l.Uuid == uuid)
 			.AsNoTracking()
-			.FirstOrDefaultAsync(l => l.Uuid == uuid, ct);
+			.FirstOrDefaultAsync(ct);
 		if (lecturer == null) return new NotFoundObjectResult(new { message = "Lektor nenalezen." });
+
+		if (studentOrganizationUuid.HasValue && lecturer.OrganizationUuid != studentOrganizationUuid.Value) {
+			return NotFound(new { message = "Lektor nenalezen." });
+		}
 
 		return new OkObjectResult(lecturer);
 	}
 
 	#endregion
+
+	private async Task<ReadOrganizationResponse> BuildOrganizationReadDtoAsync(Organization organization, CancellationToken ct) {
+		var lecturerUuids = await db.Lecturers
+			.AsNoTracking()
+			.Where(l => l.OrganizationUuid == organization.Uuid)
+			.Select(l => l.Uuid)
+			.ToListAsync(ct);
+
+		var studentUuids = await db.Students
+			.AsNoTracking()
+			.Where(s => s.OrganizationUuid == organization.Uuid)
+			.Select(s => s.Uuid)
+			.ToListAsync(ct);
+
+		return organization.ToReadDto(lecturerUuids, studentUuids);
+	}
 
 
 
@@ -292,17 +373,249 @@ public sealed class APIv1(
 
 
 
+	#region organizations
+
+	[HttpGet("organizations")]
+	public async Task<IActionResult> GetOrganizations(CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organizations = await db.Organizations
+			.OrderBy(o => o.DisplayName)
+			.AsNoTracking()
+			.ToListAsync(ct);
+
+		var result = new List<ReadOrganizationResponse>(organizations.Count);
+		foreach (var organization in organizations) {
+			result.Add(await BuildOrganizationReadDtoAsync(organization, ct));
+		}
+
+		return Ok(result);
+	}
+
+	[HttpGet("organizations/registration-options")]
+	public async Task<IActionResult> GetOrganizationsForRegistration(CancellationToken ct = default) {
+		var organizations = await db.Organizations
+			.AsNoTracking()
+			.OrderBy(o => o.DisplayName)
+			.Select(o => new {
+				o.Uuid,
+				o.DisplayName,
+				o.City,
+				o.Country
+			})
+			.ToListAsync(ct);
+
+		return Ok(organizations);
+	}
+
+	[HttpPost("organizations")]
+	public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		body.DisplayName = body.DisplayName?.Trim() ?? string.Empty;
+		body.Country = body.Country?.Trim() ?? string.Empty;
+		body.City = body.City?.Trim() ?? string.Empty;
+		body.Address = body.Address?.Trim() ?? string.Empty;
+		body.PostalCode = body.PostalCode?.Trim() ?? string.Empty;
+
+		if (string.IsNullOrWhiteSpace(body.DisplayName)) return BadRequest(new { error = "DisplayName is required." });
+		if (string.IsNullOrWhiteSpace(body.Country)) return BadRequest(new { error = "Country is required." });
+		if (string.IsNullOrWhiteSpace(body.City)) return BadRequest(new { error = "City is required." });
+		if (string.IsNullOrWhiteSpace(body.Address)) return BadRequest(new { error = "Address is required." });
+		if (string.IsNullOrWhiteSpace(body.PostalCode)) return BadRequest(new { error = "PostalCode is required." });
+
+		var lecturerUuids = body.LecturerUuids
+			.Where(uuid => uuid != Guid.Empty)
+			.Distinct()
+			.ToList();
+		var studentUuids = body.StudentUuids
+			.Where(uuid => uuid != Guid.Empty)
+			.Distinct()
+			.ToList();
+
+		var lecturers = await db.Lecturers
+			.Where(l => lecturerUuids.Contains(l.Uuid))
+			.ToListAsync(ct);
+
+		if (lecturers.Count != lecturerUuids.Count) {
+			return BadRequest(new { error = "One or more lecturer UUIDs are invalid." });
+		}
+
+		var alreadyAssignedLecturer = await db.Lecturers
+			.AsNoTracking()
+			.Where(l => lecturerUuids.Contains(l.Uuid) && l.OrganizationUuid != null)
+			.Select(l => l.Uuid)
+			.FirstOrDefaultAsync(ct);
+		if (alreadyAssignedLecturer != Guid.Empty) {
+			return BadRequest(new { error = "Lecturer membership is immutable and one lecturer can belong to at most one organization." });
+		}
+
+		var students = await db.Students
+			.Where(s => studentUuids.Contains(s.Uuid))
+			.ToListAsync(ct);
+
+		if (students.Count != studentUuids.Count) {
+			return BadRequest(new { error = "One or more student UUIDs are invalid." });
+		}
+
+		var alreadyAssignedStudent = await db.Students
+			.AsNoTracking()
+			.Where(s => studentUuids.Contains(s.Uuid) && s.OrganizationUuid != null)
+			.Select(s => s.Uuid)
+			.FirstOrDefaultAsync(ct);
+		if (alreadyAssignedStudent != Guid.Empty) {
+			return BadRequest(new { error = "Student membership is immutable and one student can belong to at most one organization." });
+		}
+
+		var organization = new Organization {
+			DisplayName = body.DisplayName,
+			Country = body.Country,
+			City = body.City,
+			Address = body.Address,
+			PostalCode = body.PostalCode,
+			Region = body.Region,
+			Type = body.Type,
+			Status = body.Status
+		};
+
+		db.Organizations.Add(organization);
+
+		foreach (var lecturer in lecturers) {
+			lecturer.OrganizationUuid = organization.Uuid;
+		}
+
+		foreach (var student in students) {
+			student.OrganizationUuid = organization.Uuid;
+		}
+
+		await db.SaveChangesAsync(ct);
+
+		return new CreatedAtActionResult(
+			nameof(GetOrganizationById),
+			"APIv1",
+			new { uuid = organization.Uuid },
+			await BuildOrganizationReadDtoAsync(organization, ct)
+		);
+	}
+
+	[HttpGet("organizations/{uuid:guid}")]
+	public async Task<IActionResult> GetOrganizationById([FromRoute] Guid uuid, CancellationToken ct = default) {
+		var organization = await db.Organizations
+			.Where(o => o.Uuid == uuid)
+			.AsNoTracking()
+			.FirstOrDefaultAsync(ct);
+
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		return Ok(await BuildOrganizationReadDtoAsync(organization, ct));
+	}
+
+	[HttpPut("organizations/{uuid:guid}")]
+	public async Task<IActionResult> UpdateOrganization([FromRoute] Guid uuid, [FromBody] UpdateOrganizationRequest body, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organization = await db.Organizations
+			.Where(o => o.Uuid == uuid)
+			.FirstOrDefaultAsync(ct);
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		if (body.DisplayName != null) {
+			var displayName = body.DisplayName.Trim();
+			if (string.IsNullOrWhiteSpace(displayName)) return BadRequest(new { error = "DisplayName cannot be empty." });
+			organization.DisplayName = displayName;
+		}
+
+		if (body.Country != null) {
+			var country = body.Country.Trim();
+			if (string.IsNullOrWhiteSpace(country)) return BadRequest(new { error = "Country cannot be empty." });
+			organization.Country = country;
+		}
+
+		if (body.City != null) {
+			var city = body.City.Trim();
+			if (string.IsNullOrWhiteSpace(city)) return BadRequest(new { error = "City cannot be empty." });
+			organization.City = city;
+		}
+
+		if (body.Address != null) {
+			var address = body.Address.Trim();
+			if (string.IsNullOrWhiteSpace(address)) return BadRequest(new { error = "Address cannot be empty." });
+			organization.Address = address;
+		}
+
+		if (body.PostalCode != null) {
+			var postalCode = body.PostalCode.Trim();
+			if (string.IsNullOrWhiteSpace(postalCode)) return BadRequest(new { error = "PostalCode cannot be empty." });
+			organization.PostalCode = postalCode;
+		}
+
+		if (body.Region.HasValue) organization.Region = body.Region.Value;
+		if (body.Type.HasValue) organization.Type = body.Type.Value;
+		if (body.Status.HasValue) organization.Status = body.Status.Value;
+
+		if (body.LecturerUuids != null || body.StudentUuids != null) {
+			return BadRequest(new { error = "Organization membership cannot be changed after initial assignment." });
+		}
+
+		await db.SaveChangesAsync(ct);
+
+		return Ok(await BuildOrganizationReadDtoAsync(organization, ct));
+	}
+
+	[HttpDelete("organizations/{uuid:guid}")]
+	public async Task<IActionResult> DeleteOrganization([FromRoute] Guid uuid, CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organization = await db.Organizations
+			.FirstOrDefaultAsync(o => o.Uuid == uuid, ct);
+		if (organization == null) return NotFound(new { error = "Organization not found." });
+
+		db.Organizations.Remove(organization);
+		await db.SaveChangesAsync(ct);
+
+		return NoContent();
+	}
+
+	#endregion
+
+
+
+
+
 	#region courses
 
 	[HttpGet("courses")]
 	public async Task<IActionResult> GetCourses([FromQuery] uint limit = 0, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
-		var accUuid = acc?.Uuid;
 		var isAdmin = acc is Admin;
 		var isLimited = limit > 0;
+		var courseScopeOrganizationUuid = await GetCourseScopeOrganizationUuidAsync(acc, ct);
 
-		var courses = await db.CoursesMinimalEf()
-			.Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Paused || c.Status == CourseStatus.Scheduled || isAdmin)
+		var query = db.CoursesMinimalEf()
+			.Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Paused || c.Status == CourseStatus.Scheduled || isAdmin);
+
+		if (courseScopeOrganizationUuid.HasValue) {
+			var orgUuid = courseScopeOrganizationUuid.Value;
+			query = query.Where(c => c.OrganizationUuid == orgUuid);
+		}
+
+		if ((acc is Student || acc is Lecturer) && courseScopeOrganizationUuid == null) {
+			return Ok(new List<Course>());
+		}
+
+		var courses = await query
 			.OrderByDescending(c => c.CreatedAt)
 			.Take(isLimited ? (int)limit : int.MaxValue)
 			.AsNoTracking()
@@ -375,7 +688,7 @@ public sealed class APIv1(
 
 		var isLimited = limit > 0;
 		var takeCount = limit == 0 ? int.MaxValue : (int)limit;
-
+		
 		if (full) {
 			var query = db.CoursesFullEf()
 				.AsNoTracking()
@@ -383,6 +696,7 @@ public sealed class APIv1(
 			
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
+				query = query.Where(c => c.OrganizationUuid == acc.OrganizationUuid);
 			}
 
 			var courses = await query
@@ -406,6 +720,7 @@ public sealed class APIv1(
 				.AsSplitQuery();
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
+				query = query.Where(c => c.OrganizationUuid == acc.OrganizationUuid);
 			}
 
 			var courses = await query
@@ -448,6 +763,7 @@ public sealed class APIv1(
 		Course? course;
 
 		var acc = await auth.ReAuthAsync(ct);
+		var courseScopeOrganizationUuid = await GetCourseScopeOrganizationUuidAsync(acc, ct);
 
 		if (full) {
 			course = await db.CoursesFullEf()
@@ -492,6 +808,17 @@ public sealed class APIv1(
 		var accessResult = ValidateRestrictedCourseAccess(course, acc);
 		if (accessResult != null) {
 			return accessResult;
+		}
+
+		if (courseScopeOrganizationUuid.HasValue) {
+			var orgUuid = courseScopeOrganizationUuid.Value;
+			if (course.OrganizationUuid != orgUuid) {
+				return NotFound(new { error = "Course not found." });
+			}
+		}
+
+		if ((acc is Student || acc is Lecturer) && courseScopeOrganizationUuid == null) {
+			return NotFound(new { error = "Course not found." });
 		}
 
 		if (course.Account != null) course.Account.Ratings = [];
@@ -1513,10 +1840,16 @@ public sealed class APIv1(
 			return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
 		}
 
+		var courseOrganizationUuid = await ResolveCourseOrganizationUuidForCreateAsync(acc, ct);
+		if (!courseOrganizationUuid.HasValue) {
+			return BadRequest(new { error = "Creator must belong to an organization." });
+		}
+
 		var newCourse = new Course {
 			Name = body.Name,
 			Description = body.Description,
-			LecturerUuid = acc.Uuid
+			LecturerUuid = acc.Uuid,
+			OrganizationUuid = courseOrganizationUuid.Value
 		};
 
 		// Category
@@ -1572,10 +1905,16 @@ public sealed class APIv1(
 			return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
 		}
 
+		var courseOrganizationUuid = await ResolveCourseOrganizationUuidForCreateAsync(acc, ct);
+		if (!courseOrganizationUuid.HasValue) {
+			return BadRequest(new { error = "Creator must belong to an organization." });
+		}
+
 		var newCourse = new Course {
 			Name = body.Course.Name,
 			Description = body.Course.Description,
-			LecturerUuid = acc.Uuid
+			LecturerUuid = acc.Uuid,
+			OrganizationUuid = courseOrganizationUuid.Value
 		};
 
 		foreach (var url in body.UrlMaterials) {
