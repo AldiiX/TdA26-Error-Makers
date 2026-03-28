@@ -115,6 +115,10 @@
                         <NuxtLink :class="$style.linkBtn" to="/dashboard">
                             <Button button-style="primary" href="/dashboard">Dashboard</Button>
                         </NuxtLink>
+
+                        <NuxtLink v-if="loggedAccount.type === 'admin'" :class="$style.linkBtn" to="/branches">
+                            <Button button-style="secondary" accent-color="primary">Pobočky</Button>
+                        </NuxtLink>
                     </div>
 
                     <Popover position="bottom-right" :trigger="useClickPopover ? 'click' : 'hover'" :wrapper-class="$style.pwr">

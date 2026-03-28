@@ -51,6 +51,14 @@ watch(() => useRoute().path, (newPath) => {
                             Dashboard
                         </NuxtLink>
                         <NuxtLink
+                            v-if="loggedAccount?.type === 'admin'"
+                            to="/branches"
+                            :class="$style.link"
+                            @click="mobileMenuOpened = false"
+                        >
+                            Pobočky
+                        </NuxtLink>
+                        <NuxtLink
                             v-if="loggedAccount"
                             to="/profile"
                             :class="$style.link"

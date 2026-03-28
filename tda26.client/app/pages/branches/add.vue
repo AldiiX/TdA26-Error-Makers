@@ -23,8 +23,8 @@ definePageMeta({
 });
 
 useSeo({
-    title: "Přidat organizaci",
-    description: "Administrace organizací v Think Different Academy.",
+    title: "Přidat pobočku",
+    description: "Administrace poboček v Think Different Academy.",
     noindex: true
 });
 
@@ -109,7 +109,7 @@ async function submitForm(): Promise<void> {
     };
 
     if (!payload.displayName || !payload.country || !payload.city || !payload.address || !payload.postalCode) {
-        submitError.value = "Vyplň všechna povinná pole organizace.";
+        submitError.value = "Vyplň všechna povinná pole pobočky.";
         return;
     }
 
@@ -126,17 +126,17 @@ async function submitForm(): Promise<void> {
 
         isInviteModalOpen.value = true;
         push.success({
-            title: "Organizace vytvořena",
-            message: "Organizace byla úspěšně vytvořena.",
+            title: "Pobočka vytvořena",
+            message: "Pobočka byla úspěšně vytvořena.",
             duration: 4500
         });
 
         resetForm();
     } catch (error) {
-        submitError.value = "Nepodařilo se vytvořit organizaci. Zkus to prosím znovu.";
+        submitError.value = "Nepodařilo se vytvořit pobočku. Zkus to prosím znovu.";
         push.error({
             title: "Chyba při vytváření",
-            message: "API vrátilo chybu při ukládání organizace.",
+            message: "API vrátilo chybu při ukládání pobočky.",
             duration: 5000
         });
     } finally {
@@ -167,13 +167,13 @@ async function copyInviteLink(): Promise<void> {
 
 <template>
     <Head>
-        <Title>Přidat organizaci • Think different Academy</Title>
+        <Title>Přidat pobočku • Think different Academy</Title>
     </Head>
 
     <section :class="$style.page">
-        <h1 :class="$style.heading">Přidat organizaci</h1>
+        <h1 :class="$style.heading">Přidat pobočku</h1>
         <p :class="$style.description">
-            Tato stránka je dostupná pouze pro administrátory. Po vytvoření organizace zobrazíme placeholder odkaz,
+            Tato stránka je dostupná pouze pro administrátory. Po vytvoření pobočky zobrazíme placeholder odkaz,
             na který by se v budoucnu poslaly registrační instrukce.
         </p>
 
@@ -256,7 +256,7 @@ async function copyInviteLink(): Promise<void> {
                     :loading="isSubmitting"
                     :disabled="isSubmitting"
                 >
-                    Vytvořit organizaci
+                    Vytvořit pobočku
                 </Button>
             </div>
         </form>
