@@ -160,6 +160,16 @@ public sealed class APIv1(
 			.FirstOrDefaultAsync(ct);
 	}
 
+	private async Task<Guid?> GetCourseScopeOrganizationUuidAsync(Account? acc, CancellationToken ct) {
+		if (acc is not Student and not Lecturer) return null;
+
+		return await db.Accounts
+			.AsNoTracking()
+			.Where(a => a.Uuid == acc.Uuid)
+			.Select(a => a.OrganizationUuid)
+			.FirstOrDefaultAsync(ct);
+	}
+
 
 
 	#region lecturers
@@ -528,17 +538,17 @@ public sealed class APIv1(
 		var acc = await auth.ReAuthAsync(ct);
 		var isAdmin = acc is Admin;
 		var isLimited = limit > 0;
-		var studentOrganizationUuid = await GetStudentOrganizationUuidAsync(acc, ct);
+		var courseScopeOrganizationUuid = await GetCourseScopeOrganizationUuidAsync(acc, ct);
 
 		var query = db.CoursesMinimalEf()
 			.Where(c => c.Status == CourseStatus.Live || c.Status == CourseStatus.Paused || c.Status == CourseStatus.Scheduled || isAdmin);
 
-		if (studentOrganizationUuid.HasValue) {
-			var orgUuid = studentOrganizationUuid.Value;
+		if (courseScopeOrganizationUuid.HasValue) {
+			var orgUuid = courseScopeOrganizationUuid.Value;
 			query = query.Where(c => c.OrganizationUuid == orgUuid);
 		}
 
-		if (acc is Student && studentOrganizationUuid == null) {
+		if ((acc is Student || acc is Lecturer) && courseScopeOrganizationUuid == null) {
 			return Ok(new List<Course>());
 		}
 
@@ -615,7 +625,7 @@ public sealed class APIv1(
 
 		var isLimited = limit > 0;
 		var takeCount = limit == 0 ? int.MaxValue : (int)limit;
-
+		
 		if (full) {
 			var query = db.CoursesFullEf()
 				.AsNoTracking()
@@ -623,6 +633,7 @@ public sealed class APIv1(
 			
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
+				query = query.Where(c => c.OrganizationUuid == acc.OrganizationUuid);
 			}
 
 			var courses = await query
@@ -646,6 +657,7 @@ public sealed class APIv1(
 				.AsSplitQuery();
 			if (acc is not Admin) {
 				query = query.Where(c => c.LecturerUuid == acc.Uuid);
+				query = query.Where(c => c.OrganizationUuid == acc.OrganizationUuid);
 			}
 
 			var courses = await query
@@ -688,7 +700,7 @@ public sealed class APIv1(
 		Course? course;
 
 		var acc = await auth.ReAuthAsync(ct);
-		var studentOrganizationUuid = await GetStudentOrganizationUuidAsync(acc, ct);
+		var courseScopeOrganizationUuid = await GetCourseScopeOrganizationUuidAsync(acc, ct);
 
 		if (full) {
 			course = await db.CoursesFullEf()
@@ -735,14 +747,14 @@ public sealed class APIv1(
 			return accessResult;
 		}
 
-		if (studentOrganizationUuid.HasValue) {
-			var orgUuid = studentOrganizationUuid.Value;
+		if (courseScopeOrganizationUuid.HasValue) {
+			var orgUuid = courseScopeOrganizationUuid.Value;
 			if (course.OrganizationUuid != orgUuid) {
 				return NotFound(new { error = "Course not found." });
 			}
 		}
 
-		if (acc is Student && studentOrganizationUuid == null) {
+		if ((acc is Student || acc is Lecturer) && courseScopeOrganizationUuid == null) {
 			return NotFound(new { error = "Course not found." });
 		}
 
