@@ -24,7 +24,12 @@ public class Account : Auditable {
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
-
+    public int Duck { get; set; }
+    
+    public int Xp { get; set; }
+    
+    public int Level { get; set; }
+    
 
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]

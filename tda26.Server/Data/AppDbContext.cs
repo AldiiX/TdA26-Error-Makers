@@ -12,6 +12,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Course> Courses => Set<Course>();
 
+    public DbSet<DailyQuestCompletion> DailyQuestCompletions { get; set; }
+    
     public DbSet<Category> Categories { get; set; }
 
     public DbSet<Rating> Ratings { get; set; }
