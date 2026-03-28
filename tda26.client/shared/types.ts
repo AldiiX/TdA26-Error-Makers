@@ -120,6 +120,21 @@ export interface Lecturer extends Account {
     updatedAt: string,
 }
 
+export type AccountType = "account" | "lecturer" | "admin" | "student";
+
+export function normalizeAccountType(type: string | null | undefined): AccountType {
+    switch ((type ?? "").toLowerCase()) {
+        case "lecturer":
+            return "lecturer";
+        case "admin":
+            return "admin";
+        case "student":
+            return "student";
+        default:
+            return "account";
+    }
+}
+
 export interface Account {
     username: string;
     uuid: string,
@@ -151,6 +166,8 @@ export interface ProfilePayload {
     account: Account;
     equipped: EquippedShopItems;
     inventory: ShopItem[];
+    type: AccountType;
+    isPremium: boolean;
 }
 
 interface Rating {

@@ -105,14 +105,18 @@ public sealed class APIv1(
 		body.Username = body.Username?.Trim() ?? string.Empty;
 		body.Email = body.Email?.Trim() ?? string.Empty;
 		body.Password = body.Password?.Trim() ?? string.Empty;
+		body.FirstName = body.FirstName?.Trim() ?? string.Empty;
+		body.MiddleName = body.MiddleName?.Trim();
+		body.LastName = body.LastName?.Trim() ?? string.Empty;
 
-		if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password)) {
+		if (string.IsNullOrEmpty(body.Username) || string.IsNullOrEmpty(body.Password) || 
+		    string.IsNullOrEmpty(body.FirstName) || string.IsNullOrEmpty(body.LastName)) {
 			return new BadRequestObjectResult(new {
-				message = "Uživatelské jméno a heslo jsou povinné."
+				message = "Uživatelské jméno, heslo, jméno a příjmení jsou povinné."
 			});
 		}
 
-		var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, ct);
+		var acc = await auth.RegisterAsync(body.Username, body.Email, body.Password, body.FirstName, body.MiddleName, body.LastName, ct);
 
 		if (acc == null) {
 			return new ConflictObjectResult(new {

@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "#shared/types";
+import { normalizeAccountType, type Account } from "#shared/types";
 import { push } from "notivue";
 import {useCourses} from "~/composables/useCourses";
 
@@ -46,15 +46,19 @@ async function submitLoginForm(event: Event) {
             throw new Error("Invalid credentials");
         }
 
+        const normalizedAccount: Account = {
+            ...res,
+            type: normalizeAccountType(res.type)
+        };
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-        loggedAccount.value = res;
+        loggedAccount.value = normalizedAccount;
 
         loginToast.resolve({
             message: "Úspěšně přihlášeno!",
             duration: 1200
         });
 
-        emit("loginSuccess", res);
+        emit("loginSuccess", normalizedAccount);
         invalidateCoursesState();
     } catch (err: any) {
         errorMsg.value = "Nesprávné uživatelské jméno nebo heslo.";

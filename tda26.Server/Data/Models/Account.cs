@@ -43,6 +43,8 @@ public class Account : Auditable {
 
     [JsonIgnore]
     public TitleShopItem? EquippedTitle { get; set; }
+    
+    public bool IsPremium { get; set; } = false;
 
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
@@ -55,7 +57,7 @@ public class Account : Auditable {
 
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
-    public enum AccountType { Account, Lecturer, Admin }
+    public enum AccountType { Account, Lecturer, Admin, Student }
 
     [NotMapped]
     public IEnumerable<Like> Likes => Ratings.OfType<Like>();

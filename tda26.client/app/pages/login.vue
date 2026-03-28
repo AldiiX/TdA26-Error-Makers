@@ -4,7 +4,7 @@ import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "#shared/types";
+import { normalizeAccountType, type Account } from "#shared/types";
 import { push } from "notivue";
 
 definePageMeta({
@@ -63,7 +63,10 @@ async function submitLoginForm(event: Event) {
         }
 
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-        loggedAccount.value = res;
+        loggedAccount.value = {
+            ...res,
+            type: normalizeAccountType(res.type)
+        };
 
         loginToast.resolve({
             message: "Úspěšně přihlášeno! Přesměrovávám...",
