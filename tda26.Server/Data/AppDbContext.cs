@@ -40,6 +40,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     
     public DbSet<Tag> Tags => Set<Tag>();
 
+    public DbSet<Student> Students => Set<Student>();
+
     // auto update audit properties
     private void SetAuditProperties() {
         var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });

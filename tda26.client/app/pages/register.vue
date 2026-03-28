@@ -31,10 +31,9 @@ const passwordApprove = ref("");
 const isLoading = ref(false);
 const errorMsg = ref<string[]>([]);
 const email = ref("");
-
-
-
-// handlers
+const firstName = ref("");
+const middleName = ref("");
+const lastName = ref("");
 function togglePassword() {
     // prepina zobrazeni hesla
     showPassword.value = !showPassword.value;
@@ -74,6 +73,18 @@ async function submitRegisterForm(event: Event) {
 
     if (!validaceEmailu(email.value)) {
         errorMsg.value.push("Neplatný formát e-mailu");
+        isLoading.value = false;
+        return;
+    }
+
+    if (!firstName.value.trim()) {
+        errorMsg.value.push("Jméno je povinné");
+        isLoading.value = false;
+        return;
+    }
+
+    if (!lastName.value.trim()) {
+        errorMsg.value.push("Příjmení je povinné");
         isLoading.value = false;
         return;
     }
@@ -153,6 +164,50 @@ async function submitRegisterForm(event: Event) {
                 </div>
 
                 <div :class="$style.group">
+                    <label :class="$style.label" for="firstName">Jméno</label>
+                    <Input
+                        id="firstName"
+                        v-model="firstName"
+                        style="width: 100%"
+                        name="firstName"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="given-name"
+                        required
+                        placeholder="Karel"
+                    />
+                </div>
+
+                <div :class="$style.group">
+                    <label :class="$style.label" for="middleName">Druhé jméno (volitelné)</label>
+                    <Input
+                        id="middleName"
+                        v-model="middleName"
+                        style="width: 100%"
+                        name="middleName"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="additional-name"
+                        placeholder="Josef"
+                    />
+                </div>
+
+                <div :class="$style.group">
+                    <label :class="$style.label" for="lastName">Příjmení</label>
+                    <Input
+                        id="lastName"
+                        v-model="lastName"
+                        style="width: 100%"
+                        name="lastName"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="family-name"
+                        required
+                        placeholder="Honsig"
+                    />
+                </div>
+
+                <div :class="$style.group">
                     <label :class="$style.label" for="passwordApprove">Heslo</label>
                     <div :class="$style.passwordRow">
                         <Input
@@ -186,7 +241,7 @@ async function submitRegisterForm(event: Event) {
                             placeholder="••••••••"
                             aria-describedby="password-help"
                             required
-                            name="password"
+                            name="passwordApprove"
                             :type="showPasswordApprove ? 'text' : 'password'"
                         />
                         <button
