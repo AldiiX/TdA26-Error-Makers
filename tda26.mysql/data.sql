@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Počítač: localhost:3306
--- Vytvořeno: Sob 28. bře 2026, 16:35
+-- Vytvořeno: Sob 28. bře 2026, 16:46
 -- Verze serveru: 8.0.45-0ubuntu0.24.04.1
 -- Verze PHP: 8.3.27
 
@@ -4296,6 +4296,22 @@ CREATE TABLE `ShopItems` (
   `UpdatedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `CreatedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Vypisuji data pro tabulku `ShopItems`
+--
+
+INSERT INTO `ShopItems` (`Uuid`, `Name`, `Description`, `PriceInDucks`, `Discriminator`, `ImageUrl`, `UpdatedAt`, `CreatedAt`) VALUES
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1001', 'Blue Duck Avatar', 'Modry avatar s minimalistickou kachnou v TDA stylu.', 189, 'AvatarShopItem', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:00.000000', '2026-03-28 16:55:00.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1002', 'Green Pixel Avatar', 'Pixelovy avatar se zelenym akcentem pro profil.', 175, 'AvatarShopItem', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:01.000000', '2026-03-28 16:55:01.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1003', 'Neon Banner Wave', 'Neonovy banner s jemnou vlnou a tmavym pozadim.', 245, 'BannerShopItem', 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80', '2026-03-28 16:55:02.000000', '2026-03-28 16:55:02.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1004', 'Sky Gradient Banner', 'Svetly banner s modrozelenym gradientem.', 260, 'BannerShopItem', 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80', '2026-03-28 16:55:03.000000', '2026-03-28 16:55:03.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1005', 'Starter Badge Star', 'Jednoduchy odznak s hvezdou pro aktivni uzivatele.', 150, 'BadgeShopItem', 'https://images.unsplash.com/photo-1516410529446-2c777cb7366d?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:04.000000', '2026-03-28 16:55:04.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1006', 'Pro Badge Shield', 'Odznak se stitem pro zkusenejsi uzivatele.', 220, 'BadgeShopItem', 'https://images.unsplash.com/photo-1633419461186-7d40a38105ec?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:05.000000', '2026-03-28 16:55:05.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1007', 'Soft Glow Effect', 'Jemny svetelny efekt kolem avataru.', 310, 'EffectShopItem', 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:06.000000', '2026-03-28 16:55:06.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1008', 'Electric Ring Effect', 'Vyrazny elektricky kruh kolem profilove fotky.', 340, 'EffectShopItem', 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:07.000000', '2026-03-28 16:55:07.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1009', 'Title: Early Bird', 'Titul pro uzivatele, kteri byli mezi prvnimi.', 199, 'TitleShopItem', 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:08.000000', '2026-03-28 16:55:08.000000'),
+('9f1f3d4a-5a0a-4f95-9d41-4a6c9e8a1010', 'Title: Bug Hunter', 'Titul pro lovce chyb a aktivni testery.', 275, 'TitleShopItem', 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=600&q=80', '2026-03-28 16:55:09.000000', '2026-03-28 16:55:09.000000');
 
 -- --------------------------------------------------------
 
