@@ -9,3 +9,4 @@ bin
 node_modules
 dist
 tda26.client/obj/
+obj
