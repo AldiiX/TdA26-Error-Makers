@@ -1,5 +1,5 @@
 import { ref, computed, watch, type Ref } from "vue";
-import type { Account, Course } from "#shared/types";
+import { normalizeAccountNumericFields, type Account, type Course } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import type { CourseDetailModal } from "~/composables/courses/[uuid]/courseDetailTypes";
 
@@ -94,7 +94,7 @@ export function useCourseRating(params: {
                 $fetch<Course>(baseUrl + `/api/v1/courses/${params.courseSmall.value.uuid}`, { method: "GET", headers: { "Content-Type": "application/json" }, query: { full: true } }),
             ]);
 
-            params.loggedAccount.value = updatedUser ?? null;
+            params.loggedAccount.value = updatedUser ? normalizeAccountNumericFields(updatedUser) : null;
             params.courseSmall.value = updatedCourseSmall;
             params.course.value = updatedCourse;
 

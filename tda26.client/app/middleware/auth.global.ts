@@ -1,4 +1,4 @@
-﻿import { normalizeAccountType, type Account } from "#shared/types";
+﻿import { normalizeAccountNumericFields, type Account } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 
 export default defineNuxtRouteMiddleware(async () => {
@@ -20,7 +20,7 @@ export default defineNuxtRouteMiddleware(async () => {
         catch (e) {}
 
         loggedAccount.value = account
-            ? { ...account, type: normalizeAccountType(account.type) }
+            ? normalizeAccountNumericFields(account)
             : null;
         //console.log(loggedAccount.value)
     }

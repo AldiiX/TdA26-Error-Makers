@@ -8,6 +8,9 @@ namespace tda26.Server.Data.Models;
 
 [Index(nameof(Username), IsUnique = true)]
 public class Account : Auditable {
+    public const int BaseXpPerLevel = 100;
+    public const int XpGrowthPerLevel = 25;
+
     // orm props
     [Key]
     public Guid Uuid { get; set; } = Guid.NewGuid();
@@ -53,6 +56,33 @@ public class Account : Auditable {
     public int Xp { get; set; }
     public int Level { get; set; }
 
+    public void AddProgress(int xpDelta, int ducksDelta) {
+        if (xpDelta > 0) {
+            Xp += xpDelta;
+            RecalculateLevelFromXp();
+        }
+
+        if (ducksDelta > 0) {
+            Ducks += ducksDelta;
+        }
+    }
+
+    public void RecalculateLevelFromXp() {
+        var remainingXp = Math.Max(0, Xp);
+        var level = 0;
+
+        while (remainingXp >= GetXpRequiredForNextLevel(level)) {
+            remainingXp -= GetXpRequiredForNextLevel(level);
+            level++;
+        }
+
+        Level = level;
+    }
+
+    private static int GetXpRequiredForNextLevel(int currentLevel) {
+        return BaseXpPerLevel + (currentLevel * XpGrowthPerLevel);
+    }
+
 
 
     // nemapovany props (pouze pro serializaci)
@@ -74,9 +104,4 @@ public class Account : Auditable {
     [NotMapped]
     public AccountType Type => AccountType.Account;
 
-    [NotMapped]
-    public int DailyRewardXp { get; set; }
-
-    [NotMapped]
-    public int DailyRewardDucks { get; set; }
 }

@@ -112,8 +112,9 @@ function duckWord(count: number): string {
     });
 }
 
-function ducksLabel(count: number): string {
-    return `${count} ${duckWord(count)}`;
+function ducksLabel(count: number | null | undefined): string {
+    const safeCount = typeof count === "number" && Number.isFinite(count) ? count : 0;
+    return `${safeCount} ${duckWord(safeCount)}`;
 }
 
 function resetFilters() {

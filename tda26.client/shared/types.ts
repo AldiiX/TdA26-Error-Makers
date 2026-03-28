@@ -94,6 +94,16 @@ export interface QuizResult {
     completedAt: string;
 }
 
+export interface QuizSubmitResponse {
+    resultUuid: string;
+    rewardDucks?: number;
+    account?: {
+        ducks: number;
+        xp: number;
+        level: number;
+    } | null;
+}
+
 export interface CourseFormModel {
     name: string;
     description: string;
@@ -135,6 +145,11 @@ export function normalizeAccountType(type: string | null | undefined): AccountTy
     }
 }
 
+function toSafeNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export interface Account {
     username: string;
     uuid: string,
@@ -142,7 +157,7 @@ export interface Account {
     fullNameWithoutTitles: string,
     likes: Rating[];
     dislikes: Rating[];
-    type: "account" | "lecturer" | "admin";
+    type: AccountType;
     ducks: number;
     xp: number;
     level: number;
@@ -152,6 +167,15 @@ export interface Account {
     equippedEffectUuid?: string | null;
     equippedBadgeUuid?: string | null;
     equippedTitleUuid?: string | null;
+}
+
+export function normalizeAccountNumericFields<T extends Account>(account: T): T {
+    return {
+        ...account,
+        ducks: toSafeNumber(account.ducks),
+        xp: toSafeNumber(account.xp),
+        level: toSafeNumber(account.level)
+    };
 }
 
 export interface EquippedShopItems {
@@ -168,8 +192,6 @@ export interface ProfilePayload {
     inventory: ShopItem[];
     type: AccountType;
     isPremium: boolean;
-    dailyRewardXp?: number;
-    dailyRewardDucks?: number;
 }
 
 interface Rating {

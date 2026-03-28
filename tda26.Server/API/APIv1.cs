@@ -68,14 +68,6 @@ public sealed class APIv1(
 			like.Course.Account = null;
 		}
 
-		try {
-			var wallet = await dailyRewards.GetWalletAsync(acc.Uuid, ct);
-			acc.DailyRewardXp = wallet.TotalXp;
-			acc.DailyRewardDucks = wallet.TotalDucks;
-		} catch (Exception ex) {
-			logger.LogWarning(ex, "Daily rewards wallet loading failed for /me.");
-		}
-
 		return Ok(acc);
 	}
 
@@ -100,22 +92,14 @@ public sealed class APIv1(
 			like.Course.Account = null;
 		}
 
-		if(acc != null) acc.ShopItems = [];
+		if (acc != null) acc.ShopItems = [];
 
-		return Ok(acc);
 		try {
 			await dailyRewards.TrackEventAsync(account.Uuid, DailyRewardEventType.Login, ct);
 		} catch (Exception ex) {
 			logger.LogWarning(ex, "Daily rewards tracking failed for login.");
 		}
 
-		try {
-			var wallet = await dailyRewards.GetWalletAsync(account.Uuid, ct);
-			account.DailyRewardXp = wallet.TotalXp;
-			account.DailyRewardDucks = wallet.TotalDucks;
-		} catch (Exception ex) {
-			logger.LogWarning(ex, "Daily rewards wallet loading failed for login.");
-		}
 
 		return Ok(account);
 	}
@@ -2959,7 +2943,29 @@ public sealed class APIv1(
 		db.QuizResults.Add(quizResult);
 		await db.SaveChangesAsync(ct);
 
+		const int quizBaseRewardDucks = 3;
+		var quizRewardDucks = 0;
+		Account? trackedAccount = null;
+
 		if (acc != null) {
+			trackedAccount = await db.Accounts
+				.FirstOrDefaultAsync(a => a.Uuid == acc.Uuid, ct);
+
+			if (trackedAccount != null) {
+				var scoreRatio = totalQuestions > 0
+					? (double)correctAnswers / totalQuestions
+					: 0d;
+				var bonusRewardDucks = scoreRatio switch {
+					>= 0.8 => 2,
+					>= 0.5 => 1,
+					_ => 0
+				};
+
+				quizRewardDucks = quizBaseRewardDucks + bonusRewardDucks;
+				trackedAccount.AddProgress(0, quizRewardDucks);
+				await db.SaveChangesAsync(ct);
+			}
+
 			try {
 				await dailyRewards.TrackEventAsync(acc.Uuid, DailyRewardEventType.QuizSubmit, ct);
 			} catch (Exception ex) {
@@ -2968,7 +2974,15 @@ public sealed class APIv1(
 		}
 
 		return Ok(new {
-			resultUuid = quizResult.Uuid
+			resultUuid = quizResult.Uuid,
+			rewardDucks = quizRewardDucks,
+			account = trackedAccount == null
+				? null
+				: new {
+					ducks = trackedAccount.Ducks,
+					xp = trackedAccount.Xp,
+					level = trackedAccount.Level
+				}
 		});
 	}
 

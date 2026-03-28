@@ -4,7 +4,7 @@ import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "#shared/types";
+import { normalizeAccountNumericFields, type Account } from "#shared/types";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -106,7 +106,7 @@ async function submitRegisterForm(event: Event) {
 
         // auth objekt
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-        loggedAccount.value = res;
+        loggedAccount.value = res ? normalizeAccountNumericFields(res) : null;
 
         // presmerovani na dashboard
         await navigateTo("/");
