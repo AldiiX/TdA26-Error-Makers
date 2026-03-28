@@ -2,6 +2,48 @@ export type WebTheme = "dark" | "light";
 
 export type CourseStatus = "draft" | "scheduled" | "live" | "paused" | "archived";
 
+export type OrganizationRegion =
+    | "centralEurope"
+    | "europe"
+    | "northAmerica"
+    | "southAmerica"
+    | "asia"
+    | "africa"
+    | "oceania"
+    | "middleEast"
+    | "global";
+
+export type OrganizationType = "hq" | "branch";
+
+export type OrganizationStatus = "active" | "onboarding" | "waiting";
+
+export interface Organization {
+    uuid: string;
+    displayName: string;
+    country: string;
+    city: string;
+    address: string;
+    postalCode: string;
+    region: OrganizationRegion;
+    type: OrganizationType;
+    status: OrganizationStatus;
+    lecturerUuids: string[];
+    studentUuids: string[];
+}
+
+export interface CreateOrganizationPayload {
+    displayName: string;
+    country: string;
+    city: string;
+    address: string;
+    postalCode: string;
+    region: OrganizationRegion;
+    type: OrganizationType;
+    status: OrganizationStatus;
+    lecturerUuids: string[];
+    studentUuids: string[];
+}
+
 export interface Module {
     uuid: string;
     title: string;
