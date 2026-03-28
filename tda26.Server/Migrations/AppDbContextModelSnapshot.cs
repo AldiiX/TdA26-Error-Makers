@@ -34,7 +34,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("ShopItemsUuid");
 
-                    b.ToTable("AccountShopItem");
+                    b.ToTable("AccountShopItem", (string)null);
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -49,7 +49,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("TagsUuid");
 
-                    b.ToTable("CourseTag");
+                    b.ToTable("CourseTag", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
@@ -104,7 +104,7 @@ namespace tda26.Server.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Accounts", (string)null);
 
                     b.HasDiscriminator().HasValue("Account");
 
@@ -140,7 +140,7 @@ namespace tda26.Server.Migrations
 
                     b.HasKey("Uuid");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
@@ -196,7 +196,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("LecturerUuid");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
@@ -239,7 +239,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("CourseUuid");
 
-                    b.ToTable("CourseModules");
+                    b.ToTable("CourseModules", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -286,7 +286,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("CourseUuid");
 
-                    b.ToTable("FeedPosts");
+                    b.ToTable("FeedPosts", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Material", b =>
@@ -342,7 +342,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("ModuleUuid");
 
-                    b.ToTable("Materials");
+                    b.ToTable("Materials", (string)null);
 
                     b.HasDiscriminator().HasValue("Material");
 
@@ -375,7 +375,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("QuizUuid");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
 
                     b.HasDiscriminator().HasValue("Question");
 
@@ -405,7 +405,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("QuestionUuid");
 
-                    b.ToTable("QuestionOptions");
+                    b.ToTable("QuestionOptions", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Quiz", b =>
@@ -452,7 +452,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("ModuleUuid");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswer", b =>
@@ -473,7 +473,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("QuizResultUuid");
 
-                    b.ToTable("QuizAnswers");
+                    b.ToTable("QuizAnswers", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.QuizAnswerOption", b =>
@@ -494,7 +494,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("OptionUuid");
 
-                    b.ToTable("QuizAnswerOptions");
+                    b.ToTable("QuizAnswerOptions", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.QuizResult", b =>
@@ -522,7 +522,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("QuizUuid");
 
-                    b.ToTable("QuizResults");
+                    b.ToTable("QuizResults", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Rating", b =>
@@ -561,7 +561,7 @@ namespace tda26.Server.Migrations
                     b.HasIndex("AccountUuid", "CourseUuid")
                         .IsUnique();
 
-                    b.ToTable("Ratings");
+                    b.ToTable("Ratings", (string)null);
 
                     b.HasDiscriminator().HasValue("Rating");
 
@@ -606,7 +606,7 @@ namespace tda26.Server.Migrations
 
                     b.HasKey("Uuid");
 
-                    b.ToTable("ShopItems");
+                    b.ToTable("ShopItems", (string)null);
 
                     b.HasDiscriminator().HasValue("ShopItem");
 
@@ -645,7 +645,7 @@ namespace tda26.Server.Migrations
 
                     b.HasIndex("DisplayName");
 
-                    b.ToTable("Tags");
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Admin", b =>
@@ -741,7 +741,7 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.ToTable("Accounts", t =>
+                    b.ToTable("Accounts", null, t =>
                         {
                             t.Property("Bio")
                                 .HasColumnName("Student_Bio");
@@ -830,7 +830,7 @@ namespace tda26.Server.Migrations
                 {
                     b.HasBaseType("tda26.Server.Data.Models.Rating");
 
-                    b.ToTable("Ratings");
+                    b.ToTable("Ratings", (string)null);
 
                     b.HasDiscriminator().HasValue("Dislike");
                 });
@@ -839,7 +839,7 @@ namespace tda26.Server.Migrations
                 {
                     b.HasBaseType("tda26.Server.Data.Models.Rating");
 
-                    b.ToTable("Ratings");
+                    b.ToTable("Ratings", (string)null);
 
                     b.HasDiscriminator().HasValue("Like");
                 });
@@ -853,7 +853,7 @@ namespace tda26.Server.Migrations
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("longtext");
 
-                    b.ToTable("ShopItems");
+                    b.ToTable("ShopItems", (string)null);
 
                     b.HasDiscriminator().HasValue("AvatarShopItem");
                 });
@@ -867,46 +867,9 @@ namespace tda26.Server.Migrations
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("longtext");
 
-                    b.ToTable("ShopItems");
+                    b.ToTable("ShopItems", (string)null);
 
                     b.HasDiscriminator().HasValue("BannerShopItem");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.EffectShopItem", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("longtext");
-
-                    b.ToTable("ShopItems");
-
-                    b.HasDiscriminator().HasValue("EffectShopItem");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.BadgeShopItem", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasColumnType("longtext");
-
-                    b.ToTable("ShopItems");
-
-                    b.HasDiscriminator().HasValue("BadgeShopItem");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.TitleShopItem", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
-
-                    b.ToTable("ShopItems");
-
-                    b.HasDiscriminator().HasValue("TitleShopItem");
                 });
 
             modelBuilder.Entity("AccountShopItem", b =>

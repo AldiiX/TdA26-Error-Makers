@@ -174,6 +174,7 @@ public static class Program {
         builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
         builder.Services.AddControllers().AddJsonOptions(options => {
             options.JsonSerializerOptions.Converters.Add(new QuestionRequestConverter());
+            options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         });
         
 
@@ -307,6 +308,21 @@ public static class Program {
         builder.Services.AddHttpClient();
 
         Application = builder.Build();
+
+        /*using (var scope = Application.Services.CreateScope()) {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StartupSeed");
+
+            try {
+                db.Database.Migrate();
+                ShopItemSeeder.SeedAsync(db).GetAwaiter().GetResult();
+                var itemsCount = db.ShopItems.Count();
+                startupLogger.LogInformation("Shop seeding finished. ShopItems count: {ItemsCount}", itemsCount);
+            } catch (Exception ex) {
+                startupLogger.LogError(ex, "Shop seeding failed during startup.");
+                throw;
+            }
+        }*/
 
         Application.UseDefaultFiles();
         Application.MapStaticAssets();
