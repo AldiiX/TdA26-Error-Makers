@@ -42,6 +42,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Student> Students => Set<Student>();
 
+    public DbSet<DailyRewardDay> DailyRewardDays => Set<DailyRewardDay>();
+    public DbSet<DailyRewardTaskState> DailyRewardTaskStates => Set<DailyRewardTaskState>();
+
     // auto update audit properties
     private void SetAuditProperties() {
         var entries = ChangeTracker.Entries().Where(e => e is { Entity: IAuditable, State: EntityState.Added or EntityState.Modified });

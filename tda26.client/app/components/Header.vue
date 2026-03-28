@@ -1,11 +1,12 @@
 <script setup lang="ts">
-    import { onMounted, onUnmounted, inject, type Ref } from 'vue';
+    import { onMounted, onUnmounted } from 'vue';
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
     import type {Account, Lecturer, WebTheme} from "#shared/types";
     import Avatar from "~/components/Avatar.vue";
     import Popover from "~/components/Popover.vue";
+    import DailyRewardsModal from "~/components/DailyRewardsModal.vue";
     import useAuth from "~/composables/useAuth";
     
     const $style = useCssModule();
@@ -20,6 +21,11 @@
     const { logout } = useAuth();
     const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
     const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
+    const isDailyRewardsModalOpen = ref(false);
+    const useClickPopover = ref(false);
+
+    const accountXp = computed(() => loggedAccount.value?.dailyRewardXp ?? 0);
+    const accountDucks = computed(() => loggedAccount.value?.dailyRewardDucks ?? 0);
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -38,9 +44,14 @@
         themeCookie.value = newTheme;
     }
 
+    function openDailyRewardsModal() {
+        isDailyRewardsModalOpen.value = true;
+    }
+
     onMounted(() => {
         document.addEventListener("scroll", ouasihfdusifhi);
         ouasihfdusifhi();
+        useClickPopover.value = window.matchMedia('(pointer: coarse)').matches;
     });
 
     onUnmounted(() => {
@@ -84,7 +95,7 @@
                         </NuxtLink>
                     </div>
 
-                    <Popover position="bottom-right" trigger="hover" :wrapper-class="$style.pwr">
+                    <Popover position="bottom-right" :trigger="useClickPopover ? 'click' : 'hover'" :wrapper-class="$style.pwr">
                         <template #trigger>
                             <div :class="$style.loggedAs">
                                 <div>
@@ -108,8 +119,26 @@
                                 </div>
                                 
                                 <div :class="$style.divider"/>
+
+                                <div :class="$style.rewardSummary">
+                                    <div :class="$style.rewardStat">
+                                        <p :class="$style.rewardLabel">XP</p>
+                                        <p :class="$style.rewardValue">{{ accountXp.toLocaleString('cs-CZ') }}</p>
+                                    </div>
+                                    <div :class="$style.rewardStat">
+                                        <p :class="$style.rewardLabel">Ducks</p>
+                                        <p :class="$style.rewardValue">{{ accountDucks.toLocaleString('cs-CZ') }}</p>
+                                    </div>
+                                </div>
                                 
                                 <div :class="$style.popoverActions">
+                                    <button :class="$style.actionButton" @click="openDailyRewardsModal">
+                                        <div :class="$style.iconWrapper">
+                                            <div :class="[$style.icon, $style.dailyRewardsIcon]"/>
+                                        </div>
+                                        <p>Daily rewards</p>
+                                    </button>
+
                                     <button v-if="false" :class="$style.actionButton" @click="toggleTheme"> <!-- TODO: dodělat -->
                                         <div :class="$style.iconWrapper">
                                             <div :class="[$style.icon, $style.themeIcon]"/>
@@ -139,6 +168,11 @@
         <div class="smallDevice"/>
         <div class="Header-Logo-Small" onclick="location.href='/'"/>
     </header>
+
+    <DailyRewardsModal
+        :enabled="isDailyRewardsModalOpen"
+        @close="isDailyRewardsModalOpen = false"
+    />
 </template>
 
 <style module lang="scss">
@@ -360,6 +394,34 @@
                 gap: 8px;
             }
 
+            .rewardSummary {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .rewardStat {
+                border: 1px solid rgb(from var(--text-color-primary) r g b / 0.12);
+                border-radius: 12px;
+                padding: 10px;
+                background: rgb(from var(--accent-color-secondary-theme) r g b / 0.08);
+            }
+
+            .rewardLabel {
+                margin: 0;
+                font-size: 12px;
+                color: var(--text-color-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+            }
+
+            .rewardValue {
+                margin: 6px 0 0;
+                font-weight: 800;
+                font-size: 20px;
+                line-height: 1;
+            }
+
             .actionButton {
                 display: flex;
                 align-items: center;
@@ -411,6 +473,10 @@
 
                     &.logoutIcon {
                         mask-image: url('/icons/logout.svg');
+                    }
+
+                    &.dailyRewardsIcon {
+                        mask-image: url('/icons/coin.svg');
                     }
                 }
 
@@ -482,7 +548,7 @@
             .right {
                 gap: 0;
 
-                .menu, .btns, .pwr {
+                .menu, .btns {
                     display: none;
                 }
 

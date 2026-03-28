@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260328133619_migrace")]
+    partial class migrace
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -219,97 +222,6 @@ namespace tda26.Server.Migrations
                     b.HasIndex("CourseUuid");
 
                     b.ToTable("CourseModules");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.DailyRewardDay", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("AccountUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTimeOffset?>("ClaimedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
-
-                    b.Property<DateOnly>("RewardDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
-
-                    b.HasKey("Uuid");
-
-                    b.HasIndex("AccountUuid", "RewardDate")
-                        .IsUnique();
-
-                    b.ToTable("DailyRewardDays");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.DailyRewardTaskState", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
-
-                    b.Property<int>("CurrentValue")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("DailyRewardDayUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("TargetValue")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TaskCode")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
-
-                    b.HasKey("Uuid");
-
-                    b.HasIndex("DailyRewardDayUuid", "TaskCode")
-                        .IsUnique();
-
-                    b.ToTable("DailyRewardTaskStates");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
@@ -910,28 +822,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.DailyRewardDay", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Account", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.DailyRewardTaskState", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.DailyRewardDay", "DailyRewardDay")
-                        .WithMany("Tasks")
-                        .HasForeignKey("DailyRewardDayUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("DailyRewardDay");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.FeedPost", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Account", "Account")
@@ -1105,11 +995,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("Materials");
 
                     b.Navigation("Quizzes");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.DailyRewardDay", b =>
-                {
-                    b.Navigation("Tasks");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>

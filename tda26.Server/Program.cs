@@ -292,6 +292,7 @@ public static class Program {
         // repozitare a service
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IMaterialAccessService, MaterialAccessService>();
+        builder.Services.AddScoped<IDailyRewardsService, DailyRewardsService>();
         builder.Services.AddSingleton<IFeedStreamBroker, InMemoryFeedStreamBroker>();
         builder.Services.AddSingleton<IGlobalStreamBroker, InMemoryGlobalStreamBroker>();
         builder.Services.AddSingleton<IStreamBroker, InMemoryStreamBroker>();
