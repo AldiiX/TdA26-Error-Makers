@@ -8,4 +8,5 @@ public class ShopItemDto {
 	public required string Description { get; set; }
 	public required int PriceInDucks { get; set; }
 	public required string Type  { get; set; }
+	public string? ImageUrl { get; set; }
 }

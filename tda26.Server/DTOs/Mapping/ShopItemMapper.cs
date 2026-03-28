@@ -12,8 +12,12 @@ public static class ShopItemMapper {
 			Type = item switch {
 				AvatarShopItem => "avatar",
 				BannerShopItem => "banner",
+				EffectShopItem => "effect",
+				BadgeShopItem => "badge",
+				TitleShopItem => "title",
 				_ => throw new ArgumentException("Unknown shop item type")
-			}
+			},
+			ImageUrl = (item as IShopItemWithImageUrl)?.ImageUrl
 		};
 	}
 }

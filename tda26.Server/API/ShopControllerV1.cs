@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using tda26.Server.Data;
 using tda26.Server.Data.Models;
 using tda26.Server.DTOs.Mapping;
@@ -16,6 +17,42 @@ public class ShopControllerV1(AppDbContext db, IAuthService auth) {
 		var si = db.ShopItems.ToList().Select(i => i.ToDto()).ToList();
 
 		return new JsonResult(si);
+	}
+
+	[HttpPost("shop/{uuid}/buy")]
+	public async Task<IActionResult> BuyShopItem(Guid uuid, CancellationToken ct = default) {
+		var loggedAccount = await auth.ReAuthAsync(ct);
+		if (loggedAccount == null) return new UnauthorizedObjectResult(new { message = "Nejste přihlášen." });
+
+		var account = await db.AccountsEf().FirstOrDefaultAsync(a => a.Uuid == loggedAccount.Uuid, ct);
+		if (account == null) return new UnauthorizedObjectResult(new { message = "Účet nenalezen." });
+
+		var item = await db.ShopItems.FindAsync([uuid], ct);
+		if (item == null) return new NotFoundObjectResult(new { message = "Položka nenalezena." });
+
+		if (account.ShopItems.Any(i => i.Uuid == uuid))
+			return new ConflictObjectResult(new { message = "Tuto položku již vlastníte." });
+
+		if (account.Ducks < item.PriceInDucks)
+			return new UnprocessableEntityObjectResult(new { message = "Nedostatek kačen." });
+
+		account.Ducks -= item.PriceInDucks;
+		account.ShopItems.Add(item);
+		await db.SaveChangesAsync(ct);
+
+		return new OkObjectResult(new { message = "Položka zakoupena.", ducks = account.Ducks });
+	}
+
+	[HttpGet("me/inventory")]
+	public async Task<IActionResult> GetInventory(CancellationToken ct = default) {
+		var loggedAccount = await auth.ReAuthAsync(ct);
+		if (loggedAccount == null) return new UnauthorizedObjectResult(new { message = "Nejste přihlášen." });
+
+		var account = await db.AccountsEf().FirstOrDefaultAsync(a => a.Uuid == loggedAccount.Uuid, ct);
+		if (account == null) return new UnauthorizedObjectResult(new { message = "Účet nenalezen." });
+
+		var items = account.ShopItems.Select(i => i.ToDto()).ToList();
+		return new JsonResult(items);
 	}
 
 	[HttpGet("shop/g")]

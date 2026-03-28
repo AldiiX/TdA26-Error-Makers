@@ -872,6 +872,43 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("BannerShopItem");
                 });
 
+            modelBuilder.Entity("tda26.Server.Data.Models.EffectShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("longtext");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("EffectShopItem");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.BadgeShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("longtext");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("BadgeShopItem");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.TitleShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("TitleShopItem");
+                });
+
             modelBuilder.Entity("AccountShopItem", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Account", null)

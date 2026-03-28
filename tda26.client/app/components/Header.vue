@@ -116,6 +116,15 @@
                                         </div>
                                         <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
                                     </button>
+
+                                    <NuxtLink to="/inventory" :class="$style.actionLink">
+                                        <button :class="$style.actionButton">
+                                            <div :class="$style.iconWrapper">
+                                                <div :class="[$style.icon, $style.inventoryIcon]"/>
+                                            </div>
+                                            <p>Inventář</p>
+                                        </button>
+                                    </NuxtLink>
                                     
                                     <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
                                         <div :class="$style.iconWrapper">
@@ -412,11 +421,26 @@
                     &.logoutIcon {
                         mask-image: url('/icons/logout.svg');
                     }
+
+                    &.inventoryIcon {
+                        mask-image: url('/icons/box-archive.svg');
+                    }
                 }
 
                 p {
                     margin: 0;
                     font-weight: 600;
+                }
+            }
+
+            .actionLink {
+                text-decoration: none;
+                color: inherit;
+                display: block;
+                width: 100%;
+
+                button {
+                    width: 100%;
                 }
             }
 

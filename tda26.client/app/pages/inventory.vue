@@ -1,54 +1,27 @@
 <script setup lang="ts">
 import { ClientOnly } from '#components';
-import TypeWriter from "~/components/TypeWriter.vue";
-import SmoothSizeWrapper from "~/components/SmoothSizeWrapper.vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
-import getBaseUrl from "#shared/utils/getBaseUrl";
 import type { Account, ShopItem } from "#shared/types";
-import { push } from "notivue";
 
 definePageMeta({
-    layout: "normal-page-layout"
+    layout: "normal-page-layout",
+    middleware: () => {
+        const user = useState<Account | null>('loggedAccount');
+        if (!user.value) return navigateTo('/login');
+    }
 });
 
 // SEO
 useSeo({
-    title: "Obchod",
+    title: "Inventář",
 });
 
 const loggedAccount = useState<Account | null>('loggedAccount', () => null);
 
-const { data: items, pending } = useAsyncData("shop-items", async () => {
-    const res = await fetch(getBaseUrl() + "/api/v1/shop/");
-    return res.json() as Promise<ShopItem[]>;
+const { data: items, pending } = useAsyncData("inventory-items", async () => {
+    const res = await $fetch<ShopItem[]>("/api/v1/me/inventory");
+    return res;
 }, { server: false });
-
-const buyingItem = ref<string | null>(null);
-
-async function buyItem(item: ShopItem) {
-    if (!loggedAccount.value) {
-        push.error({ title: "Nejste přihlášeni", message: "Pro nákup se musíte přihlásit." });
-        return;
-    }
-    buyingItem.value = item.uuid;
-    try {
-        const res = await $fetch<{ message: string; ducks: number }>(`/api/v1/shop/${item.uuid}/buy`, {
-            method: "POST",
-        });
-        loggedAccount.value.ducks = res.ducks;
-        loggedAccount.value.shopItems = [...(loggedAccount.value.shopItems ?? []), item];
-        push.success({ title: "Zakoupeno!", message: `Položka „${item.name}" byla přidána do vašeho inventáře.` });
-    } catch (err: any) {
-        const msg = err?.data?.message ?? "Nepodařilo se zakoupit položku.";
-        push.error({ title: "Chyba", message: msg });
-    } finally {
-        buyingItem.value = null;
-    }
-}
-
-function ownsItem(item: ShopItem): boolean {
-    return loggedAccount.value?.shopItems?.some(i => i.uuid === item.uuid) ?? false;
-}
 
 function typeLabel(type: ShopItem["type"]): string {
     const labels: Record<ShopItem["type"], string> = {
@@ -80,28 +53,20 @@ function typeColor(type: ShopItem["type"]): string {
     </Teleport>
 
     <section>
-        <h1 :class="$style.nadpis">Obchod</h1>
-        <ClientOnly>
-            <SmoothSizeWrapper :change-width="false">
-                <TypeWriter
-                    text="Zakupte si zajímavé položky pro váš účet! Avatary, efekty, bannery... vše na jednom místě!"
-                    :class="$style.podnapis"
-                    :start-delay-ms="300"
-                />
-            </SmoothSizeWrapper>
-        </ClientOnly>
-
-        <!-- Balance badge -->
-        <ClientOnly>
-            <div v-if="loggedAccount" :class="$style.balance">
-                <img src="/icons/coin.svg" alt="kačeny" :class="$style.coinIcon" />
-                <span>{{ loggedAccount.ducks }} kačen</span>
-            </div>
-        </ClientOnly>
+        <div :class="$style.header">
+            <h1 :class="$style.nadpis">Inventář</h1>
+            <ClientOnly>
+                <div v-if="loggedAccount" :class="$style.balance">
+                    <img src="/icons/coin.svg" alt="kačeny" :class="$style.coinIcon" />
+                    <span>{{ loggedAccount.ducks }} kačen</span>
+                </div>
+            </ClientOnly>
+        </div>
+        <p :class="$style.podnapis">Zde najdete všechny položky, které jste zakoupili v obchodě.</p>
 
         <!-- Loading skeleton -->
         <div v-if="pending" :class="$style.grid">
-            <div v-for="i in 6" :key="i" :class="[$style.card, $style.cardSkeleton]" />
+            <div v-for="i in 4" :key="i" :class="[$style.card, $style.cardSkeleton]" />
         </div>
 
         <!-- Items grid -->
@@ -111,7 +76,6 @@ function typeColor(type: ShopItem["type"]): string {
                 :key="item.uuid"
                 :class="$style.card"
             >
-                <!-- Item image / placeholder -->
                 <div :class="$style.cardImage" :style="{ '--type-color': typeColor(item.type) }">
                     <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
                     <div v-else :class="$style.cardImagePlaceholder">
@@ -120,7 +84,6 @@ function typeColor(type: ShopItem["type"]): string {
                 </div>
 
                 <div :class="$style.cardBody">
-                    <!-- Type badge -->
                     <span :class="$style.typeBadge" :style="{ '--type-color': typeColor(item.type) }">
                         {{ typeLabel(item.type) }}
                     </span>
@@ -128,43 +91,32 @@ function typeColor(type: ShopItem["type"]): string {
                     <h3 :class="$style.itemName">{{ item.name }}</h3>
                     <p :class="$style.itemDescription">{{ item.description }}</p>
 
-                    <div :class="$style.cardFooter">
-                        <div :class="$style.price">
-                            <img src="/icons/coin.svg" alt="kačeny" :class="$style.coinIconSmall" />
-                            <span>{{ item.priceInDucks }}</span>
-                        </div>
-
-                        <button
-                            v-if="!ownsItem(item)"
-                            :class="[$style.buyBtn, {
-                                [$style.buyBtnDisabled]: loggedAccount && loggedAccount.ducks < item.priceInDucks,
-                                [$style.buyBtnLoading]: buyingItem === item.uuid
-                            }]"
-                            :disabled="buyingItem === item.uuid || (!!loggedAccount && loggedAccount.ducks < item.priceInDucks)"
-                            @click="buyItem(item)"
-                        >
-                            <span v-if="buyingItem === item.uuid" :class="$style.spinner" />
-                            <span v-else-if="loggedAccount && loggedAccount.ducks < item.priceInDucks">Nedostatek kačen</span>
-                            <span v-else-if="!loggedAccount">Přihlásit se</span>
-                            <span v-else>Koupit</span>
-                        </button>
-
-                        <div v-else :class="$style.ownedBadge">
-                            <span>✓ Vlastníte</span>
-                        </div>
+                    <div :class="$style.ownedBadge">
+                        <span>✓ Vlastníte</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Empty state -->
         <div v-else :class="$style.empty">
-            <p>V obchodě momentálně nejsou žádné položky.</p>
+            <div :class="$style.emptyIcon">🛍️</div>
+            <h3>Inventář je prázdný</h3>
+            <p>Zatím jste si nic nezakoupili.</p>
+            <NuxtLink to="/shop" :class="$style.shopLink">Přejít do obchodu</NuxtLink>
         </div>
     </section>
 </template>
 
 <style module lang="scss">
 @use "@/assets/variables" as app;
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
 
 .nadpis {
     font-size: 64px;
@@ -176,14 +128,13 @@ function typeColor(type: ShopItem["type"]): string {
     margin-top: 16px;
     max-width: 700px;
     color: var(--text-color-secondary);
-    height: 46px;
+    margin-bottom: 0;
 }
 
 .balance {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-top: 20px;
     padding: 10px 18px;
     border-radius: 50px;
     background: rgb(from var(--background-color-secondary) r g b / 0.7);
@@ -314,74 +265,6 @@ function typeColor(type: ShopItem["type"]): string {
     flex: 1;
 }
 
-.cardFooter {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 8px;
-    gap: 12px;
-}
-
-.price {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    font-size: 18px;
-    color: var(--accent-color-primary);
-
-    .coinIconSmall {
-        width: 20px;
-        height: 20px;
-    }
-}
-
-.buyBtn {
-    padding: 9px 20px;
-    border-radius: 10px;
-    border: none;
-    background: var(--accent-color-primary);
-    color: var(--accent-color-primary-text);
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: Dosis, sans-serif;
-    transition: filter 0.2s ease, transform 0.2s ease;
-    min-width: 90px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:not(:disabled):hover {
-        filter: brightness(0.85);
-        transform: translateY(-1px);
-    }
-
-    &.buyBtnDisabled {
-        background: rgb(from var(--text-color-primary) r g b / 0.12);
-        color: var(--text-color-secondary);
-        cursor: not-allowed;
-        font-size: 12px;
-    }
-
-    &.buyBtnLoading {
-        pointer-events: none;
-    }
-}
-
-.spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid currentColor;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-}
-
 .ownedBadge {
     padding: 9px 16px;
     border-radius: 10px;
@@ -390,26 +273,67 @@ function typeColor(type: ShopItem["type"]): string {
     border: 1px solid rgb(from var(--accent-color-secondary-theme) r g b / 0.3);
     font-size: 14px;
     font-weight: 700;
+    width: fit-content;
 }
 
 .empty {
     text-align: center;
-    padding: 64px 0;
+    padding: 80px 0;
     color: var(--text-color-secondary);
-    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    animation: fadeIn 0.6s forwards ease;
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .emptyIcon {
+        font-size: 56px;
+        line-height: 1;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: 22px;
+        color: var(--text-color-primary);
+    }
+
+    p {
+        margin: 0;
+        font-size: 16px;
+    }
+}
+
+.shopLink {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 12px 28px;
+    border-radius: 12px;
+    background: var(--accent-color-primary);
+    color: var(--accent-color-primary-text);
+    font-weight: 700;
+    font-size: 16px;
+    text-decoration: none;
+    transition: filter 0.2s ease;
+
+    &:hover {
+        filter: brightness(0.85);
+    }
 }
 
 /* Laptop */
 @media screen and (max-width: app.$laptopBreakpoint) {
+    .header {
+        justify-content: center;
+    }
+
     .nadpis, .podnapis {
         text-align: center;
         margin: 0 auto;
-    }
-
-    .balance {
-        display: flex;
-        margin: 20px auto 0;
-        width: fit-content;
     }
 }
 
@@ -424,24 +348,9 @@ function typeColor(type: ShopItem["type"]): string {
     }
 }
 
-@media screen and (max-width: 750px) {
-    .podnapis {
-        height: 60px;
-    }
-}
-
 @media screen and (max-width: 500px) {
-    .podnapis {
-        height: 110px;
-    }
     .grid {
         grid-template-columns: 1fr;
-    }
-}
-
-@media screen and (max-width: 350px) {
-    .podnapis {
-        height: 150px;
     }
 }
 </style>

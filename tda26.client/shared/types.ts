@@ -127,12 +127,25 @@ export interface Account {
     fullNameWithoutTitles: string,
     likes: Rating[];
     dislikes: Rating[];
-    type: "account" | "lecturer" | "admin"
+    type: "account" | "lecturer" | "admin";
+    ducks: number;
+    xp: number;
+    level: number;
+    shopItems: ShopItem[];
 }
 
 interface Rating {
     course: Course | null,
     uuid: string
+}
+
+export interface ShopItem {
+    uuid: string;
+    name: string;
+    description: string;
+    priceInDucks: number;
+    type: "avatar" | "banner" | "effect" | "badge" | "title";
+    imageUrl: string | null;
 }
 
 export interface gRecaptcha {

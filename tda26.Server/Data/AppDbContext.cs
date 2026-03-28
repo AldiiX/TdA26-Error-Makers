@@ -45,6 +45,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ShopItem> ShopItems { get; set; }
     public DbSet<BannerShopItem> BannerShopItems { get; set; }
     public DbSet<AvatarShopItem> AvatarShopItems { get; set; }
+    public DbSet<EffectShopItem> EffectShopItems { get; set; }
+    public DbSet<BadgeShopItem> BadgeShopItems { get; set; }
+    public DbSet<TitleShopItem> TitleShopItems { get; set; }
 
     // auto update audit properties
     private void SetAuditProperties() {
