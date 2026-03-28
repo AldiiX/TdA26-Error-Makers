@@ -117,7 +117,7 @@
         if(course.account?.uuid === loggedAccount.value?.uuid) return true;
         if(loggedAccount.value?.type === "admin") return true;
 
-        return course.status === "live";
+        return course.status !== "draft" && course.status !== "archived";
     }
 </script>
 

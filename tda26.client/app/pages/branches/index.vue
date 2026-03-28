@@ -17,7 +17,7 @@ definePageMeta({
 });
 
 useSeo({
-    title: "Organizace",
+    title: "Pobočky",
     description: "Přehled organizací v administraci.",
     noindex: true
 });
@@ -76,7 +76,7 @@ const loadOrganizations = async (): Promise<void> => {
             method: "GET"
         });
     } catch {
-        loadError.value = "Nepodařilo se načíst organizace.";
+        loadError.value = "Nepodařilo se načíst pobočku.";
         organizations.value = [];
     } finally {
         isLoading.value = false;
@@ -204,7 +204,7 @@ async function saveOrganizationEdit(): Promise<void> {
                 <p>Status</p>
                 <p>Lektoři</p>
                 <p>Studenti</p>
-                <p :class="$style.actionsHeader">Actions</p>
+                <p :class="$style.actionsHeader">Akce</p>
             </div>
 
             <article v-for="organization in organizations" :key="organization.uuid" :class="$style.tableRow">
@@ -218,10 +218,10 @@ async function saveOrganizationEdit(): Promise<void> {
 
                 <div :class="$style.actions">
                     <Button button-style="secondary" @click="editOrganization(organization)">
-                        Edit
+                        Upravit
                     </Button>
                     <Button button-style="primary" accent-color="primary" @click="openDeleteModal(organization)">
-                        Delete
+                        Smazat
                     </Button>
                 </div>
             </article>
