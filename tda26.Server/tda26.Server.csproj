@@ -114,6 +114,9 @@
       <Compile Update="Data\Models\BannerShopItem.cs">
         <DependentUpon>ShopItem.cs</DependentUpon>
       </Compile>
+      <Compile Update="Data\Models\Student.cs">
+        <DependentUpon>Account.cs</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>

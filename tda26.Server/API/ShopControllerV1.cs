@@ -22,8 +22,6 @@ public class ShopControllerV1(AppDbContext db, IAuthService auth) {
 		var loggedAccount = await auth.ReAuthAsync();
 		if (loggedAccount == null) return new UnauthorizedResult();
 
-		if (loggedAccount is not Student student) return new BadRequestResult();
-
 		db.ShopItems.Add(new BannerShopItem() {
 			Name = "Test Banner Item",
 			Description = "This is a test item.",

@@ -41,7 +41,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
     
     public DbSet<Tag> Tags => Set<Tag>();
+
     public DbSet<ShopItem> ShopItems { get; set; }
+    public DbSet<BannerShopItem> BannerShopItems { get; set; }
+    public DbSet<AvatarShopItem> AvatarShopItems { get; set; }
 
     // auto update audit properties
     private void SetAuditProperties() {

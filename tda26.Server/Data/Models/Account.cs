@@ -22,6 +22,9 @@ public class Account : Auditable {
     public string Password { get; set; } = string.Empty;
 
     [JsonIgnore]
+	public ICollection<ShopItem> ShopItems { get; set; } = new List<ShopItem>();
+
+    [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
 
