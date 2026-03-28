@@ -3,7 +3,7 @@ import { NuxtPage, Head, Title, Meta, Html, Link, NuxtLink, ClientOnly, NuxtLayo
 import { computed, onMounted, ref } from 'vue'
 import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
 
-import type { Account, AccountType, WebTheme } from "#shared/types";
+import type { Account, WebTheme } from "#shared/types";
 import MobileMenu from "~/components/MobileMenu.vue";
 import LoadingScreen from "~/components/LoadingScreen.vue";
 import { Notivue, NotivueSwipe, Notification } from 'notivue';
@@ -12,7 +12,15 @@ import { Notivue, NotivueSwipe, Notification } from 'notivue';
 const route = useRoute();
 const theme = useState<WebTheme>('theme', () => 'light');
 const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-const debugAccountType = computed<AccountType | null>(() => loggedAccount.value?.type ?? null);
+const debugAccountBadgeLabel = computed<string | null>(() => {
+    if (!loggedAccount.value?.type) return null;
+
+    const type = loggedAccount.value.type;
+    // Admin must never be treated/displayed as premium.
+    const isPremium = type !== "admin" && loggedAccount.value.isPremium === true;
+
+    return isPremium ? `${type} (premium)` : type;
+});
 const isDev = import.meta.dev;
 
 // Default SEO fallback - pages should use useSeo() composable for specific SEO
@@ -49,8 +57,8 @@ useSeo({
 </script>
 
 <template>
-    <div v-if="isDev && debugAccountType" :class="$style.accountTypeDebug" role="status" aria-live="polite">
-        Debug: logged in as <strong>{{ debugAccountType }}</strong>
+    <div v-if="isDev && debugAccountBadgeLabel" :class="$style.accountTypeDebug" role="status" aria-live="polite">
+        Debug: logged in as <strong>{{ debugAccountBadgeLabel }}</strong>
     </div>
 
     <!-- Mobile menu -->
