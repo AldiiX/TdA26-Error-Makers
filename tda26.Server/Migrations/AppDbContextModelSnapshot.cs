@@ -37,36 +37,6 @@ namespace tda26.Server.Migrations
                     b.ToTable("CourseTag");
                 });
 
-            modelBuilder.Entity("OrganizationLecturers", b =>
-                {
-                    b.Property<Guid>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("LecturerUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("OrganizationUuid", "LecturerUuid");
-
-                    b.HasIndex("LecturerUuid");
-
-                    b.ToTable("OrganizationLecturers");
-                });
-
-            modelBuilder.Entity("OrganizationStudents", b =>
-                {
-                    b.Property<Guid>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("StudentUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("OrganizationUuid", "StudentUuid");
-
-                    b.HasIndex("StudentUuid");
-
-                    b.ToTable("OrganizationStudents");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
                     b.Property<Guid>("Uuid")
@@ -355,51 +325,6 @@ namespace tda26.Server.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.Organization", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("PostalCode")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
-
-                    b.Property<int>("Region")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.HasKey("Uuid");
-
-                    b.ToTable("Organizations");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
                 {
                     b.Property<Guid>("Uuid")
@@ -666,10 +591,8 @@ namespace tda26.Server.Migrations
                     b.HasBaseType("tda26.Server.Data.Models.Account");
 
                     b.Property<string>("Bio")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)")
-                        .HasColumnName("Bio");
+                        .HasColumnType("varchar(1024)");
 
                     b.Property<string>("Claim")
                         .HasMaxLength(128)
@@ -681,37 +604,29 @@ namespace tda26.Server.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("FirstName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("LastName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("Location")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
                     b.Property<string>("MiddleName")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("MiddleName");
+                        .HasColumnType("varchar(32)");
 
                     b.PrimitiveCollection<string>("MobileNumbers")
                         .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("PictureUrl")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(512)
-                        .HasColumnType("varchar(512)")
-                        .HasColumnName("PictureUrl");
+                        .HasColumnType("varchar(512)");
 
                     b.Property<ushort>("PricePerHour")
                         .HasColumnType("smallint unsigned");
@@ -729,45 +644,6 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(10)");
 
                     b.HasDiscriminator().HasValue("Lecturer");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Student", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.Account");
-
-                    b.Property<string>("Bio")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)")
-                        .HasColumnName("Bio");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("FirstName");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("LastName");
-
-                    b.Property<string>("MiddleName")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("MiddleName");
-
-                    b.Property<string>("PictureUrl")
-                        .ValueGeneratedOnUpdateSometimes()
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)")
-                        .HasColumnName("PictureUrl");
-
-                    b.HasDiscriminator().HasValue("Student");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FileMaterial", b =>
@@ -863,36 +739,6 @@ namespace tda26.Server.Migrations
                     b.HasOne("tda26.Server.Data.Models.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("OrganizationLecturers", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Lecturer", null)
-                        .WithMany()
-                        .HasForeignKey("LecturerUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Organization", null)
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("OrganizationStudents", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Organization", null)
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Student", null)
-                        .WithMany()
-                        .HasForeignKey("StudentUuid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
