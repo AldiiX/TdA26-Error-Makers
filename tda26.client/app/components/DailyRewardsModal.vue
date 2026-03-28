@@ -3,6 +3,7 @@ import Modal from "~/components/Modal.vue";
 import Button from "~/components/Button.vue";
 import useDailyRewards from "~/composables/useDailyRewards";
 import type { DailyRewardDay } from "#shared/types";
+import { push } from "notivue";
 
 const props = defineProps<{
     enabled: boolean;
@@ -13,6 +14,9 @@ const emit = defineEmits<{
 }>();
 
 const { monthData, loading, claiming, error, fetchMonth, claimDay } = useDailyRewards();
+const completedTaskSnapshot = ref<Set<string>>(new Set());
+const isRefreshing = ref(false);
+let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 const selectedMonth = ref(new Date());
 const selectedDate = ref<string>(toDateKey(new Date()));
@@ -65,6 +69,7 @@ const selectedDay = computed(() => dayMap.value.get(selectedDate.value) ?? null)
 
 const open = async () => {
     await fetchMonth(visibleYear.value, visibleMonth.value);
+    initializeCompletedTaskSnapshot();
 
     if (!dayMap.value.has(selectedDate.value)) {
         selectedDate.value = toDateKey(new Date(visibleYear.value, visibleMonth.value - 1, 1));
@@ -88,6 +93,7 @@ const setMonthAndSelectDay = async (date: Date, day: number) => {
     selectedMonth.value = new Date(date.getFullYear(), date.getMonth(), 1);
     selectedDate.value = toDateKey(new Date(date.getFullYear(), date.getMonth(), Math.max(1, day)));
     await fetchMonth(visibleYear.value, visibleMonth.value);
+    initializeCompletedTaskSnapshot();
 };
 
 const handleClaim = async () => {
@@ -96,18 +102,93 @@ const handleClaim = async () => {
     const claimedDay = await claimDay(selectedDay.value.date);
     if (!claimedDay) return;
 
+    const gainedXp = claimedDay.tasks.reduce((sum, task) => sum + (task.rewardXp ?? 0), 0);
+    const gainedDucks = claimedDay.tasks.reduce((sum, task) => sum + (task.rewardDuck ?? 0), 0);
+
+    push.success({
+        title: "Denní odměna odemknuta",
+        message: `Získal/a jsi +${gainedXp} XP a +${gainedDucks} kačenek.`,
+        duration: 4500
+    });
+
     await fetchMonth(visibleYear.value, visibleMonth.value);
+    notifyNewlyCompletedTasks();
     selectedDate.value = claimedDay.date;
+};
+
+const initializeCompletedTaskSnapshot = () => {
+    completedTaskSnapshot.value = collectCompletedTaskKeys();
+};
+
+const collectCompletedTaskKeys = () => {
+    const keys = new Set<string>();
+    for (const day of monthData.value?.days ?? []) {
+        for (const task of day.tasks) {
+            if (!task.isCompleted) continue;
+            keys.add(`${day.date}:${task.taskCode}`);
+        }
+    }
+    return keys;
+};
+
+const notifyNewlyCompletedTasks = () => {
+    const latestKeys = collectCompletedTaskKeys();
+
+    for (const day of monthData.value?.days ?? []) {
+        for (const task of day.tasks) {
+            if (!task.isCompleted) continue;
+
+            const key = `${day.date}:${task.taskCode}`;
+            if (completedTaskSnapshot.value.has(key)) continue;
+
+            push.success({
+                title: "Úkol splněn",
+                message: `Získal/a jsi za úkol "${task.title}" +${task.rewardXp} XP a +${task.rewardDuck} kačenek.`,
+                duration: 4200
+            });
+        }
+    }
+
+    completedTaskSnapshot.value = latestKeys;
+};
+
+const startAutoRefresh = () => {
+    stopAutoRefresh();
+    refreshInterval = setInterval(async () => {
+        if (!props.enabled || isRefreshing.value) return;
+        isRefreshing.value = true;
+        try {
+            await fetchMonth(visibleYear.value, visibleMonth.value);
+            notifyNewlyCompletedTasks();
+        } finally {
+            isRefreshing.value = false;
+        }
+    }, 15000);
+};
+
+const stopAutoRefresh = () => {
+    if (!refreshInterval) return;
+    clearInterval(refreshInterval);
+    refreshInterval = null;
 };
 
 watch(
     () => props.enabled,
     async (enabled) => {
-        if (!enabled) return;
+        if (!enabled) {
+            stopAutoRefresh();
+            return;
+        }
+
         await open();
+        startAutoRefresh();
     },
     { immediate: true }
 );
+
+onBeforeUnmount(() => {
+    stopAutoRefresh();
+});
 
 function toDateKey(date: Date): string {
     const year = date.getFullYear();
@@ -126,11 +207,11 @@ function toDateKey(date: Date): string {
     >
         <div :class="$style.wrapper">
             <div :class="$style.header">
-                <h2>Daily rewards</h2>
+                <h2>Denní odměny</h2>
                 <div :class="$style.monthControls">
-                    <Button button-style="secondary" @click="goToPreviousMonth">Predchozi</Button>
+                    <Button button-style="secondary" @click="goToPreviousMonth">Předchozí</Button>
                     <p>{{ monthLabel }}</p>
-                    <Button button-style="secondary" @click="goToNextMonth">Dalsi</Button>
+                    <Button button-style="secondary" @click="goToNextMonth">Další</Button>
                 </div>
                 <Button button-style="tertiary" @click="goToToday">Dnes</Button>
             </div>
@@ -162,10 +243,10 @@ function toDateKey(date: Date): string {
                                 <span v-if="cell.isCompleted" :class="$style.dayCheckmark">✓</span>
                                 <span>{{ Number(cell.date.split('-')[2]) }}</span>
                                 <small>
-                                    <template v-if="cell.isClaimed">Claimed</template>
-                                    <template v-else-if="cell.isCompleted">Done</template>
-                                    <template v-else-if="cell.canClaim">Ready</template>
-                                    <template v-else>Open</template>
+                                    <template v-if="cell.isClaimed">Vyzvednuto</template>
+                                    <template v-else-if="cell.isCompleted">Splněno</template>
+                                    <template v-else-if="cell.canClaim">Připraveno</template>
+                                    <template v-else>Otevřené</template>
                                 </small>
                             </button>
                         </template>
@@ -173,10 +254,10 @@ function toDateKey(date: Date): string {
                 </div>
 
                 <div :class="$style.taskSection">
-                    <h3 v-if="selectedDay">Ukoly pro {{ selectedDay.date }}</h3>
+                    <h3 v-if="selectedDay">Úkoly pro {{ selectedDay.date }}</h3>
                     <h3 v-else>Vyber den</h3>
 
-                    <div v-if="loading" :class="$style.stateInfo">Nacitam daily rewards...</div>
+                    <div v-if="loading" :class="$style.stateInfo">Načítám denní odměny...</div>
 
                     <template v-else-if="selectedDay">
                         <div
@@ -187,7 +268,7 @@ function toDateKey(date: Date): string {
                             <div>
                                 <p :class="$style.taskTitle">{{ task.title }}</p>
                                 <p :class="$style.taskDescription">{{ task.description }}</p>
-                                <p :class="$style.taskRewards">+{{ task.rewardXp }} XP • +{{ task.rewardDuck }} Duck</p>
+                                <p :class="$style.taskRewards">+{{ task.rewardXp }} XP • +{{ task.rewardDuck }} kačenek</p>
                             </div>
                             <p :class="$style.taskProgress">
                                 {{ task.currentValue }} / {{ task.targetValue }}
@@ -195,7 +276,7 @@ function toDateKey(date: Date): string {
                         </div>
 
                         <div v-if="selectedDay.tasks.length === 0" :class="$style.stateInfo">
-                            Tento den zatim nema vytvorenou aktivitu.
+                            Tento den zatím nemá vytvořenou aktivitu.
                         </div>
 
                         <Button
@@ -204,10 +285,10 @@ function toDateKey(date: Date): string {
                             :disabled="!selectedDay.canClaim || claiming"
                             @click="handleClaim"
                         >
-                            {{ claiming ? 'Odemykam...' : 'Odemknout odmenu' }}
+                            {{ claiming ? 'Odemykám...' : 'Odemknout odměnu' }}
                         </Button>
 
-                        <p v-else :class="$style.claimedInfo">Odmena uz byla odemknuta.</p>
+                        <p v-else :class="$style.claimedInfo">Odměna už byla odemknuta.</p>
                     </template>
                 </div>
             </div>
@@ -221,6 +302,7 @@ function toDateKey(date: Date): string {
     flex-direction: column;
     gap: 16px;
     color: var(--text-color-primary);
+    font-family: "Dosis", sans-serif;
 }
 
 .header {

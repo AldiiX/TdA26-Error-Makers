@@ -10,9 +10,9 @@ type DailyRewardsApiError = {
 };
 
 const defaultTasks = [
-    { taskCode: "view_material", title: "Zobrazit material", description: "Zobraz jeden material", targetValue: 1, rewardXp: 50, rewardDuck: 10 },
-    { taskCode: "view_course", title: "Zobrazit kurz", description: "Otevri libovolny kurz", targetValue: 1, rewardXp: 35, rewardDuck: 8 },
-    { taskCode: "submit_quiz", title: "Dokoncit kviz", description: "Odesli jeden kviz", targetValue: 1, rewardXp: 80, rewardDuck: 20 }
+    { taskCode: "view_material", title: "Zobrazit materiál", description: "Zobraz jeden materiál", targetValue: 1, rewardXp: 50, rewardDuck: 10 },
+    { taskCode: "view_course", title: "Zobrazit kurz", description: "Otevři libovolný kurz", targetValue: 1, rewardXp: 35, rewardDuck: 8 },
+    { taskCode: "submit_quiz", title: "Dokončit kvíz", description: "Odešli jeden kvíz", targetValue: 1, rewardXp: 80, rewardDuck: 20 }
 ] as const;
 
 export default function useDailyRewards() {
@@ -50,7 +50,7 @@ export default function useDailyRewards() {
             // Fallback keeps UI usable when endpoint temporarily fails.
             monthData.value = createFallbackMonth(year, month);
             syncWalletFromMonth(monthData.value);
-            error.value = serverMessage ?? "Nepodarilo se nacist odmeny. Zobrazuji zakladni rezim.";
+            error.value = serverMessage ?? "Nepodařilo se načíst odměny. Zobrazuji základní režim.";
         } finally {
             loading.value = false;
         }
@@ -72,7 +72,7 @@ export default function useDailyRewards() {
             });
         } catch (e: unknown) {
             const apiError = e as DailyRewardsApiError;
-            error.value = apiError?.data?.error ?? apiError?.data?.message ?? "Nepodarilo se odemknout denni odmenu.";
+            error.value = apiError?.data?.error ?? apiError?.data?.message ?? "Nepodařilo se odemknout denní odměnu.";
             return null;
         } finally {
             claiming.value = false;

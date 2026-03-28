@@ -126,7 +126,7 @@
                                         <p :class="$style.rewardValue">{{ accountXp.toLocaleString('cs-CZ') }}</p>
                                     </div>
                                     <div :class="$style.rewardStat">
-                                        <p :class="$style.rewardLabel">Ducks</p>
+                                        <p :class="$style.rewardLabel">Kačenky</p>
                                         <p :class="$style.rewardValue">{{ accountDucks.toLocaleString('cs-CZ') }}</p>
                                     </div>
                                 </div>
@@ -136,7 +136,7 @@
                                         <div :class="$style.iconWrapper">
                                             <div :class="[$style.icon, $style.dailyRewardsIcon]"/>
                                         </div>
-                                        <p>Daily rewards</p>
+                                        <p>Denní odměny</p>
                                     </button>
 
                                     <button v-if="false" :class="$style.actionButton" @click="toggleTheme"> <!-- TODO: dodělat -->
