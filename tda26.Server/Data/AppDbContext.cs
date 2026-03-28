@@ -1,14 +1,12 @@
-﻿﻿using tda26.Server.Data.Models;
+﻿using tda26.Server.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace tda26.Server.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
-    
-    public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
-    public DbSet<Student> Students => Set<Student>();
+    public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
     public DbSet<Admin> Admins => Set<Admin>();
 
