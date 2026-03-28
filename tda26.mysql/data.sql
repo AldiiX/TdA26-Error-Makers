@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Počítač: localhost:3306
--- Vytvořeno: Sob 28. bře 2026, 16:20
+-- Vytvořeno: Sob 28. bře 2026, 16:35
 -- Verze serveru: 8.0.45-0ubuntu0.24.04.1
 -- Verze PHP: 8.3.27
 
@@ -1364,6 +1364,13 @@ CREATE TABLE `Organizations` (
   `Type` int NOT NULL,
   `Status` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Vypisuji data pro tabulku `Organizations`
+--
+
+INSERT INTO `Organizations` (`Uuid`, `DisplayName`, `Country`, `City`, `Address`, `PostalCode`, `Region`, `Type`, `Status`) VALUES
+('00000000-0000-0000-0000-000000000000', 'Think different Academy', 'Czech Republic', 'Praha', 'Unknown address', '11000', 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -4477,13 +4484,6 @@ CREATE TABLE `__EFMigrationsHistory` (
   `MigrationId` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `ProductVersion` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Vypisuji data pro tabulku `__EFMigrationsHistory`
---
-
-INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES
-('20260328161727_Initial', '9.0.11');
 
 --
 -- Indexy pro exportované tabulky
