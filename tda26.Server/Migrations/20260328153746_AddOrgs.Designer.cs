@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260328115714_AddOrganizations")]
-    partial class AddOrganizations
+    [Migration("20260328153746_AddOrgs")]
+    partial class AddOrgs
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,36 +40,6 @@ namespace tda26.Server.Migrations
                     b.ToTable("CourseTag");
                 });
 
-            modelBuilder.Entity("OrganizationLecturers", b =>
-                {
-                    b.Property<Guid>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("LecturerUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("OrganizationUuid", "LecturerUuid");
-
-                    b.HasIndex("LecturerUuid");
-
-                    b.ToTable("OrganizationLecturers");
-                });
-
-            modelBuilder.Entity("OrganizationStudents", b =>
-                {
-                    b.Property<Guid>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid>("StudentUuid")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("OrganizationUuid", "StudentUuid");
-
-                    b.HasIndex("StudentUuid");
-
-                    b.ToTable("OrganizationStudents");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
                     b.Property<Guid>("Uuid")
@@ -89,6 +59,9 @@ namespace tda26.Server.Migrations
 
                     b.Property<bool>("IsPremium")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid?>("OrganizationUuid")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -112,6 +85,8 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(32)");
 
                     b.HasKey("Uuid");
+
+                    b.HasIndex("OrganizationUuid");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -187,6 +162,9 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
 
+                    b.Property<Guid>("OrganizationUuid")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTimeOffset?>("ScheduledStart")
                         .HasColumnType("datetime(6)");
 
@@ -207,6 +185,8 @@ namespace tda26.Server.Migrations
                     b.HasIndex("CategoryUuid");
 
                     b.HasIndex("LecturerUuid");
+
+                    b.HasIndex("OrganizationUuid");
 
                     b.ToTable("Courses");
                 });
@@ -873,34 +853,14 @@ namespace tda26.Server.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OrganizationLecturers", b =>
+            modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
-                    b.HasOne("tda26.Server.Data.Models.Lecturer", null)
-                        .WithMany()
-                        .HasForeignKey("LecturerUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Organization", null)
+                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
                         .WithMany()
                         .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
+                        .OnDelete(DeleteBehavior.SetNull);
 
-            modelBuilder.Entity("OrganizationStudents", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Organization", null)
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tda26.Server.Data.Models.Student", null)
-                        .WithMany()
-                        .HasForeignKey("StudentUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
@@ -913,9 +873,17 @@ namespace tda26.Server.Migrations
                         .WithMany()
                         .HasForeignKey("LecturerUuid");
 
+                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Account");
 
                     b.Navigation("Category");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
