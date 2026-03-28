@@ -241,6 +241,23 @@ public sealed class APIv1(
 
 	#region organizations
 
+	[HttpGet("organizations")]
+	public async Task<IActionResult> GetOrganizations(CancellationToken ct = default) {
+		var acc = await auth.ReAuthAsync(ct);
+		if (acc == null) return Unauthorized();
+
+		if (acc is not Admin) return Forbid();
+
+		var organizations = await db.Organizations
+			.Include(o => o.Lecturers)
+			.Include(o => o.Students)
+			.OrderBy(o => o.DisplayName)
+			.AsNoTracking()
+			.ToListAsync(ct);
+
+		return Ok(organizations.Select(o => o.ToReadDto()).ToList());
+	}
+
 	[HttpPost("organizations")]
 	public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest body, CancellationToken ct = default) {
 		var acc = await auth.ReAuthAsync(ct);
