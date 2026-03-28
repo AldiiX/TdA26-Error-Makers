@@ -1142,6 +1142,11 @@ namespace tda26.Server.Migrations
                         .HasForeignKey("EquippedTitleUuid")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationUuid")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("EquippedAvatar");
 
                     b.Navigation("EquippedBadge");
@@ -1151,14 +1156,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("EquippedEffect");
 
                     b.Navigation("EquippedTitle");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Organization");
                 });
