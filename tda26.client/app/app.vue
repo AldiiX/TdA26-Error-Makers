@@ -3,7 +3,7 @@ import { NuxtPage, Head, Title, Meta, Html, Link, NuxtLink, ClientOnly, NuxtLayo
 import { computed, onMounted, ref } from 'vue'
 import { useNuxtApp, useRoute, useCookie, useHead } from '#imports'
 
-import type {WebTheme} from "#shared/types";
+import type { Account, AccountType, WebTheme } from "#shared/types";
 import MobileMenu from "~/components/MobileMenu.vue";
 import LoadingScreen from "~/components/LoadingScreen.vue";
 import { Notivue, NotivueSwipe, Notification } from 'notivue';
@@ -11,6 +11,9 @@ import { Notivue, NotivueSwipe, Notification } from 'notivue';
 // state
 const route = useRoute();
 const theme = useState<WebTheme>('theme', () => 'light');
+const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+const debugAccountType = computed<AccountType | null>(() => loggedAccount.value?.type ?? null);
+const isDev = import.meta.dev;
 
 // Default SEO fallback - pages should use useSeo() composable for specific SEO
 const siteTitle = "Think Different Academy";
@@ -46,6 +49,10 @@ useSeo({
 </script>
 
 <template>
+    <div v-if="isDev && debugAccountType" :class="$style.accountTypeDebug" role="status" aria-live="polite">
+        Debug: logged in as <strong>{{ debugAccountType }}</strong>
+    </div>
+
     <!-- Mobile menu -->
     <MobileMenu />
 
@@ -93,5 +100,20 @@ useSeo({
             padding: 20px;
         }
     }
+}
+
+.accountTypeDebug {
+    position: fixed;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    font-size: 12px;
+    background: rgb(from var(--background-color-secondary) r g b / 0.9);
+    border: 1px solid rgb(from var(--text-color-primary) r g b / 0.2);
+    color: var(--text-color-primary);
+    border-radius: 999px;
+    padding: 6px 10px;
+    pointer-events: none;
 }
 </style>
