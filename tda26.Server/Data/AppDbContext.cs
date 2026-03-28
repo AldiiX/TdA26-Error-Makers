@@ -8,7 +8,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
+    public DbSet<Student> Students => Set<Student>();
+
     public DbSet<Admin> Admins => Set<Admin>();
+
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     public DbSet<Course> Courses => Set<Course>();
 
@@ -87,6 +91,43 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
+
+        // Share profile columns across Lecturer/Student in the Accounts TPH table.
+        modelBuilder.Entity<Lecturer>().Property(l => l.FirstName).HasColumnName("FirstName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.MiddleName).HasColumnName("MiddleName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.LastName).HasColumnName("LastName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.Bio).HasColumnName("Bio");
+        modelBuilder.Entity<Lecturer>().Property(l => l.PictureUrl).HasColumnName("PictureUrl");
+
+        modelBuilder.Entity<Student>().Property(s => s.FirstName).HasColumnName("FirstName");
+        modelBuilder.Entity<Student>().Property(s => s.MiddleName).HasColumnName("MiddleName");
+        modelBuilder.Entity<Student>().Property(s => s.LastName).HasColumnName("LastName");
+        modelBuilder.Entity<Student>().Property(s => s.Bio).HasColumnName("Bio");
+        modelBuilder.Entity<Student>().Property(s => s.PictureUrl).HasColumnName("PictureUrl");
+
+        modelBuilder.Entity<Organization>()
+            .HasMany(o => o.Lecturers)
+            .WithMany(l => l.Organizations)
+            .UsingEntity<Dictionary<string, object>>(
+                "OrganizationLecturers",
+                right => right.HasOne<Lecturer>().WithMany().HasForeignKey("LecturerUuid"),
+                left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
+                join => {
+                    join.HasKey("OrganizationUuid", "LecturerUuid");
+                }
+            );
+
+        modelBuilder.Entity<Organization>()
+            .HasMany(o => o.Students)
+            .WithMany(s => s.Organizations)
+            .UsingEntity<Dictionary<string, object>>(
+                "OrganizationStudents",
+                right => right.HasOne<Student>().WithMany().HasForeignKey("StudentUuid"),
+                left => left.HasOne<Organization>().WithMany().HasForeignKey("OrganizationUuid"),
+                join => {
+                    join.HasKey("OrganizationUuid", "StudentUuid");
+                }
+            );
 
         /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)
