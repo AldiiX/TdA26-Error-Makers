@@ -142,6 +142,30 @@ export interface Account {
     fullNameWithoutTitles: string,
     likes: Rating[];
     dislikes: Rating[];
+    type: "account" | "lecturer" | "admin";
+    ducks: number;
+    xp: number;
+    level: number;
+    shopItems: ShopItem[];
+    equippedAvatarUuid?: string | null;
+    equippedBannerUuid?: string | null;
+    equippedEffectUuid?: string | null;
+    equippedBadgeUuid?: string | null;
+    equippedTitleUuid?: string | null;
+}
+
+export interface EquippedShopItems {
+    avatar: ShopItem | null;
+    banner: ShopItem | null;
+    effect: ShopItem | null;
+    badge: ShopItem | null;
+    title: ShopItem | null;
+}
+
+export interface ProfilePayload {
+    account: Account;
+    equipped: EquippedShopItems;
+    inventory: ShopItem[];
     type: AccountType;
     isPremium: boolean;
 }
@@ -149,6 +173,15 @@ export interface Account {
 interface Rating {
     course: Course | null,
     uuid: string
+}
+
+export interface ShopItem {
+    uuid: string;
+    name: string;
+    description: string;
+    priceInDucks: number;
+    type: "avatar" | "banner" | "effect" | "badge" | "title";
+    imageUrl: string | null;
 }
 
 export interface gRecaptcha {

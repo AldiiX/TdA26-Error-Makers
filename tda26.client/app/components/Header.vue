@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { onMounted, onUnmounted, inject, type Ref } from 'vue';
+    import { onMounted, onUnmounted } from 'vue';
     import { NuxtLink } from '#components';
     import Button from "~/components/Button.vue";
     import Menu from "~/components/Menu.vue";
@@ -116,7 +116,25 @@
                                         </div>
                                         <p>{{ theme === 'light' ? 'Tmavý režim' : 'Světlý režim' }}</p>
                                     </button>
-                                    
+
+                                    <NuxtLink to="/inventory" :class="$style.actionLink">
+                                        <button :class="$style.actionButton">
+                                            <div :class="$style.iconWrapper">
+                                                <div :class="[$style.icon, $style.inventoryIcon]"/>
+                                            </div>
+                                            <p>Inventář</p>
+                                        </button>
+                                    </NuxtLink>
+
+                                    <NuxtLink to="/profile" :class="$style.actionLink">
+                                        <button :class="$style.actionButton">
+                                            <div :class="$style.iconWrapper">
+                                                <div :class="[$style.icon, $style.profileIcon]"/>
+                                            </div>
+                                            <p>Profil</p>
+                                        </button>
+                                    </NuxtLink>
+
                                     <button :class="[$style.actionButton, $style.logoutButton]" @click="logout">
                                         <div :class="$style.iconWrapper">
                                             <div :class="[$style.icon, $style.logoutIcon]"/>
@@ -309,7 +327,7 @@
                             right: 0;
                             z-index: -1;
                             color: transparent;
-                            text-shadow: 0 0 24px var(--background-color), 0px 0 12px var(--background-color);
+                            text-shadow: 0 0 24px var(--background-color), 0 0 12px var(--background-color);
                         }
                     }
                 }
@@ -412,11 +430,30 @@
                     &.logoutIcon {
                         mask-image: url('/icons/logout.svg');
                     }
+
+                    &.inventoryIcon {
+                        mask-image: url('/icons/box-archive.svg');
+                    }
+
+                    &.profileIcon {
+                        mask-image: url('/icons/user_circle.svg');
+                    }
                 }
 
                 p {
                     margin: 0;
                     font-weight: 600;
+                }
+            }
+
+            .actionLink {
+                text-decoration: none;
+                color: inherit;
+                display: block;
+                width: 100%;
+
+                button {
+                    width: 100%;
                 }
             }
 

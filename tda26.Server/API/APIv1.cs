@@ -89,6 +89,8 @@ public sealed class APIv1(
 			like.Course.Account = null;
 		}
 
+		if(acc != null) acc.ShopItems = [];
+
 		return Ok(acc);
 	}
 

@@ -17,7 +17,7 @@ public static class EntityFrameworkIncludes {
 	}
 
 	public static IQueryable<Course> CoursesFullEf(this AppDbContext db) {
-		return CoursesMinimalEf(db)
+		return db.CoursesMinimalEf()
 				.Include(c => c.Materials
 					.OrderByDescending(m => m.CreatedAt))
 				.Include(c => c.Quizzes
@@ -37,7 +37,14 @@ public static class EntityFrameworkIncludes {
 	public static IQueryable<Account> AccountsEf(this AppDbContext db) {
 		return db.Accounts
 			.Include(a => a.Ratings)
-				.ThenInclude(r => r.Course);
+				.ThenInclude(r => r.Course)
+			.Include(a => a.ShopItems)
+			.Include(a => a.EquippedAvatar)
+			.Include(a => a.EquippedBanner)
+			.Include(a => a.EquippedEffect)
+			.Include(a => a.EquippedBadge)
+			.Include(a => a.EquippedTitle)
+			;
 	}
 
 	public static IQueryable<Quiz> QuizzesEf(this AppDbContext db) {

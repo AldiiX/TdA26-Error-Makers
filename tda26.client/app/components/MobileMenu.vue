@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {computed} from "vue";
 import {useRoute} from "#imports";
 import {useState} from "#app";
 import {NuxtLink, ClientOnly} from "#components";
 import Menu from "~/components/Menu.vue";
-import type {Account, Lecturer, WebTheme} from "#shared/types";
+import type {Account, Lecturer} from "#shared/types";
 import Avatar from "~/components/Avatar.vue";
+import Button from "~/components/Button.vue";
 import useAuth from "~/composables/useAuth";
 
 
@@ -13,19 +13,6 @@ const { logout } = useAuth();
 const loggedAccount = useState<Account | Lecturer | null>('loggedAccount', () => null);
 const mobileMenuOpened = useState<boolean>('mobileMenuOpened', () => false);
 const currentPage = ref<string>("/");
-const theme = useState<WebTheme>('theme', () => 'light');
-
-const themeCookie = useCookie<WebTheme>('theme', {
-    default: () => 'light',
-    sameSite: 'lax',
-    path: '/'
-});
-
-function toggleTheme() {
-    const newTheme: WebTheme = theme.value === 'light' ? 'dark' : 'light';
-    theme.value = newTheme;
-    themeCookie.value = newTheme;
-}
 
 watch(() => useRoute().path, (newPath) => {
     currentPage.value = newPath;
@@ -63,6 +50,14 @@ watch(() => useRoute().path, (newPath) => {
                         >
                             Dashboard
                         </NuxtLink>
+                        <NuxtLink
+                            v-if="loggedAccount"
+                            to="/profile"
+                            :class="$style.link"
+                            @click="mobileMenuOpened = false"
+                        >
+                            Profil
+                        </NuxtLink>
                     </nav>
 
                     <div :class="$style.loggedAs">
@@ -90,7 +85,7 @@ watch(() => useRoute().path, (newPath) => {
 <!--                                </button>-->
 
                                 <button :class="[$style.actionButton, $style.logout]" @click="logout">
-                                    <div :class="[$style.icon, $style.logoutIcon]"/>
+                                    <span :class="[$style.icon, $style.logoutIcon]"></span>
                                     <span>Odhlásit se</span>
                                 </button>
                             </div>
