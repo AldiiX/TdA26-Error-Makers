@@ -5,7 +5,9 @@ namespace tda26.Server.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
-    
+
+    public DbSet<Student> Students { get; set; }
+
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
     public DbSet<Admin> Admins => Set<Admin>();
@@ -39,6 +41,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
     
     public DbSet<Tag> Tags => Set<Tag>();
+    public DbSet<ShopItem> ShopItems { get; set; }
 
     // auto update audit properties
     private void SetAuditProperties() {
