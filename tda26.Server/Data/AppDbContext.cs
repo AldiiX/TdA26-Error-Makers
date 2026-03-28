@@ -5,12 +5,12 @@ namespace tda26.Server.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options) {
     public DbSet<Account> Accounts { get; set; }
-
-    public DbSet<Student> Students { get; set; }
-
+public DbSet<Student> Students { get; set; }
     public DbSet<Lecturer> Lecturers => Set<Lecturer>();
 
     public DbSet<Admin> Admins => Set<Admin>();
+
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     public DbSet<Course> Courses => Set<Course>();
 
@@ -129,6 +129,29 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             .WithMany()
             .HasForeignKey(a => a.EquippedTitleUuid)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Ensure legacy join-table mappings are never reintroduced by conventions.
+        modelBuilder.Ignore("OrganizationStudents");
+        modelBuilder.Ignore("OrganizationLecturers");
+
+        // Share profile columns across Lecturer/Student in the Accounts TPH table.
+        modelBuilder.Entity<Lecturer>().Property(l => l.FirstName).HasColumnName("FirstName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.MiddleName).HasColumnName("MiddleName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.LastName).HasColumnName("LastName");
+        modelBuilder.Entity<Lecturer>().Property(l => l.Bio).HasColumnName("Bio");
+        modelBuilder.Entity<Lecturer>().Property(l => l.PictureUrl).HasColumnName("PictureUrl");
+
+        modelBuilder.Entity<Student>().Property(s => s.FirstName).HasColumnName("FirstName");
+        modelBuilder.Entity<Student>().Property(s => s.MiddleName).HasColumnName("MiddleName");
+        modelBuilder.Entity<Student>().Property(s => s.LastName).HasColumnName("LastName");
+        modelBuilder.Entity<Student>().Property(s => s.Bio).HasColumnName("Bio");
+        modelBuilder.Entity<Student>().Property(s => s.PictureUrl).HasColumnName("PictureUrl");
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.Organization)
+            .WithMany()
+            .HasForeignKey(a => a.OrganizationUuid)
+            .OnDelete(DeleteBehavior.SetNull);
 
         /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)

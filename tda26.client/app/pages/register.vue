@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
-import { ref } from "vue";
-import BlurBackground from "~/components/backgrounds/BlurBackground.vue";
+import { computed, ref } from "vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "#shared/types";
+import Select from "~/components/Select.vue";
+import type { Account, OrganizationRegistrationOption } from "#shared/types";
+import getBaseUrl from "#shared/utils/getBaseUrl";
 
 definePageMeta({
     layout: "normal-page-layout"
@@ -34,6 +35,28 @@ const email = ref("");
 const firstName = ref("");
 const middleName = ref("");
 const lastName = ref("");
+const organizationUuid = ref<string | null>(null);
+
+const { data: registrationOrganizations } = await useFetch<OrganizationRegistrationOption[]>(
+    `${getBaseUrl()}/api/v1/organizations/registration-options`,
+    {
+        server: false,
+        default: () => []
+    }
+);
+
+const organizationSelectOptions = computed(() =>
+    (registrationOrganizations.value ?? []).map(org => ({
+        value: org.uuid,
+        label: `${org.displayName} (${org.city}, ${org.country})`
+    }))
+);
+
+const route = useRoute();
+if (typeof route.query.organization === "string") {
+    organizationUuid.value = route.query.organization;
+}
+
 function togglePassword() {
     // prepina zobrazeni hesla
     showPassword.value = !showPassword.value;
@@ -88,6 +111,12 @@ async function submitRegisterForm(event: Event) {
         isLoading.value = false;
         return;
     }
+
+    if (!organizationUuid.value) {
+        errorMsg.value.push("Výběr pobočky je povinný");
+        isLoading.value = false;
+        return;
+    }
     
     // Check if all password rules pass
     const allRulesPass = passwordRules.value.every(rule => rule.pass);
@@ -99,6 +128,8 @@ async function submitRegisterForm(event: Event) {
 
 
     try {
+        formDataObj.organizationUuid = organizationUuid.value;
+
         const res = await $fetch<Account | null>("/api/v1/register", {
             method: "POST",
             body: formDataObj
@@ -204,6 +235,16 @@ async function submitRegisterForm(event: Event) {
                         autocomplete="family-name"
                         required
                         placeholder="Honsig"
+                    />
+                </div>
+
+                <div :class="$style.group">
+                    <label :class="$style.label" for="organization">Pobočka</label>
+                    <Select
+                        v-model="organizationUuid"
+                        :options="organizationSelectOptions"
+                        placeholder="Vyber pobočku"
+                        search-placeholder="Hledat pobočku..."
                     />
                 </div>
 
