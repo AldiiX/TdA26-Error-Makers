@@ -315,6 +315,16 @@ public static class Program {
 
             try {
                 db.Database.Migrate();
+
+                db.Database.ExecuteSqlRaw(@"
+                    ALTER TABLE Accounts
+                    ADD COLUMN IF NOT EXISTS EquippedAvatarUuid char(36) NULL,
+                    ADD COLUMN IF NOT EXISTS EquippedBannerUuid char(36) NULL,
+                    ADD COLUMN IF NOT EXISTS EquippedEffectUuid char(36) NULL,
+                    ADD COLUMN IF NOT EXISTS EquippedBadgeUuid char(36) NULL,
+                    ADD COLUMN IF NOT EXISTS EquippedTitleUuid char(36) NULL;
+                ");
+
                 ShopItemSeeder.SeedAsync(db).GetAwaiter().GetResult();
                 var itemsCount = db.ShopItems.Count();
                 startupLogger.LogInformation("Shop seeding finished. ShopItems count: {ItemsCount}", itemsCount);

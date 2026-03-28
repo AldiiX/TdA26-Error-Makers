@@ -25,46 +25,79 @@ public static class ShopItemSeeder {
 
     private static string BuildKey(string typeName, string name) => $"{typeName}|{name}";
 
+    private static AvatarShopItem Avatar(string name, string description, int price, string seed) => new() {
+        Name = name,
+        Description = description,
+        PriceInDucks = price,
+        ImageUrl = $"https://picsum.photos/seed/{seed}/512/512"
+    };
+
+    private static BannerShopItem Banner(string name, string description, int price, string seed) => new() {
+        Name = name,
+        Description = description,
+        PriceInDucks = price,
+        ImageUrl = $"https://picsum.photos/seed/{seed}/1280/400"
+    };
+
+    private static EffectShopItem Effect(string name, string description, int price, string seed) => new() {
+        Name = name,
+        Description = description,
+        PriceInDucks = price,
+        ImageUrl = $"https://picsum.photos/seed/{seed}/960/540"
+    };
+
+    private static BadgeShopItem Badge(string name, string description, int price, string seed) => new() {
+        Name = name,
+        Description = description,
+        PriceInDucks = price,
+        ImageUrl = $"https://picsum.photos/seed/{seed}/512/512"
+    };
+
+    private static TitleShopItem Title(string name, string description, int price) => new() {
+        Name = name,
+        Description = description,
+        PriceInDucks = price
+    };
+
     private static List<ShopItem> BuildSeedItems() {
         return [
-            // Avatar
-            new AvatarShopItem { Name = "Neonovy profil", Description = "Avatar s jemnym neonovym glow efektem.", PriceInDucks = 180, ImageUrl = string.Empty },
-            new AvatarShopItem { Name = "Aqua fokus", Description = "Cisty avatar ve stylu brand barev.", PriceInDucks = 220, ImageUrl = string.Empty },
-            new AvatarShopItem { Name = "Polar glow", Description = "Studeny avatar s decentnim prechodem.", PriceInDucks = 260, ImageUrl = string.Empty },
-            new AvatarShopItem { Name = "Night pulse", Description = "Tmavy avatar se sviticim okrajem.", PriceInDucks = 300, ImageUrl = string.Empty },
-            new AvatarShopItem { Name = "Mint wave", Description = "Lehky avatar v sekundarni brand palete.", PriceInDucks = 340, ImageUrl = string.Empty },
-            new AvatarShopItem { Name = "Core pixel", Description = "Minimalisticky avatar se ctvercovym motivem.", PriceInDucks = 380, ImageUrl = string.Empty },
+            // Avatar (6)
+            Avatar("Neonovy profil", "Avatar s jemnym neonovym glow efektem.", 180, "avatar-neon"),
+            Avatar("Aqua fokus", "Cisty avatar ve stylu brand barev.", 220, "avatar-aqua"),
+            Avatar("Polar glow", "Studeny avatar s decentnim prechodem.", 260, "avatar-polar"),
+            Avatar("Night pulse", "Tmavy avatar se sviticim okrajem.", 300, "avatar-night"),
+            Avatar("Mint wave", "Lehky avatar v sekundarni brand palete.", 340, "avatar-mint"),
+            Avatar("Core pixel", "Minimalisticky avatar se ctvercovym motivem.", 380, "avatar-pixel"),
 
-            // Banner
-            new BannerShopItem { Name = "Wave banner", Description = "Siroky profilovy banner s wave motivem.", PriceInDucks = 360, ImageUrl = string.Empty },
-            new BannerShopItem { Name = "Blue grid", Description = "Minimalisticky banner s kontrastnim prechodem.", PriceInDucks = 520, ImageUrl = string.Empty },
-            new BannerShopItem { Name = "Liquid glass", Description = "Skleneny banner inspirovany UI stylizaci.", PriceInDucks = 560, ImageUrl = string.Empty },
-            new BannerShopItem { Name = "Hex stream", Description = "Technicky banner se sitovym vzorem.", PriceInDucks = 620, ImageUrl = string.Empty },
-            new BannerShopItem { Name = "Night runway", Description = "Tmavy banner s neony a hloubkou.", PriceInDucks = 700, ImageUrl = string.Empty },
-            new BannerShopItem { Name = "Signal stripe", Description = "Dynamicky banner pro aktivni profily.", PriceInDucks = 760, ImageUrl = string.Empty },
+            // Banner (6)
+            Banner("Wave banner", "Siroky profilovy banner s wave motivem.", 360, "banner-wave"),
+            Banner("Blue grid", "Minimalisticky banner s kontrastnim prechodem.", 520, "banner-grid"),
+            Banner("Liquid glass", "Skleneny banner inspirovany UI stylizaci.", 560, "banner-glass"),
+            Banner("Hex stream", "Technicky banner se sitovym vzorem.", 620, "banner-hex"),
+            Banner("Night runway", "Tmavy banner s neony a hloubkou.", 700, "banner-runway"),
+            Banner("Signal stripe", "Dynamicky banner pro aktivni profily.", 760, "banner-signal"),
 
-            // Effect
-            new EffectShopItem { Name = "Pulse efekt", Description = "Animovany efekt zvyraznujici aktivniho uzivatele.", PriceInDucks = 480, ImageUrl = string.Empty },
-            new EffectShopItem { Name = "Soft aura", Description = "Jemna aura kolem profiloveho elementu.", PriceInDucks = 540, ImageUrl = string.Empty },
-            new EffectShopItem { Name = "Spark ring", Description = "Kruhovy efekt s kratkymi odlesky.", PriceInDucks = 620, ImageUrl = string.Empty },
-            new EffectShopItem { Name = "Focus rays", Description = "Liniovy efekt s modernim rasterem.", PriceInDucks = 700, ImageUrl = string.Empty },
-            new EffectShopItem { Name = "Echo blur", Description = "Dvojity stinovy efekt s plynulym dozvukem.", PriceInDucks = 760, ImageUrl = string.Empty },
-            new EffectShopItem { Name = "Flux core", Description = "Vyrazny premium efekt s hlubsim kontrastem.", PriceInDucks = 860, ImageUrl = string.Empty },
+            // Effect (6)
+            Effect("Pulse efekt", "Animovany efekt zvyraznujici aktivniho uzivatele.", 480, "effect-pulse"),
+            Effect("Soft aura", "Jemna aura kolem profiloveho elementu.", 540, "effect-aura"),
+            Effect("Spark ring", "Kruhovy efekt s kratkymi odlesky.", 620, "effect-spark"),
+            Effect("Focus rays", "Liniovy efekt s modernim rasterem.", 700, "effect-rays"),
+            Effect("Echo blur", "Dvojity stinovy efekt s plynulym dozvukem.", 760, "effect-echo"),
+            Effect("Flux core", "Vyrazny premium efekt s hlubsim kontrastem.", 860, "effect-flux"),
 
-            // Badge
-            new BadgeShopItem { Name = "Top resitel", Description = "Odznak za stabilni vysledky v kvizech.", PriceInDucks = 300, ImageUrl = string.Empty },
-            new BadgeShopItem { Name = "Sprint badge", Description = "Odznak pro rychle dokonceni studia.", PriceInDucks = 360, ImageUrl = string.Empty },
-            new BadgeShopItem { Name = "Kviz maestro", Description = "Odznak pro vysoke skore napric kvizy.", PriceInDucks = 430, ImageUrl = string.Empty },
-            new BadgeShopItem { Name = "Daily streak", Description = "Odznak za pravidelnou aktivitu.", PriceInDucks = 500, ImageUrl = string.Empty },
-            new BadgeShopItem { Name = "Team helper", Description = "Odznak za pomoc ostatnim studentum.", PriceInDucks = 580, ImageUrl = string.Empty },
+            // Badge (5)
+            Badge("Top resitel", "Odznak za stabilni vysledky v kvizech.", 300, "badge-top"),
+            Badge("Sprint badge", "Odznak pro rychle dokonceni studia.", 360, "badge-sprint"),
+            Badge("Kviz maestro", "Odznak pro vysoke skore napric kvizy.", 430, "badge-maestro"),
+            Badge("Daily streak", "Odznak za pravidelnou aktivitu.", 500, "badge-streak"),
+            Badge("Team helper", "Odznak za pomoc ostatnim studentum.", 580, "badge-helper"),
 
-            // Title
-            new TitleShopItem { Name = "Mistr kurzu", Description = "Exkluzivni titul k profilovemu jmenu.", PriceInDucks = 900 },
-            new TitleShopItem { Name = "Kodovy navigator", Description = "Titul pro uzivatele s orientaci v kodu.", PriceInDucks = 980 },
-            new TitleShopItem { Name = "Debug veteran", Description = "Titul pro trpelive a peclive ladeni.", PriceInDucks = 1120 },
-            new TitleShopItem { Name = "Challenge hunter", Description = "Titul pro fanousky narocnych ukolu.", PriceInDucks = 1260 },
-            new TitleShopItem { Name = "Academy legend", Description = "Vyberovy titul pro top profily.", PriceInDucks = 1500 }
+            // Title (5)
+            Title("Mistr kurzu", "Exkluzivni titul k profilovemu jmenu.", 900),
+            Title("Kodovy navigator", "Titul pro uzivatele s orientaci v kodu.", 980),
+            Title("Debug veteran", "Titul pro trpelive a peclive ladeni.", 1120),
+            Title("Challenge hunter", "Titul pro fanousky narocnych ukolu.", 1260),
+            Title("Academy legend", "Vyberovy titul pro top profily.", 1500)
         ];
     }
 }
-

@@ -132,6 +132,25 @@ export interface Account {
     xp: number;
     level: number;
     shopItems: ShopItem[];
+    equippedAvatarUuid?: string | null;
+    equippedBannerUuid?: string | null;
+    equippedEffectUuid?: string | null;
+    equippedBadgeUuid?: string | null;
+    equippedTitleUuid?: string | null;
+}
+
+export interface EquippedShopItems {
+    avatar: ShopItem | null;
+    banner: ShopItem | null;
+    effect: ShopItem | null;
+    badge: ShopItem | null;
+    title: ShopItem | null;
+}
+
+export interface ProfilePayload {
+    account: Account;
+    equipped: EquippedShopItems;
+    inventory: ShopItem[];
 }
 
 interface Rating {

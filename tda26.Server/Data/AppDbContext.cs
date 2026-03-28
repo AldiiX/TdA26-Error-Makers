@@ -97,6 +97,36 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedAvatar)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedAvatarUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedBanner)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedBannerUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedEffect)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedEffectUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedBadge)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedBadgeUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .HasOne(a => a.EquippedTitle)
+            .WithMany()
+            .HasForeignKey(a => a.EquippedTitleUuid)
+            .OnDelete(DeleteBehavior.Restrict);
+
         /*modelBuilder.Entity<Lecturer>()
             .Property(l => l.IsPublic)
             .IsRequired()

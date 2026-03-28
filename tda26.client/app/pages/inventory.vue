@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ClientOnly, NuxtLink } from "#components";
-import type { Account, ShopItem } from "#shared/types";
+import type { Account, ProfilePayload, ShopItem } from "#shared/types";
 import formatCzechCount from "#shared/utils/formatCzechCount";
+import { push } from "notivue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import LoginForm from "~/components/LoginForm.vue";
 import Modal from "~/components/Modal.vue";
@@ -52,6 +53,21 @@ const { data: fetchedItems, pending } = useAsyncData("inventory-items", async ()
     server: false,
     default: () => []
 });
+
+const { data: profileData, refresh: refreshProfile } = useAsyncData("me-profile-inventory", async () => {
+    if (!loggedAccount.value) return null;
+
+    try {
+        return await $fetch<ProfilePayload>("/api/v1/me/profile");
+    } catch {
+        return null;
+    }
+}, {
+    server: false,
+    default: () => null
+});
+
+const equipLoadingUuid = ref<string | null>(null);
 
 onMounted(() => {
     if (!loggedAccount.value) {
@@ -121,6 +137,59 @@ function typeColor(type: ShopItem["type"]): string {
 
 function selectType(type: "all" | ShopItem["type"]) {
     selectedType.value = type;
+}
+
+function equippedItemByType(type: ShopItem["type"]): ShopItem | null {
+    const equipped = profileData.value?.equipped;
+    if (!equipped) return null;
+
+    if (type === "avatar") return equipped.avatar;
+    if (type === "banner") return equipped.banner;
+    if (type === "effect") return equipped.effect;
+    if (type === "badge") return equipped.badge;
+    return equipped.title;
+}
+
+function isEquipped(item: ShopItem): boolean {
+    return equippedItemByType(item.type)?.uuid === item.uuid;
+}
+
+async function equipItem(item: ShopItem) {
+    if (!loggedAccount.value) {
+        authModalOpen.value = true;
+        return;
+    }
+
+    equipLoadingUuid.value = item.uuid;
+
+    try {
+        await $fetch(`/api/v1/me/inventory/${item.uuid}/equip`, { method: "POST" });
+        await refreshProfile();
+        push.success({ title: "Vybaveno", message: `Položka \"${item.name}\" je aktivní.` });
+    } catch (err: any) {
+        push.error({ title: "Chyba", message: err?.data?.message ?? "Nepodařilo se vybavit položku." });
+    } finally {
+        equipLoadingUuid.value = null;
+    }
+}
+
+async function unequipItem(type: ShopItem["type"]) {
+    if (!loggedAccount.value) {
+        authModalOpen.value = true;
+        return;
+    }
+
+    equipLoadingUuid.value = `slot-${type}`;
+
+    try {
+        await $fetch(`/api/v1/me/inventory/${type}/unequip`, { method: "POST" });
+        await refreshProfile();
+        push.success({ title: "Odebrano", message: "Položka byla odebrána z vybavení." });
+    } catch (err: any) {
+        push.error({ title: "Chyba", message: err?.data?.message ?? "Nepodařilo se odebrat vybavení." });
+    } finally {
+        equipLoadingUuid.value = null;
+    }
 }
 
 function handleAuthSuccess() {
@@ -239,7 +308,31 @@ function handleAuthSuccess() {
                                     <span>{{ item.priceInDucks }}</span>
                                 </div>
 
-                                <div :class="$style.ownedBadge">✓ Vlastníte</div>
+                                <div :class="$style.footerActions">
+                                    <div v-if="isEquipped(item)" :class="$style.equippedBadge">✓ Vybaveno</div>
+
+                                    <button
+                                        v-if="!isEquipped(item)"
+                                        type="button"
+                                        :class="$style.equipButton"
+                                        :disabled="equipLoadingUuid === item.uuid"
+                                        @click="equipItem(item)"
+                                    >
+                                        <span v-if="equipLoadingUuid === item.uuid" :class="$style.spinner" />
+                                        <span v-else>Equip</span>
+                                    </button>
+
+                                    <button
+                                        v-else
+                                        type="button"
+                                        :class="[$style.equipButton, $style.equipButtonSecondary]"
+                                        :disabled="equipLoadingUuid === `slot-${item.type}`"
+                                        @click="unequipItem(item.type)"
+                                    >
+                                        <span v-if="equipLoadingUuid === `slot-${item.type}`" :class="$style.spinner" />
+                                        <span v-else>Odebrat</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </article>
@@ -687,6 +780,12 @@ function handleAuthSuccess() {
     gap: 8px;
 }
 
+.footerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .price {
     display: inline-flex;
     align-items: center;
@@ -701,7 +800,7 @@ function handleAuthSuccess() {
     height: 18px;
 }
 
-.ownedBadge {
+.equippedBadge {
     border-radius: 10px;
     padding: 9px 14px;
     color: var(--accent-color-secondary-theme);
@@ -709,6 +808,49 @@ function handleAuthSuccess() {
     background: rgb(from var(--accent-color-secondary-theme) r g b / 0.15);
     font-size: 13px;
     font-weight: 700;
+}
+
+.equipButton {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    min-width: 92px;
+    cursor: pointer;
+    background: var(--accent-color-primary);
+    color: var(--accent-color-primary-text);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: Dosis, sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover:not(:disabled) {
+        filter: brightness(0.9);
+    }
+
+    &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+}
+
+.equipButtonSecondary {
+    background: rgb(from var(--text-color-primary) r g b / 0.1);
+    color: var(--text-color-primary);
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .emptyState {

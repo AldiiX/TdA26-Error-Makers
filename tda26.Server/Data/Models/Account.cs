@@ -23,6 +23,27 @@ public class Account : Auditable {
 
 	public ICollection<ShopItem> ShopItems { get; set; } = new List<ShopItem>();
 
+    public Guid? EquippedAvatarUuid { get; set; }
+    public Guid? EquippedBannerUuid { get; set; }
+    public Guid? EquippedEffectUuid { get; set; }
+    public Guid? EquippedBadgeUuid { get; set; }
+    public Guid? EquippedTitleUuid { get; set; }
+
+    [JsonIgnore]
+    public AvatarShopItem? EquippedAvatar { get; set; }
+
+    [JsonIgnore]
+    public BannerShopItem? EquippedBanner { get; set; }
+
+    [JsonIgnore]
+    public EffectShopItem? EquippedEffect { get; set; }
+
+    [JsonIgnore]
+    public BadgeShopItem? EquippedBadge { get; set; }
+
+    [JsonIgnore]
+    public TitleShopItem? EquippedTitle { get; set; }
+
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 

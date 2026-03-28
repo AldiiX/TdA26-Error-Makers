@@ -39,6 +39,11 @@ public static class EntityFrameworkIncludes {
 			.Include(a => a.Ratings)
 				.ThenInclude(r => r.Course)
 			.Include(a => a.ShopItems)
+			.Include(a => a.EquippedAvatar)
+			.Include(a => a.EquippedBanner)
+			.Include(a => a.EquippedEffect)
+			.Include(a => a.EquippedBadge)
+			.Include(a => a.EquippedTitle)
 			;
 	}
 
