@@ -27,7 +27,7 @@ public class ShopControllerV1(AppDbContext db, IAuthService auth) {
 		var account = await db.AccountsEf().FirstOrDefaultAsync(a => a.Uuid == loggedAccount.Uuid, ct);
 		if (account == null) return new UnauthorizedObjectResult(new { message = "Účet nenalezen." });
 
-		var item = await db.ShopItems.FindAsync([uuid], ct);
+		var item = await db.ShopItems.FindAsync(new object[] { uuid }, ct);
 		if (item == null) return new NotFoundObjectResult(new { message = "Položka nenalezena." });
 
 		if (account.ShopItems.Any(i => i.Uuid == uuid))
