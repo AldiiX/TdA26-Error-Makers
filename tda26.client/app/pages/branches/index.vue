@@ -188,8 +188,16 @@ async function saveOrganizationEdit(): Promise<void> {
     </Head>
 
     <section :class="$style.page">
-        <h1 :class="$style.heading">Pobočky</h1>
-        <p :class="$style.description">Seznam všech organizací a jejich základních informací.</p>
+        <div :class="$style.headingRow">
+            <div>
+                <h1 :class="$style.heading">Pobočky</h1>
+                <p :class="$style.description">Seznam všech organizací a jejich základních informací.</p>
+            </div>
+
+            <Button button-style="primary" accent-color="primary" @click="navigateTo('/branches/add')">
+                Přidat pobočku
+            </Button>
+        </div>
 
         <div v-if="isLoading" :class="$style.info">Načítání poboček...</div>
         <div v-else-if="loadError" :class="[$style.info, $style.error]">{{ loadError }}</div>
@@ -328,6 +336,14 @@ async function saveOrganizationEdit(): Promise<void> {
     max-width: 1100px;
 }
 
+.headingRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
 .heading {
     margin: 0;
     font-size: 48px;
@@ -454,6 +470,10 @@ async function saveOrganizationEdit(): Promise<void> {
 }
 
 @media screen and (max-width: app.$tabletBreakpoint) {
+    .headingRow {
+        align-items: flex-start;
+    }
+
     .heading {
         font-size: 36px;
     }
