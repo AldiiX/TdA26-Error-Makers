@@ -41,6 +41,9 @@ function toggleVisibility(): void {
             <span :class="$style.divider"/>
             <div :class="$style.description">
                 <p>{{ quiz.attemptsCount }} dokončení</p>
+                <span
+                    :class="[$style.modeBadge, quiz.mode === 'finaltest' ? $style.modeBadgeFinal : $style.modeBadgePractice]"
+                >{{ quiz.mode === 'finaltest' ? 'Závěrečný test' : 'Procvičovací' }}</span>
             </div>
 <!--                <p :class="$style.description">{{ quiz.description }}</p>-->
         </NuxtLink>
@@ -246,6 +249,25 @@ function toggleVisibility(): void {
         mask-image: url('/icons/pen.svg');
         background-color: var(--accent-color-secondary-theme, #2ecc71);
     }
+}
+
+.modeBadge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 2px;
+}
+
+.modeBadgePractice {
+    background-color: color-mix(in srgb, #27ae60 15%, transparent);
+    color: #27ae60;
+}
+
+.modeBadgeFinal {
+    background-color: color-mix(in srgb, #e74c3c 15%, transparent);
+    color: #e74c3c;
 }
 
 .iconButtonDelete {

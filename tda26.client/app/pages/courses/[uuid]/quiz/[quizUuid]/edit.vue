@@ -155,6 +155,7 @@ const saveQuiz = async () => {
         uuid: quiz.value!.uuid.startsWith("new-") ? undefined : quiz.value!.uuid,
         title: quiz.value!.title,
         attemptsCount: quiz.value!.attemptsCount,
+        mode: quiz.value!.mode ?? 'practice',
         questions: quiz.value!.questions.map((q, index) => ({
             ...mapQuestionToDto(q),
             order: index,
@@ -462,6 +463,18 @@ const removeQuestionOption = (questionIndex: number, optionIndex: number) => {
 <!--            <p @click="incrementQuestion(1)">&gt;</p>-->
 <!--        </div>-->
         
+        <div style="display: flex; align-items: center; gap: 8px; justify-content: center; padding: 4px 0;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-weight: 600;">
+                <input
+                    type="checkbox"
+                    :checked="quiz.mode === 'finaltest'"
+                    :disabled="isActionInProgress"
+                    @change="quiz!.mode = ($event.target as HTMLInputElement).checked ? 'finaltest' : 'practice'"
+                />
+                Závěrečný test
+            </label>
+        </div>
+
         <div :class="$style.buttonGroup">
             <Button :disabled="!canSave || isActionInProgress" button-style="secondary" @click="saveQuiz">Uložit</Button>
             <Button :disabled="!canSave || isActionInProgress" button-style="primary" @click="saveAndExit">Uložit a odejít</Button>

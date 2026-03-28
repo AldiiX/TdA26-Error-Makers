@@ -1,3 +1,5 @@
+using tda26.Server.Data.Models;
+
 namespace tda26.Server.DTOs.v1;
 
 public class CreateUpdateQuizRequest {
@@ -6,6 +8,7 @@ public class CreateUpdateQuizRequest {
     public int AttemptsCount { get; set; }
     public bool? IsVisible { get; set; }
     public Guid? ModuleUuid { get; set; }
+    public QuizMode? Mode { get; set; }
 
     public List<CreateUpdateQuestionRequest> Questions { get; set; } = new() {
         new CreateUpdateSingleChoiceQuestionRequest {

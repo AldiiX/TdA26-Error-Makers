@@ -1,3 +1,5 @@
+using tda26.Server.Data.Models;
+
 namespace tda26.Server.DTOs.v1;
 
 public class ReadQuizResponse
@@ -12,4 +14,5 @@ public class ReadQuizResponse
     
     public bool IsVisible { get; set; }
     public int Order { get; set; } = 0;
+    public QuizMode Mode { get; set; } = QuizMode.Practice;
 }

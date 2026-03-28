@@ -2361,7 +2361,8 @@ public sealed class APIv1(
         var newQuiz = new Quiz {
             Title = body.Title,
             AttemptsCount = body.AttemptsCount,
-            CourseUuid = course.Uuid
+            CourseUuid = course.Uuid,
+            Mode = body.Mode ?? QuizMode.Practice
         };
 
         foreach (var questionDto in body.Questions) {
@@ -2480,6 +2481,10 @@ public sealed class APIv1(
 
 		if (body.IsVisible.HasValue) {
 			quiz.IsVisible = body.IsVisible.Value;
+		}
+
+		if (body.Mode.HasValue) {
+			quiz.Mode = body.Mode.Value;
 		}
 
 		var existingQuestions = quiz.Questions.ToList();

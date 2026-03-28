@@ -69,6 +69,8 @@ export function useCourseQuizzes(params: {
             return;
         }
 
+        const isFinalTest = (form.elements.namedItem("createQuizIsFinalTest") as HTMLInputElement)?.checked ?? false;
+
         params.isActionInProgress.value = true;
 
         try {
@@ -79,6 +81,7 @@ export function useCourseQuizzes(params: {
                     body: {
                         title: quizName,
                         moduleUuid: params.targetModuleUuid?.value ?? undefined,
+                        mode: isFinalTest ? "finaltest" : "practice",
                     }
                 }
             );

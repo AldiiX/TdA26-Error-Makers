@@ -1,8 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using tda26.Server.DTOs.Converters;
 
 namespace tda26.Server.Data.Models;
+
+[JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
+public enum QuizMode {
+    Practice = 0,
+    FinalTest = 1
+}
 
 [Table("Quizzes")]
 public class Quiz : Auditable, IModule {
@@ -31,4 +38,6 @@ public class Quiz : Auditable, IModule {
     public bool IsVisible { get; set; } = false;
 
     public int Order { get; set; } = 0;
+
+    public QuizMode Mode { get; set; } = QuizMode.Practice;
 }

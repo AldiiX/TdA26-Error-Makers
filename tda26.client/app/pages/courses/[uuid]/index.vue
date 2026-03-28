@@ -1306,6 +1306,13 @@ function closeMaterialResultsModal() {
                     :disabled="isActionInProgress"
                 />
 
+                <div style="margin-top: 12px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" name="createQuizIsFinalTest" :disabled="isActionInProgress" />
+                        Závěrečný test (bez chatu, s randomizací otázek)
+                    </label>
+                </div>
+
                 <div :class="$style.modalButtons">
                     <Button type="reset" button-style="tertiary" :disabled="isActionInProgress" @click="enabledModal = null">Zrušit</Button>
 

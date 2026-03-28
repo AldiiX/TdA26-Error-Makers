@@ -73,6 +73,7 @@ export interface Quiz {
     questions: Question[];
     isVisible: boolean;
     order: number;
+    mode: 'practice' | 'finaltest';
 }
 
 export interface Question {
