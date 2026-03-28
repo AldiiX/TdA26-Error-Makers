@@ -9,8 +9,6 @@ public sealed class Student : Account {
 	[MaxLength(32)] public string LastName { get; set; } = string.Empty;
 	[MaxLength(1024)] public string? Bio { get; set; }
 	[MaxLength(512)] public string? PictureUrl { get; set; }
-
-	public bool IsPremium { get; set; } = false;
 	
 	[NotMapped]
 	public new AccountType Type => AccountType.Student;

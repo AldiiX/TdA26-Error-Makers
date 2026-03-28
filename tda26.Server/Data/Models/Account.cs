@@ -21,6 +21,8 @@ public class Account : Auditable {
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
 
+    public bool IsPremium { get; set; } = false;
+
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 

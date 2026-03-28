@@ -143,7 +143,7 @@ export interface Account {
     likes: Rating[];
     dislikes: Rating[];
     type: AccountType;
-    isPremium?: boolean;
+    isPremium: boolean;
 }
 
 interface Rating {

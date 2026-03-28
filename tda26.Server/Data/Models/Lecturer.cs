@@ -20,8 +20,6 @@ public sealed class Lecturer : Account {
     public ICollection<string> Emails { get; set; } =  new List<string>();
     public ICollection<string> Tags { get; set; } =  new List<string>();
 
-    public bool IsPremium { get; set; } = false;
-
 
 
     // nemapovany props (pouze pro serializaci)
