@@ -105,15 +105,6 @@
       <Compile Update="Data\Models\SingleChoiceQuestion.cs">
         <DependentUpon>Question.cs</DependentUpon>
       </Compile>
-      <Compile Update="Data\Models\AvatarShopItem.cs">
-        <DependentUpon>ShopItem.cs</DependentUpon>
-      </Compile>
-      <Compile Update="Data\Models\IShopItemWithImageUrl.cs">
-        <DependentUpon>ShopItem.cs</DependentUpon>
-      </Compile>
-      <Compile Update="Data\Models\BannerShopItem.cs">
-        <DependentUpon>ShopItem.cs</DependentUpon>
-      </Compile>
     </ItemGroup>
 
     <ItemGroup>

@@ -544,47 +544,6 @@ namespace tda26.Server.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.ShopItem", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("CreatedAt"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<int>("PriceInDucks")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("StudentUuid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
-
-                    b.HasKey("Uuid");
-
-                    b.HasIndex("StudentUuid");
-
-                    b.ToTable("ShopItems");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
                 {
                     b.Property<Guid>("Uuid")
@@ -685,53 +644,6 @@ namespace tda26.Server.Migrations
                         .HasColumnType("varchar(10)");
 
                     b.HasDiscriminator().HasValue("Lecturer");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Student", b =>
-                {
-                    b.HasBaseType("tda26.Server.Data.Models.Account");
-
-                    b.Property<string>("Bio")
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("MiddleName")
-                        .HasMaxLength(32)
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("PictureUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
-
-                    b.ToTable("Accounts", t =>
-                        {
-                            t.Property("Bio")
-                                .HasColumnName("Student_Bio");
-
-                            t.Property("FirstName")
-                                .HasColumnName("Student_FirstName");
-
-                            t.Property("LastName")
-                                .HasColumnName("Student_LastName");
-
-                            t.Property("MiddleName")
-                                .HasColumnName("Student_MiddleName");
-
-                            t.Property("PictureUrl")
-                                .HasColumnName("Student_PictureUrl");
-                        });
-
-                    b.HasDiscriminator().HasValue("Student");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.FileMaterial", b =>
@@ -998,13 +910,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.ShopItem", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Student", null)
-                        .WithMany("ShopItems")
-                        .HasForeignKey("StudentUuid");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Category", "Category")
@@ -1057,11 +962,6 @@ namespace tda26.Server.Migrations
             modelBuilder.Entity("tda26.Server.Data.Models.QuizResult", b =>
                 {
                     b.Navigation("Answers");
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Student", b =>
-                {
-                    b.Navigation("ShopItems");
                 });
 #pragma warning restore 612, 618
         }
