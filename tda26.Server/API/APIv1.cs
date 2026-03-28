@@ -170,6 +170,16 @@ public sealed class APIv1(
 			.FirstOrDefaultAsync(ct);
 	}
 
+	private async Task<Guid?> ResolveCourseOrganizationUuidForCreateAsync(Account acc, CancellationToken ct) {
+		var creatorOrganizationUuid = await db.Accounts
+			.AsNoTracking()
+			.Where(a => a.Uuid == acc.Uuid)
+			.Select(a => a.OrganizationUuid)
+			.FirstOrDefaultAsync(ct);
+
+		return creatorOrganizationUuid;
+	}
+
 
 
 	#region lecturers
@@ -1769,10 +1779,16 @@ public sealed class APIv1(
 			return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
 		}
 
+		var courseOrganizationUuid = await ResolveCourseOrganizationUuidForCreateAsync(acc, ct);
+		if (!courseOrganizationUuid.HasValue) {
+			return BadRequest(new { error = "Creator must belong to an organization." });
+		}
+
 		var newCourse = new Course {
 			Name = body.Name,
 			Description = body.Description,
-			LecturerUuid = acc.Uuid
+			LecturerUuid = acc.Uuid,
+			OrganizationUuid = courseOrganizationUuid.Value
 		};
 
 		// Category
@@ -1828,10 +1844,16 @@ public sealed class APIv1(
 			return new JsonResult(new { error = "Only lecturers can create courses." }) { StatusCode = StatusCodes.Status403Forbidden };
 		}
 
+		var courseOrganizationUuid = await ResolveCourseOrganizationUuidForCreateAsync(acc, ct);
+		if (!courseOrganizationUuid.HasValue) {
+			return BadRequest(new { error = "Creator must belong to an organization." });
+		}
+
 		var newCourse = new Course {
 			Name = body.Course.Name,
 			Description = body.Course.Description,
-			LecturerUuid = acc.Uuid
+			LecturerUuid = acc.Uuid,
+			OrganizationUuid = courseOrganizationUuid.Value
 		};
 
 		foreach (var url in body.UrlMaterials) {
