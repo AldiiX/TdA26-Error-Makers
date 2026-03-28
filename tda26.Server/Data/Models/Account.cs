@@ -21,6 +21,29 @@ public class Account : Auditable {
     [MaxLength(512), JsonIgnore]
     public string Password { get; set; } = string.Empty;
 
+	public ICollection<ShopItem> ShopItems { get; set; } = new List<ShopItem>();
+
+    public Guid? EquippedAvatarUuid { get; set; }
+    public Guid? EquippedBannerUuid { get; set; }
+    public Guid? EquippedEffectUuid { get; set; }
+    public Guid? EquippedBadgeUuid { get; set; }
+    public Guid? EquippedTitleUuid { get; set; }
+
+    [JsonIgnore]
+    public AvatarShopItem? EquippedAvatar { get; set; }
+
+    [JsonIgnore]
+    public BannerShopItem? EquippedBanner { get; set; }
+
+    [JsonIgnore]
+    public EffectShopItem? EquippedEffect { get; set; }
+
+    [JsonIgnore]
+    public BadgeShopItem? EquippedBadge { get; set; }
+
+    [JsonIgnore]
+    public TitleShopItem? EquippedTitle { get; set; }
+    
     public bool IsPremium { get; set; } = false;
 
     [JsonIgnore]
@@ -31,6 +54,12 @@ public class Account : Auditable {
 
     [JsonIgnore]
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+
+    public int Ducks  { get; set; }
+    public int Xp { get; set; }
+    public int Level { get; set; }
+
+
 
     // nemapovany props (pouze pro serializaci)
     [JsonConverter(typeof(JsonStringEnumLowerCaseConverter))]
@@ -50,4 +79,10 @@ public class Account : Auditable {
 
     [NotMapped]
     public AccountType Type => AccountType.Account;
+
+    [NotMapped]
+    public int DailyRewardXp { get; set; }
+
+    [NotMapped]
+    public int DailyRewardDucks { get; set; }
 }

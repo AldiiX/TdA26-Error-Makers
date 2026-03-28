@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tda26.Server.Data;
 
@@ -11,9 +12,11 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260328151928_AddDailyRewards")]
+    partial class AddDailyRewards
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -93,9 +96,6 @@ namespace tda26.Server.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -131,8 +131,6 @@ namespace tda26.Server.Migrations
                     b.HasIndex("EquippedEffectUuid");
 
                     b.HasIndex("EquippedTitleUuid");
-
-                    b.HasIndex("OrganizationUuid");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -208,9 +206,6 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
 
-                    b.Property<Guid>("OrganizationUuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<DateTimeOffset?>("ScheduledStart")
                         .HasColumnType("datetime(6)");
 
@@ -231,8 +226,6 @@ namespace tda26.Server.Migrations
                     b.HasIndex("CategoryUuid");
 
                     b.HasIndex("LecturerUuid");
-
-                    b.HasIndex("OrganizationUuid");
 
                     b.ToTable("Courses");
                 });
@@ -476,51 +469,6 @@ namespace tda26.Server.Migrations
                     b.HasDiscriminator().HasValue("Material");
 
                     b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("tda26.Server.Data.Models.Organization", b =>
-                {
-                    b.Property<Guid>("Uuid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<string>("PostalCode")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("varchar(24)");
-
-                    b.Property<int>("Region")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.HasKey("Uuid");
-
-                    b.ToTable("Organizations");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Question", b =>
@@ -834,10 +782,8 @@ namespace tda26.Server.Migrations
                     b.HasBaseType("tda26.Server.Data.Models.Account");
 
                     b.Property<string>("Bio")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)")
-                        .HasColumnName("Bio");
+                        .HasColumnType("varchar(1024)");
 
                     b.Property<string>("Claim")
                         .HasMaxLength(128)
@@ -849,37 +795,29 @@ namespace tda26.Server.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("FirstName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("LastName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("Location")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
                     b.Property<string>("MiddleName")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("MiddleName");
+                        .HasColumnType("varchar(32)");
 
                     b.PrimitiveCollection<string>("MobileNumbers")
                         .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("PictureUrl")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(512)
-                        .HasColumnType("varchar(512)")
-                        .HasColumnName("PictureUrl");
+                        .HasColumnType("varchar(512)");
 
                     b.Property<ushort>("PricePerHour")
                         .HasColumnType("smallint unsigned");
@@ -904,36 +842,44 @@ namespace tda26.Server.Migrations
                     b.HasBaseType("tda26.Server.Data.Models.Account");
 
                     b.Property<string>("Bio")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)")
-                        .HasColumnName("Bio");
+                        .HasColumnType("varchar(1024)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("FirstName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("LastName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("MiddleName")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(32)
-                        .HasColumnType("varchar(32)")
-                        .HasColumnName("MiddleName");
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("PictureUrl")
-                        .ValueGeneratedOnUpdateSometimes()
                         .HasMaxLength(512)
-                        .HasColumnType("varchar(512)")
-                        .HasColumnName("PictureUrl");
+                        .HasColumnType("varchar(512)");
+
+                    b.ToTable("Accounts", t =>
+                        {
+                            t.Property("Bio")
+                                .HasColumnName("Student_Bio");
+
+                            t.Property("FirstName")
+                                .HasColumnName("Student_FirstName");
+
+                            t.Property("LastName")
+                                .HasColumnName("Student_LastName");
+
+                            t.Property("MiddleName")
+                                .HasColumnName("Student_MiddleName");
+
+                            t.Property("PictureUrl")
+                                .HasColumnName("Student_PictureUrl");
+                        });
 
                     b.HasDiscriminator().HasValue("Student");
                 });
@@ -1153,16 +1099,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("EquippedTitle");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Organization");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Category", "Category")
@@ -1173,17 +1109,9 @@ namespace tda26.Server.Migrations
                         .WithMany()
                         .HasForeignKey("LecturerUuid");
 
-                    b.HasOne("tda26.Server.Data.Models.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationUuid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Account");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.CourseModule", b =>
