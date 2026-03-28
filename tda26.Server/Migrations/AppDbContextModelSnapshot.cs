@@ -87,10 +87,11 @@ namespace tda26.Server.Migrations
                     b.Property<Guid?>("EquippedTitleUuid")
                         .HasColumnType("char(36)");
 
-                    b.Property<int>("Level")
-                        .HasColumnType("int");
                     b.Property<bool>("IsPremium")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
 
                     b.Property<string>("Password")
                         .IsRequired()

@@ -12,8 +12,8 @@ using tda26.Server.Data;
 namespace tda26.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260328114006_Mig1")]
-    partial class Mig1
+    [Migration("20260328145959_AddShopAndEquipment")]
+    partial class AddShopAndEquipment
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,21 @@ namespace tda26.Server.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("AccountShopItem", b =>
+                {
+                    b.Property<Guid>("OwnedByAccountsUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("ShopItemsUuid")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("OwnedByAccountsUuid", "ShopItemsUuid");
+
+                    b.HasIndex("ShopItemsUuid");
+
+                    b.ToTable("AccountShopItem");
+                });
 
             modelBuilder.Entity("CourseTag", b =>
                 {
@@ -57,6 +72,30 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("varchar(8)");
 
+                    b.Property<int>("Ducks")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("EquippedAvatarUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("EquippedBadgeUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("EquippedBannerUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("EquippedEffectUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("EquippedTitleUuid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsPremium")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -78,7 +117,20 @@ namespace tda26.Server.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<int>("Xp")
+                        .HasColumnType("int");
+
                     b.HasKey("Uuid");
+
+                    b.HasIndex("EquippedAvatarUuid");
+
+                    b.HasIndex("EquippedBadgeUuid");
+
+                    b.HasIndex("EquippedBannerUuid");
+
+                    b.HasIndex("EquippedEffectUuid");
+
+                    b.HasIndex("EquippedTitleUuid");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -553,9 +605,6 @@ namespace tda26.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("AccountUuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)");
@@ -587,8 +636,6 @@ namespace tda26.Server.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<DateTimeOffset>("UpdatedAt"));
 
                     b.HasKey("Uuid");
-
-                    b.HasIndex("AccountUuid");
 
                     b.ToTable("ShopItems");
 
@@ -834,15 +881,26 @@ namespace tda26.Server.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("longtext");
 
-                    b.ToTable("ShopItems", t =>
-                        {
-                            t.Property("ImageUrl")
-                                .HasColumnName("AvatarShopItem_ImageUrl");
-                        });
+                    b.ToTable("ShopItems");
 
                     b.HasDiscriminator().HasValue("AvatarShopItem");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.BadgeShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("longtext");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("BadgeShopItem");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.BannerShopItem", b =>
@@ -851,11 +909,50 @@ namespace tda26.Server.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("longtext");
 
                     b.ToTable("ShopItems");
 
                     b.HasDiscriminator().HasValue("BannerShopItem");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.EffectShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("longtext");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("EffectShopItem");
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.TitleShopItem", b =>
+                {
+                    b.HasBaseType("tda26.Server.Data.Models.ShopItem");
+
+                    b.ToTable("ShopItems");
+
+                    b.HasDiscriminator().HasValue("TitleShopItem");
+                });
+
+            modelBuilder.Entity("AccountShopItem", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.Account", null)
+                        .WithMany()
+                        .HasForeignKey("OwnedByAccountsUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tda26.Server.Data.Models.ShopItem", null)
+                        .WithMany()
+                        .HasForeignKey("ShopItemsUuid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -871,6 +968,44 @@ namespace tda26.Server.Migrations
                         .HasForeignKey("TagsUuid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
+                {
+                    b.HasOne("tda26.Server.Data.Models.AvatarShopItem", "EquippedAvatar")
+                        .WithMany()
+                        .HasForeignKey("EquippedAvatarUuid")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("tda26.Server.Data.Models.BadgeShopItem", "EquippedBadge")
+                        .WithMany()
+                        .HasForeignKey("EquippedBadgeUuid")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("tda26.Server.Data.Models.BannerShopItem", "EquippedBanner")
+                        .WithMany()
+                        .HasForeignKey("EquippedBannerUuid")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("tda26.Server.Data.Models.EffectShopItem", "EquippedEffect")
+                        .WithMany()
+                        .HasForeignKey("EquippedEffectUuid")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("tda26.Server.Data.Models.TitleShopItem", "EquippedTitle")
+                        .WithMany()
+                        .HasForeignKey("EquippedTitleUuid")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("EquippedAvatar");
+
+                    b.Navigation("EquippedBadge");
+
+                    b.Navigation("EquippedBanner");
+
+                    b.Navigation("EquippedEffect");
+
+                    b.Navigation("EquippedTitle");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
@@ -1040,13 +1175,6 @@ namespace tda26.Server.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("tda26.Server.Data.Models.ShopItem", b =>
-                {
-                    b.HasOne("tda26.Server.Data.Models.Account", null)
-                        .WithMany("ShopItems")
-                        .HasForeignKey("AccountUuid");
-                });
-
             modelBuilder.Entity("tda26.Server.Data.Models.Tag", b =>
                 {
                     b.HasOne("tda26.Server.Data.Models.Category", "Category")
@@ -1059,8 +1187,6 @@ namespace tda26.Server.Migrations
             modelBuilder.Entity("tda26.Server.Data.Models.Account", b =>
                 {
                     b.Navigation("Ratings");
-
-                    b.Navigation("ShopItems");
                 });
 
             modelBuilder.Entity("tda26.Server.Data.Models.Course", b =>
