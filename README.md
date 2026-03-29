@@ -1,7 +1,7 @@
 <div align="center">
   <h1 style="text-align: center">TdA26 – Error Makers</h1>
-  <img src="https://img.shields.io/badge/Tour%20de%20App-2026-00dc82?style=for-the-badge" alt="Tour de App 2026" />
-  <img src="https://img.shields.io/badge/status-in%20development-ffaa00?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/Tour%20de%20App-2026-097969?style=for-the-badge" alt="Tour de App 2026" />
+  <img src="https://img.shields.io/badge/status-finished-5D3FD3?style=for-the-badge" alt="Status" />
 </div>
 
 <p align="center">
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Soutěžíme za <a href="https://educhem.cz"><b>Střední školu EDUCHEM, a.s.</b></a>
+  Soutěžili jsme za <a href="https://educhem.cz"><b>Střední školu EDUCHEM, a.s.</b></a>
 </p>
 
 --- 
@@ -42,6 +42,19 @@
 </p>
 
 ---
+
+## Stáhnout verzi aplikace
+- [Nominační kolo](https://github.com/AldiiX/TdA26-Error-Makers/releases/tag/nominacni-kolo) - aplikace skončila na **4. místě** ze **144 týmů**.
+- [Soutěžní kolo](https://github.com/AldiiX/TdA26-Error-Makers/releases/tag/soutezni-kolo) - aplikace skončila na **1. místě** z cca **40 týmů**.
+- [Grandfinále](https://github.com/AldiiX/TdA26-Error-Makers/releases/tag/grandfinale) - v grf aplikace skončila na **3. místě** z **20 týmů**. Měli jsme ale skvělý přednes 😎
+
+>Žádná z těchto verzí nemá zabezpečený backend (API endpointy) - zadání to takto vyžadovalo.
+
+## Screenshoty
+![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/1.png)
+![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/2.png)
+![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/3.png)
+![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/4.png)
 
 ## Použité technologie
 

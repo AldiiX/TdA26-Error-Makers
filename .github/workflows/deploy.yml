@@ -1,9 +1,9 @@
 ﻿name: Build and push Web App to TdA
 
 on:
-  push:
-    branches:
-      - main
+  #push:
+  #  branches:
+  #    - main
   workflow_dispatch:
 
 permissions:
