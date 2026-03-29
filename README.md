@@ -50,6 +50,8 @@
 
 >Žádná z těchto verzí nemá zabezpečený backend (API endpointy) - zadání to takto vyžadovalo.
 
+>Všechny ostatní služby (MySQL, Redis, MinIO...) používají defaultní přihlašovací údaje, které jsou uvedeny v `docker-compose.yml` a `Dockerfile`. Pokud si aplikaci lokálně spustíte, tak se ujistěte, že nemáte porty těchto služeb otevřené do veřejné sítě.
+
 ## Screenshoty
 ![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/1.png)
 ![S1](https://cloud0.emsio.cz/public/img/stanislavskudrnacz/websites/tda26/2.png)
