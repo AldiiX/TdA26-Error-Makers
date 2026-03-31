@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import { normalizeAccountNumericFields, type Account } from "#shared/types";
+import { normalizeAccountNumericFields } from "#shared/types";
 import Select from "~/components/Select.vue";
 import type { Account, OrganizationRegistrationOption } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
