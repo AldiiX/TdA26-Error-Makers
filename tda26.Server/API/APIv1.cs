@@ -141,8 +141,8 @@ public sealed class APIv1(
 				message = "Uživatelské jméno, heslo, jméno a příjmení jsou povinné."
 			});
 		}
-
-		if (body.OrganizationUuid == Guid.Empty) {
+		
+		if (string.IsNullOrEmpty(body.OrganizationUuid.ToString())) {
 			return new BadRequestObjectResult(new {
 				message = "Organizace je povinná."
 			});
