@@ -24,8 +24,30 @@
     const isDailyRewardsModalOpen = ref(false);
     const useClickPopover = ref(false);
 
-    const accountXp = computed(() => loggedAccount.value?.dailyRewardXp ?? 0);
-    const accountDucks = computed(() => loggedAccount.value?.dailyRewardDucks ?? 0);
+    const accountXp = computed(() => loggedAccount.value?.xp ?? 0);
+    const accountDucks = computed(() => loggedAccount.value?.ducks ?? 0);
+    const accountLevel = computed(() => loggedAccount.value?.level ?? 0);
+    const baseXpPerLevel = 100;
+    const xpGrowthPerLevel = 25;
+
+    const xpNeededForNextLevel = computed(() => baseXpPerLevel + (accountLevel.value * xpGrowthPerLevel));
+
+    const xpProgressInLevel = computed(() => {
+        const totalXp = Math.max(0, accountXp.value);
+        let spentXp = 0;
+
+        for (let level = 0; level < accountLevel.value; level++) {
+            spentXp += baseXpPerLevel + (level * xpGrowthPerLevel);
+        }
+
+        const progress = Math.max(0, totalXp - spentXp);
+        return Math.min(progress, xpNeededForNextLevel.value);
+    });
+
+    const xpProgressPercent = computed(() => {
+        if (xpNeededForNextLevel.value <= 0) return 0;
+        return Math.min(100, Math.round((xpProgressInLevel.value / xpNeededForNextLevel.value) * 100));
+    });
 
     function ouasihfdusifhi() {
         const header = document.querySelector("header");
@@ -126,12 +148,26 @@
 
                                 <div :class="$style.rewardSummary">
                                     <div :class="$style.rewardStat">
+                                        <p :class="$style.rewardLabel">Level</p>
+                                        <p :class="$style.rewardValue">{{ accountLevel.toLocaleString('cs-CZ') }}</p>
+                                    </div>
+                                    <div :class="$style.rewardStat">
                                         <p :class="$style.rewardLabel">XP</p>
                                         <p :class="$style.rewardValue">{{ accountXp.toLocaleString('cs-CZ') }}</p>
                                     </div>
                                     <div :class="$style.rewardStat">
                                         <p :class="$style.rewardLabel">Kačenky</p>
                                         <p :class="$style.rewardValue">{{ accountDucks.toLocaleString('cs-CZ') }}</p>
+                                    </div>
+                                </div>
+
+                                <div :class="$style.levelProgress">
+                                    <div :class="$style.levelProgressTop">
+                                        <span>Postup na další level</span>
+                                        <span>{{ xpProgressInLevel }} / {{ xpNeededForNextLevel }} XP</span>
+                                    </div>
+                                    <div :class="$style.levelProgressBar">
+                                        <div :class="$style.levelProgressFill" :style="{ width: `${xpProgressPercent}%` }" />
                                     </div>
                                 </div>
                                 
@@ -418,8 +454,41 @@
 
             .rewardSummary {
                 display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: repeat(3, minmax(0, 1fr));
                 gap: 8px;
+            }
+
+            .levelProgress {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                border: 1px solid rgb(from var(--text-color-primary) r g b / 0.12);
+                border-radius: 12px;
+                padding: 10px;
+                background: rgb(from var(--accent-color-primary) r g b / 0.08);
+            }
+
+            .levelProgressTop {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                font-size: 12px;
+                color: var(--text-color-secondary);
+            }
+
+            .levelProgressBar {
+                width: 100%;
+                height: 8px;
+                border-radius: 999px;
+                background: rgb(from var(--text-color-primary) r g b / 0.14);
+                overflow: hidden;
+            }
+
+            .levelProgressFill {
+                height: 100%;
+                border-radius: 999px;
+                background: linear-gradient(90deg, var(--accent-color-primary), var(--accent-color-secondary-theme));
+                transition: width 0.25s ease;
             }
 
             .rewardStat {

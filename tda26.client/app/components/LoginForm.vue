@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import { normalizeAccountType, type Account } from "#shared/types";
+import { normalizeAccountNumericFields, normalizeAccountType, type Account } from "#shared/types";
 import { push } from "notivue";
 import {useCourses} from "~/composables/useCourses";
 
@@ -46,10 +46,10 @@ async function submitLoginForm(event: Event) {
             throw new Error("Invalid credentials");
         }
 
-        const normalizedAccount: Account = {
+        const normalizedAccount: Account = normalizeAccountNumericFields({
             ...res,
             type: normalizeAccountType(res.type)
-        };
+        });
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
         loggedAccount.value = normalizedAccount;
 

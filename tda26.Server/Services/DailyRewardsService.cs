@@ -24,10 +24,16 @@ public sealed class DailyRewardsService(AppDbContext db) : IDailyRewardsService 
     public async Task TrackEventAsync(Guid accountUuid, DailyRewardEventType eventType, CancellationToken ct = default) {
         if (!EventTaskMap.TryGetValue(eventType, out var taskCodes) || taskCodes.Length == 0) return;
 
+        var account = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Uuid == accountUuid, ct);
+        if (account == null) return;
+
         var today = GetTodayDate();
         var day = await EnsureDayAsync(accountUuid, today, ct);
 
         var utcNow = DateTimeOffset.UtcNow;
+        var gainedXp = 0;
+        var gainedDucks = 0;
         foreach (var task in day.Tasks.Where(t => taskCodes.Contains(t.TaskCode))) {
             if (task.IsCompleted) continue;
 
@@ -35,7 +41,16 @@ public sealed class DailyRewardsService(AppDbContext db) : IDailyRewardsService 
             if (task.CurrentValue >= task.TargetValue) {
                 task.IsCompleted = true;
                 task.CompletedAt = utcNow;
+
+                if (TaskDefinitionsByCode.TryGetValue(task.TaskCode, out var definition)) {
+                    gainedXp += definition.RewardXp;
+                    gainedDucks += definition.RewardDuck;
+                }
             }
+        }
+
+        if (gainedXp > 0 || gainedDucks > 0) {
+            account.AddProgress(gainedXp, gainedDucks);
         }
 
         await db.SaveChangesAsync(ct);
@@ -119,25 +134,16 @@ public sealed class DailyRewardsService(AppDbContext db) : IDailyRewardsService 
     }
 
     public async Task<DailyRewardsWallet> GetWalletAsync(Guid accountUuid, CancellationToken ct = default) {
-        var completedTaskCodes = await db.DailyRewardTaskStates
+        var wallet = await db.Accounts
             .AsNoTracking()
-            .Where(task => task.IsCompleted)
-            .Where(task => task.DailyRewardDay.AccountUuid == accountUuid)
-            .Select(task => task.TaskCode)
-            .ToListAsync(ct);
+            .Where(a => a.Uuid == accountUuid)
+            .Select(a => new DailyRewardsWallet {
+                TotalXp = a.Xp,
+                TotalDucks = a.Ducks
+            })
+            .FirstOrDefaultAsync(ct);
 
-        var totalXp = 0;
-        var totalDucks = 0;
-        foreach (var code in completedTaskCodes) {
-            if (!TaskDefinitionsByCode.TryGetValue(code, out var definition)) continue;
-            totalXp += definition.RewardXp;
-            totalDucks += definition.RewardDuck;
-        }
-
-        return new DailyRewardsWallet {
-            TotalXp = totalXp,
-            TotalDucks = totalDucks
-        };
+        return wallet ?? new DailyRewardsWallet();
     }
 
     private async Task<DailyRewardDay> EnsureDayAsync(Guid accountUuid, DateOnly date, CancellationToken ct) {

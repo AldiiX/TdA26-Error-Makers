@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import CircleBlurBlob from "~/components/CircleBlurBlob.vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
+import { normalizeAccountNumericFields } from "#shared/types";
 import Select from "~/components/Select.vue";
 import type { Account, OrganizationRegistrationOption } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
@@ -137,7 +138,7 @@ async function submitRegisterForm(event: Event) {
 
         // auth objekt
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-        loggedAccount.value = res;
+        loggedAccount.value = res ? normalizeAccountNumericFields(res) : null;
 
         // presmerovani na dashboard
         await navigateTo("/");

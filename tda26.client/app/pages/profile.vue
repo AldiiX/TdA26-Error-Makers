@@ -59,8 +59,13 @@ function duckWord(count: number): string {
     });
 }
 
-function ducksLabel(count: number): string {
-    return `${count} ${duckWord(count)}`;
+function ducksLabel(count: number | null | undefined): string {
+    const safeCount = typeof count === "number" && Number.isFinite(count) ? count : 0;
+    return `${safeCount} ${duckWord(safeCount)}`;
+}
+
+function safeNumber(value: number | null | undefined): number {
+    return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 function itemImage(item: ShopItem | null): string | null {
@@ -96,8 +101,8 @@ function handleAuthSuccess() {
                     <p><strong>Uživatel:</strong> {{ profileData.account.fullNameWithoutTitles }}</p>
                     <p><strong>UUID:</strong> {{ profileData.account.uuid }}</p>
                     <p><strong>Kačenky:</strong> {{ ducksLabel(profileData.account.ducks) }}</p>
-                    <p><strong>XP:</strong> {{ profileData.account.xp }}</p>
-                    <p><strong>Level:</strong> {{ profileData.account.level }}</p>
+                    <p><strong>XP:</strong> {{ safeNumber(profileData.account.xp) }}</p>
+                    <p><strong>Level:</strong> {{ safeNumber(profileData.account.level) }}</p>
                     <NuxtLink to="/inventory" :class="$style.linkButton">Otevřít inventář</NuxtLink>
                 </article>
 

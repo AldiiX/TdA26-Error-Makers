@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {Account, AnswerSubmission, Course, Question, Quiz} from "#shared/types";
+import type { Account, AnswerSubmission, Quiz, QuizSubmitResponse } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
@@ -42,6 +42,8 @@ definePageMeta({
 const { uuid, quizUuid } = useRoute().params;
 
 const quiz = useState<Quiz | null>(`quiz-${quizUuid}`);
+const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+const quizSubmitReward = useState<{ resultUuid: string; rewardDucks: number } | null>("quiz-submit-reward", () => null);
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
@@ -109,26 +111,27 @@ const endQuiz = async () => {
         })
         .filter((entry): entry is AnswerSubmission | any => entry !== null);
 
-    const response = await $fetch<{ resultUuid: string }>(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}/submit`, {
+    const response = await $fetch<QuizSubmitResponse>(getBaseUrl() + `/api/v1/courses/${uuid}/quizzes/${quizUuid}/submit`, {
         method: 'POST',
+        credentials: 'include',
         body: {
             answers,
             totalTimeSeconds: totalTimeSeconds
         }
     });
+
+    if (loggedAccount.value && response.account) {
+        loggedAccount.value.ducks = Number.isFinite(response.account.ducks) ? Number(response.account.ducks) : 0;
+        loggedAccount.value.xp = Number.isFinite(response.account.xp) ? Number(response.account.xp) : 0;
+        loggedAccount.value.level = Number.isFinite(response.account.level) ? Number(response.account.level) : 0;
+    }
+
+    quizSubmitReward.value = {
+        resultUuid: response.resultUuid,
+        rewardDucks: Number.isFinite(response.rewardDucks) ? Number(response.rewardDucks) : 0
+    };
     
-    window.location.href = `/courses/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`;
-};
-
-const incrementQuestion = (i: number) => {
-    if (!quiz.value) return;
-
-    const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
-    
-    if (newIndex < 0) return;
-    if (newIndex >= quiz.value.questions.length) return;
-
-    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
+    await navigateTo(`/courses/${uuid}/quiz/${quizUuid}/result/${response.resultUuid}`);
 };
 
 const setQuestionIndex = (i: number) => {
@@ -173,11 +176,11 @@ onMounted(() => {
     <div v-if="quiz" :class="[$style.quizContainer]">
         <ul :class="$style.questionProgress">
             <li
-                v-for="(_, i) in quiz.questions"
+                v-for="i in quiz.questions.length"
                 :key="i"
-                :class="{ [$style.active]: i === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
-                @click="setQuestionIndex(i)"
-            >{{ i + 1 }}</li>
+                :class="{ [$style.active]: (i - 1) === kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex }"
+                @click="setQuestionIndex(i - 1)"
+            >{{ i }}</li>
         </ul>
         <p>{{ quiz.title }}</p>
         <QuizQuestionCard

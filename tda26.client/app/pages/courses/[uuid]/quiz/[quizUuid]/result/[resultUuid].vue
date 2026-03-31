@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
 import { Head, Title } from '#components';
-import type {Quiz, QuizResult} from "#shared/types";
+import type { Account, QuizResult } from "#shared/types";
 import getBaseUrl from "#shared/utils/getBaseUrl";
+import { push } from "notivue";
 import Button from "~/components/Button.vue";
 import QuizQuestionCard from "~/components/pagespecific/QuizQuestionCard.vue";
 
@@ -42,6 +43,8 @@ definePageMeta({
 const { uuid, quizUuid, resultUuid } = useRoute().params;
 
 const result = useState<QuizResult | null>(`quiz-result-${resultUuid}`);
+const loggedAccount = useState<Account | null>("loggedAccount", () => null);
+const rewardState = useState<{ resultUuid: string; rewardDucks: number } | null>("quiz-submit-reward", () => null);
 
 const kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex = ref(0);
 
@@ -58,16 +61,6 @@ const incrementQuestionIndex = (i: number) => {
         return;
     }
 
-    kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
-};
-
-const incrementQuestion = (i: number) => {
-    if (!result.value) return;
-
-    const newIndex = kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value + i;
-
-    if (newIndex < 0) return;
-    if (newIndex >= result.value.quiz.questions.length) return;
 
     kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value = newIndex;
 };
@@ -92,6 +85,30 @@ const setQuestionIndex = (i: number) => {
     //         kvizovyIndexNaJednotlivyKvizProKvizVyuzitiProReferencniIntegrituAbyKvizZobrazeniMelJednuOtazkuSamenSamenIndexSamenAstarSeranVasMaMocRadIndexIndex.value
     //         ]?.selectedIndices ?? [])
 };
+
+onMounted(() => {
+    if (!rewardState.value || rewardState.value.resultUuid !== resultUuid) return;
+
+    const rewardDucks = Number.isFinite(rewardState.value.rewardDucks)
+        ? Number(rewardState.value.rewardDucks)
+        : 0;
+
+    if (loggedAccount.value) {
+        loggedAccount.value.ducks = Number.isFinite(loggedAccount.value.ducks)
+            ? Number(loggedAccount.value.ducks)
+            : 0;
+    }
+
+    if (rewardDucks > 0) {
+        push.success({
+            title: "Kvíz dokončen",
+            message: `Získal/a jsi +${rewardDucks} kačenek za dokončení kvízu.`,
+            duration: 4200
+        });
+    }
+
+    rewardState.value = null;
+});
 
 </script>
 

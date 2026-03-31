@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import ButtonComponent from "~/components/Button.vue";
 import Input from "~/components/Input.vue";
-import type {Account} from "#shared/types";
+import { normalizeAccountNumericFields, type Account } from "#shared/types";
 
 const emit = defineEmits<{
     (e: "registerSuccess", account: Account): void;
@@ -80,9 +80,9 @@ async function submitRegisterForm(event: Event) {
         }
 
         const loggedAccount = useState<Account | null>("loggedAccount", () => null);
-        loggedAccount.value = res;
+        loggedAccount.value = normalizeAccountNumericFields(res);
 
-        emit("registerSuccess", res);
+        emit("registerSuccess", normalizeAccountNumericFields(res));
     } catch (err: any) {
         errorMsg.value = ["Uživatelské jméno nebo e-mail už existuje."];
     } finally {

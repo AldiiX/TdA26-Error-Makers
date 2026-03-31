@@ -24,8 +24,8 @@ export default function useDailyRewards() {
 
     const syncWalletFromMonth = (month: DailyRewardsMonthResponse | null) => {
         if (!month || !loggedAccount.value) return;
-        loggedAccount.value.dailyRewardXp = month.totalXp;
-        loggedAccount.value.dailyRewardDucks = month.totalDucks;
+        loggedAccount.value.xp = Number.isFinite(month.totalXp) ? month.totalXp : 0;
+        loggedAccount.value.ducks = Number.isFinite(month.totalDucks) ? month.totalDucks : 0;
     };
 
     const fetchMonth = async (year: number, month: number) => {
@@ -109,8 +109,8 @@ export default function useDailyRewards() {
             year,
             month,
             daysInMonth,
-            totalXp: loggedAccount.value?.dailyRewardXp ?? 0,
-            totalDucks: loggedAccount.value?.dailyRewardDucks ?? 0,
+            totalXp: loggedAccount.value?.xp ?? 0,
+            totalDucks: loggedAccount.value?.ducks ?? 0,
             days
         };
     };
